@@ -1,0 +1,78 @@
+name: Build and Push Dist
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    tags:
+     - '*'
+     
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18'
+
+      - name: Install global tools
+        run: |
+          npm install -g @lightningjs/cli typescript
+          lng --version
+
+      - name: Install project dependencies
+        run: npm install
+        working-directory: ./accelerator-home-ui
+
+      - name: Build project
+        run: lng dist
+        working-directory: ./accelerator-home-ui
+
+      - name: verify dist
+        run:  test -d "./accelerator-home-ui/dist" && echo "exist" || echo "Not exist"
+
+      - name: Add script tag to index.html
+        run: |
+          sed -i "/<\/head>/i <script type=\"text/javascript\"> \
+          const fbEndpoint = new URLSearchParams(window.location.search).get('__firebolt_endpoint'); \
+          if (fbEndpoint) { \
+              window.__firebolt = window.__firebolt || {}; \
+              window.__firebolt.endpoint = fbEndpoint; \
+          } \
+          </script>" ./accelerator-home-ui/dist/es6/index.html
+
+      - name: to move dist 
+        run: mv ./accelerator-home-ui/dist/es6/* ./accelerator-home-ui/dist
+        
+      - name: get reference name
+        run: echo " Reference name :${{ github.ref_name }}"
+        
+      - name: Identify if triggered by a branch or tag
+        run: |
+          TRIGGERED_HEAD=${GITHUB_REF#refs/}
+          if [${TRIGGERED_HEAD} == "heads/*"]; then
+           SET_URL = "${SERVER_BASE_URL}/${{github.ref_name}}/"
+          elif [${TRIGGERED_HEAD} == "tags/*"]; then
+           SET_URL = "${SERVER_BASE_URL}/releases/${{github.ref_name}}/"
+          else
+            echo "error occured location not found:"
+          fi
+          
+      - name: Set up JFrog CLI
+        uses: jfrog/setup-jfrog-cli-action@v1
+        with:
+          version: latest
+
+      - name: Configure JFrog CLI
+        run: |
+          jfrog rt config --url ${{ secrets.ARTIFACTORY_URL }} --apikey ${{ secrets.ARTIFACTORY_API_KEY }}
+          
+      - name: Upload dist to Artifactory
+        run: |
+          jfrog rt u "./accelerator-home-ui/dist/*" "${SET_URL}" --flat=true
