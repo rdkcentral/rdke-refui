@@ -1126,6 +1126,36 @@ export default class AppApi {
     })
   }
 
+  getPowerStateBeforeReboot() {
+    return new Promise((resolve, reject) => {
+      thunder
+        .call('org.rdk.System', 'getPowerStateBeforeReboot')
+        .then(result => {
+          resolve(result)
+        })
+        .catch(err => {
+          console.error("AppAPI System getPowerStateBeforeReboot failed: ", JSON.stringify(err));
+          Metrics.error(Metrics.ErrorType.OTHER, "PowerStateFailure", "Error in Thunder System getPowerStateBeforeReboot " + JSON.stringify(err), false, null)
+          reject(err)
+        })
+    })
+  }
+
+  getPowerStateIsManagedByDevice() {
+    return new Promise((resolve, reject) => {
+      thunder
+        .call('org.rdk.System', 'getPowerStateIsManagedByDevice')
+        .then(result => {
+          resolve(result)
+        })
+        .catch(err => {
+          console.error("AppAPI System getPowerStateIsManagedByDevice failed: ", JSON.stringify(err));
+          Metrics.error(Metrics.ErrorType.OTHER, "PowerStateFailure", "Error in Thunder System getPowerStateIsManagedByDevice " + JSON.stringify(err), false, null)
+          reject(err)
+        })
+    })
+  }
+
   getPowerState() {
     return new Promise((resolve, reject) => {
       thunder

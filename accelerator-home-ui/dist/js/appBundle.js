@@ -3,7 +3,7 @@
  * SDK version: 4.8.3
  * CLI version: 2.14.2
  * 
- * Generated: Thu, 21 Nov 2024 15:09:04 GMT
+ * Generated: Fri, 22 Nov 2024 16:14:36 GMT
  */
 
 var APP_accelerator_home_ui = (function () {
@@ -362,12 +362,12 @@ var APP_accelerator_home_ui = (function () {
    */
 
   let timeout$1 = null;
-  var easeExecution = (cb, delay) => {
+  var easeExecution = ((cb, delay) => {
     clearTimeout(timeout$1);
     timeout$1 = setTimeout(() => {
       cb();
     }, delay);
-  };
+  });
 
   /*
    * If not stated otherwise in this file or this component's LICENSE file the
@@ -5066,7 +5066,7 @@ var APP_accelerator_home_ui = (function () {
    * limitations under the License.
    */
   let ApplicationInstance;
-  var Launch = (App, appSettings, platformSettings, appData) => {
+  var Launch = ((App, appSettings, platformSettings, appData) => {
     initSettings$2(appSettings, platformSettings);
     initUtils(platformSettings);
     initStorage();
@@ -5085,7 +5085,7 @@ var APP_accelerator_home_ui = (function () {
     const app = Application(App, appData, platformSettings);
     ApplicationInstance = new app(appSettings);
     return ApplicationInstance;
-  };
+  });
 
   /*
    * If not stated otherwise in this file or this component's LICENSE file the
@@ -9981,14 +9981,6 @@ preferredAudioLanguages:   preferredAudioLanguages$1
     }
   }
 
-  function _defineProperty$1(e, r, t) {
-    return (r = _toPropertyKey$1(r)) in e ? Object.defineProperty(e, r, {
-      value: t,
-      enumerable: !0,
-      configurable: !0,
-      writable: !0
-    }) : e[r] = t, e;
-  }
   function _toPrimitive$1(t, r) {
     if ("object" != typeof t || !t) return t;
     var e = t[Symbol.toPrimitive];
@@ -10002,6 +9994,20 @@ preferredAudioLanguages:   preferredAudioLanguages$1
   function _toPropertyKey$1(t) {
     var i = _toPrimitive$1(t, "string");
     return "symbol" == typeof i ? i : i + "";
+  }
+  function _defineProperty$1(obj, key, value) {
+    key = _toPropertyKey$1(key);
+    if (key in obj) {
+      Object.defineProperty(obj, key, {
+        value: value,
+        enumerable: true,
+        configurable: true,
+        writable: true
+      });
+    } else {
+      obj[key] = value;
+    }
+    return obj;
   }
 
   class RDKShellApis {
@@ -11653,6 +11659,28 @@ preferredAudioLanguages:   preferredAudioLanguages$1
           console.error("AppAPI System setPowerState failed: ", JSON.stringify(err));
           Metrics$3.error(Metrics$3.ErrorType.OTHER, "PowerStateFailure", "Error in Thunder System setPowerState " + JSON.stringify(err), false, null);
           resolve(false);
+        });
+      });
+    }
+    getPowerStateBeforeReboot() {
+      return new Promise((resolve, reject) => {
+        thunder$j.call('org.rdk.System', 'getPowerStateBeforeReboot').then(result => {
+          resolve(result);
+        }).catch(err => {
+          console.error("AppAPI System getPowerStateBeforeReboot failed: ", JSON.stringify(err));
+          Metrics$3.error(Metrics$3.ErrorType.OTHER, "PowerStateFailure", "Error in Thunder System getPowerStateBeforeReboot " + JSON.stringify(err), false, null);
+          reject(err);
+        });
+      });
+    }
+    getPowerStateIsManagedByDevice() {
+      return new Promise((resolve, reject) => {
+        thunder$j.call('org.rdk.System', 'getPowerStateIsManagedByDevice').then(result => {
+          resolve(result);
+        }).catch(err => {
+          console.error("AppAPI System getPowerStateIsManagedByDevice failed: ", JSON.stringify(err));
+          Metrics$3.error(Metrics$3.ErrorType.OTHER, "PowerStateFailure", "Error in Thunder System getPowerStateIsManagedByDevice " + JSON.stringify(err), false, null);
+          reject(err);
         });
       });
     }
@@ -25331,9 +25359,9 @@ preferredAudioLanguages:   preferredAudioLanguages$1
    * @param {Object|function} styles - Object or callback that takes theme as an argument, ultimately the returned value
    * @param {Object} theme - theme to be provided to styles
    */
-  var createStyles = (styles, theme) => {
+  var createStyles = ((styles, theme) => {
     return typeof styles === 'function' ? styles(theme) : styles;
-  };
+  });
 
   /**
    * Copyright 2020 Comcast Cable Communications Management, LLC
@@ -65590,9 +65618,16 @@ preferredAudioLanguages:   preferredAudioLanguages$1
         "Amazon": "n:2",
         "Prime": "n:2"
       };
-      appApi.getPowerState().then(res => {
-        GLOBALS.powerState = res.success ? res.powerState : "ON";
-      });
+      // Device shall boot to STANDBY mode by default. Change to last known state if available else to ON.
+      appApi.getPowerStateIsManagedByDevice().then(res => {
+        if (!res.powerStateManagedByDevice) {
+          this._getPowerStatebeforeReboot();
+        } else {
+          appApi.getPowerState().then(res => {
+            GLOBALS.powerState = res.success ? res.powerState : "ON";
+          });
+        }
+      }).catch(err => this._getPowerStatebeforeReboot());
       keyIntercept(GLOBALS.selfClientName).catch(err => {
         console.error("App _init keyIntercept err:", JSON.stringify(err));
       });
@@ -66156,6 +66191,41 @@ preferredAudioLanguages:   preferredAudioLanguages$1
           }
         });
       }
+    }
+    _powerStateHandlingWhileError() {
+      appApi.getPowerState().then(res => {
+        if (res.powerState !== 'ON') {
+          appApi.setPowerState('ON').then(res => {
+            if (res.success) {
+              appApi.getPowerState().then(res => {
+                GLOBALS.powerState = res.powerState;
+              });
+            }
+          }).catch(err => appApi.reboot());
+        } else {
+          GLOBALS.powerState = res.powerState;
+        }
+      });
+    }
+    _getPowerStatebeforeReboot() {
+      appApi.getPowerStateBeforeReboot().then(res => {
+        if (res.state !== 'ON') {
+          appApi.getPreferredStandbyMode().then(res => {
+            appApi.setPowerState(res.preferredStandbyMode).then(res => {
+              if (res.success) {
+                appApi.getPowerState().then(res => {
+                  GLOBALS.powerState = res.powerState;
+                });
+              }
+            }).catch(err => {
+              console.log("****rebooting the device, set PowerState failed ****");
+              appApi.reboot();
+            });
+          }).catch(err => this._powerStateHandlingWhileError());
+        } else {
+          this._powerStateHandlingWhileError();
+        }
+      }).catch(this._powerStateHandlingWhileError());
     }
     _firstEnable() {
       thunder.on("org.rdk.System", "onSystemPowerStateChanged", notification => {

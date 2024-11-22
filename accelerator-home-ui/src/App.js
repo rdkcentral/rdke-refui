@@ -506,9 +506,16 @@ export default class App extends Router.App {
       "Amazon": "n:2",
       "Prime": "n:2"
     }
-    appApi.getPowerState().then(res =>{
-      GLOBALS.powerState = res.success ? res.powerState : "ON"
-    })
+    // Device shall boot to STANDBY mode by default. Change to last known state if available else to ON.
+    appApi.getPowerStateIsManagedByDevice().then(res =>{
+      if(!res.powerStateManagedByDevice) {
+        this._getPowerStatebeforeReboot()
+      } else {
+        appApi.getPowerState().then(res =>{
+          GLOBALS.powerState = res.success ? res.powerState : "ON"
+        })
+      }
+    }).catch(err => this._getPowerStatebeforeReboot())
     keyIntercept(GLOBALS.selfClientName).catch(err => {
       console.error("App _init keyIntercept err:", JSON.stringify(err));
     });
@@ -1080,6 +1087,43 @@ export default class App extends Router.App {
         }
       })
     }
+  }
+
+  _powerStateHandlingWhileError() {
+    appApi.getPowerState().then(res => {
+      if(res.powerState !=='ON') {
+        appApi.setPowerState('ON').then(res => {
+          if(res.success) {
+            appApi.getPowerState().then(res => {
+              GLOBALS.powerState = res.powerState
+            })
+          }
+        }).catch(err => appApi.reboot())
+      } else {
+        GLOBALS.powerState = res.powerState
+      }
+    })
+  }
+
+  _getPowerStatebeforeReboot() {
+    appApi.getPowerStateBeforeReboot().then(res => {
+      if(res.state !== 'ON'){
+        appApi.getPreferredStandbyMode().then(res =>{
+          appApi.setPowerState(res.preferredStandbyMode).then(res => {
+            if(res.success) {
+              appApi.getPowerState().then(res => {
+                GLOBALS.powerState = res.powerState
+              })
+            }
+          }).catch(err => {
+            console.log(`****rebooting the device, set PowerState failed ****`)
+            appApi.reboot()
+          })
+        }).catch(err =>  this._powerStateHandlingWhileError())
+      } else {
+        this._powerStateHandlingWhileError()
+      }
+    }).catch(this._powerStateHandlingWhileError())
   }
 
   _firstEnable() {
