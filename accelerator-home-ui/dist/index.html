@@ -1,27 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <style>
-            html {height: 100%; width: 100%;}
-            *,body {margin:0; padding:0;}
-            canvas { position: absolute; z-index: 2; }
-            body { width: 100%; height: 100%;}
-        </style>
-        <script type="text/javascript">
-            const fbEndpoint = new URLSearchParams(window.location.search).get('__firebolt_endpoint')
-            if (fbEndpoint) {
-                window.__firebolt = window.__firebolt || {}
-                window.__firebolt.endpoint = fbEndpoint
-            }
-        </script>
-    </head>
-    <body>
-        <script src="./js/lightning.min.js"></script>
-        <script src="./js/appBundle.js"></script>
-
-        <script>
-            const appSettings = {
+   <head>
+       <meta charset="UTF-8" />
+       <style>
+           html {height: 100%; width: 100%;}
+           *,body {margin:0; padding:0;}
+           canvas { position: absolute; z-index: 2; }
+           body { width: 100%; height: 100%;}
+       </style>
+   <script type="text/javascript">
+       const fbEndpoint = new URLSearchParams(window.location.search).get('__firebolt_endpoint')
+       if (fbEndpoint) {
+           window.__firebolt = window.__firebolt || {}
+           window.__firebolt.endpoint = fbEndpoint
+       }
+   </script>
+   </head>
+   <body>
+       <script src="./js/lightning.min.js"></script>
+       <script src="./js/appBundle.js"></script>
+       <script>
+           const appSettings = {
   "stage": {
     "clearColor": "0x00000000",
     "useImageWorker": true
@@ -33,28 +32,23 @@
   "icon": "./static/icon.png",
   "id": "accelerator-home-ui"
 }
-
-            const platformSettings = {
+           const platformSettings = {
   "id": "UIv3",
   "inspector": false,
   "path": "./static",
   "log": true,
   "enableAppSuspended": true,
   "showVersion": false,
-  "version": "4.5.5"
+  "version": "4.5.6"
 }
-
-            const appData = {}
-
-            let bundle = window.APP_accelerator_home_ui
-            // support rollup and esbuild
-            if (typeof bundle !== 'function') {
-              bundle = bundle.default
-            }
-
-            const app = bundle(appSettings, platformSettings, appData)
-            document.body.appendChild(app.stage.getCanvas())
-
-        </script>
-    </body>
+           const appData = {}
+           let bundle = window.APP_accelerator_home_ui
+           // support rollup and esbuild
+           if (typeof bundle !== 'function') {
+             bundle = bundle.default
+           }
+           const app = bundle(appSettings, platformSettings, appData)
+           document.body.appendChild(app.stage.getCanvas())
+       </script>
+   </body>
 </html>
