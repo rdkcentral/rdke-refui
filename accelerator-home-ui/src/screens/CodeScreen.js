@@ -17,7 +17,7 @@
  * limitations under the License.
  **/
 import { Lightning, Router, Utils, Language, Storage } from '@lightningjs/sdk'
-import { CONFIG } from '../Config/Config'
+import { CONFIG, GLOBALS } from '../Config/Config'
 import ThunderJS from 'ThunderJS'
 import AlexaApi from '../api/AlexaApi'
 import { Metrics } from '@firebolt-js/sdk'
@@ -101,7 +101,7 @@ export default class CodeScreen extends Lightning.Component {
         if (AlexaApi.get().checkAlexaAuthStatus() !== "AlexaUserDenied") {
             thunder.Controller.activate({ callsign: "org.rdk.VoiceControl" }).then(res => {
                 if (Storage.get("alexaOTPReset")) {
-                    AlexaApi.get().resetAVSCredentials();
+                    if(GLOBALS.AlexaAvsstatus){AlexaApi.get().resetAVSCredentials();}
                     Storage.remove("alexaOTPReset");
                 }
                 thunder.on("org.rdk.VoiceControl", 'onServerMessage', notification => {

@@ -21,7 +21,7 @@ import AlexaApi from '../../api/AlexaApi'
 import { Lightning, Utils, Storage, Language, Router } from '@lightningjs/sdk'
 import SettingsMainItem from '../../items/SettingsMainItem'
 import { COLORS } from '../../colors/Colors'
-import { CONFIG } from '../../Config/Config'
+import { CONFIG,GLOBALS } from '../../Config/Config'
 import XcastApi from '../../api/XcastApi'
 import UsbApi from '../../api/UsbApi'
 
@@ -342,6 +342,7 @@ export default class PrivacyScreen extends Lightning.Component {
                     })
 
                     setTimeout(() => {
+                        if(GLOBALS.AlexaAvsstatus){
                         AlexaApi.get().resetAVSCredentials().then((result) => {
                             console.log("Triggering AVS credential reset." ,result)
                             if (result.success) {
@@ -361,7 +362,15 @@ export default class PrivacyScreen extends Lightning.Component {
                                     cookieToggle = !cookieToggle
                                 }, 2000)
                             }
-                        })
+                        })}
+                        else{
+                            this.tag('ClearCookies.Title').text = Language.translate('Clear Cookies and App Data') + " - " + Language.translate('Finished')
+                            setTimeout(() => {
+                                this.tag('ClearCookies.Title').text = Language.translate('Clear Cookies and App Data')
+                                this.tag('ClearCookies.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
+                                cookieToggle = !cookieToggle
+                            }, 2000)
+                        }
                     }, 2000)
                 }
             },

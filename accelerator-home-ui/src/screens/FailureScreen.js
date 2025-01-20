@@ -109,9 +109,10 @@ export default class FailureScreen extends Lightning.Component {
                 }
                 _handleEnter() {
                     if (GLOBALS.topmostApp !== GLOBALS.selfClientName) {
+                        if(GLOBALS.AlexaAvsstatus){
                         AlexaApi.get().resetAVSCredentials().then(() => {
                             console.log("avs credentials reseted")
-                        })
+                        })}
                         console.log("Current app: " + GLOBALS.topmostApp + ", moving the app to front")
                         RDKShellApis.moveToFront(GLOBALS.topmostApp)
                         RDKShellApis.setFocus(GLOBALS.topmostApp).catch((err) => {
@@ -119,9 +120,11 @@ export default class FailureScreen extends Lightning.Component {
                         });
                     }
                     else {
+                        if(GLOBALS.AlexaAvsstatus){
                         AlexaApi.get().resetAVSCredentials().then(async () => {
                             await Router.navigate('AlexaLoginScreen');
                         })
+                    }
                     }
                 }
                 _focus() {
