@@ -1226,7 +1226,13 @@ export default class App extends Router.App {
     console.log("App listenToVoiceControl method got called, configuring VoiceControl Plugin")
     await voiceApi.activate().then(() => {
       voiceApi.voiceStatus().then(voiceStatusResp => {
+        if(voiceStatusResp.success){
+        if(voiceStatusResp.urlPtt.includes("avs://"))
+        {
+          GLOBALS.AlexaAvsstatus(true)
+        }
         if (voiceStatusResp.ptt.status != "ready" || !voiceStatusResp.urlPtt.includes("avs://")) {
+          GLOBALS.AlexaAvsstatus(false)
           console.error("App voiceStatus says PTT/AVS not ready, enabling it.");
           // TODO: Future -> add option for user to select which Voice service provider.
           // Then configure VoiceControl plugin for that end point.
@@ -1238,7 +1244,10 @@ export default class App extends Router.App {
             });
           }
         }
+      }
+
       });
+      
       if (AlexaApi.get().checkAlexaAuthStatus() === "AlexaAuthPending") {
         /* AVS SDK might be awaiting a ping packet to start. */
         AlexaApi.get().pingAlexaSDK();

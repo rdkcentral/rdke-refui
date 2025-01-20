@@ -19,7 +19,7 @@
 import { Lightning, Utils, Router, Language } from '@lightningjs/sdk'
 import AppApi from '../../api/AppApi'
 import BluetoothApi from '../../api/BluetoothApi'
-import { CONFIG } from '../../Config/Config'
+import { CONFIG,GLOBALS } from '../../Config/Config'
 import WiFi from '../../api/WifiApi'
 import AlexaApi from '../../api/AlexaApi.js';
 import RCApi from '../../api/RemoteControl'
@@ -150,7 +150,7 @@ export default class RebootConfirmationScreen extends Lightning.Component {
     async _performFactoryReset() {
         // Deactivate SmartScreen instance to prevent overlay when Auth is revoked.
         AlexaApi.get().disableSmartScreen();
-        AlexaApi.get().resetAVSCredentials();
+        if(GLOBALS.AlexaAvsstatus){AlexaApi.get().resetAVSCredentials();}
         AlexaApi.get().setAlexaAuthStatus("AlexaAuthPending");
         let getsuportedmode = await appApi.getSupportedAudioPorts();
         for (let i = 0; i < getsuportedmode.supportedAudioPorts.length; i++) {
