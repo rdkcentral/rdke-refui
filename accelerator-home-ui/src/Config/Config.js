@@ -68,6 +68,7 @@ export var CONFIG = {
 }
 
 export const GLOBALS = {
+  _AlexaAvsstatus:false,
   _previousapp_onActiveSourceStatusUpdated:null,
   _previousapp_onDisplayConnectionChanged:null,
   _constantselfClientName: window.__firebolt && window.__firebolt.endpoint !== undefined ? "FireboltMainApp-refui" : "ResidentApp",
@@ -100,5 +101,11 @@ export const GLOBALS = {
   get previousapp_onActiveSourceStatusUpdated(){
     return this._previousapp_onActiveSourceStatusUpdated
   },
+  set AlexaAvsstatus(status){
+    this._AlexaAvsstatus=status
+  },
+  get AlexaAvsstatus(){
+    return this._AlexaAvsstatus
+  }
 
 }
