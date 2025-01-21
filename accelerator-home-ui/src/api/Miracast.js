@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE
  * file the following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2025 RDK Management
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,22 +25,26 @@ export default class Miracast {
     }
 
     activateService() {
-        return new Promise((resolve) => {
+        return new Promise((resolve,reject) => {
         this._thunder.Controller.activate({ callsign: 'org.rdk.MiracastService' }).then((res) => {
         console.log(res)
+        resolve(res)
         }).catch(err => {
-            console.log('MiracastService: Error Activation ', err);
+            reject(err)
+            console.error('MiracastService: Error Activation ', err);
             Metrics.error(Metrics.ErrorType.OTHER,"MiracastServiceError", "Error while Thunder Controller MiracastService activate "+JSON.stringify(err), false, null)
         })
         })
     }
 
     activatePlayer() {
-        return new Promise((resolve) => {
+        return new Promise((resolve,reject) => {
         this._thunder.Controller.activate({ callsign: 'org.rdk.MiracastPlayer' }).then((res) => {
         console.log(res)
+        resolve(res)
         }).catch(err => {
-            console.log('MiracastPlayer: Error Activation ', err);
+            reject(err)
+            console.error('MiracastPlayer: Error Activation ', err);
             Metrics.error(Metrics.ErrorType.OTHER,"MiracastPlayerError", "Error while Thunder Controller MiracastPlayer activate "+JSON.stringify(err), false, null)
         })
         })
@@ -48,11 +52,13 @@ export default class Miracast {
 
     deactivateService()
     {
-    return new Promise((resolve) => {
-        this._thunder.Controller.deactivate({ callsign: 'org.rdk.MiracastService' }).then(() => {
-            console.log("MiracastService: deactivated org.rdk.MiracastService")
+    return new Promise((resolve,reject) => {
+        this._thunder.Controller.deactivate({ callsign: 'org.rdk.MiracastService' }).then((res) => {
+            console.log("MiracastService: deactivated org.rdk.MiracastService" +res)
+            resolve(res)
         }).catch(err => {
-            console.log('MiracastService: Error deactivation ', err)
+            reject(err)
+            console.error('MiracastService: Error deactivation ', err)
             Metrics.error(Metrics.ErrorType.OTHER,"MiracastServiceError", "Error while Thunder Controller MiracastService deactivate "+JSON.stringify(err), false, null)
         })
         })
@@ -60,11 +66,13 @@ export default class Miracast {
 
     deactivatePlayer()
     {
-    return new Promise((resolve) => {
-        this._thunder.Controller.deactivate({ callsign: 'org.rdk.MiracastPlayer' }).then(() => {
+    return new Promise((resolve,reject) => {
+        this._thunder.Controller.deactivate({ callsign: 'org.rdk.MiracastPlayer' }).then((res) => {
             console.log("MiracastPlayer: deactivated org.rdk.MiracastPlayer")
+            resolve(res)
         }).catch(err => {
-            console.log('MiracastPlayer: Error deactivation ', err)
+            reject(err)
+            console.error('MiracastPlayer: Error deactivation ', err)
             Metrics.error(Metrics.ErrorType.OTHER,"MiracastPlayerError", "Error while Thunder Controller MiracastPlayer deactivate "+JSON.stringify(err), false, null)
         })
         })
@@ -168,7 +176,9 @@ export default class Miracast {
     playRequest(source_dev_ip,source_dev_mac,source_dev_name,sink_dev_ip,X,Y,W,H)
     {
         return new Promise((resolve, reject) => {
-            this._thunder.call('org.rdk.MiracastPlayer', 'playRequest',{device_parameters:{source_dev_ip:source_dev_ip,source_dev_mac:source_dev_mac,source_dev_name:source_dev_name,sink_dev_ip:sink_dev_ip},video_rectangle:{X:X,Y:Y,W:W,H:H}})
+            this._thunder.call('org.rdk.MiracastPlayer', 'playRequest',{device_parameters:
+                {source_dev_ip:source_dev_ip,source_dev_mac:source_dev_mac,source_dev_name:source_dev_name,sink_dev_ip:sink_dev_ip},
+                video_rectangle:{X:X,Y:Y,W:W,H:H}})
                 .then(res => {
                     console.log("Sucess response from playRequest "+JSON.stringify(res))
                     resolve(res)
@@ -261,10 +271,15 @@ export default class Miracast {
         })
     }
 
-    setVideoFormats(native,display_mode_supported,profile,level,cea_mask,vesa_mask,hh_mask,latency,min_slice,slice_encode,video_frame_skip_support,max_skip_intervals,video_frame_rate_change_support)
+    setVideoFormats(native,display_mode_supported,profile,level,cea_mask,vesa_mask,hh_mask,latency,min_slice,slice_encode,
+        video_frame_skip_support,max_skip_intervals,video_frame_rate_change_support)
     {
         return new Promise((resolve, reject) => {
-            this._thunder.call('org.rdk.MiracastPlayer', 'setVideoFormats',{native:native,display_mode_supported:display_mode_supported,h264_codecs:{profile:profile,level:level,cea_mask:cea_mask,vesa_mask:vesa_mask,vesa_mask:vesa_mask,latency:latency,min_slice:min_slice,slice_encode:slice_encode,video_frame_skip_support:video_frame_skip_support,max_skip_intervals:max_skip_intervals,video_frame_rate_change_support:video_frame_rate_change_support}})
+            this._thunder.call('org.rdk.MiracastPlayer', 'setVideoFormats',
+            {native:native,display_mode_supported:display_mode_supported,h264_codecs:
+                {profile:profile,level:level,cea_mask:cea_mask,vesa_mask:vesa_mask,hh_mask:hh_mask,latency:latency,min_slice:min_slice,slice_encode:slice_encode,
+                video_frame_skip_support:video_frame_skip_support,max_skip_intervals:max_skip_intervals,
+                video_frame_rate_change_support:video_frame_rate_change_support}})
                 .then(res => {
                     console.log("Sucess response from setVideoFormats "+JSON.stringify(res))
                     resolve(res)

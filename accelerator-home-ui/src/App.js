@@ -50,6 +50,7 @@ import { AcknowledgeChallenge, Keyboard, PinChallenge } from '@firebolt-js/manag
 import PersistentStoreApi from './api/PersistentStore.js';
 import { Localization, Metrics } from '@firebolt-js/sdk';
 import RDKShellApis from './api/RDKShellApis.js';
+import MiracastNotification from './screens/MiracastNotification.js';
 
 
 var powerState = 'ON';
@@ -124,6 +125,9 @@ export default class App extends Router.App {
         },
         AppCarousel: {
           type: AppCarousel
+        },
+        MiracastNotification: {
+          type:MiracastNotification
         }
       },
       VideoScreen: {
@@ -582,12 +586,12 @@ export default class App extends Router.App {
         this.SubscribeToHdmiCecSourcevent(noti.data.state,self.appIdentifiers)
       }
       if (noti.callsign === "org.rdk.MiracastPlayer") {
-        if(noti.data.state){
+        if(noti.data.state==="activated"){
           this.SubscribeToMiracastPlayer()
         }
       }
       if (noti.callsign === "org.rdk.MiracastService") {
-        if(noti.data.state){
+        if(noti.data.state=="activated"){
           this.SubscribeToMiracastService()
         }
       }
@@ -668,8 +672,8 @@ export default class App extends Router.App {
       {
         miracast.activatePlayer().then((res)=>{
           console.log("activating the miracst player from app.js "+ res)
-        }).catch((err) => console.log(err))
-      }s
+        }).catch((err) => console.error(err))
+      }
     })
     appApi.getPluginStatus('org.rdk.MiracastService').then(result => {
       if (result[0].state === "activated")
@@ -680,7 +684,7 @@ export default class App extends Router.App {
       {
         miracast.activateService().then((res)=>{
           console.log("activating the miracst Service from app.js "+ res)
-        }).catch((err) => console.log(err))
+        }).catch((err) => console.error(err))
       }
     })
     /********************   RDKUI-303 - PAGE VISIBILITY API **************************/
