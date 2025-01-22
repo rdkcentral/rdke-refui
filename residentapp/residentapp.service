@@ -1,0 +1,13 @@
+[Unit]
+Description=Resident app service for RDK platform
+After=wpeframework.service wpeframework-rdkshell.service lighttpd.service wpeframework-ocicontainer.service ermgr.service
+Requires=wpeframework.service wpeframework-rdkshell.service lighttpd.service wpeframework-ocicontainer.service ermgr.service
+
+[Service]
+Environment="LOGPATH=/opt/logs"
+ExecStart=/bin/sh -c 'exec /lib/rdk/residentApp.sh &'
+RemainAfterExit=yes
+ExecStop=/bin/sh -c 'exec /lib/rdk/residentApp.sh stop'
+
+[Install]
+WantedBy=multi-user.target

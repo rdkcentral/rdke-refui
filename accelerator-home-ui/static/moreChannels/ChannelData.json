@@ -1,0 +1,58 @@
+{
+  "readme": "This property is a comment for this JSON format and is functionality wise not necessary | serviceList is an array of channel objects | Each channel must have all four properties as mentioned in this sample | dvburi should start with a 'C_' (it can be any unique value following a 'C_' |dvburi of an app should be 'OTT' and that object should have a callsign(same rdkshell callsign for that particular app) property mentioned. | If the item is an app, Callsign is a requirement and url is optional depending on the app. | eventList is an object with all the custom dvburi s as keys and a list of shows in the channel as values | Schedule for an app is not currently supported, so event list only needs to contain program details of custom(iptv) channels | eventList needs to have the dvburi mapped to an array of program objects(object containing details of the particular program/show) | the format of the program object is similar to the data provided by scheduleEvents method in DTV Plugin .",
+  "serviceList": [
+    {
+      "shortname": "Xumo",
+      "callsign": "HtmlApp",
+      "url": "https://x1box-app.xumo.com/index.html",
+      "dvburi": "OTT",
+      "lcn": 0
+    },
+    {
+      "channelName": "Custom Channel 1",
+      "shortname": "C1",
+      "dvburi": "C_1.2.3",
+      "iptvuri": "https://bitdash-a.akamaihd.net/content/MI201109210084_1/m3u8s/f08e80da-bf1d-4e3d-8899-f0f6155f6efa.m3u8"
+    },
+    {
+      "channelName": "Custom Channel 2",
+      "shortname": "C2",
+      "dvburi": "C_1.2.4",
+      "iptvuri": "https://bitdash-a.akamaihd.net/content/MI201109210084_1/m3u8s/f08e80da-bf1d-4e3d-8899-f0f6155f6efa.m3u8"
+    }
+  ],
+  "eventList": {
+    "C_1.2.3": [
+      {
+        "name": "C1 Sample Show 1",
+        "description": "Description for C1 Sample Show 1",
+        "duration": 1800,
+        "starttime": 1676307600,
+        "iptvuri": "https://bitdash-a.akamaihd.net/content/MI201109210084_1/m3u8s/f08e80da-bf1d-4e3d-8899-f0f6155f6efa.m3u8"
+      },
+      {
+        "name": "C1 Sample Show 2",
+        "description": "Description for C1 Sample Show 2",
+        "duration": 1800,
+        "starttime": 1676311200,
+        "iptvuri": "https://bitdash-a.akamaihd.net/content/MI201109210084_1/m3u8s/f08e80da-bf1d-4e3d-8899-f0f6155f6efa.m3u8"
+      }
+    ],
+    "C_1.2.4": [
+      {
+        "name": "C2 Sample Show 1",
+        "description": "Description for C2 Sample Show 1",
+        "duration": 1800,
+        "starttime": 1676307600,
+        "iptvuri": "https://bitdash-a.akamaihd.net/content/MI201109210084_1/m3u8s/f08e80da-bf1d-4e3d-8899-f0f6155f6efa.m3u8"
+      },
+      {
+        "name": "C2 Sample Show 2",
+        "description": "Description for C2 Sample Show 2",
+        "duration": 1800,
+        "starttime": 1676311200,
+        "iptvuri": "https://bitdash-a.akamaihd.net/content/MI201109210084_1/m3u8s/f08e80da-bf1d-4e3d-8899-f0f6155f6efa.m3u8"
+      }
+    ]
+  }
+}

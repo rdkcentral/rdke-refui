@@ -1,0 +1,38 @@
+{
+    "App_launched_via_Netflix_Button": {
+        "source_type": 3,
+        "iid": "00000001"
+    },
+    "App_launched_at_suspended_mode_at_power_on": {
+        "source_type": 22,
+        "iid": "00000002"
+    },
+    "App_launched_via_DIAL_request": {
+        "source_type": 12,
+        "iid": "00000003"
+    },
+    "App_launched_from_EPG_Grid": {
+        "source_type": 3,
+        "iid": "00000004"
+    },
+    "App_launched_via_channel_number": {
+        "source_type": 3,
+        "iid": "00000005"
+    },
+    "App_launched_from_channel_info_bar": {
+        "source_type": 3,
+        "iid": "00000006"
+    },
+    "App_launched_via_channel_surf_option": {
+        "source_type": 3,
+        "iid": "00000007"
+    },
+    "App_launched_via_Netflix_Icon_On_The_Apps_Section": {
+        "source_type": 3,
+        "iid": "00000008"
+    },
+    "App_launched_via_Netflix_Icon_On_The_Apps_Row_On_The_Main_Home_Page": {
+        "source_type": 3,
+        "iid": "00000009"
+    }
+}

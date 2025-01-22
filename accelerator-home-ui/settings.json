@@ -1,0 +1,18 @@
+{
+  "appSettings": {
+    "stage": {
+      "clearColor": "0x00000000",
+      "useImageWorker": true
+    },
+    "debug": false
+  },
+  "platformSettings": {
+    "id": "UIv3",
+    "inspector": false,
+    "path": "./static",
+    "log": true,
+    "enableAppSuspended": true,
+    "showVersion": false,
+    "version": "4.5.8"
+  }
+}

@@ -1,0 +1,83 @@
+This component contains software that is Copyright (c) 2020 RDK Management.
+The component is licensed to you under the Apache License, Version 2.0 (the "License").
+You may not use the component except in compliance with the License.
+
+The component may include material which is licensed under other
+licenses / copyrights as listed below. Your use of this material
+within the component is also subject to the terms and conditions
+of these licenses. The LICENSE file contains the text of all the
+licenses which apply within this component.
+
+Material in accelerator-home-ui/src/ui-components has been adapted from
+original code in the Lightning-UI-Components repository at:
+https://github.com/rdkcentral/Lightning-UI-Components
+and which is:
+Copyright 2020 Comcast Cable Communications Management LLC
+Licensed under the Apache License, Version 2.0.
+
+The Montserrat directory within this component contains fonts which are
+licensed under the SIL Open Font License, version 1.1. The Montserrat directory contains its own
+license file, called LICENSE, which describes the licensing of the material in
+the Montserrat directory.
+Note: there are two directories called "Montserrat" in this repository.
+
+The Play directory within this component contains fonts which are
+licensed under the SIL Open Font License, version 1.1. The Play directory contains its own
+license file, called LICENSE, which describes the licensing of the material in
+the Play directory.
+Note: there are two directories called "Play" in this repository.
+
+The tvShows directory within this component contains images which are
+licensed under the Pixabay license.The tvShows directory contains its own
+license file, called LICENSE, which describes the licensing of the material in
+the tvShows directory.
+Note: there are two directories called "tvShows" in this repository.
+
+babel-polyfill is:
+Copyright (c) 2014-present Sebastian McKenzie and other contributors
+including
+Copyright (c) 2014-present, Facebook, Inc.
+Copyright 2019 Denis Pushkarev (zloirock.ru)
+Licensed under the MIT license
+
+url-polyfill is:
+Copyright (c) 2017 Valentin Richard
+Licensed under the MIT license
+
+fetch is:
+Copyright (c) 2014-2016 GitHub, Inc.
+Licensed under the MIT License.
+
+Roboto Regular font is:
+Copyright 2017 Google Inc. All Rights Reserved.
+Licensed under the Apache License, Version 2.0
+
+Lightning framework is:
+Copyright Metrological, 2017
+Copyright (c) 2020 RDK Management
+Licensed under the Apache License, Version 2.0
+
+DejaVu Fonts — License
+Fonts are (c) Bitstream. DejaVu changes are in public domain.
+Glyphs imported from Arev fonts are (c) Tavmjong Bah
+Copyright (c) 2003 by Bitstream, Inc. All Rights Reserved.
+Copyright (c) 2006 by Tavmjong Bah. All Rights Reserved.
+
+Some images have been taken from https://www.pngrepo.com/
+Licensed under the CC0 1.0 Universal license
+(https://www.svgrepo.com/svg/70785/fast-forward,
+https://www.svgrepo.com/svg/83992/pause,
+https://www.svgrepo.com/svg/44484/play-button,
+https://www.svgrepo.com/svg/84993/rewind,
+https://www.svgrepo.com/svg/294704/bluetooth,
+https://www.svgrepo.com/svg/51926/wifi, https://www.svgrepo.com/svg/69692/menu,
+https://www.svgrepo.com/svg/204978/play,
+https://www.svgrepo.com/svg/10074/settings,
+https://www.svgrepo.com/svg/125773/vintage-mic,
+https://www.svgrepo.com/svg/164527/information-button)
+
+This component contains a bundled application in appBundle.js.  Please refer
+to the included package.json file for details of dependencies.  LICENSE
+contains a copy of every license which may apply to the contents of the bundled application.
+
+The TMDB image "tmdb-logo.png" is used with permission (https://www.themoviedb.org/about/logos-attribution)
