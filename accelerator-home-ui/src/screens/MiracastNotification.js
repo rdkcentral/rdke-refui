@@ -33,8 +33,7 @@ export default class MiracastNotification extends Lightning.Component {
         }
         devicename = args.name;
         devicemac = args.mac;
-        this.tag('MiracastNotification.Message.Name').text.text = Language.translate(`NAME: ${devicename}`) ;
-        this.tag('MiracastNotification.Message.Mac').text.text= Language.translate(`MAC: ${devicemac}`);
+        this.tag('MiracastNotification.Message').text.text = Language.translate(`NAME: ${devicename} \n MAC: ${devicemac}`) ;
     }
 
     set params(args){
@@ -69,26 +68,15 @@ export default class MiracastNotification extends Lightning.Component {
                     x: 0, y: 75, w: 1558, h: 3, rect: true, mountX: 0.5,
                 },
                 Message: {
-                    x: 0,
-                    y: 125,
-                    Name: {
-                      mountX: 0.5,
-                      text :{
-                        text: `NAME: ${devicename}`,
-                        fontFace: CONFIG.language.font,
-                        fontSize: 25
-                      },
-                    },
-                    Mac: {
-                      mountX: 0.5,
-                      y:30,
-                      text:{
-                        text: `MAC: ${devicemac}`,
-                        fontFace: CONFIG.language.font,
-                        fontSize: 25,
-                      },
-                      
-                    },
+                  x: 0,
+                  y: 125,
+                  mountX: 0.5,
+                  text: {
+                      text: `Name: ${devicename}\n MAC: ${devicemac}`,
+                      fontFace: CONFIG.language.font,
+                      fontSize: 25,
+                      lineHeight:30
+                  },
                 },
                 RectangleDefault: {
                   x: 0, y: 230, w: 200, mountX: 0.5, h: 50, rect: true,color: 0x000000,
@@ -174,8 +162,7 @@ export default class MiracastNotification extends Lightning.Component {
     }
     _unfocus() {
         this.alpha = 0
-        this.tag('MiracastNotification.Message.Name').text.text = `NAME: Default Name`
-        this.tag('MiracastNotification.Message.Mac').text.text = `MAC: Default MAC`
+        this.tag('MiracastNotification.Message.Name').text.text = `NAME: Default Name \n MAC:Default MAC`
     }
     _handleBack() {
         Router.focusPage()
