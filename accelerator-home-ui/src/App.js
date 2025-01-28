@@ -186,13 +186,13 @@ export default class App extends Router.App {
       if (GLOBALS.topmostApp.includes("dac.native")) {
         this.jumpToRoute("apps");
       } 
-      else if (GLOBALS.currentdevicedetails.state==="INITIATED"||GLOBALS.currentdevicedetails.state==="INPROGRESS ")
+      else if (GLOBALS.Miracastclientdevicedetails.state==="INITIATED"||GLOBALS.Miracastclientdevicedetails.state==="INPROGRESS ")
       {
-        miracast.stopClientConnection(GLOBALS.currentdevicedetails.mac,GLOBALS.currentdevicedetails.name)
+        miracast.stopClientConnection(GLOBALS.Miracastclientdevicedetails.mac,GLOBALS.Miracastclientdevicedetails.name)
       }
-      else if(GLOBALS.currentdevicedetails.state==="PLAYING")
+      else if(GLOBALS.Miracastclientdevicedetails.state==="PLAYING")
       {
-        miracast.stopRequest(GLOBALS.currentdevicedetails.mac,GLOBALS.currentdevicedetails.name,300)
+        miracast.stopRequest(GLOBALS.Miracastclientdevicedetails.mac,GLOBALS.Miracastclientdevicedetails.name,300)
       }
       else {
         this.jumpToRoute("menu"); //method to exit the current app(if any) and route to home screen
@@ -803,9 +803,9 @@ export default class App extends Router.App {
     console.log('onLaunchRequest ' + JSON.stringify(data));
     });
     thunder.on('org.rdk.MiracastService.1', 'onClientConnectionError', data => {
-      if(data.name===GLOBALS.currentdevicedetails.name)
+      if(data.name===GLOBALS.Miracastclientdevicedetails.name)
       {
-        miracast.stopRequest(GLOBALS.currentdevicedetails.mac,GLOBALS.currentdevicedetails.name,300)
+        miracast.stopRequest(GLOBALS.Miracastclientdevicedetails.mac,GLOBALS.Miracastclientdevicedetails.name,300)
       }
       if(GLOBALS.topmostApp===GLOBALS.selfClientName)
       {
@@ -825,7 +825,7 @@ export default class App extends Router.App {
 
   SubscribeToMiracastPlayer() {
     thunder.on('org.rdk.MiracastPlayer.1', 'onStateChange', data => {
-      GLOBALS.currentdevicedetails=data
+      GLOBALS.Miracastclientdevicedetails=data
       if(data.state==="PLAYING")
       {
         if (GLOBALS.topmostApp != GLOBALS.selfClientName) {
@@ -918,7 +918,7 @@ export default class App extends Router.App {
     });
     thunder.on('org.rdk.RDKShell', 'onLaunched', data => {
       console.warn("[RDKSHELLEVT] onLaunched:", data);
-      miracast.stopRequest(GLOBALS.currentdevicedetails.mac,GLOBALS.currentdevicedetails.name,300)
+      miracast.stopRequest(GLOBALS.Miracastclientdevicedetails.mac,GLOBALS.Miracastclientdevicedetails.name,300)
       if ((data.launchType === "activate") || (data.launchType === "resume")) {
         // Change (Tracked TopMost) UI's visibility to false only for other apps.
         if ((data.client != GLOBALS.selfClientName)

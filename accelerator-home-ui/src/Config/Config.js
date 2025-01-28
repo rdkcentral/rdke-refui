@@ -69,7 +69,7 @@ export var CONFIG = {
 
 export const GLOBALS = {
   _AlexaAvsstatus:false,
-  _currentdevicedetails:{mac: null,name: null,reason_code: null,state:null},
+  _Miracastclientdevicedetails:{mac: null,name: null,reason_code: null,state:null},
   _previousapp_onActiveSourceStatusUpdated:null,
   _previousapp_onDisplayConnectionChanged:null,
   _constantselfClientName: window.__firebolt && window.__firebolt.endpoint !== undefined ? "FireboltMainApp-refui" : "ResidentApp",
@@ -108,12 +108,12 @@ export const GLOBALS = {
   get AlexaAvsstatus(){
     return this._AlexaAvsstatus
   },
-  set currentdevicedetails(params)
+  set Miracastclientdevicedetails(params)
   {
-    this._currentdevicedetails={mac:params.mac,name:params.name,reason_code:params.reason_code,state:params.state}
+    this._Miracastclientdevicedetails={mac:params.mac,name:params.name,reason_code:params.reason_code,state:params.state}
   },
-  get currentdevicedetails()
+  get Miracastclientdevicedetails()
   {
-    return this._currentdevicedetails
+    return this._Miracastclientdevicedetails
   }
 }

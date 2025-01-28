@@ -162,7 +162,7 @@ export default class MiracastNotification extends Lightning.Component {
     }
     _unfocus() {
         this.alpha = 0
-        this.tag('MiracastNotification.Message.Name').text.text = `NAME: Default Name \n MAC:Default MAC`
+        this.tag('MiracastNotification.Message').text.text = `NAME: Default Name \n MAC:Default MAC`
     }
     _handleBack() {
         Router.focusPage()
@@ -206,7 +206,6 @@ export default class MiracastNotification extends Lightning.Component {
             _handleEnter() {
               miracast.acceptClientConnection("Accept").then(res=>{
                 if(res.success){Router.focusPage()}
-
               })
             
             }
