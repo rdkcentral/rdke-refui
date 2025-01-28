@@ -49,6 +49,7 @@ import AlexaApi from '../api/AlexaApi.js'
 import { Storage } from '@lightningjs/sdk'
 import { Metrics } from '@firebolt-js/sdk'
 import { GLOBALS } from '../Config/Config.js'
+import MiracastNotification from '../screens/MiracastNotification.js'
 
 let api = null
 
@@ -133,7 +134,7 @@ export default {
         }
         return Promise.resolve()
       },
-      widgets: ['Menu', 'Fail', 'Volume','Miracastscreen', "AppCarousel", "VideoInfoChange"],
+      widgets: ['Menu', 'Fail', 'Volume','MiracastNotification', "AppCarousel", "VideoInfoChange"],
     },
     {
       path: 'tv-overlay/:type',
@@ -145,12 +146,12 @@ export default {
     {
       path: 'applauncher',
       component: AppLauncherScreen,
-      widgets: ['Volume', 'SettingsOverlay','Miracastscreen', "AppCarousel"] //other overlays needs to be added to improve ovelay functionality.
+      widgets: ['Volume', 'SettingsOverlay','MiracastNotification', "AppCarousel"] //other overlays needs to be added to improve ovelay functionality.
     },
     {
       path: 'player',
       component: AAMPVideoPlayer,
-      widgets: ['Volume', "SettingsOverlay", "AppCarousel"]
+      widgets: ['Volume', "SettingsOverlay",'MiracastNotification', "AppCarousel"]
     },
     {
       path: 'camera/player',
@@ -164,7 +165,7 @@ export default {
     {
       path: 'dtvplayer',
       component: DTVPlayer,
-      widgets: ['Volume', 'TvOverlays', 'ChannelOverlay', "SettingsOverlay", "AppCarousel"]
+      widgets: ['Volume', 'TvOverlays', 'ChannelOverlay','MiracastNotification', "SettingsOverlay", "AppCarousel"]
     },
     {
       path: '!',

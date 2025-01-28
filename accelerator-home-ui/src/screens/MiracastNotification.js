@@ -16,12 +16,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-import { Language, Lightning, Router } from "@lightningjs/sdk";
+import { Language, Lightning, Router, Registry} from "@lightningjs/sdk";
 import { CONFIG } from '../Config/Config'
 import Miracast from "../api/Miracast";
 
 var devicename = ''
-var deviceip = ''
+var devicemac = ''
 var miracast = new Miracast()
 
 export default class MiracastNotification extends Lightning.Component {
@@ -32,8 +32,9 @@ export default class MiracastNotification extends Lightning.Component {
             return;
         }
         devicename = args.name;
-        deviceip = args.mac;
-        this.tag('Miracastscreen.Message').text.text = Language.translate(`Name: ${devicename} MAC:${deviceip}`);
+        devicemac = args.mac;
+        this.tag('MiracastNotification.Message.Name').text.text = Language.translate(`NAME: ${devicename}`) ;
+        this.tag('MiracastNotification.Message.Mac').text.text= Language.translate(`MAC: ${devicemac}`);
     }
 
     set params(args){
@@ -52,7 +53,7 @@ export default class MiracastNotification extends Lightning.Component {
             h: 2000,
             rect: true,
             color: 0xff000000,
-            Miracastscreen: {
+            MiracastNotification: {
                 x: 960,
                 y: 300,
                 Title: {
@@ -70,19 +71,44 @@ export default class MiracastNotification extends Lightning.Component {
                 Message: {
                     x: 0,
                     y: 125,
-                    mountX: 0.5,
-                    text: {
-                        text: `Name: ${devicename} IP:${deviceip}`,
+                    Name: {
+                      mountX: 0.5,
+                      text :{
+                        text: `NAME: ${devicename}`,
+                        fontFace: CONFIG.language.font,
+                        fontSize: 25
+                      },
+                    },
+                    Mac: {
+                      mountX: 0.5,
+                      y:30,
+                      text:{
+                        text: `MAC: ${devicemac}`,
                         fontFace: CONFIG.language.font,
                         fontSize: 25,
+                      },
+                      
                     },
                 },
-            
+                RectangleDefault: {
+                  x: 0, y: 230, w: 200, mountX: 0.5, h: 50, rect: true,color: 0x000000,
+                  Timer: {
+                      x: 100,
+                      y: 25,
+                      mount: 0.5,
+                      text: {
+                          text: "",
+                          fontFace: CONFIG.language.font,
+                          fontSize: 25,
+                      },
+                  },
+                  visible:true
+                },
                 BorderBottom: {
-                    x: 0, y: 200, w: 1558, h: 3, rect: true, mountX: 0.5,
+                    x: 0, y: 330, w: 1558, h: 3, rect: true, mountX: 0.5,
                 },
                 Accept: {
-                    x: 0, y: 300, w: 300, mountX: 1, h: 60, rect: true, color: 0xffffffff,
+                    x: 0, y: 430, w: 300, mountX: 1, h: 60, rect: true, color: 0xffffffff,
                     Title: {
                       x: 150,
                       y: 30,
@@ -98,7 +124,7 @@ export default class MiracastNotification extends Lightning.Component {
                     visible: true
                 },
                 Deny: {
-                    x: 250, y: 300, w: 300, mountX: 0.5, h: 60, rect: true, color: 0xffffffff,
+                    x: 250, y: 430, w: 300, mountX: 0.5, h: 60, rect: true, color: 0xffffffff,
                     Title: {
                       x: 150,
                       y: 30,
@@ -119,16 +145,37 @@ export default class MiracastNotification extends Lightning.Component {
         };
     }
     _active(){
-        console.info('Miracastscreen initialized');
-        this._setState("Accept");
+      this.tag('Timer').text.text =""
+      this.timeout=30
+      this.initTimer()
+      console.info('MiracastNotification initialized');
+      this._setState("Accept");
     }
+    _inactive() {
+      if (this.timeInterval) {
+          Registry.clearInterval(this.timeInterval)
+      }
+    }
+  
+    initTimer() {
+      this.timeInterval = Registry.setInterval(() => {
+          if (this.timeout > 0) { --this.timeout }
+          else {
+            miracast.acceptClientConnection("Reject").then(res=>{
+              if(res.success){Router.focusPage()} 
+             })
+          }
+          this.tag('Timer').text.text = this.timeout >= 10 ? `0:${this.timeout}` : `0:0${this.timeout}`
+      }, 1000)
+  }
     _focus() {
       this.alpha=1
-        console.info('Miracastscreen focused');
+        console.log('MiracastNotification focused');
     }
     _unfocus() {
         this.alpha = 0
-        this.tag('Miracastscreen.Message').text.text = `Name: Default Name IP:Default IP`
+        this.tag('MiracastNotification.Message.Name').text.text = `NAME: Default Name`
+        this.tag('MiracastNotification.Message.Mac').text.text = `MAC: Default MAC`
     }
     _handleBack() {
         Router.focusPage()
@@ -160,12 +207,22 @@ export default class MiracastNotification extends Lightning.Component {
             _handleRight() {
                 this._setState('Deny')
             }
-              _handleEnter() {
-                miracast.acceptClientConnection("Accept").then(res=>{
-                  if(res.success){Router.focusPage()}
-                })
+            _handleLeft(){
+
+            }
+            _handleDown(){
+
+            }
+            _handleUp(){
               
-              }
+            }
+            _handleEnter() {
+              miracast.acceptClientConnection("Accept").then(res=>{
+                if(res.success){Router.focusPage()}
+
+              })
+            
+            }
             },
             class Deny extends this {
                 $enter() {
@@ -189,16 +246,23 @@ export default class MiracastNotification extends Lightning.Component {
                         },
                       });
                 }
+              _handleLeft() {
+                  this._setState('Accept')
+                }
+              _handleRight(){
 
+              }
+              _handleDown(){
 
-                _handleLeft() {
-                    this._setState('Accept')
-                  }
-                  _handleEnter() {
-                    miracast.acceptClientConnection("Reject").then(res=>{
-                     if(res.success){Router.focusPage()} 
-                    })
-                  }
-                },
+              }
+              _handleUp(){
+
+              }
+              _handleEnter() {
+                miracast.acceptClientConnection("Reject").then(res=>{
+                  if(res.success){Router.focusPage()} 
+                })
+              }
+              },
         ]
     }}

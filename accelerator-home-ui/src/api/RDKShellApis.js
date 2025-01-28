@@ -122,7 +122,7 @@ class RDKShellApis {
   setScale = (client, callsign = client, xScale, yScale) => this.thunderCall('setScale', 'setScale', { client, callsign, xScale, yScale });
   setScreenResolution = (w, h) => this.thunderCall('setScreenResolution', 'setScreenResolution', { w, h });
   setTopmost = (client, topmost = true, focus = true) => this.thunderCall('setTopmost', 'setTopmost', { client, topmost, focus });
-  setVisibility = (client, callsign = client, visible = true) => this.thunderCall('setVisibility', 'setVisibility', { client, callsign, visible });
+  setVisibility = (client, visible = true) => this.thunderCall('setVisibility', 'setVisibility', { client, client, visible });
   setGraphicsFrameRate = (frameRate) => this.thunderCall('setGraphicsFrameRate', 'setGraphicsFrameRate', { frameRate });
   showCursor = () => this.thunderCall('showCursor', 'showCursor', {});
   showFullScreenImage = (path) => this.thunderCall('showFullScreenImage', 'showFullScreenImage', { path });
