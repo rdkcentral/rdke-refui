@@ -23,21 +23,26 @@ export var tvShowsInfo = [
   {
     displayName: 'Fantasy-Island',
     url: '/images/tvShows/fantasy-island.jpg',
+    uri: 'https://bitdash-a.akamaihd.net/content/MI201109210084_1/m3u8s/f08e80da-bf1d-4e3d-8899-f0f6155f6efa.m3u8'
   },
   {
-    displayName: 'Onward',
+    displayName: 'BigBuckBunny', 
     url: '/images/tvShows/onward.jpg',
+    uri: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
   },
   {
-    displayName: 'Let it Snow',
+    displayName: 'Sintel',
     url: '/images/tvShows/let-it-snow.jpg',
+    uri: "https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8"
   },
   {
-    displayName: 'FOG DASH',
+    displayName: 'DAI Test',
     url: '/images/tvShows/do-little.jpg',
+    uri: "https://test-streams.mux.dev/dai-discontinuity-deltatre/manifest.m3u8",
   },
   {
-    displayName: 'FOG HLS',
+    displayName: 'Tears of Steel',
     url: '/images/tvShows/summerland.jpg',
+    uri: "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8"
   },
 ]

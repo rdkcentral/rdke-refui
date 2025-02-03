@@ -946,24 +946,10 @@ export default class MainView extends Lightning.Component {
             this.internetConnectivity = false
           }
           console.log("MainView: internetConnectivity ", JSON.stringify(this.internetConnectivity));
-          let displayName = this.tag('TVShows').items[this.tag('TVShows').index].data.displayName
+          let params ={url: this.tag('TVShows').items[this.tag('TVShows').index].data.uri,
+          }
           if (this.internetConnectivity) {
-            if (displayName === "FOG HLS") {
-              let params = {
-                url: "http://127.0.0.1:9080/tsb?clientId=FOG_AAMP&recordedUrl=https%3A%2F%2Fcph-p2p-msl.akamaized.net%2Fhls%2Flive%2F2000341%2Ftest%2Fmaster.m3u8",
-              }
-              Router.navigate("player", params)
-            }
-            else if (displayName === "FOG DASH") {
-              let params = {
-                url: "http://127.0.0.1:9080/tsb?clientId=FOG_AAMP&recordedUrl=https%3A%2F%2Flin001-gb-s8-tst-ll.cdn01.skycdp.com%2FSKYNEHD_HD_SUD_SKYUKD_4050_18_0000000000000018163.mpd",
-              }
-              Router.navigate("player", params)
-            }
-            else {
-              //this.fireAncestors('$goToPlayer')
-              Router.navigate('player')
-            }
+            Router.navigate("player",params)
           }
         }
         $exit() {
