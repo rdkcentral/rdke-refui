@@ -50,7 +50,6 @@ import { AcknowledgeChallenge, Keyboard, PinChallenge } from '@firebolt-js/manag
 import PersistentStoreApi from './api/PersistentStore.js';
 import { Localization, Metrics } from '@firebolt-js/sdk';
 import RDKShellApis from './api/RDKShellApis.js';
-import MiracastNotification from './screens/MiracastNotification.js';
 
 
 var powerState = 'ON';
@@ -125,9 +124,6 @@ export default class App extends Router.App {
         },
         AppCarousel: {
           type: AppCarousel
-        },
-        MiracastNotification: {
-          type:MiracastNotification
         }
       },
       VideoScreen: {
@@ -585,16 +581,6 @@ export default class App extends Router.App {
       if (noti.callsign === "org.rdk.HdmiCecSource") {
         this.SubscribeToHdmiCecSourcevent(noti.data.state,self.appIdentifiers)
       }
-      if (noti.callsign === "org.rdk.MiracastPlayer") {
-        if(noti.data.state==="activated"){
-          this.SubscribeToMiracastPlayer()
-        }
-      }
-      if (noti.callsign === "org.rdk.MiracastService") {
-        if(noti.data.state=="activated"){
-          this.SubscribeToMiracastService()
-        }
-      }
     })
 
     this._subscribeToRDKShellNotifications()
@@ -663,30 +649,6 @@ export default class App extends Router.App {
       })
     }
 
-    appApi.getPluginStatus('org.rdk.MiracastPlayer').then(result => {
-      if (result[0].state === "activated")
-      {
-        this.SubscribeToMiracastPlayer()
-      }
-      else
-      {
-        miracast.activatePlayer().then((res)=>{
-          console.log("activating the miracst player from app.js "+ res)
-        }).catch((err) => console.error(err))
-      }
-    })
-    appApi.getPluginStatus('org.rdk.MiracastService').then(result => {
-      if (result[0].state === "activated")
-      {
-        this.SubscribeToMiracastService()
-      }
-      else
-      {
-        miracast.activateService().then((res)=>{
-          console.log("activating the miracst Service from app.js "+ res)
-        }).catch((err) => console.error(err))
-      }
-    })
     /********************   RDKUI-303 - PAGE VISIBILITY API **************************/
 
     //ACTIVATING HDMI CEC PLUGIN
@@ -748,24 +710,6 @@ export default class App extends Router.App {
     this._subscribeToIOPortNotifications()
 
     this._updateLanguageToDefault()
-  }
-
-  SubscribeToMiracastService() {
-    this.thunder.on('org.rdk.MiracastService', 'onClientConnectionRequest', data => {
-    console.log('onClientConnectionRequest ' + JSON.stringify(data));
-    });
-    this.thunder.on('org.rdk.MiracastService', 'onLaunchRequest', data => {
-    console.log('onLaunchRequest ' + JSON.stringify(data));
-    });
-    this.thunder.on('org.rdk.MiracastService', 'onClientConnectionError', data => {
-    console.log('onClientConnectionError ' + JSON.stringify(data));
-    });
-  }
-
-  SubscribeToMiracastPlayer() {
-    this._thunder.on('org.rdk.MiracastPlayer', 'onStateChange', data => {
-      console.log('onStateChange ' + JSON.stringify(data));
-      });
   }
 
   _subscribeToRDKShellNotifications() {
