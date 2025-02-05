@@ -29,3 +29,6 @@ appurl="http://127.0.0.1:50050/lxresui/index.html#splash"
 log "Selected reference app is $appurl"
 
 curl -s -X POST -H "Content-Type: application/json" 'http://127.0.0.1:9998/jsonrpc' -d '{"jsonrpc": "2.0","id": 4,"method": "org.rdk.RDKShell.1.launch", "params": {"callsign":"ResidentApp","type": "ResidentApp","visible": true,"focus": true,"uri":'"$appurl?data=$partnerApps"'}}' >>$LOGFILE 2>&1
+# RDKVREFPLT-4612: to start maintanence manager, RFC and Log Upload
+sleep 2
+curl -s -X POST 'http://127.0.0.1:9998/jsonrpc' -d '{"jsonrpc":"2.0","id":5,"method":"Controller.1.activate", "params":{"callsign":"org.rdk.MaintenanceManager"}}' >>$LOGFILE 2>&1
