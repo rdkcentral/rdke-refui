@@ -278,8 +278,8 @@ export default class Miracast {
             this._thunder.call('org.rdk.MiracastPlayer', 'setVideoFormats',
             {native:native,display_mode_supported:display_mode_supported,h264_codecs:
                 {profile:profile,level:level,cea_mask:cea_mask,vesa_mask:vesa_mask,hh_mask:hh_mask,latency:latency,min_slice:min_slice,slice_encode:slice_encode,
-                    video_frame_skip_support:video_frame_skip_support,max_skip_intervals:max_skip_intervals,
-                    video_frame_rate_change_support:video_frame_rate_change_support}})
+                video_frame_skip_support:video_frame_skip_support,max_skip_intervals:max_skip_intervals,
+                video_frame_rate_change_support:video_frame_rate_change_support}})
                 .then(res => {
                     console.log("Sucess response from setVideoFormats "+JSON.stringify(res))
                     resolve(res)
