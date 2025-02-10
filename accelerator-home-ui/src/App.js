@@ -50,6 +50,8 @@ import { AcknowledgeChallenge, Keyboard, PinChallenge } from '@firebolt-js/manag
 import PersistentStoreApi from './api/PersistentStore.js';
 import { Localization, Metrics } from '@firebolt-js/sdk';
 import RDKShellApis from './api/RDKShellApis.js';
+import Miracast from './api/Miracast.js';
+import MiracastNotification from './screens/MiracastNotification.js';
 
 
 var powerState = 'ON';
@@ -60,6 +62,7 @@ var dtvApi = new DTVApi();
 var cecApi = new CECApi();
 var xcastApi = new XcastApi();
 var voiceApi = new VoiceApi();
+var miracast = new Miracast();
 
 export default class App extends Router.App {
 
@@ -124,6 +127,10 @@ export default class App extends Router.App {
         },
         AppCarousel: {
           type: AppCarousel
+        },
+        MiracastNotification: {
+          zIndex: 999,
+          type:MiracastNotification
         }
       },
       VideoScreen: {
@@ -178,7 +185,16 @@ export default class App extends Router.App {
     if (key.keyCode == Keymap.Home && !Router.isNavigating()) {
       if (GLOBALS.topmostApp.includes("dac.native")) {
         this.jumpToRoute("apps");
-      } else {
+      } 
+      else if (GLOBALS.Miracastclientdevicedetails.state==="INITIATED"||GLOBALS.Miracastclientdevicedetails.state==="INPROGRESS ")
+      {
+        miracast.stopClientConnection(GLOBALS.Miracastclientdevicedetails.mac,GLOBALS.Miracastclientdevicedetails.name)
+      }
+      else if(GLOBALS.Miracastclientdevicedetails.state==="PLAYING")
+      {
+        miracast.stopRequest(GLOBALS.Miracastclientdevicedetails.mac,GLOBALS.Miracastclientdevicedetails.name,300)
+      }
+      else {
         this.jumpToRoute("menu"); //method to exit the current app(if any) and route to home screen
       }
       return true
@@ -581,8 +597,19 @@ export default class App extends Router.App {
       if (noti.callsign === "org.rdk.HdmiCecSource") {
         this.SubscribeToHdmiCecSourcevent(noti.data.state,self.appIdentifiers)
       }
+      if (noti.callsign === "org.rdk.MiracastPlayer") {
+        if(noti.data.state==="activated"){
+          console.log("subscribing the events for player")
+          this.SubscribeToMiracastPlayer()
+        }
+      }
+      if (noti.callsign === "org.rdk.MiracastService") {
+        if(noti.data.state==="activated"){
+          console.log("subscribing the events for Service")
+          this.SubscribeToMiracastService()
+        }
+      }
     })
-
     this._subscribeToRDKShellNotifications()
     appApi.getPluginStatus("Cobalt").then(() => {
       /* Loop through YouTube variants and set respective urls. */
@@ -648,7 +675,42 @@ export default class App extends Router.App {
         }
       })
     }
-
+    appApi.getPluginStatus('org.rdk.MiracastPlayer').then(result => {
+      if (result[0].state === "activated")
+      {
+        this.SubscribeToMiracastPlayer()
+      }
+      else
+      {
+        miracast.activatePlayer().then((res)=>{
+          console.log("activating the miracst player from app.js "+ res)
+        }).catch((err) => console.error(err))
+      }
+    })
+    appApi.getPluginStatus('org.rdk.MiracastService').then(result => {
+      if (result[0].state === "activated")
+      {
+        miracast.getEnable().then((res)=>{
+          if(!res.enabled)
+          {
+            miracast.setEnable(true)
+          }
+        })
+        this.SubscribeToMiracastService()
+      }
+      else
+      {
+        miracast.activateService().then((res)=>{
+          miracast.getEnable().then(async (res)=>{
+            if(!res.enabled)
+            {
+              await miracast.setEnable(true)
+            }
+          })
+          console.log("activating the miracst Service from app.js "+ res)
+        }).catch((err) => console.error(err))
+      }
+    })
     /********************   RDKUI-303 - PAGE VISIBILITY API **************************/
 
     //ACTIVATING HDMI CEC PLUGIN
@@ -712,6 +774,98 @@ export default class App extends Router.App {
     this._updateLanguageToDefault()
   }
 
+  SubscribeToMiracastService() {
+    thunder.on('org.rdk.MiracastService.1', 'onClientConnectionRequest', data => {
+    console.log('onClientConnectionRequest ' + JSON.stringify(data));
+    this.tag("MiracastNotification").notify(data)
+    if(GLOBALS.topmostApp===GLOBALS.selfClientName)
+    {
+      Router.focusWidget("MiracastNotification")
+    }
+
+    else{
+      this._moveApptoFront(GLOBALS.selfClientName, true)
+      Router.navigate("applauncher");
+      Router.focusWidget("MiracastNotification")
+    }
+    });
+    thunder.on('org.rdk.MiracastService.1', 'onLaunchRequest', data => {
+    miracast.playRequest(
+        data.device_parameters.source_dev_ip,
+        data.device_parameters.source_dev_mac ,
+        data.device_parameters.source_dev_name,
+        data.device_parameters.sink_dev_ip, 
+        0,
+        0,
+        1920,
+        1080,
+    )
+    console.log('onLaunchRequest ' + JSON.stringify(data));
+    });
+    thunder.on('org.rdk.MiracastService.1', 'onClientConnectionError', data => {
+      if(data.name===GLOBALS.Miracastclientdevicedetails.name)
+      {
+        miracast.stopRequest(GLOBALS.Miracastclientdevicedetails.mac,GLOBALS.Miracastclientdevicedetails.name,300)
+      }
+      if(GLOBALS.topmostApp===GLOBALS.selfClientName)
+      {
+        this.tag("Fail").notify({title:"Miracast Status",msg:`Reason Code : ${data.error_code} Reason :${data.reason} `})
+        Router.focusWidget("Fail")
+      }
+
+      else{
+        this._moveApptoFront(GLOBALS.selfClientName, true)
+        Router.navigate("applauncher");
+        this.tag("Fail").notify({title:"Miracast Status",msg:`Reason Code : ${data.error_code} Reason :${data.reason} `})
+        Router.focusWidget("Fail")
+      }
+    console.log('onClientConnectionError ' + JSON.stringify(data));
+    });
+  }
+
+  SubscribeToMiracastPlayer() {
+    thunder.on('org.rdk.MiracastPlayer.1', 'onStateChange', data => {
+      GLOBALS.Miracastclientdevicedetails=data
+      if(data.state==="PLAYING")
+      {
+        if (GLOBALS.topmostApp != GLOBALS.selfClientName) {
+          appApi.exitApp(GLOBALS.topmostApp).then(()=>{
+
+              RDKShellApis.setVisibility(GLOBALS.topmostApp,false)
+              miracast.updatePlayerState(data.mac,data.state,data.reason_code,data.reason)
+          }).catch(err => {
+            console.log("exitapp err: " + err)
+          });}
+          else{
+            RDKShellApis.setVisibility(GLOBALS.selfClientName,false)
+            miracast.updatePlayerState(data.mac,data.state,data.reason_code,data.reason)
+          }
+        
+      }
+      if(data.state === "STOPPED")
+      {
+        RDKShellApis.setVisibility(GLOBALS.selfClientName,true)
+        Router.navigate(Storage.get("lastVisitedRoute"));
+        if(data.reason_code!=200){
+          if(GLOBALS.topmostApp===GLOBALS.selfClientName)
+          {
+            this.tag("Fail").notify({title:"Miracast Status",msg:`Reason Code : ${data.reason_code} Reason :${data.reason} `})
+            Router.focusWidget("Fail")
+          }
+
+          else{
+            this._moveApptoFront(GLOBALS.selfClientName, true)
+            Router.navigate("applauncher");
+            this.tag("Fail").notify({title:"Miracast Status",msg:`Reason Code : ${data.reason_code} Reason :${data.reason} `})
+            Router.focusWidget("Fail")
+          }
+        }
+        miracast.updatePlayerState(data.mac,data.state,data.reason_code,data.reason)
+      }
+      console.log('onStateChange ' + JSON.stringify(data));
+      });
+  }
+
   _subscribeToRDKShellNotifications() {
     thunder.on('org.rdk.RDKShell', 'onApplicationActivated', data => {
       console.warn("[RDKSHELLEVT] onApplicationActivated:", data);
@@ -764,6 +918,7 @@ export default class App extends Router.App {
     });
     thunder.on('org.rdk.RDKShell', 'onLaunched', data => {
       console.warn("[RDKSHELLEVT] onLaunched:", data);
+      miracast.stopRequest(GLOBALS.Miracastclientdevicedetails.mac,GLOBALS.Miracastclientdevicedetails.name,300)
       if ((data.launchType === "activate") || (data.launchType === "resume")) {
         // Change (Tracked TopMost) UI's visibility to false only for other apps.
         if ((data.client != GLOBALS.selfClientName)
