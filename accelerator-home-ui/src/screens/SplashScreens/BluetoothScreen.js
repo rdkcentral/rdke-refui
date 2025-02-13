@@ -18,7 +18,7 @@
  **/
 
 import { Lightning, Registry, Router, Utils, Language, Settings } from '@lightningjs/sdk'
-import { CONFIG } from '../../Config/Config'
+import { CONFIG ,GLOBALS} from '../../Config/Config'
 import AppApi from '../../api/AppApi';
 import BluetoothApi from '../../api/BluetoothApi';
 import ThunderJS from 'ThunderJS'
@@ -211,7 +211,7 @@ export default class BluetoothScreen extends Lightning.Component {
                     }
                 })
             } else {
-                if(cbData.status.pairingState != "SEARCHING" && cbData.status.pairingState != "PAIRING" ) {
+                if(cbData.status.pairingState != "SEARCHING" && cbData.status.pairingState != "PAIRING" && !GLOBALS.RCSkipStatus) {
                     RCApi.get().startPairing(30).catch(err => {
                         console.err("RCInformationScreen startPairing error:", err);
                     });
@@ -355,6 +355,7 @@ export default class BluetoothScreen extends Lightning.Component {
                 }
                 _handleEnter() {
                     console.log('SplashBluetoothScreen states Start Pairing')
+                    GLOBALS.RCSkipStatus=true;
                     Router.navigate('splash/language')
                 }
                 $exit() {

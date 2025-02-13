@@ -69,6 +69,7 @@ export var CONFIG = {
 
 export const GLOBALS = {
   _AlexaAvsstatus:false,
+  _RCSkipStatus:false,
   _Miracastclientdevicedetails:{mac: null,name: null,reason_code: null,state:null},
   _previousapp_onActiveSourceStatusUpdated:null,
   _previousapp_onDisplayConnectionChanged:null,
@@ -115,5 +116,13 @@ export const GLOBALS = {
   get Miracastclientdevicedetails()
   {
     return this._Miracastclientdevicedetails
+  },
+  set RCSkipStatus(status)
+  {
+    this._RCSkipStatus = status
+  },
+  get RCSkipStatus()
+  {
+    return this._RCSkipStatus
   }
 }
