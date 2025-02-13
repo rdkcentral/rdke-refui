@@ -831,13 +831,13 @@ export default class App extends Router.App {
         if (GLOBALS.topmostApp != GLOBALS.selfClientName) {
           appApi.exitApp(GLOBALS.topmostApp).then(()=>{
 
-              RDKShellApis.setVisibility(GLOBALS.topmostApp,false)
+              RDKShellApis.setVisibility(GLOBALS.topmostApp,GLOBALS.topmostApp,false)
               miracast.updatePlayerState(data.mac,data.state,data.reason_code,data.reason)
           }).catch(err => {
             console.log("exitapp err: " + err)
           });}
           else{
-            RDKShellApis.setVisibility(GLOBALS.selfClientName,false)
+            RDKShellApis.setVisibility(GLOBALS.selfClientName,GLOBALS.selfClientName,false)
             miracast.updatePlayerState(data.mac,data.state,data.reason_code,data.reason)
           }
         

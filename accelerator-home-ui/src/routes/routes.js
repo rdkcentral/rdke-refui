@@ -208,6 +208,7 @@ export default {
     AlexaApi.get().reportApplicationState(request.hash, true);
     if (request.hash === "menu") {
       /* To prevent the onboarding screen appearing next time. */
+      GLOBALS.RCSkipStatus=true;
       Storage.set("setup", true);
     }
   }
