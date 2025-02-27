@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 LOGFILE=/opt/logs/residentapp.log
 
@@ -10,7 +10,7 @@ log()
 # Check if all the commands used in this script are available
 commandsRequired="echo date curl exit"
 for cmd in $commandsRequired; do
-    if ! command -v $cmd > /dev/null; then
+    if ! command -v "$cmd" > /dev/null; then
         log "Required command '$cmd' not found; cannot proceed, exiting."
         exit 1
     fi
