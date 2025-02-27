@@ -382,7 +382,10 @@ export default class MainView extends Lightning.Component {
           this.fireAncestors("$hideImage", 0);
           console.log('videoStreamInfoUpdate ', JSON.stringify(notification))
         })
-        this.inputSelect = true //set the inputSelect to true if the device is tv, here considering hdmiApi is only available on tv
+        if(Storage.get("deviceType") == "tv")
+        {
+          this.inputSelect = true //set the inputSelect to true if the device is tv, here considering hdmiApi is only available on tv
+        }
         this.appItems = this.tempRow
         this.hdmiApi.getHDMIDevices()
           .then(res => {
