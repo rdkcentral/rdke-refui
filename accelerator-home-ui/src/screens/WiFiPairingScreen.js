@@ -22,9 +22,10 @@ import ConfirmAndCancel from '../items/ConfirmAndCancel'
 import PasswordSwitch from './PasswordSwitch'
 import { Keyboard } from '../ui-components/index'
 import { KEYBOARD_FORMATS } from '../ui-components/components/Keyboard'
-import WiFi, { WiFiError, WiFiState } from '../api/WifiApi'
+import WiFi, { WiFiError } from '../api/WifiApi'
 import Network from '../api/NetworkApi'
 import PersistentStoreApi from '../api/PersistentStore'
+import NetworkManager,{WiFiState} from '../api/NetworkManagerAPI'
 
 export default class WifiPairingScreen extends Lightning.Component {
 
@@ -207,14 +208,14 @@ export default class WifiPairingScreen extends Lightning.Component {
         }, 5000);
       }
       if (this._item) {
-        WiFi.get().connect(false, this._item, '').then(() => { })
+        NetworkManager.WiFiConnect(false, this._item, '').then(() => { })
           .catch(err => {
             this.ERR("Not able to connect to wifi" + JSON.stringify(err))
           })
       }
       Router.back()
     } else if (option === 'Disconnect') {
-      WiFi.get().disconnect().then(() => {
+      NetworkManager.WiFiDisconnect().then(() => {
         Registry.setTimeout(() => {
           Router.back()
         }, (Router.isNavigating() ? 20 : 0));
@@ -241,22 +242,22 @@ export default class WifiPairingScreen extends Lightning.Component {
         this.onErrorCB.dispose()
       }
     })
-    this.onWIFIStateChangedCB = WiFi.get().thunder.on(WiFi.get().callsign, 'onWIFIStateChanged', notification => {
-      if (notification.state === WiFiState.CONNECTED) {
-        Network.get().setDefaultInterface("WIFI").then(() => {
-          this.LOG("Successfully set WIFI as default interface.")
+    this.onWIFIStateChangedCB = NetworkManager.thunder.on(NetworkManager.callsign, 'onWIFIStateChanged', notification => {
+      if (notification.state === WiFiState.WIFI_STATE_CONNECTED) {
+       NetworkManager.SetPrimaryInterface("wlan0").then(() => {
+          console.log("Successfully set WIFI as default interface.")
         }).catch(err => {
           this.ERR("Could not set WIFI as default interface." + JSON.stringify(err))
         });
         this.onWIFIStateChangedCB.dispose()
       }
     })
-    WiFi.get().connect(false, this._item, password).then(() => {
-      WiFi.get().saveSSID(this._item.ssid, password, this._item.security).then((response) => {
-        if (response.result === 0 && response.success === true && flag === 0) {
+    NetworkManager.WiFiConnect(false, this._item, password).then(() => {
+      NetworkManager.AddToKnownSSIDs(this._item.ssid, password, this._item.security).then((response) => {
+        if (response === true && flag === 0) {
           PersistentStoreApi.get().setValue('wifi', 'SSID', this._item.ssid)
         }
-        else if (response.result !== 0) {
+        else {
           WiFi.get().clearSSID();
         }
       }).then(() => {

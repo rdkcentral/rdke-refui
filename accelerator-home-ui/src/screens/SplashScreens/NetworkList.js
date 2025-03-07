@@ -22,8 +22,9 @@ import { COLORS } from '../../colors/Colors'
 import { CONFIG,GLOBALS } from '../../Config/Config'
 import SettingsMainItem from '../../items/SettingsMainItem'
 import Network from '../../api/NetworkApi'
-import WiFi, { WiFiError, WiFiState, WiFiErrorMessages } from '../../api/WifiApi'
+import WiFi, { WiFiError, WiFiErrorMessages } from '../../api/WifiApi'
 import WiFiItem from '../../items/WiFiItem'
+import NetworkManager,{WiFiState}from '../../api/NetworkManagerAPI'
 
 export default class NetworkList extends Lightning.Component {
   constructor(...args) {
@@ -157,33 +158,33 @@ export default class NetworkList extends Lightning.Component {
       this.tag('JoinAnotherNetwork').visible = true
     }
     this._setState('JoinAnotherNetwork')
-    Network.get().activate().then(result => {
+    NetworkManager.activate().then(result => {
       if (result) {
-        Network.get()._thunder.on(Network.get().callsign, 'onIPAddressStatusChanged', notification => {
+        NetworkManager.thunder.on(NetworkManager.callsign, 'onAddressChange', notification => {
           this.LOG(JSON.stringify(notification))
           if (notification.status == 'ACQUIRED') {
             // Nothing to do here.
           } else if (notification.status == 'LOST') {
-            if (notification.interface === 'WIFI') {
-              Network.get().setInterfaceEnabled('ETHERNET').then(res => {
+            if (notification.interface === 'wlan0') {
+              NetworkManager.SetInterfaceState('eth0').then(res => {
                 if (res) {
-                  Network.get().setDefaultInterface('ETHERNET')
+                  NetworkManager.SetPrimaryInterface('eth0')
                 }
               })
             }
           }
         })
-        Network.get()._thunder.on(Network.get().callsign, 'onDefaultInterfaceChanged', notification => {
+        NetworkManager.thunder.on(NetworkManager.callsign, 'onActiveInterfaceChange', notification => {
           this.LOG(JSON.stringify(notification))
-          if (notification.newInterfaceName === 'ETHERNET') {
-            Network.get().setInterfaceEnabled('ETHERNET').then(result => {
+          if (notification.newInterfaceName === 'eth0') {
+            NetworkManager.SetInterfaceState('eth0').then(result => {
               if (result) {
-                Network.get().setDefaultInterface('ETHERNET')
+                NetworkManager.SetPrimaryInterface('eth0')
               }
             })
           } else if (
-            notification.newInterfaceName == 'ETHERNET' ||
-            notification.oldInterfaceName == 'WIFI'
+            notification.newInterfaceName == 'eth0' ||
+            notification.oldInterfaceName == 'wlan0'
           ) {
             //WiFi.get().disconnect()
             this.wifiStatus = false
@@ -193,25 +194,25 @@ export default class NetworkList extends Lightning.Component {
             this.wifiLoading.stop()
             this.tag('Switch.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
             this._setState('Switch')
-            Network.get().setInterfaceEnabled('ETHERNET').then(result => {
+            NetworkManager.SetInterfaceState('eth0').then(result => {
               if (result) {
-                Network.get().setDefaultInterface('ETHERNET')
+                NetworkManager.SetPrimaryInterface('eth0')
               }
             })
           }
           else if (
             notification.newInterfaceName === "" &&
-            notification.oldInterfaceName === "WIFI"
+            notification.oldInterfaceName === "wlan0"
           ) {
             this.LOG('emplty new old wifi')
-            Network.get().setDefaultInterface('ETHERNET')
+            NetworkManager.SetPrimaryInterface('eth0')
           }
         })
-        Network.get()._thunder.on(Network.get().callsign, 'onConnectionStatusChanged', notification => {
-          if (notification.interface === 'ETHERNET' && notification.status === 'CONNECTED') {
-            Network.get().setInterfaceEnabled('ETHERNET').then(res => {
+        NetworkManager.thunder.on(NetworkManager.callsign, 'onInterfaceStateChange', notification => {
+          if (notification.interface === 'eth0' && notification.status === 'INTERFACE_ADDED') {
+            NetworkManager.SetInterfaceState('eth0').then(res => {
               if (res) {
-                Network.get().setDefaultInterface('ETHERNET')
+                NetworkManager.SetPrimaryInterface('eth0')
               }
             })
           }
@@ -231,7 +232,7 @@ export default class NetworkList extends Lightning.Component {
       if (this.showConnectMessage) {
         this.tag('Info').text.text = Language.translate("Searching, please wait");
       }
-      WiFi.get().startScan()
+      NetworkManager.StartWiFiScan()
     }
   }
 
@@ -239,37 +240,34 @@ export default class NetworkList extends Lightning.Component {
    * Function to be executed when the Wi-Fi screen is disabled.
    */
   _unfocus() {
-    WiFi.get().stopScan()
+    NetworkManager.StopWiFiScan()
   }
 
   /**
    * Function to render list of Wi-Fi networks.
    */
-  async renderDeviceList(ssids) {
-    this.LOG("WIFI renderDeviceList ssids.length: " + JSON.stringify(ssids.length))
-    this.tag('Networks.AvailableNetworks').tag('List').rollMax = ssids.length * 90
-    this._pairedList = [];
-    await WiFi.get().getCurrentState().then(async (state) => {
-      if (state === WiFiState.CONNECTED) {
-        await WiFi.get().getConnectedSSID().then(result => {
-          if (result.ssid != '') {
-            this.LOG("Connected network detected " + JSON.stringify(result.ssid))
-            this._pairedList = [result]
-            this.tag('Networks.PairedNetworks').h = this._pairedList.length * 90
-            this.tag('Networks.PairedNetworks').tag('List').h = this._pairedList.length * 90
-            this.tag('Networks.PairedNetworks').tag('List').items = this._pairedList.map((item, index) => {
-              item.connected = true
-              return {
-                ref: 'Paired' + index,
-                w: 1920 - 300,
-                h: 90,
-                type: WiFiItem,
-                item: item,
-              }
-            })
-          }
-        })
-      }})
+  renderDeviceList(ssids) {
+    console.log("WIFI renderDeviceList ssids.length:", ssids.length)
+    NetworkManager.GetConnectedSSID().then(result => {
+      if (result.ssid != '') {
+        this._pairedList = [result]
+      } else {
+        this._pairedList = []
+      }
+      this.tag('Networks.AvailableNetworks').tag('List').rollMax = ssids.length * 90
+      this.tag('Networks.PairedNetworks').h = this._pairedList.length * 90
+      this.tag('Networks.PairedNetworks').tag('List').h = this._pairedList.length * 90
+      this.tag('Networks.PairedNetworks').tag('List').items = this._pairedList.map((item, index) => {
+        item.connected = true
+        return {
+          ref: 'Paired' + index,
+          w: 1920 - 300,
+          h: 90,
+          type: WiFiItem,
+          item: item,
+        }
+      })
+
       const seenSSIDs = new Set();
       this._otherList = ssids.filter(device => {
         const result = this._pairedList.map(a => a.ssid)
@@ -368,7 +366,7 @@ export default class NetworkList extends Lightning.Component {
     if (dir === 'down') {
       if (list.index < list.length - 1) list.setNext()
       else if (list.index == list.length - 1) {
-        WiFi.get().startScan()
+        NetworkManager.StartWiFiScan()
         this._setState('JoinAnotherNetwork')
         if (listname === 'MyDevices' && this.tag('Networks.AvailableNetworks').tag('List').length > 0) {
           this._setState('AvailableDevices')
@@ -391,13 +389,13 @@ export default class NetworkList extends Lightning.Component {
  */
   switch() {
     if (!this.wifiStatus) {
-      WiFi.get().disconnect()
+      NetworkManager.WiFiDisconnect()
       this.LOG('turning off wifi')
-      Network.get().setInterfaceEnabled('ETHERNET', true).then(result => {
+      NetworkManager.SetInterfaceState('eth0').then(result => {
         if (result) {
-          Network.get().setDefaultInterface('ETHERNET', true).then(result => {
+          NetworkManager.SetPrimaryInterface('eth0').then(result => {
             if (result) {
-              WiFi.get().disconnect()
+              NetworkManager.WiFiDisconnect()
               this.wifiStatus = false
               this.tag('Networks').visible = false
               this.tag('JoinAnotherNetwork').visible = false
@@ -414,7 +412,7 @@ export default class NetworkList extends Lightning.Component {
       this.tag('JoinAnotherNetwork').visible = true
       this.wifiLoading.play()
       this.tag('Loader').visible = true
-      WiFi.get().startScan()
+      NetworkManager.StartWiFiScan()
     }
   }
 
@@ -423,27 +421,27 @@ export default class NetworkList extends Lightning.Component {
  * Function to activate Wi-Fi plugin.
  */
   _activateWiFi() {
-    WiFi.get().activate().then(() => {
+    // WiFi.get().activate().then(() => {
       this.switch()
-    })
-    WiFi.get().thunder.on(WiFi.get().callsign, 'onWIFIStateChanged', notification => {
+    // })
+    NetworkManager.thunder.on(NetworkManager.callsign, 'onWiFiStateChange', notification => {
       this.LOG(JSON.stringify(notification))
-      if (notification.state === WiFiState.CONNECTED && ! GLOBALS.Setup) {
+      if (notification.state === WiFiState.WIFI_STATE_CONNECTED && ! GLOBALS.Setup) {
         this.tag('Info').text.text = Language.translate("Connection successful");
         Registry.setTimeout(() => {
           Router.navigate('menu')
         }, 2000)
-      } else if (notification.state === WiFiState.CONNECTING || notification.state === WiFiState.PAIRING) {
+      } else if (notification.state === WiFiState.WIFI_STATE_CONNECTING || notification.state === WiFiState.WIFI_STATE_PAIRING) {
         this.tag('Info').text.text = Language.translate("Connecting, please wait");
       }
     })
     WiFi.get().thunder.on(WiFi.get().callsign, 'onError', error => {
       WiFi.get().startScan()
-      Network.get().getDefaultInterface().then(defIface => {
+      NetworkManager.GetPrimaryInterface().then(defIface => {
         if (defIface != "ETHERNET") {
-          Network.get().setInterfaceEnabled('ETHERNET').then(res => {
+          NetworkManager.SetInterfaceState('eth0').then(res => {
             if (res) {
-              Network.get().setDefaultInterface('ETHERNET')
+              NetworkManager.SetPrimaryInterface('eth0')
             }
           })
         }
@@ -456,9 +454,9 @@ export default class NetworkList extends Lightning.Component {
         this.tag('Info').text.text = Language.translate(WiFiErrorMessages[error.code]);
       }
     })
-    WiFi.get().thunder.on(WiFi.get().callsign, 'onAvailableSSIDs', notification => {
+    NetworkManager.thunder.on(NetworkManager.callsign, 'onAvailableSSIDs', notification => {
       this.ssids = [...this.ssids, ...notification.ssids]
-      if (!notification.moreData) {
+      // if (!notification.moreData) {
         if (this.showConnectMessage) {
           this.showConnectMessage = false
           this.tag('Info').text.text = Language.translate("Select a network to connect");
@@ -468,7 +466,7 @@ export default class NetworkList extends Lightning.Component {
           this.tag('Loader').visible = false
           this.wifiLoading.stop()
         }, 1000)
-      }
+      // }
     })
   }
 }
