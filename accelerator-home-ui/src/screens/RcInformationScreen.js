@@ -230,7 +230,7 @@ export default class RCInformationScreen extends Lightning.Component {
 
     _inactive() {
         console.warn("RCInformationScreen _inactive.");
-        onStatusCBhandle.dispose();
+        if(onStatusCBhandle != null)onStatusCBhandle.dispose();
         this.tag("Status.Value").text.text = `N/A`
         this.tag("MacAddress.Value").text.text = `N/A`
         this.tag("SwVersion.Value").text.text = `N/A`

@@ -102,7 +102,7 @@ export default class FirmwareScreen extends Lightning.Component {
                 FirmwareUpdate: {
                     alpha:0,
                     RectangleDefault: {
-                        x: 110, y: 200, w: 300, mountX: 0.5, h: 50, rect: true, color: CONFIG.theme.hex,
+                        x: 210, y: 200, w: 400, mountX: 0.5, h: 50, rect: true, color: CONFIG.theme.hex,
                         Update: {
                             x: 170,
                             y: 25,
