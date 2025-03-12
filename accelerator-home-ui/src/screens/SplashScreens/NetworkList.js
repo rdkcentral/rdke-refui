@@ -21,8 +21,6 @@ import { Lightning, Utils, Router, Registry, Language, Storage } from '@lightnin
 import { COLORS } from '../../colors/Colors'
 import { CONFIG } from '../../Config/Config'
 import SettingsMainItem from '../../items/SettingsMainItem'
-import Network from '../../api/NetworkApi'
-import WiFi, { WiFiError, WiFiErrorMessages } from '../../api/WifiApi'
 import WiFiItem from '../../items/WiFiItem'
 import NetworkManager,{WiFiState}from '../../api/NetworkManagerAPI'
 
@@ -419,25 +417,30 @@ export default class NetworkList extends Lightning.Component {
       } else if (notification.state === WiFiState.WIFI_STATE_CONNECTING || notification.state === WiFiState.WIFI_STATE_PAIRING) {
         this.tag('Info').text.text = Language.translate("Connecting, please wait");
       }
-    })
-    WiFi.get().thunder.on(WiFi.get().callsign, 'onError', error => {
-      WiFi.get().startScan()
-      NetworkManager.GetPrimaryInterface().then(defIface => {
-        if (defIface != "ETHERNET") {
-          NetworkManager.SetInterfaceState('eth0').then(res => {
-            if (res) {
-              NetworkManager.SetPrimaryInterface('eth0')
+      else if(notification.state === WiFiState.WIFI_STATE_SSID_CHANGED|| notification.state === WiFiState.WIFI_STATE_CONNECTION_LOST ||
+        notification.state === WiFiState.WIFI_STATE_CONNECTION_FAILED ||
+        notification.state === WiFiState.WIFI_STATE_CONNECTION_INTERRUPTED ||
+        notification.state === WiFiState.WIFI_STATE_INVALID_CREDENTIALS ||
+        notification.state === WiFiState.WIFI_STATE_AUTHENTICATION_FAILED ||
+        notification.state === WiFiState.WIFI_STATE_ERROR )
+        {
+          NetworkManager.StartWiFiScan()
+          NetworkManager.GetPrimaryInterface().then(defIface => {
+            if (defIface != "eth0") {
+              NetworkManager.SetInterfaceState('eth0').then(res => {
+                if (res) {
+                  NetworkManager.SetPrimaryInterface('eth0')
+                }
+              })
             }
-          })
+          });
+          // Show error message.
+          this.tag('Info').text.text = Language.translate(notification.state);
+          if (this.widgets) {
+            this.widgets.fail.notify({ title: 'WiFi Error', msg: notification.state })
+            Router.focusWidget('Fail')
+          }
         }
-      });
-      if (error.code === WiFiError.INVALID_CREDENTIALS
-        || error.code === WiFiError.SSID_CHANGED
-        || error.code === WiFiError.CONNECTION_FAILED
-        || error.code === WiFiError.CONNECTION_INTERRUPTED) {
-        // Show error message.
-        this.tag('Info').text.text = Language.translate(WiFiErrorMessages[error.code]);
-      }
     })
     NetworkManager.thunder.on(NetworkManager.callsign, 'onAvailableSSIDs', notification => {
       this.ssids = [...this.ssids, ...notification.ssids]
