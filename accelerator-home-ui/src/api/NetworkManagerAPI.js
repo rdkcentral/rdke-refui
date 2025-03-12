@@ -123,7 +123,7 @@ class NetworkManager {
   StopWiFiScan =() => this.thunderCall('StopWiFiScan', 'StopWiFiScan', {});
   GetKnownSSIDs =() => this.thunderCall('GetKnownSSIDs', 'GetKnownSSIDs', {}, 'result');
   AddToKnownSSIDs =(ssid,passphrase,securityMode) => this.thunderCall('AddToKnownSSIDs', 'AddToKnownSSIDs', {"ssid":ssid,"passphrase":passphrase,"securityMode":securityMode});
-  RemoveKnownSSID =(ssid) => this.thunderCall('RemoveKnownSSID', 'RemoveKnownSSID', {ssid});
+  RemoveKnownSSID =(ssid) => this.thunderCall('RemoveKnownSSID', 'RemoveKnownSSID', {"ssid":ssid});
   // WiFiConnect =(ssid,passphrase,securityMode) => this.thunderCall('WiFiConnect', 'WiFiConnect', {ssid,passphrase,securityMode});
   WiFiDisconnect =() => this.thunderCall('WiFiDisconnect', 'WiFiDisconnect', {});
   WiFiConnect(useSaved = false, networkInfo, passphrase = "") {

@@ -22,10 +22,10 @@ import ConfirmAndCancel from '../items/ConfirmAndCancel'
 import PasswordSwitch from './PasswordSwitch'
 import { Keyboard } from '../ui-components/index'
 import { KEYBOARD_FORMATS } from '../ui-components/components/Keyboard'
-import WiFi, { WiFiError } from '../api/WifiApi'
-import Network from '../api/NetworkApi'
 import PersistentStoreApi from '../api/PersistentStore'
 import NetworkManager,{WiFiState} from '../api/NetworkManagerAPI'
+
+let Ssid = null
 
 export default class WifiPairingScreen extends Lightning.Component {
 
@@ -156,6 +156,7 @@ export default class WifiPairingScreen extends Lightning.Component {
     this.passwd = "";
     this.tag("Pwd").text.text = ""
     this.tag('Title').text = item.ssid
+    Ssid=item.ssid
     let options = []
     this._item = item
     if (item.connected) {
@@ -191,7 +192,6 @@ export default class WifiPairingScreen extends Lightning.Component {
   }
 
   _inactive() {
-    if (this.onErrorCB) this.onErrorCB.dispose();
     if (this.onWIFIStateChangedCB) this.onWIFIStateChangedCB.dispose();
     if (this.waitToConnectTO) Registry.clearTimeout(this.waitToConnectTO);
   }
@@ -232,16 +232,6 @@ export default class WifiPairingScreen extends Lightning.Component {
         }, 5000);
       }
     let flag = 0
-    this.onErrorCB = WiFi.get().thunder.on(WiFi.get().callsign, 'onError', notification => {
-      if (notification.code === WiFiError.INVALID_CREDENTIALS || notification.code === WiFiError.SSID_CHANGED) {
-        this.LOG("INVALID_CREDENTIALS; deleting WiFi Persistence data.")
-        WiFi.get().clearSSID().then(() => {
-          PersistentStoreApi.get().deleteNamespace('wifi')
-        });
-        flag = 1
-        this.onErrorCB.dispose()
-      }
-    })
     this.onWIFIStateChangedCB = NetworkManager.thunder.on(NetworkManager.callsign, 'onWIFIStateChanged', notification => {
       if (notification.state === WiFiState.WIFI_STATE_CONNECTED) {
        NetworkManager.SetPrimaryInterface("wlan0").then(() => {
@@ -251,6 +241,13 @@ export default class WifiPairingScreen extends Lightning.Component {
         });
         this.onWIFIStateChangedCB.dispose()
       }
+      else if (notification.state === WiFiState.WIFI_STATE_INVALID_CREDENTIALS|| notification.state === WiFiState.WIFI_STATE_SSID_CHANGED) {
+        console.log("INVALID_CREDENTIALS; deleting WiFi Persistence data.")
+        NetworkManager.RemoveKnownSSID(Ssid).then(() => {
+          PersistentStoreApi.get().deleteNamespace('wifi')
+        });
+        flag = 1
+      }
     })
     NetworkManager.WiFiConnect(false, this._item, password).then(() => {
       NetworkManager.AddToKnownSSIDs(this._item.ssid, password, this._item.security).then((response) => {
@@ -258,7 +255,7 @@ export default class WifiPairingScreen extends Lightning.Component {
           PersistentStoreApi.get().setValue('wifi', 'SSID', this._item.ssid)
         }
         else {
-          WiFi.get().clearSSID();
+          NetworkManager.RemoveKnownSSID(Ssid)
         }
       }).then(() => {
         // Immediate return causes some clash at plugin implementation level resulting not saving/connecting.

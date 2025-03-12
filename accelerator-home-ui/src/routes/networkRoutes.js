@@ -51,7 +51,7 @@ const networkRoutes = [
     {
         path: 'settings/network/interface/wifi/connect',
         component: WifiPairingScreen,
-        widgets: ['Volume', "AppCarousel"]
+        widgets: ['Volume','Fail', "AppCarousel"]
     },
     {
         path: 'settings/network/interface/wifi/another',
