@@ -169,9 +169,9 @@ export default class NetworkScreen extends Lightning.Component {
                     NetworkManager.SetInterfaceState('eth0').then(res => {
                         if (res) {
                             NetworkManager.SetPrimaryInterface('eth0').then(() => {
-                                NetworkManager.GetAvailableInterfaces('eth0').then(res => {
+                                NetworkManager.GetAvailableInterfaces().then(res => {
                                     console.log(JSON.stringify(res))
-                                    let eth = res.interfaces.filter((item) => item.type == 'ETHERNET')
+                                    let eth = res.filter((item) => item.type == 'ETHERNET')
                                     if (eth[0].type == 'ETHERNET' && eth[0].enabled == true && eth[0].connected == true) {
                                         Registry.setTimeout(() => {
                                             Router.navigate('menu')

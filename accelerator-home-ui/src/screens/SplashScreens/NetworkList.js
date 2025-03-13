@@ -407,7 +407,7 @@ export default class NetworkList extends Lightning.Component {
     // WiFi.get().activate().then(() => {
       this.switch()
     // })
-    NetworkManager.thunder.on(NetworkManager.callsign, 'onWiFiStateChange', notification => {
+    NetworkManager.thunder.on(NetworkManager.callsign, '', notification => {
       console.log(JSON.stringify(notification))
       if (notification.state === WiFiState.WIFI_STATE_CONNECTED && ! Storage.get("setup")) {
         this.tag('Info').text.text = Language.translate("Connection successful");

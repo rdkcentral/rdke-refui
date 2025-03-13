@@ -23,7 +23,7 @@ import ConfirmAndCancel from '../../items/ConfirmAndCancel'
 import PasswordSwitch from '../../screens/PasswordSwitch'
 import { Keyboard } from '../../ui-components/index'
 import { KEYBOARD_FORMATS } from '../../ui-components/components/Keyboard'
-import WiFi from '../../api/WifiApi'
+import NetworkManager from '../../api/NetworkManagerAPI'
 
 export default class WifiPairingScreen extends Lightning.Component {
   static _template() {
@@ -167,15 +167,15 @@ export default class WifiPairingScreen extends Lightning.Component {
         this.startConnect(this.passwd)
       }
     } else if (option === 'Disconnect') {
-      WiFi.get().disconnect().then(() => {
+      NetworkManager.WiFiDisconnect().then(() => {
         this.fireAncestors("$navigateBack")
       })
     }
   }
 
   startConnect(password = "") {
-    WiFi.get().connect(false, this._item, password).then(() => {
-      WiFi.get().saveSSID(this._item.ssid, password, this._item.security).then(() => {
+    NetworkManager.WiFiConnect(false, this._item, password).then(() => {
+      NetworkManager.AddToKnownSSIDs(this._item.ssid, password, this._item.security).then(() => {
         console.log('Started connect and saved SSID; going back now.')
         this.fireAncestors("$navigateBack")
       });
