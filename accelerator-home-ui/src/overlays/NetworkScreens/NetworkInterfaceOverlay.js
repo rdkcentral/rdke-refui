@@ -20,9 +20,9 @@
  import SettingsMainItem from '../../items/SettingsMainItem'
  import { COLORS } from '../../colors/Colors'
  import { CONFIG } from '../../Config/Config'
- import Network from '../../api/NetworkApi'
  import { Language } from '@lightningjs/sdk';
  import WifiScreen from './NetworkWifiOverlay'
+ import NetworkManager from '../../api/NetworkManagerAPI';
 
  export default class NetworkInterfaceScreen extends Lightning.Component {
 
@@ -103,33 +103,36 @@
     }
 
     _active() {
-        this.onDefaultInterfaceChangedCB = Network.get()._thunder.on(Network.get().callsign, 'onDefaultInterfaceChanged', (notification) => {
-            this.LOG('onDefaultInterfaceChanged notification from networkInterfaceScreen: ' + JSON.stringify(notification))
-            if (notification.newInterfaceName === "ETHERNET") {
+        this.onDefaultInterfaceChangedCB = NetworkManager.thunder.on(NetworkManager.callsign, 'onActiveInterfaceChange', (notification) => {
+            this.LOG('onActiveInterfaceChange notification from networkInterfaceScreen: ' + JSON.stringify(notification))
+            if (notification.newInterfaceName === "eth0") {
                 this.loadingAnimation.stop()
                 this.tag('Ethernet.Loader').visible = false
                 this.tag('Ethernet.Title').text.text = 'Ethernet: ' + Language.translate("Connected")
-            } else if (notification.newInterfaceName === "" && notification.oldInterfaceName === "WIFI") {
+            } else if (notification.newInterfaceName === "" && notification.oldInterfaceName === "wlan0") {
                 this.loadingAnimation.stop()
                 this.tag('Ethernet.Loader').visible = false
                 this.tag('Ethernet.Title').text.text = 'Ethernet: '+Language.translate('Error')+', '+Language.translate('Retry')+'!'
-            } else if (notification.newInterfaceName === "WIFI") {
+            } else if (notification.newInterfaceName === "wlan0") {
                 this.loadingAnimation.stop()
                 this.tag('Ethernet.Loader').visible = false
                 this.tag('Ethernet.Title').text.text = 'Ethernet'
             }
+            Metrics.action("user", "The user changed the network interface", null)
         });
-        this.onConnectionStatusChangedCB = Network.get()._thunder.on(Network.get().callsign, 'onConnectionStatusChanged', (notification) => {
-            this.LOG('onConnectionStatusChanged notification from networkInterfaceScreen: ' + JSON.stringify(notification))
-            if (notification.interface === "ETHERNET") {
-                this.tag('Ethernet.Title').text.text = 'Ethernet: ' + Language.translate(notification.status.toLowerCase())
+        this.onConnectionStatusChangedCB = NetworkManager.thunder.on(NetworkManager.callsign, 'onInterfaceStateChange', (notification) => {
+            this.LOG('onInterfaceStateChange notification from networkInterfaceScreen: ' + JSON.stringify(notification))
+            if (notification.interface === "eth0") {
+                this.tag('Ethernet.Title').text.text = 'Ethernet: ' + Language.translate(notification.state.toLowerCase())
             }
+            Metrics.action("App", "network connection of app changed", null)
         });
 
         this.loadingAnimation = this.tag('Ethernet.Loader').animation({
             duration: 3, repeat: -1, stopMethod: 'immediate', stopDelay: 0.2,
             actions: [{ p: 'rotation', v: { sm: 0, 0: 0, 1: 2 * Math.PI } }]
         });
+
         this.tag('Ethernet.Loader').src = this.LoadingIcon
     }
 
@@ -183,10 +186,10 @@
                     this.tag('Ethernet.Title').text.text = 'Ethernet :' + Language.translate('Configuring as default')
                     this.tag('Ethernet.Loader').visible = true
                     this.loadingAnimation.start()
-                    await Network.get().isInterfaceEnabled("ETHERNET").then(enabled => {
+                    await NetworkManager.GetInterfaceState("eth0").then(enabled => {
                         if (!enabled) {
-                            Network.get().setInterfaceEnabled("ETHERNET").then(() => {
-                                Network.get().setDefaultInterface("ETHERNET").then(result => {
+                            NetworkManager.SetInterfaceState("eth0").then(() => {
+                                NetworkManager.SetPrimaryInterface("eth0").then(result => {
                                     if (result) {
                                         this.loadingAnimation.stop()
                                         this.tag('Ethernet.Title').text.text = 'Ethernet'
@@ -195,7 +198,7 @@
                                 });
                             });
                         } else {
-                            Network.get().setDefaultInterface("ETHERNET").then(result => {
+                            NetworkManager.SetPrimaryInterface("eth0").then(result => {
                                 if (result) {
                                     this.loadingAnimation.stop()
                                     this.tag('Ethernet.Title').text.text = 'Ethernet'

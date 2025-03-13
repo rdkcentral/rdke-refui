@@ -20,9 +20,8 @@
 import { Lightning, Language } from '@lightningjs/sdk'
 import SettingsMainItem from '../../items/SettingsMainItem'
 import { COLORS } from '../../colors/Colors'
-import { CONFIG } from '../../Config/Config'
-import Network from '../../api/NetworkApi';
-import WiFi from '../../api/WifiApi';
+import { CONFIG ,GLOBALS } from '../../Config/Config'
+import NetworkManager from '../../api/NetworkManagerAPI';
 
 var currentInterface = [];
 
@@ -258,30 +257,31 @@ export default class NetworkInfo extends Lightning.Component {
     }
 
     _active() {
-        this.onInterfaceStatusChangedCB = Network.get()._thunder.on(Network.get().callsign, 'onInterfaceStatusChanged', () => {
+        this.onInterfaceStatusChangedCB = NetworkManager.thunder.on(NetworkManager.callsign,'onInterfaceStatusChanged', data => {
             this.refreshDetails();
         })
-        this.onConnectionStatusChangedCB = Network.get()._thunder.on(Network.get().callsign, 'onConnectionStatusChanged', () => {
+        this.onIPAddressStatusChangedCB = NetworkManager.thunder.on(NetworkManager.callsign,'onAddressChange', data => {
             this.refreshDetails();
         })
-        this.onIPAddressStatusChangedCB = Network.get()._thunder.on(Network.get().callsign, 'onIPAddressStatusChanged', () => {
+        this.onDefaultInterfaceChangedCB = NetworkManager.thunder.on(NetworkManager.callsign,'onActiveInterfaceChange', data => {
             this.refreshDetails();
         })
-        this.onDefaultInterfaceChangedCB = Network.get()._thunder.on(Network.get().callsign, 'onDefaultInterfaceChanged', () => {
+        if ("ResidentApp" !== GLOBALS.selfClientName)
+        {
+        this.OnNetworkChangedfirebolt = FireBoltApi.get().deviceinfo.listen("networkChanged",value =>{
             this.refreshDetails();
         })
+        }
     }
 
     _inactive() {
         this.onInterfaceStatusChangedCB.dispose()
-        this.onConnectionStatusChangedCB.dispose()
         this.onIPAddressStatusChangedCB.dispose()
         this.onDefaultInterfaceChangedCB.dispose()
     }
 
     _disable() {
-        if (this.NWPluginSelfActivated) Network.get().deactivate()
-        if (this.WiFiPluginSelfActivated) WiFi.get().deactivate()
+        if (this.NetworkManagerActivated) NetworkManager.deactivate()
     }
 
     async refreshDetails() {
@@ -290,13 +290,59 @@ export default class NetworkInfo extends Lightning.Component {
         this.tag("IPAddress.Value").text.text = `NA`
         this.tag("Gateway.Value").text.text = `NA`
         this.tag("MACAddress.Value").text.text = `NA`
-        await Network.get().getDefaultInterface().then((defaultInterface) => {
-            Network.get().getIPSettings(defaultInterface).then((result) => {
-                if (result.interface === "WIFI") {
+        if ("ResidentApp" === GLOBALS.selfClientName)
+        {
+            await NetworkManager.GetPrimaryInterface().then((defaultInterface) => {
+                console.log("defaultinterface"+defaultInterface)
+                NetworkManager.GetIPSettings(defaultInterface).then((result) => {
+                    if (result.interface === "wlan0") {
+                        this.tag("ConnectionType.Value").text.text = Language.translate("Wireless")
+                        this.tag("SSID").alpha = 1
+                        this.tag("SignalStrength").alpha = 1
+                        NetworkManager.GetConnectedSSID().then((result) => {
+                            if (parseInt(result.signalStrength) >= -50) {
+                                this.tag("SignalStrength.Value").text.text = `Excellent`
+                            }
+                            else if (parseInt(result.signalStrength) >= -60) {
+                                this.tag("SignalStrength.Value").text.text = `Good`
+                            }
+                            else if (parseInt(result.signalStrength) >= -67) {
+                                this.tag("SignalStrength.Value").text.text = `Fair`
+                            }
+                            else {
+                                this.tag("SignalStrength.Value").text.text = `Poor`
+                            }
+                            this.tag("SSID.Value").text.text = `${result.ssid}`
+                        }).catch((error) => console.log(error));
+                    } else if (result.interface === "eth0") {
+                        this.tag("ConnectionType.Value").text.text = 'Ethernet'
+                        this.tag("SSID").alpha = 0
+                        this.tag("SignalStrength").alpha = 0
+                    }
+                    this.tag('InternetProtocol.Value').text.text = result.ipversion
+                    this.tag('IPAddress.Value').text.text = result.ipaddress
+                    this.tag("Gateway.Value").text.text = result.gateway
+                }).catch((err) => console.error(err))
+
+                NetworkManager.GetAvailableInterfaces().then((interfaces) => {
+                    currentInterface = interfaces.filter((data) => data.name === defaultInterface)
+                    if (currentInterface[0].connected) {
+                        this.tag("Status.Value").text.text = Language.translate('Connected')
+                    }
+                    else {
+                        this.tag('Status.Value').text.text = Language.translate('Disconnected')
+                    }
+                    this.tag('MACAddress.Value').text.text = currentInterface[0].mac
+                }).catch((error) => console.log(error));
+            }).catch((error) => console.log(error));
+        }
+        else{
+            await FireBoltApi.get().deviceinfo.getnetwork().then(res=>{
+                if (res.type === "wifi") {
                     this.tag("ConnectionType.Value").text.text = Language.translate("Wireless")
                     this.tag("SSID").alpha = 1
                     this.tag("SignalStrength").alpha = 1
-                    WiFi.get().getConnectedSSID().then((result) => {
+                    NetworkManager.GetConnectedSSID().then((result) => {
                         if (parseInt(result.signalStrength) >= -50) {
                             this.tag("SignalStrength.Value").text.text = `Excellent`
                         }
@@ -313,33 +359,31 @@ export default class NetworkInfo extends Lightning.Component {
                     }).catch((error) => {
                         this.ERR("WiFi.get().getConnectedSSID error: " + JSON.stringify(error))
                     });
-                } else if (result.interface === "ETHERNET") {
+                } else if (res.type === "ethernet") {
                     this.tag("ConnectionType.Value").text.text = 'Ethernet'
                     this.tag("SSID").alpha = 0
                     this.tag("SignalStrength").alpha = 0
                 }
-                this.tag('InternetProtocol.Value').text.text = result.ipversion
-                this.tag('IPAddress.Value').text.text = result.ipaddr
-                this.tag("Gateway.Value").text.text = result.gateway
-            }).catch((err) => {
-                this.ERR("Network.get().getIPSettings error: " + JSON.stringify(err))
-            })
-
-            Network.get().getInterfaces().then((interfaces) => {
-                currentInterface = interfaces.filter((data) => data.interface === defaultInterface)
-                if (currentInterface[0].connected) {
+                if (res.state== "connected") {
                     this.tag("Status.Value").text.text = Language.translate('Connected')
                 }
                 else {
                     this.tag('Status.Value').text.text = Language.translate('Disconnected')
                 }
-                this.tag('MACAddress.Value').text.text = currentInterface[0].macAddress
-            }).catch((error) => {
-                this.ERR("Network.get().getInterfaces error: " + JSON.stringify(error))
-            });
-        }).catch((error) => {
-            this.ERR("Network.get().getDefaultInterface error: " + JSON.stringify(error))
-        });
+            NetworkManager.GetPrimaryInterface().then((defaultInterface) => {
+                NetworkManager.GetIPSettings(defaultInterface).then((result) => {
+                this.tag('InternetProtocol.Value').text.text = result.ipversion
+                this.tag('IPAddress.Value').text.text = result.ipaddress
+                this.tag("Gateway.Value").text.text = result.gateway
+                })
+                NetworkManager.GetAvailableInterfaces().then((res) => {
+                    currentInterface = res.interfaces.filter((data) => data.type === defaultInterface)
+                    this.tag('MACAddress.Value').text.text = currentInterface[0].mac
+                }).catch((error) => console.log(error));
+            })
+
+            }).catch((error) => console.log(error));
+        }
     }
 
     _focus() {

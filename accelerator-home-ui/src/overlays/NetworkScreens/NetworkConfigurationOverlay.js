@@ -20,9 +20,9 @@ import { Lightning, Utils, Language } from '@lightningjs/sdk'
 import SettingsMainItem from '../../items/SettingsMainItem'
 import { COLORS } from '../../colors/Colors'
 import { CONFIG } from '../../Config/Config'
-import Network from '../../api/NetworkApi'
 import NetworkInfoScreen from './NetworkInfoScreen'
 import NetworkInterfaceOverlay from './NetworkInterfaceOverlay'
+import NetworkManager from '../../api/NetworkManagerAPI'
 
 export default class NetworkConfigurationScreen extends Lightning.Component {
     static _template() {
@@ -150,17 +150,20 @@ export default class NetworkConfigurationScreen extends Lightning.Component {
         let _currentIPSettings = {}
         let _newIPSettings = {}
 
-        Network.get().getDefaultInterface().then(interfaceName => {
-            this.$NetworkInterfaceText(interfaceName)
+        NetworkManager.GetPrimaryInterface().then(interfaceName => {
+            if(interfaceName === "eth0"){this.$NetworkInterfaceText("ETHERNET")}
+            if(interfaceName === "wlan0"){this.$NetworkInterfaceText("WIFI")}
         })
 
-        this.onDefaultIfaceChangedCB = Network.get()._thunder.on(Network.get().callsign, 'onDefaultInterfaceChanged', data => {
-            this.$NetworkInterfaceText(data.newInterfaceName)
+        this.onDefaultIfaceChangedCB = NetworkManager.thunder.on(NetworkManager.callsign, 'onActiveInterfaceChange', data => {
+            if(data.newInterfaceName === "eth0"){this.$NetworkInterfaceText("ETHERNET")}
+            if(data.newInterfaceName === "wlan0"){this.$NetworkInterfaceText("WIFI")}
             this.tag('TestInternetAccess.Title').text.text = Language.translate('Test Internet Access: ')
+            Metrics.action("user", "User changed the network interface", null)
         });
 
         _newIPSettings = _currentIPSettings
-        _newIPSettings.ipversion = "IPV6"
+        _newIPSettings.ipversion = "IPV6" // this fails, need to verify how to set proper ip settings
 
         // loader animation for testing internet
         this.loadingAnimation = this.tag('TestInternetAccess.Loader').animation({
@@ -244,18 +247,17 @@ export default class NetworkConfigurationScreen extends Lightning.Component {
                 _handleEnter() {
                     this.loadingAnimation.start()
                     this.tag('TestInternetAccess.Loader').visible = true
-                    Network.get().isConnectedToInternet().then(result => {
-                        let connectionStatus = Language.translate("Internet Access: ")
-                        if (result) {
+                    NetworkManager.IsConnectedToInternet().then(result => {
+                        var connectionStatus = Language.translate("Internet Access: ")
+                        if (result.connected) {
                             connectionStatus += Language.translate("Connected")
                         } else {
-                            connectionStatus += Language.translate("Not Connected")
+                            connectionStatus += Language.translate("Disconnected")
                         }
-
                         setTimeout(() => {
-                            this.tag('TestInternetAccess.Loader').visible = false
-                            this.tag('TestInternetAccess.Title').text.text = connectionStatus
-                            this.loadingAnimation.stop()
+                        this.tag('TestInternetAccess.Loader').visible = false
+                        this.tag('TestInternetAccess.Title').text.text = connectionStatus
+                        this.loadingAnimation.stop()
                         }, 2000)
                     })
                 }

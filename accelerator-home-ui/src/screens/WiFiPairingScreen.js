@@ -232,7 +232,7 @@ export default class WifiPairingScreen extends Lightning.Component {
         }, 5000);
       }
     let flag = 0
-    this.onWIFIStateChangedCB = NetworkManager.thunder.on(NetworkManager.callsign, 'onWIFIStateChanged', notification => {
+    this.onWIFIStateChangedCB = NetworkManager.thunder.on(NetworkManager.callsign, 'onWIFIStateChange', notification => {
       if (notification.state === WiFiState.WIFI_STATE_CONNECTED) {
        NetworkManager.SetPrimaryInterface("wlan0").then(() => {
           console.log("Successfully set WIFI as default interface.")

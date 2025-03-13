@@ -101,18 +101,18 @@ class NetworkManager {
     });
   }
 
-  GetAvailableInterfaces =() => this.thunderCall('GetAvailableInterfaces', 'GetAvailableInterfaces', {}, 'result');
-  GetPrimaryInterface =() => this.thunderCall('GetPrimaryInterface', 'GetPrimaryInterface', {}, 'Interface');
+  GetAvailableInterfaces =() => this.thunderCall('GetAvailableInterfaces', 'GetAvailableInterfaces', {}, 'interfaces');
+  GetPrimaryInterface =() => this.thunderCall('GetPrimaryInterface', 'GetPrimaryInterface', {}, 'interface');
   SetPrimaryInterface =(Interface) => this.thunderCall('SetPrimaryInterface', 'SetPrimaryInterface', {"interface":Interface} );
   SetInterfaceState =(Interface,enabled=true) => this.thunderCall('SetInterfaceState', 'SetInterfaceState', {"interface":Interface,"enabled":enabled} );
-  GetInterfaceState =(Interface) => this.thunderCall('GetInterfaceState', 'GetInterfaceState', {"interface":Interface}, );
-  GetIPSettings =(Interface,ipversion) => this.thunderCall('GetIPSettings', 'GetIPSettings', {Interface,ipversion}, 'result');
+  GetInterfaceState =(Interface) => this.thunderCall('GetInterfaceState', 'GetInterfaceState', {"interface":Interface},"enabled" );
+  GetIPSettings =(Interface,ipversion="IPv4") => this.thunderCall('GetIPSettings', 'GetIPSettings', {"interface":Interface,"ipversion":ipversion}, 'result');
   SetIPSettings =(Interface,ipversion,autoconfig,ipaddress,prefix,gateway,primarydns,secondarydns) => this.thunderCall('SetIPSettings', 'SetIPSettings', {Interface,ipversion,autoconfig,ipaddress,prefix,gateway,primarydns,secondarydns}, );
   GetStunEndpoint =() => this.thunderCall('GetStunEndpoint', 'GetStunEndpoint', {}, 'result');
   SetStunEndpoint =(endPoint,port,bindTimeout,cacheTimeout) => this.thunderCall('SetStunEndpoint', 'SetStunEndpoint', {endPoint,port,bindTimeout,cacheTimeout} );
   GetConnectivityTestEndpoints =() => this.thunderCall('GetConnectivityTestEndpoints', 'GetConnectivityTestEndpoints', {}, 'result');
   SetConnectivityTestEndpoints =(endpoints) => this.thunderCall('SetConnectivityTestEndpoints', 'SetConnectivityTestEndpoints', {endpoints} );
-  IsConnectedToInternet =(ipversion) => this.thunderCall('IsConnectedToInternet', 'IsConnectedToInternet', {ipversion}, 'result');
+  IsConnectedToInternet =(ipversion="IPv4") => this.thunderCall('IsConnectedToInternet', 'IsConnectedToInternet', {"ipversion":ipversion}, 'result');
   GetCaptivePortalURI =() => this.thunderCall('GetCaptivePortalURI', 'GetCaptivePortalURI', {}, 'result');
   StartConnectivityMonitoring =(interval) => this.thunderCall('StartConnectivityMonitoring', 'StartConnectivityMonitoring', {interval});
   StopConnectivityMonitoring =() => this.thunderCall('StopConnectivityMonitoring', 'StopConnectivityMonitoring', {});
@@ -121,7 +121,7 @@ class NetworkManager {
   Trace =(endpoint,ipversion,noOfRequest,guid) => this.thunderCall('Trace', 'Trace', {endpoint,ipversion,noOfRequest,guid}, 'result');
   StartWiFiScan =(frequency) => this.thunderCall('StartWiFiScan', 'StartWiFiScan', {frequency});
   StopWiFiScan =() => this.thunderCall('StopWiFiScan', 'StopWiFiScan', {});
-  GetKnownSSIDs =() => this.thunderCall('GetKnownSSIDs', 'GetKnownSSIDs', {}, 'result');
+  GetKnownSSIDs =() => this.thunderCall('GetKnownSSIDs', 'GetKnownSSIDs', {}, 'ssids');
   AddToKnownSSIDs =(ssid,passphrase,securityMode) => this.thunderCall('AddToKnownSSIDs', 'AddToKnownSSIDs', {"ssid":ssid,"passphrase":passphrase,"securityMode":securityMode});
   RemoveKnownSSID =(ssid) => this.thunderCall('RemoveKnownSSID', 'RemoveKnownSSID', {"ssid":ssid});
   // WiFiConnect =(ssid,passphrase,securityMode) => this.thunderCall('WiFiConnect', 'WiFiConnect', {ssid,passphrase,securityMode});
