@@ -383,7 +383,7 @@ export default class WiFiScreen extends Lightning.Component {
                         });
                       }
                       if (notification.code === WiFiState.WIFI_STATE_SSID_CHANGED || notification.code === WiFiState.WIFI_STATE_INVALID_CREDENTIALS) {
-                        
+
                         NetworkManager.RemoveKnownSSID(this.ListItem).then(() => {
                           this._setState("WifiPairingScreen")
                         })
