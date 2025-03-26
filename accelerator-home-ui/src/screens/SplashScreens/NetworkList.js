@@ -244,28 +244,30 @@ export default class NetworkList extends Lightning.Component {
   /**
    * Function to render list of Wi-Fi networks.
    */
-  renderDeviceList(ssids) {
+  async renderDeviceList(ssids) {
     console.log("WIFI renderDeviceList ssids.length:", ssids.length)
-    NetworkManager.GetConnectedSSID().then(result => {
-      if (result.ssid != '') {
-        this._pairedList = [result]
-      } else {
-        this._pairedList = []
-      }
-      this.tag('Networks.AvailableNetworks').tag('List').rollMax = ssids.length * 90
-      this.tag('Networks.PairedNetworks').h = this._pairedList.length * 90
-      this.tag('Networks.PairedNetworks').tag('List').h = this._pairedList.length * 90
-      this.tag('Networks.PairedNetworks').tag('List').items = this._pairedList.map((item, index) => {
-        item.connected = true
-        return {
-          ref: 'Paired' + index,
-          w: 1920 - 300,
-          h: 90,
-          type: WiFiItem,
-          item: item,
-        }
-      })
-
+    this._pairedList = [];
+    await NetworkManager.GetWifiState().then(async (state) => {
+      if (state === WiFiState.CONNECTED) {
+        await NetworkManager.GetConnectedSSID().then(result => {
+          if (result.ssid != '') {
+            console.log("Connected network detected " + JSON.stringify(result.ssid))
+            this._pairedList = [result]
+            this.tag('Networks.PairedNetworks').h = this._pairedList.length * 90
+            this.tag('Networks.PairedNetworks').tag('List').h = this._pairedList.length * 90
+            this.tag('Networks.PairedNetworks').tag('List').items = this._pairedList.map((item, index) => {
+              item.connected = true
+              return {
+                ref: 'Paired' + index,
+                w: 1920 - 300,
+                h: 90,
+                type: WiFiItem,
+                item: item,
+              }
+            })
+          }
+        })
+      }})
       const seenSSIDs = new Set();
       this._otherList = ssids.filter(device => {
         const result = this._pairedList.map(a => a.ssid)

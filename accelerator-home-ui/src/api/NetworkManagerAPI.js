@@ -151,7 +151,7 @@ class NetworkManager {
   GetWiFiSignalStrength =() => this.thunderCall('GetWiFiSignalStrength', 'GetWiFiSignalStrength', {}, 'result');
   GetSupportedSecurityModes =() => this.thunderCall('GetSupportedSecurityModes', 'GetSupportedSecurityModes', {}, 'result');
   SetLogLevel =(logLevel) => this.thunderCall('SetLogLevel', 'SetLogLevel', {logLevel} );
-  GetWifiState =() => this.thunderCall('GetWifiState', 'GetWifiState', {});
+  GetWifiState =() => this.thunderCall('GetWifiState', 'GetWifiState', {},"state");
 }
 
 const NetworkManagerInstance = new NetworkManager();

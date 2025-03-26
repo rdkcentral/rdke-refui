@@ -259,24 +259,28 @@ export default class WiFiScreen extends Lightning.Component {
     this.tag('Networks.PairedNetworks').tag('List').items = []
     this.tag('Networks.PairedNetworks').tag('List').h = 0
 
-    NetworkManager.GetConnectedSSID().then(result => {
-      if (result.ssid != '') {
-        this._pairedList = [result]
-        this.tag('Networks').visible = true
-        this.tag('Networks.PairedNetworks').h = this._pairedList.length * 90
-        this.tag('Networks.PairedNetworks').tag('List').h = this._pairedList.length * 90
-        this.tag('Networks.PairedNetworks').tag('List').items = this._pairedList.map((item, index) => {
-          item.connected = true
-          return {
-            ref: 'Paired' + index,
-            w: 1920 - 300,
-            h: 90,
-            type: WiFiItem,
-            item: item,
+    await NetworkManager.GetWifiState().then(async (state) => {
+      if (state === WiFiState.CONNECTED) {
+        await NetworkManager.GetConnectedSSID().then(result => {
+          if (result.ssid != '') {
+            console.log("Connected network detected " + JSON.stringify(result.ssid))
+            this._pairedList = [result]
+            this.tag('Networks.PairedNetworks').h = this._pairedList.length * 90
+            this.tag('Networks.PairedNetworks').tag('List').h = this._pairedList.length * 90
+            this.tag('Networks.PairedNetworks').tag('List').items = this._pairedList.map((item, index) => {
+              item.connected = true
+              return {
+                ref: 'Paired' + index,
+                w: 1920 - 300,
+                h: 90,
+                type: WiFiItem,
+                item: item,
+              }
+            })
           }
         })
-      }
-
+      }})
+      const seenSSIDs = new Set();
       this._otherList = ssids.filter(device => {
         const result = this._pairedList.map(a => a.ssid)
         const uniqueKey = `${device.ssid}_${device.frequency}`;
