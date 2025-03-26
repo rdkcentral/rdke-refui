@@ -544,7 +544,50 @@ export default class App extends Router.App {
           console.log("App getSerialNumber result:", serialNumber);
           appApi.getModelName().then(modelName => {
             let friendlyName = modelName + "_" + serialNumber;
-            this.xcastApi.setFriendlyName(friendlyName).then(result => {
+            this.xcastApi.setFriendlyName(friendlyName).then(  async (result) => {
+            try {
+              await xcastApi.setStandbyBehavior("active").then(async res =>{
+                  await appApi.getPluginStatus("Cobalt").then(async res=>{
+                    let params = {"applications": []}
+                    params.applications.push({
+                        "names": ["YouTube"],
+                        "prefixes": ["myYouTube"],
+                        "cors": [".youtube.com"],
+                        "properties": { "allowStop": true },
+                        "launchParameters": { "query": "source_type=12","payload": "..." }
+                    })
+                    await xcastApi.registerApplications(params).then(res=>{
+                    })
+                  })
+                  await appApi.getPluginStatus("Amazon").then(async res=>{
+                    let params = {"applications": []}
+                    params.applications.push({
+                        "names": ["Prime Video"],
+                        "prefixes": ["myPrimeVideo"],
+                        "cors": [".amazon.com"],
+                        "properties": { "allowStop": true },
+                        "launchParameters": { "query": "source_type=12","payload": "..." }
+                    })
+                    await xcastApi.registerApplications(params).then(res=>{
+                    })
+                  })
+                  await appApi.getPluginStatus("Netflix").then(async res=>{
+                    let params = {"applications": []}
+                    params.applications.push({
+                        "names": ["Netflix"],
+                        "prefixes": ["myNetflix"],
+                        "cors": [".netflix.com"],
+                        "properties": { "allowStop": true },
+                        "launchParameters": { "query": "source_type=12","payload": "..." }
+                    })
+                    await xcastApi.registerApplications(params).then(res=>{
+                    })
+                  })
+                  console.log("Xcast register app param " + JSON.stringify(params))
+              })
+          } catch (error) {
+              console.error( "plugin check and registerapllication error for register" +error)
+          }
               console.log("App XCAST setFriendlyName result:", result);
             }).catch(error => {
               console.error("App Error setting friendlyName:", error);

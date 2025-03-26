@@ -121,6 +121,19 @@ export default class XcastApi {
         })
     })
   }
+  setStandbyBehavior(state) {
+    return new Promise((resolve, reject) => {
+      this._thunder.call('org.rdk.Xcast', 'setStandbyBehavior',{"standbybehavior":state})
+        .then(res => {
+          resolve(res)
+        })
+        .catch(err => {
+          console.log('Xdial setStandbyBehavior error', err)
+          Metrics.error(Metrics.ErrorType.OTHER,"XcastApiError", "Error while fetching Thunder setStandbyBehavior status"+JSON.stringify(err), false, null)
+          reject(err)
+        })
+    })
+  }
   setFriendlyName(name) {
     return new Promise((resolve) => {
       this._thunder.call('org.rdk.Xcast', 'setFriendlyName', { friendlyname: name }).then(result => {
@@ -177,6 +190,20 @@ export default class XcastApi {
         Metrics.error(Metrics.ErrorType.OTHER,"XcastApiError", "Error in Thunder Xcast.1 onApplicationStateChange "+JSON.stringify(err), false, null)
       });
     });
+  }
+  registerApplications(params){
+    console.log("Register Apllication Params"+ JSON.stringify(params))
+    return new Promise((resolve,reject) => {
+    this._thunder.call('org.rdk.Xcast', 'registerApplications',params )
+        .then(res => {
+          resolve(res)
+        })
+        .catch(err => {
+          console.error('Xdial registerApplications error', err);
+          Metrics.error(Metrics.ErrorType.OTHER,"XcastApiError", "Error while getting Thunder Xcast registerApplications "+JSON.stringify(err), false, null)
+          reject(err)
+        })
+    })
   }
 
   static supportedApps() {
