@@ -185,7 +185,7 @@ export default class App extends Router.App {
     if (key.keyCode == Keymap.Home && !Router.isNavigating()) {
       if (GLOBALS.topmostApp.includes("dac.native")) {
         this.jumpToRoute("apps");
-      } 
+      }
       else if (GLOBALS.Miracastclientdevicedetails.state==="INITIATED"||GLOBALS.Miracastclientdevicedetails.state==="INPROGRESS ")
       {
         miracast.stopClientConnection(GLOBALS.Miracastclientdevicedetails.mac,GLOBALS.Miracastclientdevicedetails.name)
@@ -837,7 +837,7 @@ export default class App extends Router.App {
         data.device_parameters.source_dev_ip,
         data.device_parameters.source_dev_mac ,
         data.device_parameters.source_dev_name,
-        data.device_parameters.sink_dev_ip, 
+        data.device_parameters.sink_dev_ip,
         0,
         0,
         1920,
@@ -883,7 +883,7 @@ export default class App extends Router.App {
             RDKShellApis.setVisibility(GLOBALS.selfClientName,GLOBALS.selfClientName,false)
             miracast.updatePlayerState(data.mac,data.state,data.reason_code,data.reason)
           }
-        
+
       }
       if(data.state === "STOPPED")
       {
@@ -918,12 +918,6 @@ export default class App extends Router.App {
     });
     thunder.on('org.rdk.RDKShell', 'onApplicationDisconnected', data => {
       console.warn("[RDKSHELLEVT] onApplicationDisconnected:", data);
-      if(data.client.startsWith('youtube'))
-        {
-          RDKShellApis.removeKeyIntercept({"keyCode": 173, "modifiers": [],"client": data.client }).then(res=>{console.warn(JSON.stringify(res))})
-          RDKShellApis.removeKeyIntercept({"keyCode": 174, "modifiers": [],"client": data.client }).then(res=>{console.warn(JSON.stringify(res))})
-          RDKShellApis.removeKeyIntercept({"keyCode": 175, "modifiers": [],"client": data.client }).then(res=>{console.warn(JSON.stringify(res))})
-        }
     });
     thunder.on('org.rdk.RDKShell', 'onApplicationFirstFrame', data => {
       console.warn("[RDKSHELLEVT] onApplicationFirstFrame:", data);
@@ -1489,7 +1483,7 @@ export default class App extends Router.App {
       }
 
       });
-      
+
       if (AlexaApi.get().checkAlexaAuthStatus() === "AlexaAuthPending") {
         /* AVS SDK might be awaiting a ping packet to start. */
         AlexaApi.get().pingAlexaSDK();
