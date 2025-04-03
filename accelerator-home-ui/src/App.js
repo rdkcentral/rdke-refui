@@ -918,6 +918,12 @@ export default class App extends Router.App {
     });
     thunder.on('org.rdk.RDKShell', 'onApplicationDisconnected', data => {
       console.warn("[RDKSHELLEVT] onApplicationDisconnected:", data);
+      if(data.client.startsWith('youtube'))
+        {
+          RDKShellApis.removeKeyIntercept({"keyCode": 173, "modifiers": [],"client": data.client }).then(res=>{console.warn(JSON.stringify(res))})
+          RDKShellApis.removeKeyIntercept({"keyCode": 174, "modifiers": [],"client": data.client }).then(res=>{console.warn(JSON.stringify(res))})
+          RDKShellApis.removeKeyIntercept({"keyCode": 175, "modifiers": [],"client": data.client }).then(res=>{console.warn(JSON.stringify(res))})
+        }
     });
     thunder.on('org.rdk.RDKShell', 'onApplicationFirstFrame', data => {
       console.warn("[RDKSHELLEVT] onApplicationFirstFrame:", data);
@@ -936,6 +942,12 @@ export default class App extends Router.App {
     });
     thunder.on('org.rdk.RDKShell', 'onHibernated', data => {
       console.warn("[RDKSHELLEVT] onHibernated:", data);
+      if(data.callsign.startsWith('YouTube'))
+      {
+        RDKShellApis.removeKeyIntercept({"keyCode": 173, "modifiers": [],"client": data.callsign }).then(res=>{console.warn(JSON.stringify(res))})
+        RDKShellApis.removeKeyIntercept({"keyCode": 174, "modifiers": [],"client": data.callsign }).then(res=>{console.warn(JSON.stringify(res))})
+        RDKShellApis.removeKeyIntercept({"keyCode": 175, "modifiers": [],"client": data.callsign }).then(res=>{console.warn(JSON.stringify(res))})
+      }
       if(data.success)
       {
         if ((GLOBALS.topmostApp === data.client)
@@ -948,10 +960,20 @@ export default class App extends Router.App {
     });
     thunder.on('org.rdk.RDKShell', 'onRestored', data => {
       console.warn("[RDKSHELLEVT] onRestored:", data);
+      if(data.callsign.startsWith('YouTube') )
+        {
+          RDKShellApis.addKeyIntercepts({"intercepts":[{"keys":[{"keyCode":173,"modifiers":[]},{"keyCode":174,"modifiers":[]},{"keyCode":175,"modifiers":[]}],"client": data.callsign }]}).then(res=>{console.warn(JSON.stringify(res))})
+        }
     });
     thunder.on('org.rdk.RDKShell', 'onDestroyed', data => {
       console.warn("[RDKSHELLEVT] onDestroyed:", data);
       // No need to handle this when UI is in Firebolt compatible mode.
+      if(data.client.startsWith('YouTube'))
+      {
+        RDKShellApis.removeKeyIntercept({"keyCode": 173, "modifiers": [],"client": data.client }).then(res=>{console.warn(JSON.stringify(res))})
+        RDKShellApis.removeKeyIntercept({"keyCode": 174, "modifiers": [],"client": data.client }).then(res=>{console.warn(JSON.stringify(res))})
+        RDKShellApis.removeKeyIntercept({"keyCode": 175, "modifiers": [],"client": data.client }).then(res=>{console.warn(JSON.stringify(res))})
+      }
       if ((GLOBALS.topmostApp === data.client)
         && (GLOBALS.selfClientName === "ResidentApp"|| GLOBALS.selfClientName === "FireboltMainApp-refui")) {
         appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName).then(() => {
@@ -964,6 +986,10 @@ export default class App extends Router.App {
       miracast.stopRequest(GLOBALS.Miracastclientdevicedetails.mac,GLOBALS.Miracastclientdevicedetails.name,300)
       if ((data.launchType === "activate") || (data.launchType === "resume")) {
         // Change (Tracked TopMost) UI's visibility to false only for other apps.
+        if(data.client.startsWith('YouTube') )
+        {
+          RDKShellApis.addKeyIntercepts({"intercepts":[{"keys":[{"keyCode":173,"modifiers":[]},{"keyCode":174,"modifiers":[]},{"keyCode":175,"modifiers":[]}],"client": data.client }]}).then(res=>{console.warn(JSON.stringify(res))})
+        }
         if ((data.client != GLOBALS.selfClientName)
           && ((GLOBALS.topmostApp === "ResidentApp")
             || (GLOBALS.topmostApp === GLOBALS.selfClientName))) {
@@ -980,6 +1006,12 @@ export default class App extends Router.App {
       } else if (data.launchType === "suspend") {
         // No need to handle this here when UI is in Firebolt compatible mode.
         // It will be done at RefUI's 'foreground' event handler.
+        if(data.client.startsWith('YouTube'))
+        {
+          RDKShellApis.removeKeyIntercept({"keyCode": 173, "modifiers": [],"client": data.client }).then(res=>{console.warn(JSON.stringify(res))})
+          RDKShellApis.removeKeyIntercept({"keyCode": 174, "modifiers": [],"client": data.client }).then(res=>{console.warn(JSON.stringify(res))})
+          RDKShellApis.removeKeyIntercept({"keyCode": 175, "modifiers": [],"client": data.client }).then(res=>{console.warn(JSON.stringify(res))})
+        }
         if ((GLOBALS.topmostApp === data.client)
           && (GLOBALS.selfClientName === "ResidentApp")) {
           appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName).then(() => {
@@ -991,6 +1023,12 @@ export default class App extends Router.App {
     thunder.on('org.rdk.RDKShell', 'onSuspended', data => {
       console.warn("[RDKSHELLEVT] onSuspended:", data);
       // No need to handle this here when UI is in Firebolt compatible mode.
+      if(data.client.startsWith('YouTube'))
+      {
+        RDKShellApis.removeKeyIntercept({"keyCode": 173, "modifiers": [],"client": data.client }).then(res=>{console.warn(JSON.stringify(res))})
+        RDKShellApis.removeKeyIntercept({"keyCode": 174, "modifiers": [],"client": data.client }).then(res=>{console.warn(JSON.stringify(res))})
+        RDKShellApis.removeKeyIntercept({"keyCode": 175, "modifiers": [],"client": data.client }).then(res=>{console.warn(JSON.stringify(res))})
+      }
       if ((GLOBALS.topmostApp === data.client)
         && (GLOBALS.selfClientName === "ResidentApp" || GLOBALS.selfClientName === "FireboltMainApp-refui")) {
         appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName).then(() => {
@@ -1003,6 +1041,12 @@ export default class App extends Router.App {
     });
     thunder.on('org.rdk.RDKShell', 'onPluginSuspended', data => {
       console.warn("[RDKSHELLEVT] onPluginSuspended:", data);
+      if(data.client.startsWith('YouTube'))
+      {
+        RDKShellApis.removeKeyIntercept({"keyCode": 173, "modifiers": [],"client": data.client }).then(res=>{console.warn(JSON.stringify(res))})
+        RDKShellApis.removeKeyIntercept({"keyCode": 174, "modifiers": [],"client": data.client }).then(res=>{console.warn(JSON.stringify(res))})
+        RDKShellApis.removeKeyIntercept({"keyCode": 175, "modifiers": [],"client": data.client }).then(res=>{console.warn(JSON.stringify(res))})
+      }
       if ((GLOBALS.topmostApp === data.client)
         && (GLOBALS.selfClientName === "ResidentApp" || GLOBALS.selfClientName === "FireboltMainApp-refui")) {
         appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName).then(() => {
