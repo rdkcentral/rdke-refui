@@ -233,6 +233,7 @@ export default class NetworkList extends Lightning.Component {
    */
   async renderDeviceList(ssids) {
     console.log("WIFI renderDeviceList ssids.length:", ssids.length)
+    this.tag('Networks.AvailableNetworks').tag('List').rollMax = ssids.length * 90
     this._pairedList = [];
     await WiFi.get().getCurrentState().then(async (state) => {
       if (state === WiFiState.CONNECTED) {
