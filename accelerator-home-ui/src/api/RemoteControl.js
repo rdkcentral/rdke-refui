@@ -81,7 +81,6 @@ export default class RCApi {
 
   getNetStatus() {
     return new Promise((resolve, reject) => {
-      this.INFO("RCApi: getNetStatus ");
       this.thunder.call('org.rdk.RemoteControl', 'getNetStatus').then(result => {
         this.INFO("RCApi: getNetStatus result: ", JSON.stringify(result))
         if (result.success) resolve(result);
