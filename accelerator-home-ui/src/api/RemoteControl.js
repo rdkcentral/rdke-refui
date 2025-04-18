@@ -79,10 +79,10 @@ export default class RCApi {
     })
   }
 
-  getNetStatus(netType = 1) {
+  getNetStatus() {
     return new Promise((resolve, reject) => {
-      this.INFO("RCApi: getNetStatus of netType:", netType);
-      this.thunder.call('org.rdk.RemoteControl', 'getNetStatus', { netType: netType }).then(result => {
+      this.INFO("RCApi: getNetStatus ");
+      this.thunder.call('org.rdk.RemoteControl', 'getNetStatus').then(result => {
         this.INFO("RCApi: getNetStatus result: ", JSON.stringify(result))
         if (result.success) resolve(result);
         reject(false);
@@ -94,7 +94,7 @@ export default class RCApi {
     })
   }
 
-  startPairing(timeout = 30, netType = 1) {
+  startPairing(timeout = 30, netType ) {
     return new Promise((resolve, reject) => {
       //this.INFO("RCApi: startPairing netType " + netType + " timeout " + timeout);
       this.thunder.call('org.rdk.RemoteControl', 'startPairing', { netType: netType, timeout: timeout }).then(result => {

@@ -191,9 +191,16 @@ export default class BluetoothScreen extends Lightning.Component {
         //console.log("BluetoothScreen cbData:", JSON.stringify(cbData));
         // getStatus response has 'success' property; notification payload does not have that.
         if ((cbData !== undefined) && (cbData.hasOwnProperty("success") ? cbData.success : true)) {
-            if (cbData.status.remoteData.length) {
+            let cbDatastatus
+            if (Array.isArray(cbData.status)) {
+                cbDatastatus = cbData.status[0] || {};
+              } 
+            else if (cbData.status && typeof cbData.status === 'object') {
+                cbDatastatus = cbData.status;
+              }
+            if (cbDatastatus.remoteData.length) {
                 //console.log("BluetoothScreen rcPairingApis RemoteData Length ", cbData.status.remoteData.length)
-                cbData.status.remoteData.map(item => {
+                cbDatastatus.remoteData.map(item => {
                     this.tag('Info').text.text = `paired with device ${item.name}`
                     // Do not clear this.RCTimeout if need to run this in background to reconnect on loss.
                     // if (this.RCTimeout) {
@@ -211,10 +218,14 @@ export default class BluetoothScreen extends Lightning.Component {
                     }
                 })
             } else {
-                if(cbData.status.pairingState != "SEARCHING" && cbData.status.pairingState != "PAIRING" && !GLOBALS.RCSkipStatus) {
-                    RCApi.get().startPairing(30).catch(err => {
-                        console.err("RCInformationScreen startPairing error:", err);
-                    });
+                if(cbDatastatus.pairingState != "SEARCHING" && cbDatastatus.pairingState != "PAIRING" ) {
+                    for(let i=0;i<cbDatastatus.netTypesSupported.length;i++)
+                    {
+                        console.log("Netypesupported"+cbDatastatus.netTypesSupported[i])
+                        RCApi.get().startPairing(30,cbDatastatus.netTypesSupported[i]).catch(err => {
+                            console.err("RCInformationScreen startPairing error:", err);
+                        });
+                    }
                 }
             }
         }

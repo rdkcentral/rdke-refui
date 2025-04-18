@@ -242,24 +242,31 @@ export default class RCInformationScreen extends Lightning.Component {
     onStatusCB(cbData) {
         // getStatus response has 'success' property; notification payload does not have that.
         if ((cbData !== undefined) && ("success" in cbData ? cbData.success : true)) {
-            if (cbData.status.remoteData.length) {
+            let cbDatastatus
+            if (Array.isArray(cbData.status)) {
+                cbDatastatus = cbData.status[0] || {};
+              } 
+            else if (cbData.status && typeof cbData.status === 'object') {
+                cbDatastatus = cbData.status;
+              }
+            if (cbDatastatus.remoteData.length) {
                 console.log("RCInformationScreen rcPairingApis RemoteData Length", cbData.status.remoteData.length)
                 let RemoteName = []; let connectedStatus = []; let MacAddress = [];
                 let swVersion = []; let BatteryPercent = [];
 
-                cbData.status.remoteData.map(item => {
+                cbDatastatus.remoteData.map(item => {
                     RemoteName.push(item.name)
                 })
-                cbData.status.remoteData.map(item => {
+                cbDatastatus.remoteData.map(item => {
                     MacAddress.push(item.macAddress)
                 })
-                cbData.status.remoteData.map(item => {
+                cbDatastatus.remoteData.map(item => {
                     swVersion.push(item.swVersion)
                 })
-                cbData.status.remoteData.map(item => {
+                cbDatastatus.remoteData.map(item => {
                     BatteryPercent.push(item.batteryPercent)
                 })
-                cbData.status.remoteData.map(item => {
+                cbDatastatus.remoteData.map(item => {
                     connectedStatus.push(item.connected)
                 })
                 this.tag("Status.Value").text.text = connectedStatus
@@ -268,10 +275,14 @@ export default class RCInformationScreen extends Lightning.Component {
                 this.tag("BatteryPercent.Value").text.text = BatteryPercent
                 this.tag("RCUName.Value").text.text = RemoteName
             } else {
-                if(cbData.status.pairingState != "SEARCHING" && cbData.status.pairingState != "PAIRING" ) {
-                    RCApi.get().startPairing(30).catch(err => {
-                        console.err("RCInformationScreen startPairing error:", err);
-                    });
+                if(cbDatastatus.pairingState != "SEARCHING" && cbDatastatus.pairingState != "PAIRING" ) {
+                    for(let i=0;i<cbDatastatus.netTypesSupported.length;i++)
+                    {
+                        console.log("Netypesupported"+cbDatastatus.netTypesSupported[i])
+                        RCApi.get().startPairing(30,cbDatastatus.netTypesSupported[i]).catch(err => {
+                            console.err("RCInformationScreen startPairing error:", err);
+                        });
+                    }
                 }
             }
         }
