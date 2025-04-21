@@ -16,8 +16,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-import { Storage } from "@lightningjs/sdk";
-import Network from "../api/NetworkApi";
 import AppApi from "./AppApi";
 import { GLOBALS } from "../Config/Config.js";
 import { appListInfo } from "./../../static/data/AppListInfo.js";
@@ -39,20 +37,20 @@ let partnerApps = [];
 /**
  * Get the ip address.
  */
-let IpAddress1 = "";
-let IpAddress2 = "";
+// let IpAddress1 = "";
+// let IpAddress2 = "";
 
-Network.get().getStbIp().then((ip) => {
-  IpAddress1 = ip;
-  Storage.set("ipAddress", IpAddress1);
-}).catch(() => {
-  Storage.set("ipAddress", null);
-});
+// Network.get().getStbIp().then((ip) => {
+//   IpAddress1 = ip;
+//   Storage.set("ipAddress", IpAddress1);
+// }).catch(() => {
+//   Storage.set("ipAddress", null);
+// });
 
 let appApi = new AppApi();
-appApi.getIP().then((ip) => {
-  IpAddress2 = ip;
-});
+// appApi.getIP().then((ip) => {
+//   IpAddress2 = ip;
+// });
 
 /**
  * Class that returns the data required for home screen.
@@ -118,7 +116,7 @@ export default class HomeApi {
   getMetroInfo() {
     let metroAppsMetaData;
 
-    if (IpAddress1 || IpAddress2) {
+    if (GLOBALS.IsConnectedToInternet) {
       metroAppsMetaData = metroAppsInfo;
     } else {
       metroAppsMetaData = metroAppsInfoOffline;

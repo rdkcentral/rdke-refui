@@ -20,7 +20,7 @@ import { Lightning, Language, Settings, Storage } from '@lightningjs/sdk'
 import { COLORS } from '../../colors/Colors'
 import { CONFIG, GLOBALS } from '../../Config/Config'
 import AppApi from '../../api/AppApi.js';
-import NetworkApi from '../../api/NetworkApi'
+import NetworkManager from '../../api/NetworkManagerAPI.js';
 import FireBoltApi from '../../api/firebolt/FireBoltApi';
 /**
  * Class for Video and Audio screen.
@@ -247,7 +247,6 @@ export default class DeviceInformationScreen extends Lightning.Component {
     }
 
     _init() {
-        this._network = new NetworkApi();
         this.appApi = new AppApi();
     }
 
@@ -264,8 +263,8 @@ export default class DeviceInformationScreen extends Lightning.Component {
             }).catch(err => {
                 console.error(`error while getting the system versions` + JSON.stringify(err))
             })
-            this._network.isConnectedToInternet().then((result) => {
-                if (result === true) {
+            NetworkManager.IsConnectedToInternet().then((result) => {
+                if (result.connected === true) {
                     this.appApi.getLocation().then(result => {
                         console.log("getLocation from device info " + JSON.stringify(result))
                         let locationInfo = ""

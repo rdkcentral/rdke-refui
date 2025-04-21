@@ -21,6 +21,7 @@ import AppApi from '../../api/AppApi'
 import BluetoothApi from '../../api/BluetoothApi'
 import { CONFIG,GLOBALS } from '../../Config/Config'
 import WiFi from '../../api/WifiApi'
+import NetworkManager from '../../api/NetworkManagerAPI.js'
 import AlexaApi from '../../api/AlexaApi.js';
 import RCApi from '../../api/RemoteControl'
 import Warehouse from '../../api/WarehouseApis.js'
@@ -190,9 +191,15 @@ export default class RebootConfirmationScreen extends Lightning.Component {
         if (rsactivitytime.success != true) { console.log("rsactivitytime",rsactivitytime) }
         let clearLastDeepSleepReason = await appApi.clearLastDeepSleepReason().catch(err => { console.error("clearLastDeepSleepReason",err) });
         if (clearLastDeepSleepReason.success != true) { console.log("clearLastDeepSleepReason",clearLastDeepSleepReason) }
-        let clearSSID = await WiFi.get().clearSSID().catch(err =>  { console.error("clearSSID",err) });
-        if (clearSSID.success != true)  { console.log("clearSSID",clearSSID) }
-        let wifidisconnect = await WiFi.get().disconnect().catch(err =>{ console.error("wifidisconnect",err) });
+        let GetKnownSSIDs = await NetworkManager.GetKnownSSIDs().then((ssids)=>{ssids}).catch(err =>  { console.error("GetKnownssids",err) });
+        let clearSSID =false
+        for(let i=0;i<GetKnownSSIDs.length;i++)
+        {
+        if(GetKnownSSIDs.length>0)
+            {clearSSID= await NetworkManager.RemoveKnownSSID(ssids[i]).catch(err =>  { console.error("clearSSID",err) });}
+        }
+        if (clearSSID != true)  { console.log("clearSSID",clearSSID) }
+        let wifidisconnect = await NetworkManager.WiFiDisconnect().catch(err =>{ console.error("wifidisconnect",err) });
         if (wifidisconnect.success != true) { console.log("wifidisconnect",wifidisconnect) }
         await appApi.clearCache().catch(err => { console.error("clearCache error: ", err)})
         await appApi.reboot("User Trigger").then(result => { console.log('device rebooting' + JSON.stringify(result))})

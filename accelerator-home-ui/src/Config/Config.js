@@ -70,6 +70,7 @@ export var CONFIG = {
 export const GLOBALS = {
   _AlexaAvsstatus:false,
   _RCSkipStatus:false,
+  _IsinternetConnected:false,
   _Miracastclientdevicedetails:{mac: null,name: null,reason_code: null,state:null},
   _previousapp_onActiveSourceStatusUpdated:null,
   _previousapp_onDisplayConnectionChanged:null,
@@ -124,5 +125,13 @@ export const GLOBALS = {
   get RCSkipStatus()
   {
     return this._RCSkipStatus
+  },
+  set IsConnectedToInternet(status)
+  {
+    this._IsinternetConnected =status
+  },
+  get IsConnectedToInternet()
+  {
+    return this._IsinternetConnected
   }
 }

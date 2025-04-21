@@ -21,7 +21,7 @@ import { CONFIG } from '../Config/Config';
 import { Keyboard } from '../ui-components/index'
 import { KEYBOARD_FORMATS } from '../ui-components/components/Keyboard'
 import PasswordSwitch from './PasswordSwitch';
-import WiFi from '../api/WifiApi';
+import NetworkManager from '../api/NetworkManagerAPI';
 import PersistentStoreApi from '../api/PersistentStore';
 
 export default class JoinAnotherNetworkComponent extends Lightning.Component {
@@ -61,13 +61,13 @@ export default class JoinAnotherNetworkComponent extends Lightning.Component {
   }
 
   async startConnectForAnotherNetwork(device, passphrase) {
-    await WiFi.get().connect(false, { ssid: device.ssid, security: device.security }, passphrase).then(() => {
-      WiFi.get().saveSSID(device.ssid, passphrase, device.security).then((response) => {
-        if (response.result === 0 && response.success === true) {
+    await NetworkManager.WiFiConnect(false, { ssid: device.ssid, security: device.security }, passphrase).then(() => {
+      NetworkManager.AddToKnownSSIDs(device.ssid, passphrase, device.security).then((response) => {
+        if (response === true ) {
           PersistentStoreApi.get().setValue('wifi', 'SSID', device.ssid)
         }
-        else if (response.result !== 0) {
-          WiFi.get().clearSSID()
+        else {
+          NetworkManager.RemoveKnownSSID(device.ssid)
         }
       })
       if (!Router.isNavigating()) {

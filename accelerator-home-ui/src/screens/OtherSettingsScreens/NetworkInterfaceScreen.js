@@ -20,7 +20,6 @@ import { Lightning, Router, Utils } from '@lightningjs/sdk'
 import SettingsMainItem from '../../items/SettingsMainItem'
 import { COLORS } from '../../colors/Colors'
 import { CONFIG } from '../../Config/Config'
-import Network from '../../api/NetworkApi'
 import { Language } from '@lightningjs/sdk';
 import { Metrics } from '@firebolt-js/sdk'
 import NetworkManager from '../../api/NetworkManagerAPI'

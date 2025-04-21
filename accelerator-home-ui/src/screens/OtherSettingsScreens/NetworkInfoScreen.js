@@ -20,8 +20,6 @@ import { Lightning, Language, Router } from '@lightningjs/sdk'
 import SettingsMainItem from '../../items/SettingsMainItem'
 import { COLORS } from '../../colors/Colors'
 import { CONFIG, GLOBALS } from '../../Config/Config'
-import Network from '../../api/NetworkApi'
-import WiFi from '../../api/WifiApi'
 import FireBoltApi from '../../api/firebolt/FireBoltApi'
 import NetworkManager from '../../api/NetworkManagerAPI'
 

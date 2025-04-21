@@ -125,7 +125,7 @@ class NetworkManager {
   AddToKnownSSIDs =(ssid,passphrase,securityMode) => this.thunderCall('AddToKnownSSIDs', 'AddToKnownSSIDs', {"ssid":ssid,"passphrase":passphrase,"securityMode":securityMode});
   RemoveKnownSSID =(ssid) => this.thunderCall('RemoveKnownSSID', 'RemoveKnownSSID', {"ssid":ssid});
   // WiFiConnect =(ssid,passphrase,securityMode) => this.thunderCall('WiFiConnect', 'WiFiConnect', {ssid,passphrase,securityMode});
-  WiFiDisconnect =() => this.thunderCall('WiFiDisconnect', 'WiFiDisconnect', {});
+  WiFiDisconnect =() => this.thunderCall('WiFiDisconnect', 'WiFiDisconnect', {},"result");
   WiFiConnect(useSaved = false, networkInfo, passphrase = "") {
     let params = {}
     if (!useSaved) { // saveSSID was never called earlier. Need proper params.
