@@ -201,7 +201,7 @@ export default class WifiPairingScreen extends Lightning.Component {
       Router.back()
     } else if (option === 'Connect') {
       GLOBALS.Wificonnectinprogress = true
-      const wificurrentstate=await WiFi.get().getCurrentState()
+      const wificurrentstate=await NetworkManager.GetWifiState()
       if(wificurrentstate === WiFiState.CONNECTED){
         setTimeout(() => {
           GLOBALS.Wificonnectinprogress = false

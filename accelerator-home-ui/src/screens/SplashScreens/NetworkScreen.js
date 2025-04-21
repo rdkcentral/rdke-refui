@@ -21,7 +21,6 @@ import { Lightning, Router, Storage, Language, Registry } from '@lightningjs/sdk
 import { COLORS } from '../../colors/Colors'
 import { CONFIG, GLOBALS } from '../../Config/Config'
 import SettingsMainItem from '../../items/SettingsMainItem'
-import Network from '../../api/NetworkApi'
 import AlexaApi from '../../api/AlexaApi'
 import AppApi from '../../api/AppApi'
 import NetworkManager from '../../api/NetworkManagerAPI'
@@ -228,7 +227,7 @@ export default class NetworkScreen extends Lightning.Component {
                 _handleEnter() {
                     if (AlexaApi.get().checkAlexaAuthStatus() !== "AlexaUserDenied" && GLOBALS.AlexaAvsstatus) {
                         NetworkManager.IsConnectedToInternet().then(result => {
-                            if (result)
+                            if (result.connected)
                                 Registry.setTimeout(() => { 
                                 Router.navigate('AlexaLoginScreen') 
                             }, (Router.isNavigating() ? 20 : 0));

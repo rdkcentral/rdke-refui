@@ -99,8 +99,8 @@ export default class App extends Router.App {
         console.log("is online");
       }
       else {
-        Storage.set("ipAddress", null);
-        console.log("is offline")
+        // Storage.set("ipAddress", null);
+        console.log(`is offline`)
       }
     }
     window.addEventListener("offline", updateAddress)
@@ -840,6 +840,10 @@ export default class App extends Router.App {
       console.warn("onActiveInterfaceChange:", data);
     });
     thunder.on('org.rdk.NetworkManager', 'onInternetStatusChange', data => {
+      if(data.status === "FULLY_CONNECTED")
+      {
+        GLOBALS.IsConnectedToInternet = true
+      }
       console.warn("onInternetStatusChange:", data);
     });
     thunder.on('org.rdk.NetworkManager', 'onAvailableSSIDs', data => {

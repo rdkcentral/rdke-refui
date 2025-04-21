@@ -45,6 +45,7 @@ class NetworkManager {
     this.INFO = console.info;
     this.LOG = console.log;
     this.ERR = console.error;
+    this.WARN = console.warn;
   }
 
   registerEvent = (eventId, callback) => {
@@ -53,10 +54,10 @@ class NetworkManager {
 
   thunderCall = (infoMessage, method, params = {}, property) => {
     return new Promise((resolve, reject) => {
-      this.INFO('info', `NetworkManager: ${infoMessage}.`);
+      this.INFO("NetworkManager: " + infoMessage + ".");
       this.thunder.call(this.callsign, method, params)
         .then(result => {
-          this.LOG('info', `NetworkManager: ${infoMessage}: ${JSON.stringify(params)} result: ${JSON.stringify(result)}`);
+          this.LOG("NetworkManager: " + infoMessage + ": " + JSON.stringify(params) + " result: " + JSON.stringify(result));
           if (result.success) {
             if (property === 'result') {
               resolve(result);
@@ -64,13 +65,13 @@ class NetworkManager {
               resolve(property ? result[property] : result.success);
             }
           } else {
-            this.ERR('error', `NetworkManager: Error ${infoMessage} ${JSON.stringify(params)} result: ${JSON.stringify(result)}`);
+            this.ERR("NetworkManager: Error " + infoMessage + " " + JSON.stringify(params) + " result: " + JSON.stringify(result));
             Metrics.error(Metrics.ErrorType.OTHER, "NetworkManagerError", `Error ${infoMessage} ${JSON.stringify(params)} result: ${JSON.stringify(result)}`, false, null)
             reject(result.success);
           }
         })
         .catch(err => {
-          this.ERR('error', `NetworkManager: Error ${infoMessage} ${err}`);
+          this.ERR("NetworkManager: Error " + infoMessage + " " + JSON.stringify(err));
           reject(err);
         });
     });
@@ -78,10 +79,10 @@ class NetworkManager {
   activate() {
     return new Promise((resolve, reject) => {
       this.thunder.call('Controller', 'activate', { callsign: this.callsign }).then(result => {
-        this.INFO(this.callsign + " NetworkManager activate result:" + result)
+        this.INFO(this.callsign + " NetworkManager activate result: " + JSON.stringify(result))
         resolve(true)
       }).catch(err => {
-        this.ERR(this.callsign + " NetworkManager activate error: " + err)
+        this.ERR(this.callsign + " NetworkManager activate error: " + JSON.stringify(err))
         Metrics.error(Metrics.ErrorType.NETWORK,"NetworkManagerError", "Error while Thunder Controller NetworkManager activate "+JSON.stringify(err), false, null)
         reject(err)
       });
@@ -91,10 +92,10 @@ class NetworkManager {
   deactivate() {
     return new Promise((resolve, reject) => {
       this.thunder.call('Controller', 'deactivate', { callsign: this.callsign }).then(result => {
-        this.INFO(this.callsign + " NetworkManager deactivate result:" + result)
+        this.INFO(this.callsign + " NetworkManager deactivate result: " + JSON.stringify(result))
         resolve(true)
       }).catch(err => {
-        this.ERR(this.callsign + " NetworkManager deactivate error: " + err)
+        this.ERR(this.callsign + " NetworkManager deactivate error: " + JSON.stringify(err))
         Metrics.error(Metrics.ErrorType.NETWORK,"NetworkManagerError", "Error while Thunder Controller NetworkManager deactivate "+JSON.stringify(err), false, null)
         reject(err)
       });
@@ -125,7 +126,7 @@ class NetworkManager {
   AddToKnownSSIDs =(ssid,passphrase,securityMode) => this.thunderCall('AddToKnownSSIDs', 'AddToKnownSSIDs', {"ssid":ssid,"passphrase":passphrase,"securityMode":securityMode});
   RemoveKnownSSID =(ssid) => this.thunderCall('RemoveKnownSSID', 'RemoveKnownSSID', {"ssid":ssid});
   // WiFiConnect =(ssid,passphrase,securityMode) => this.thunderCall('WiFiConnect', 'WiFiConnect', {ssid,passphrase,securityMode});
-  WiFiDisconnect =() => this.thunderCall('WiFiDisconnect', 'WiFiDisconnect', {});
+  WiFiDisconnect =() => this.thunderCall('WiFiDisconnect', 'WiFiDisconnect', {},"result");
   WiFiConnect(useSaved = false, networkInfo, passphrase = "") {
     let params = {}
     if (!useSaved) { // saveSSID was never called earlier. Need proper params.
@@ -139,7 +140,7 @@ class NetworkManager {
         result.success ? resolve(result) : reject(result.success)
 
       }).catch(err => {
-        this.ERR(this.callsign + ": connect error:" + JSON.stringify(err))
+        this.ERR(this.callsign + ": connect error: " + JSON.stringify(err))
         Metrics.error(Metrics.ErrorType.NETWORK,"NetworkManagerError", "Error in Thunder NetworkManager connect params "+JSON.stringify(err), false, null)
         reject(err)
       })
