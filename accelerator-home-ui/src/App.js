@@ -476,32 +476,21 @@ export default class App extends Router.App {
     })
     thunder.Controller.activate({ callsign: 'org.rdk.System' }).then(result => {
       console.log("App System plugin activation result: " + result)
-      let rfc = "Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.XDial.WolWakeEnable"
-      let rfcList = { rfcList: [rfc] }
-      appApi.getRFCConfig(rfcList).then(rfcStatus => {
-        if ("success" in rfcStatus && rfcStatus.success) {
-          if ((rfc in rfcStatus.RFCConfig) && (rfcStatus.RFCConfig[rfc] === "true")) {
-            appApi.setNetworkStandbyMode().then(result => {
-              if (!result.success) {
-                console.warn("App RFC setNetworkStandbyMode returned false; trying updated API.")
-                let param = {
-                  wakeupSources: [
-                    {
-                      "WAKEUPSRC_WIFI": true,
-                      "WAKEUPSRC_IR": true,
-                      "WAKEUPSRC_POWER_KEY": true,
-                      "WAKEUPSRC_CEC": true,
-                      "WAKEUPSRC_LAN": true
-                    }
-                  ]
-                }
-                appApi.setWakeupSrcConfiguration(param);
+      appApi.setNetworkStandbyMode().then(result => {
+        if (!result.success) {
+          console.warn("App RFC setNetworkStandbyMode returned false; trying updated API.")
+          let param = {
+            wakeupSources: [
+              {
+                "WAKEUPSRC_WIFI": true,
+                "WAKEUPSRC_IR": true,
+                "WAKEUPSRC_POWER_KEY": true,
+                "WAKEUPSRC_CEC": true,
+                "WAKEUPSRC_LAN": true
               }
-            })
-          } else {
-            console.error("App RFC WolWakeEnable response:", JSON.stringify(rfcStatus));
-            console.error("App RFC check of WolWakeEnable failed.");
+            ]
           }
+          appApi.setWakeupSrcConfiguration(param);
         }
       })
     }).catch(err => {
@@ -611,7 +600,7 @@ export default class App extends Router.App {
         appApi.exitApp(GLOBALS.topmostApp);
       }
       // TODO: make the check based on XcastApi.supportedApps() list
-      if (Object.prototype.hasOwnProperty.call(noti, "callsign") && (noti.callsign.startsWith("YouYube") || noti.callsign.startsWith("Amazon") || noti.callsign.startsWith("Netflix"))) {
+      if (Object.prototype.hasOwnProperty.call(noti, "callsign") && (noti.callsign.startsWith("YouTube") || noti.callsign.startsWith("Amazon") || noti.callsign.startsWith("Netflix"))) {
         let params = { applicationName: noti.callsign, state: 'stopped' };
         switch (noti.data.state) {
           case "activated":

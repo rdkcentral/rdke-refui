@@ -1438,36 +1438,6 @@ export default class AppApi {
     })
   }
 
-  // 3. Sync Location
-  syncLocation() {
-    return new Promise((resolve) => {
-      thunder
-        .call('LocationSync', 'sync')
-        .then(result => {
-          resolve(result)
-        })
-        .catch(err => {
-          console.error("AppAPI LocationSync sync error:", JSON.stringify(err, 3, null))
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder LocationSync sync " + JSON.stringify(err), false, null)
-          resolve(false)
-        })
-    })
-  }
-
-  getLocation() {
-    return new Promise((resolve) => {
-      thunder
-        .call('LocationSync', 'location')
-        .then(result => {
-          resolve(result)
-        })
-        .catch(err => {
-          console.error("AppAPI LocationSync location error:", JSON.stringify(err, 3, null))
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder LocationSync location " + JSON.stringify(err), false, null)
-          resolve(false)
-        })
-    })
-  }
   // 4. Check for Firmware Update
 
   //Get Firmware Update Info
@@ -1747,18 +1717,6 @@ export default class AppApi {
     })
   }
 
-  registerChangeLocation() {
-    thunder
-      .call('Controller', 'activate', { callsign: "LocationSync" })
-      .then(() => {
-        thunder.on("LocationSync", "locationchange", notification => {
-          console.log("AppAPI locationchange notification :", notification);
-        })
-      }).catch(err => {
-        console.error(err)
-        Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder locationchange of LocationSync " + JSON.stringify(err), false, null)
-      })
-  }
 
   async sendAppState(value) {
     const state = await thunder
