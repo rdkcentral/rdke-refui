@@ -600,7 +600,7 @@ export default class App extends Router.App {
         appApi.exitApp(GLOBALS.topmostApp);
       }
       // TODO: make the check based on XcastApi.supportedApps() list
-      if (Object.prototype.hasOwnProperty.call(noti, "callsign") && (noti.callsign.startsWith("YouYube") || noti.callsign.startsWith("Amazon") || noti.callsign.startsWith("Netflix"))) {
+      if (Object.prototype.hasOwnProperty.call(noti, "callsign") && (noti.callsign.startsWith("YouTube") || noti.callsign.startsWith("Amazon") || noti.callsign.startsWith("Netflix"))) {
         let params = { applicationName: noti.callsign, state: 'stopped' };
         switch (noti.data.state) {
           case "activated":
