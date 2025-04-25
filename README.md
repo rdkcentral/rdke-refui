@@ -1,7 +1,8 @@
 # rdke-refui
 
 Reference **lightning 2.0** based UI to showcase features and services of RDK Video reference platforms.
-This section details about how to customize the current UI source code and develop further.
+
+Following section details about how to customize the current UI source code and develop further.
 
 **Follow the commands to run the application on you laptop.**
 
@@ -59,3 +60,9 @@ Note: On a RDKV reference device; the `lighttpd` webserver is configured to load
 $ lng serve
 ```
 It will print the local url as : `http://127.0.0.1:8080` which can be loaded as url to the `residentApp.sh` which is responsible for offline UI url loading on STB.
+
+## License Details
+This project is distributed under the terms outlined in the associated [License](LICENSE) and [Notice](NOTICE) files. Please review these files for detailed information.
+
+## Release and change Details
+For a comprehensive list of changes, updates, and release history, refer to the [Changelog](CHANGELOG.md).
