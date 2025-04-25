@@ -119,42 +119,10 @@ export default class DeviceInformationScreen extends Lightning.Component {
                     rect: true,
                     color: 0xFFFFFFFF
                 },
-                Location: {
-                    Title: {
-                        x: 10,
-                        y: 225,
-                        mountY: 0.5,
-                        text: {
-                            text: Language.translate(`Location`),
-                            textColor: COLORS.titleColor,
-                            fontFace: CONFIG.language.font,
-                            fontSize: 25,
-                        }
-                    },
-                    Value: {
-                        x: 400,
-                        y: 225,
-                        mountY: 0.5,
-                        text: {
-                            text: `CountryCode:`,
-                            textColor: COLORS.titleColor,
-                            fontFace: CONFIG.language.font,
-                            fontSize: 25,
-                        }
-                    },
-                },
-                Line4: {
-                    y: 270,
-                    mountY: 0.5,
-                    w: 1600,
-                    h: 3,
-                    rect: true,
-                    color: 0xFFFFFFFF
-                },
                 SupportedDRM: {
                     Title: {
                         x: 10,
-                        y: 360,
+                        y: 270,
                         mountY: 0.5,
                         text: {
                             text: Language.translate(`Supported DRM & Key-System`),
@@ -167,7 +135,7 @@ export default class DeviceInformationScreen extends Lightning.Component {
                     },
                     Value: {
                         x: 400,
-                        y: 360,
+                        y: 270,
                         mountY: 0.5,
                         text: {
                             text: `N/A`,
@@ -180,7 +148,7 @@ export default class DeviceInformationScreen extends Lightning.Component {
                     },
                 },
                 Line5: {
-                    y: 450,
+                    y: 360,
                     mountY: 0.5,
                     w: 1600,
                     h: 3,
@@ -190,7 +158,7 @@ export default class DeviceInformationScreen extends Lightning.Component {
                 FirmwareVersions: {
                     Title: {
                         x: 10,
-                        y: 540,
+                        y: 450,
                         mountY: 0.5,
                         text: {
                             text: Language.translate(`Firmware version`),
@@ -201,7 +169,7 @@ export default class DeviceInformationScreen extends Lightning.Component {
                     },
                     Value: {
                         x: 400,
-                        y: 540,
+                        y: 450,
                         mountY: 0.5,
                         text: {
                             text: `UI Version: ${Settings.get('platform', 'version')}, Build Version: , Firebolt API Version: `,
@@ -212,7 +180,7 @@ export default class DeviceInformationScreen extends Lightning.Component {
                     },
                 },
                 Line6: {
-                    y: 630,
+                    y: 540,
                     mountY: 0.5,
                     w: 1600,
                     h: 3,
@@ -222,7 +190,7 @@ export default class DeviceInformationScreen extends Lightning.Component {
                 AppVersions: {
                     Title: {
                         x: 10,
-                        y: 720,
+                        y: 630,
                         mountY: 0.5,
                         text: {
                             text: Language.translate(`App Info`),
@@ -233,7 +201,7 @@ export default class DeviceInformationScreen extends Lightning.Component {
                     },
                     Value: {
                         x: 400,
-                        y: 720,
+                        y: 630,
                         mountY: 0.5,
                         text: {
                             text: "Youtube:\nAmazon Prime:\nNetflix ESN:",
@@ -244,7 +212,7 @@ export default class DeviceInformationScreen extends Lightning.Component {
                     },
                 },
                 Line7: {
-                    y: 810,
+                    y: 720,
                     mountY: 0.5,
                     w: 1600,
                     h: 3,
@@ -273,30 +241,6 @@ export default class DeviceInformationScreen extends Lightning.Component {
             }).catch(err => {
                 console.error(`error while getting the system versions`)
             })
-            this._network.isConnectedToInternet().then((result) => {
-                if (result === true) {
-                    this.appApi.getLocation().then(result => {
-                        console.log("getLocation from device info " + JSON.stringify(result))
-                        let locationInfo = ""
-                        if (result.city.length !== 0) {
-                            locationInfo = "City: " + result.city
-                        }
-                        else {
-                            locationInfo = "City: N/A "
-                        }
-                        if (result.country.length !== 0) {
-                            locationInfo += ", Country: " + result.country;
-                        }
-                        else {
-                            locationInfo += ", Country: N/A "
-                        }
-                        this.tag('Location.Value').text.text = `${locationInfo}`
-                    })
-                }
-                else {
-                    this.tag('Location.Value').text.text = `City: N/A, Country: N/A`
-                }
-            })
         } else {
             // Firebolt mode
             FireBoltApi.get().deviceinfo.getversion().then(res => {
@@ -304,9 +248,6 @@ export default class DeviceInformationScreen extends Lightning.Component {
                 this.tag('FirmwareVersions.Value').text.text = `UI Version - ${Settings.get('platform', 'version')} \nBuild Version - ${res.firmware.readable} \nFirebolt API Version - ${res.api.readable} `
             }).catch(err => {
                 console.error(`error while getting the system versions from Firebolt.getversion API`)
-            })
-            FireBoltApi.get().localization.countryCode().then(res => {
-                this.tag('Location.Value').text.text = `CountryCode: ${res}`;
             })
         }
 
@@ -378,7 +319,6 @@ export default class DeviceInformationScreen extends Lightning.Component {
         }
 
 
-        this.appApi.registerChangeLocation()
     }
 
     set netflixESN(v) {
