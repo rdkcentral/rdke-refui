@@ -1724,8 +1724,12 @@ export default class App extends Router.App {
       })
       if (this.xcastApps(notification.applicationName)) {
         let applicationName = this.xcastApps(notification.applicationName);
+        let baseUrl = Storage.get(notification.applicationName + "DefaultURL");
+        let pairingCode = notification.parameters.payload; 
+        let additionalDataUrl = notification.parameters.additionalDataUrl;
+        let url = `${baseUrl}${pairingCode}&additionalDataUrl=${additionalDataUrl}`;
           let params = {
-            url: applicationName.startsWith("YouTube") ? notification.parameters.url : notification.parameters.pluginUrl ,
+            url: applicationName.startsWith("YouTube") ? url : notification.parameters.pluginUrl ,
             launchLocation: "dial",
             appIdentifier: self.appIdentifiers[applicationName]
           }
