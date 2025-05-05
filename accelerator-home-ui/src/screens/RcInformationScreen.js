@@ -250,7 +250,7 @@ export default class RCInformationScreen extends Lightning.Component {
                 cbDatastatus = cbData.status;
               }
             if (cbDatastatus.remoteData.length) {
-                console.log("RCInformationScreen rcPairingApis RemoteData Length", cbData.status.remoteData.length)
+                console.log("RCInformationScreen rcPairingApis RemoteData Length", cbDatastatus.remoteData.length)
                 let RemoteName = []; let connectedStatus = []; let MacAddress = [];
                 let swVersion = []; let BatteryPercent = [];
 
