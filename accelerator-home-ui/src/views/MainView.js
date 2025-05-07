@@ -484,7 +484,13 @@ export default class MainView extends Lightning.Component {
 
 
   _focus() {
-    this._setState(this.state);
+      if (GLOBALS.TofocusVOD === true) {
+        this._setState('TVShows');
+        GLOBALS.TofocusVOD=false
+      }
+      else{
+    this._setState(this.state);}
+
   }
 
   _firstEnable() {

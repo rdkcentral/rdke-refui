@@ -68,6 +68,7 @@ export var CONFIG = {
 }
 
 export const GLOBALS = {
+  _TofocusVOD:false,
   _AlexaAvsstatus:false,
   _RCSkipStatus:false,
   _Miracastclientdevicedetails:{mac: null,name: null,reason_code: null,state:null},
@@ -124,5 +125,13 @@ export const GLOBALS = {
   get RCSkipStatus()
   {
     return this._RCSkipStatus
+  },
+  set TofocusVOD(status)
+  {
+    this._TofocusVOD = status
+  },
+  get TofocusVOD()
+  {
+    return this._TofocusVOD
   }
 }
