@@ -55,42 +55,10 @@ export default class DeviceInformationScreen extends Lightning.Component {
                     rect: true,
                     color: 0xFFFFFFFF
                 },
-                ChipSet: {
-                    Title: {
-                        x: 10,
-                        y: 45,
-                        mountY: 0.5,
-                        text: {
-                            text: Language.translate(`Chipset`),
-                            textColor: COLORS.titleColor,
-                            fontFace: CONFIG.language.font,
-                            fontSize: 25,
-                        }
-                    },
-                    Value: {
-                        x: 400,
-                        y: 45,
-                        mountY: 0.5,
-                        text: {
-                            text: `N/A`,
-                            textColor: COLORS.titleColor,
-                            fontFace: CONFIG.language.font,
-                            fontSize: 25,
-                        }
-                    }
-                },
-                Line2: {
-                    y: 90,
-                    mountY: 0.5,
-                    w: 1600,
-                    h: 3,
-                    rect: true,
-                    color: 0xFFFFFFFF
-                },
                 SerialNumber: {
                     Title: {
                         x: 10,
-                        y: 135,
+                        y: 45,
                         mountY: 0.5,
                         text: {
                             text: Language.translate(`Serial Number`),
@@ -101,7 +69,7 @@ export default class DeviceInformationScreen extends Lightning.Component {
                     },
                     Value: {
                         x: 400,
-                        y: 135,
+                        y: 45,
                         mountY: 0.5,
                         text: {
                             text: `N/A`,
@@ -111,8 +79,8 @@ export default class DeviceInformationScreen extends Lightning.Component {
                         }
                     },
                 },
-                Line3: {
-                    y: 180,
+                Line2: {
+                    y: 90,
                     mountY: 0.5,
                     w: 1600,
                     h: 3,
@@ -122,7 +90,7 @@ export default class DeviceInformationScreen extends Lightning.Component {
                 SupportedDRM: {
                     Title: {
                         x: 10,
-                        y: 270,
+                        y: 180,
                         mountY: 0.5,
                         text: {
                             text: Language.translate(`Supported DRM & Key-System`),
@@ -135,7 +103,7 @@ export default class DeviceInformationScreen extends Lightning.Component {
                     },
                     Value: {
                         x: 400,
-                        y: 270,
+                        y: 180,
                         mountY: 0.5,
                         text: {
                             text: `N/A`,
@@ -147,8 +115,8 @@ export default class DeviceInformationScreen extends Lightning.Component {
                         }
                     },
                 },
-                Line5: {
-                    y: 360,
+                Line3: {
+                    y: 270,
                     mountY: 0.5,
                     w: 1600,
                     h: 3,
@@ -158,7 +126,7 @@ export default class DeviceInformationScreen extends Lightning.Component {
                 FirmwareVersions: {
                     Title: {
                         x: 10,
-                        y: 450,
+                        y: 360,
                         mountY: 0.5,
                         text: {
                             text: Language.translate(`Firmware version`),
@@ -169,7 +137,7 @@ export default class DeviceInformationScreen extends Lightning.Component {
                     },
                     Value: {
                         x: 400,
-                        y: 450,
+                        y: 360,
                         mountY: 0.5,
                         text: {
                             text: `UI Version: ${Settings.get('platform', 'version')}, Build Version: , Firebolt API Version: `,
@@ -179,8 +147,8 @@ export default class DeviceInformationScreen extends Lightning.Component {
                         }
                     },
                 },
-                Line6: {
-                    y: 540,
+                Line4: {
+                    y: 450,
                     mountY: 0.5,
                     w: 1600,
                     h: 3,
@@ -190,7 +158,7 @@ export default class DeviceInformationScreen extends Lightning.Component {
                 AppVersions: {
                     Title: {
                         x: 10,
-                        y: 630,
+                        y: 540,
                         mountY: 0.5,
                         text: {
                             text: Language.translate(`App Info`),
@@ -201,7 +169,7 @@ export default class DeviceInformationScreen extends Lightning.Component {
                     },
                     Value: {
                         x: 400,
-                        y: 630,
+                        y: 540,
                         mountY: 0.5,
                         text: {
                             text: "Youtube:\nAmazon Prime:\nNetflix ESN:",
@@ -211,8 +179,8 @@ export default class DeviceInformationScreen extends Lightning.Component {
                         }
                     },
                 },
-                Line7: {
-                    y: 720,
+                Line5: {
+                    y: 630,
                     mountY: 0.5,
                     w: 1600,
                     h: 3,
@@ -267,12 +235,6 @@ export default class DeviceInformationScreen extends Lightning.Component {
                 }
             });
             this.tag('SupportedDRM.Value').text.text = `${drms.substring(0, drms.length - 1)}`
-        })
-
-        this.appApi.getDeviceIdentification().then(result => {
-            console.log('from device Information screen getDeviceIdentification: ' + JSON.stringify(result))
-            this.tag('ChipSet.Value').text.text = `${result.chipset}`
-            // this.tag('FirmwareVersions.Value').text.text = `${result.firmwareversion}`
         })
 
         let self = this;

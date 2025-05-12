@@ -1561,21 +1561,6 @@ export default class AppApi {
     })
   }
 
-  // device Identification
-  getDeviceIdentification() {
-    return new Promise((resolve) => {
-      thunder
-        .call('DeviceIdentification', 'deviceidentification')
-        .then(result => {
-          resolve(result)
-        })
-        .catch(err => {
-          console.error("AppAPI getDeviceIdentification error:", JSON.stringify(err, 3, null))
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder DeviceIdentification deviceidentification " + JSON.stringify(err), false, null)
-          resolve(false)
-        })
-    })
-  }
 
   // 5. Device Info
   systeminfo() {
