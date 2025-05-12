@@ -115,7 +115,7 @@ export default class DeviceInformationScreen extends Lightning.Component {
                         }
                     },
                 },
-                Line5: {
+                Line3: {
                     y: 270,
                     mountY: 0.5,
                     w: 1600,
@@ -147,7 +147,7 @@ export default class DeviceInformationScreen extends Lightning.Component {
                         }
                     },
                 },
-                Line6: {
+                Line4: {
                     y: 450,
                     mountY: 0.5,
                     w: 1600,
@@ -179,7 +179,7 @@ export default class DeviceInformationScreen extends Lightning.Component {
                         }
                     },
                 },
-                Line7: {
+                Line5: {
                     y: 630,
                     mountY: 0.5,
                     w: 1600,
