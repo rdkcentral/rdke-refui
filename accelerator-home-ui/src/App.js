@@ -913,15 +913,29 @@ export default class App extends Router.App {
     });
     thunder.on('org.rdk.RDKShell', 'onApplicationLaunched', data => {
       console.warn("[RDKSHELLEVT] onApplicationLaunched:", data);
+      console.warn("[RDKSHELLEVT] onApplicationLaunched:", data);
+      if ((data.client != GLOBALS.selfClientName) && (GLOBALS.topmostApp === GLOBALS.selfClientName)) {
+        RDKShellApis.setVisibility(GLOBALS.selfClientName, false);
+        GLOBALS.topmostApp = data.client;
+      }
     });
     thunder.on('org.rdk.RDKShell', 'onApplicationResumed', data => {
       console.warn("[RDKSHELLEVT] onApplicationResumed:", data);
+      if ((data.client != GLOBALS.selfClientName) && (GLOBALS.topmostApp === GLOBALS.selfClientName)) {
+        RDKShellApis.setVisibility(GLOBALS.selfClientName, false);
+        GLOBALS.topmostApp = data.client;
+      }
     });
     thunder.on('org.rdk.RDKShell', 'onApplicationSuspended', data => {
       console.warn("[RDKSHELLEVT] onApplicationSuspended:", data);
     });
     thunder.on('org.rdk.RDKShell', 'onApplicationTerminated', data => {
       console.warn("[RDKSHELLEVT] onApplicationTerminated:", data);
+      if ((data.client != GLOBALS.selfClientName) && (GLOBALS.topmostApp != GLOBALS.selfClientName)) {
+        appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName).then(() => {
+        AlexaApi.get().reportApplicationState("menu", true);
+      });
+        }
     });
     thunder.on('org.rdk.RDKShell', 'onHibernated', data => {
       console.warn("[RDKSHELLEVT] onHibernated:", data);

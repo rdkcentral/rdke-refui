@@ -72,7 +72,12 @@ export default class AppStore extends Lightning.Component {
     }
 
     async _firstEnable() {
-        const Catalog = await getAppCatalogInfo()
+        const Catalog=[]
+        try {
+             Catalog = await getAppCatalogInfo()
+        } catch (error) {
+            console.error("Failed to get App Catalog Info:", error)
+        }
         const options = ['My Apps', 'App Catalog', 'Manage Apps']
         this.tag('Options').add(options.map((element, idx) => {
             return {
