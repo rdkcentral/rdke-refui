@@ -913,7 +913,6 @@ export default class App extends Router.App {
     });
     thunder.on('org.rdk.RDKShell', 'onApplicationLaunched', data => {
       console.warn("[RDKSHELLEVT] onApplicationLaunched:", data);
-      console.warn("[RDKSHELLEVT] onApplicationLaunched:", data);
       if ((data.client != GLOBALS.selfClientName) && (GLOBALS.topmostApp === GLOBALS.selfClientName)) {
         RDKShellApis.setVisibility(GLOBALS.selfClientName, false);
         GLOBALS.topmostApp = data.client;
