@@ -841,14 +841,14 @@ export default class App extends Router.App {
       }
       if(GLOBALS.topmostApp===GLOBALS.selfClientName)
       {
-        this.tag("Fail").notify({title:"Miracast Status",msg:`Reason Code : ${data.error_code} Reason :${data.reason} `})
+        this.tag("Fail").notify({title:Language.translate("Miracast Status"),msg:`${Language.translate("Reason Code :")}  ${data.error_code} ${Language.translate("Reason :")}${data.reason} `})
         Router.focusWidget("Fail")
       }
 
       else{
         this._moveApptoFront(GLOBALS.selfClientName, true)
         Router.navigate("applauncher");
-        this.tag("Fail").notify({title:"Miracast Status",msg:`Reason Code : ${data.error_code} Reason :${data.reason} `})
+        this.tag("Fail").notify({title:Language.translate("Miracast Status"),msg:`${Language.translate("Reason Code :")} ${data.error_code} ${Language.translate("Reason :")}${data.reason} `})
         Router.focusWidget("Fail")
       }
     console.log('onClientConnectionError ' + JSON.stringify(data));
@@ -881,14 +881,14 @@ export default class App extends Router.App {
         if(data.reason_code!=200){
           if(GLOBALS.topmostApp===GLOBALS.selfClientName)
           {
-            this.tag("Fail").notify({title:"Miracast Status",msg:`Reason Code : ${data.reason_code} Reason :${data.reason} `})
+            this.tag("Fail").notify({title:Language.translate("Miracast Status"),msg:`${Language.translate("Reason Code :")} ${data.reason_code} ${Language.translate("Reason :")}${data.reason} `})
             Router.focusWidget("Fail")
           }
 
           else{
             this._moveApptoFront(GLOBALS.selfClientName, true)
             Router.navigate("applauncher");
-            this.tag("Fail").notify({title:"Miracast Status",msg:`Reason Code : ${data.reason_code} Reason :${data.reason} `})
+            this.tag("Fail").notify({title:Language.translate("Miracast Status"),msg:`${Language.translate("Reason Code :")} ${data.reason_code} ${Language.translate("Reason :")}${data.reason} `})
             Router.focusWidget("Fail")
           }
         }

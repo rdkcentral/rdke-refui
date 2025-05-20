@@ -264,5 +264,16 @@
   "Acknowledge": "Reconocer",
   "Grant": "Conceder",
   "Deny": "Denegar",
-  "Keyboard challenge": "Desafío del teclado"
+  "Keyboard challenge": "Desafío del teclado",
+  "MiracastNotification.Message": "MiracastNotification.Message",
+  "Invalid arguments passed to notify":"Se pasaron argumentos no válidos para notificar",
+  "NAME":"NOMBRE",
+  "MAC":"IMPERMEABLE",
+  "Screen Cast Request From ": "Solicitud de transmisión de pantalla de",
+  "Accept":"Aceptar",
+  "NAME: Default Name ":"NOMBRE: Nombre predeterminado",
+  "MAC:Default MAC":"MAC: MAC predeterminada",
+  "Miracast Status":"Estado de Miracast",
+  "Reason Code :":"Código de motivo:",
+  "Reason :":"Razón :"
 }
