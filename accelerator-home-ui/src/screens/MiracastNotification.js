@@ -33,7 +33,7 @@ export default class MiracastNotification extends Lightning.Component {
         }
         devicename = args.name;
         devicemac = args.mac;
-        this.tag('MiracastNotification.Message').text.text = Language.translate(`NAME: ${devicename} \n MAC: ${devicemac}`) ;
+        this.tag('MiracastNotification.Message').text.text = `${Language.translate("Name:") } ${devicename}\n ${Language.translate("MAC:") } ${devicemac}` ;
     }
 
     set params(args){
@@ -58,7 +58,7 @@ export default class MiracastNotification extends Lightning.Component {
                 Title: {
                     mountX: 0.5,
                     text: {
-                        text: 'Screen Cast Request From ',
+                        text: Language.translate('Screen Cast Request From '),
                         fontFace: CONFIG.language.font,
                         fontSize: 40,
                         textColor: CONFIG.theme.hex,
@@ -72,7 +72,7 @@ export default class MiracastNotification extends Lightning.Component {
                   y: 125,
                   mountX: 0.5,
                   text: {
-                      text: `Name: ${devicename}\n MAC: ${devicemac}`,
+                      text: `${Language.translate("Name:") } ${devicename}\n ${Language.translate("MAC:") } ${devicemac}`,
                       fontFace: CONFIG.language.font,
                       fontSize: 25,
                       lineHeight:30
@@ -102,7 +102,7 @@ export default class MiracastNotification extends Lightning.Component {
                       y: 30,
                       mount: 0.5,
                       text: {
-                        text: 'Accept',
+                        text: Language.translate('Accept'),
                         fontFace: CONFIG.language.font,
                         fontSize: 22,
                         textColor: 0xff000000,
@@ -118,7 +118,7 @@ export default class MiracastNotification extends Lightning.Component {
                       y: 30,
                       mount: 0.5,
                       text: {
-                        text: 'Deny',
+                        text: Language.translate('Deny'),
                         fontFace: CONFIG.language.font,
                         fontSize: 22,
                         textColor: 0xff000000,
@@ -162,7 +162,7 @@ export default class MiracastNotification extends Lightning.Component {
     }
     _unfocus() {
         this.alpha = 0
-        this.tag('MiracastNotification.Message').text.text = `NAME: Default Name \n MAC:Default MAC`
+        this.tag('MiracastNotification.Message').text.text = `${Language.translate("NAME: Default Name") }\n${Language.translate( "MAC:Default MAC")}`
     }
     _handleBack() {
         Router.focusPage()
