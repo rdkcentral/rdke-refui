@@ -27,7 +27,8 @@ export const WiFiErrorMessages = {
   3: 'CONNECTION_INTERRUPTED - The connection was interrupted',
   4: 'INVALID_CREDENTIALS - The connection failed due to invalid credentials',
   5: 'NO_SSID - The SSID does not exist',
-  6: 'UNKNOWN - Any other error.'
+  6: 'UNKNOWN - Any other error.',
+  7: 'WIFI_AUTH_FAILED - Authentication Failed'
 }
 
 export const WiFiStateMessages = {
