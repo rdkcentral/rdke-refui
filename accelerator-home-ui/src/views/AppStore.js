@@ -72,7 +72,7 @@ export default class AppStore extends Lightning.Component {
     }
 
     async _firstEnable() {
-        const Catalog=[]
+        let Catalog=[]
         try {
              Catalog = await getAppCatalogInfo()
         } catch (error) {
