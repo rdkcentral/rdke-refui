@@ -308,12 +308,6 @@ export default class App extends Router.App {
     else if (key.keyCode == Keymap.Power) {
       // Remote power key and keyboard F1 key used for STANDBY and POWER_ON
       return this._powerKeyPressed()
-    } else if (key.keyCode == 228) {
-      console.log("___________DEEP_SLEEP_______________________F12")
-      appApi.setPowerState("DEEP_SLEEP").then(() => {
-        powerState = 'DEEP_SLEEP'
-      })
-      return true
     } else if (key.keyCode === Keymap.AudioVolumeMute && !Router.isNavigating()) {
       if (GLOBALS.topmostApp === GLOBALS.selfClientName) {
         this.tag("Volume").onVolumeMute();
