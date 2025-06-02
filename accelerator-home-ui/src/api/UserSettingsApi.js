@@ -24,7 +24,7 @@ const thunder = ThunderJS(CONFIG.thunderConfig)
 const callsign = 'org.rdk.UserSettings'
 const errorName = 'UserSettingsError'
 
-export default class TTSApi {
+export default class UserSettingsApi {
     activate() {
         return new Promise((resolve, reject) => {
             thunder.Controller.activate({ callsign: callsign })
@@ -75,7 +75,7 @@ export default class TTSApi {
           thunder
             .call(callsign, 'getVoiceGuidance')
             .then(result => {
-              resolve(result.result)
+              resolve(result)
             })
             .catch(err => {
               //FIXME:

@@ -20,8 +20,8 @@ import { Lightning, Utils, Language, Router } from '@lightningjs/sdk'
 import SettingsMainItem from '../../items/SettingsMainItem'
 import { COLORS } from '../../colors/Colors'
 import { CONFIG } from '../../Config/Config'
-import AppApi from '../../api/TTSApi';
 import TTSApi from '../../api/TTSApi';
+import UserSettingsApi from '../../api/UserSettingsApi';
 
 export default class TTSScreen extends Lightning.Component {
     _onChanged() {
@@ -71,13 +71,18 @@ export default class TTSScreen extends Lightning.Component {
 
     refreshEnableButton() {
         this.ttsApi.isEnabled()
-            .then(res => {
-                if (res) {
-                    this.tag('Enable.Button').src = Utils.asset('images/settings/ToggleOnOrange.png');
-                }
-                else {
-                    this.tag('Enable.Button').src = Utils.asset('images/settings/ToggleOffWhite.png');
-                }
+            .then(ttsApiIsEnabled => {
+                this.userSettingsApi.getVoiceGuidance()
+                    .then(userSettingsApiIsEnabled => {
+                        this.ttsSupport = ttsApiIsEnabled && userSettingsApiIsEnabled;
+                        console.log(`TTS API: ${ttsApiIsEnabled} US: ${userSettingsApiIsEnabled}`)
+                        if (this.ttsSupport === true) {
+                            this.tag('Enable.Button').src = Utils.asset('images/settings/ToggleOnOrange.png');
+                        }
+                        else {
+                            this.tag('Enable.Button').src = Utils.asset('images/settings/ToggleOffWhite.png');
+                        }
+                });
         });
     }
 
@@ -85,7 +90,10 @@ export default class TTSScreen extends Lightning.Component {
         this._setState('Enable')
 
         this.ttsApi = new TTSApi();
+        this.userSettingsApi = new UserSettingsApi();
+
         this.ttsApi.activate();
+        this.userSettingsApi.activate();
 
         this.refreshEnableButton();
     }
@@ -102,22 +110,14 @@ export default class TTSScreen extends Lightning.Component {
     }
 
     toggleTTS() {
-        this.ttsApi.isEnabled()
-            .then(res => {
-                console.log(res)
-                if (res) {
-                    this.ttsApi.enable(false)
-                        .then(() => {
-                            this.tag('Enable.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
-                        })
-                }
-                else {
-                    this.ttsApi.enable(true)
-                        .then(() => {
-                            this.tag('Enable.Button').src = Utils.asset('images/settings/ToggleOnOrange.png')
-                        })
-                }
-            })
+        if(this.ttsSupport) {
+            this.ttsApi.enable(false);
+            this.userSettingsApi.setVoiceGuidance(false);
+        }
+        else {
+            this.ttsApi.enable(true);
+            this.userSettingsApi.setVoiceGuidance(true);
+        }
     }
 
     static _states() {
@@ -135,6 +135,7 @@ export default class TTSScreen extends Lightning.Component {
                 }
                 _handleEnter() {
                     this.toggleTTS();
+                    this.refreshEnableButton();
                 }
             },
         ]
