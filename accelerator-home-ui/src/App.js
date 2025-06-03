@@ -182,7 +182,7 @@ export default class App extends Router.App {
   }
   _performKeyPressOPerations(key) {
     let self = this;
-    if (key.keyCode == Keymap.Home && !Router.isNavigating()) {
+    if ((key.keyCode == Keymap.Home || key.keyCode == Keymap.Escape)  && !Router.isNavigating()) {
       if (GLOBALS.topmostApp.includes("dac.native")) {
         this.jumpToRoute("apps");
       }
