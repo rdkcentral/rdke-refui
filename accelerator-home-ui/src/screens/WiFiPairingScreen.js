@@ -210,7 +210,8 @@ export default class WifiPairingScreen extends Lightning.Component {
 
   startConnect(password = "") {
     let flag = 0
-    this.onErrorCB = WiFi.get().thunder.on(WiFi.get().callsign, 'onError', notification => {
+	this.onErrorCB = WiFi.get().thunder.on(WiFi.get().callsign, 'onError', notification => {
+	  console.warn("WiFiPairingScreen.js onError notification received: " + JSON.stringify(notification));
       if (notification.code === WiFiError.INVALID_CREDENTIALS || notification.code === WiFiError.SSID_CHANGED) {
         console.log("INVALID_CREDENTIALS; deleting WiFi Persistence data.")
         WiFi.get().clearSSID().then(() => {
@@ -221,12 +222,15 @@ export default class WifiPairingScreen extends Lightning.Component {
       }
     })
     this.onWIFIStateChangedCB = WiFi.get().thunder.on(WiFi.get().callsign, 'onWIFIStateChanged', notification => {
-      if (notification.state === WiFiState.CONNECTED) {
-        Network.get().setDefaultInterface("WIFI").then(() => {
-          console.log("Successfully set WIFI as default interface.")
-        }).catch(err => {
-          console.error("Could not set WIFI as default interface." + JSON.stringify(err))
-        });
+	  console.warn("WiFiPairingScreen.js onWIFIStateChanged notification received: " + JSON.stringify(notification));
+	  if (notification.state === WiFiState.CONNECTED) {
+		  if (Network.get().getDefaultInterface() !== "WIFI") {
+			  Network.get().setDefaultInterface("WIFI").then(() => {
+				  console.log("Successfully set WIFI as default interface.")
+			  }).catch(err => {
+				  console.error("Could not set WIFI as default interface." + JSON.stringify(err))
+			  });
+		  }
         this.onWIFIStateChangedCB.dispose()
       }
     })

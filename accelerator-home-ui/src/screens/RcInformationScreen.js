@@ -245,7 +245,7 @@ export default class RCInformationScreen extends Lightning.Component {
             let cbDatastatus
             if (Array.isArray(cbData.status)) {
                 cbDatastatus = cbData.status[0] || {};
-              } 
+              }
             else if (cbData.status && typeof cbData.status === 'object') {
                 cbDatastatus = cbData.status;
               }

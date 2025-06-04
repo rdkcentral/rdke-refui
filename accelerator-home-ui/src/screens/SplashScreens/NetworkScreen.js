@@ -146,14 +146,12 @@ export default class NetworkScreen extends Lightning.Component {
                     // this._setState('WiFiScreen')
                     Network.get().setInterfaceEnabled('WIFI').then(res => {
                         if (res) {
-                            Network.get().setDefaultInterface('WIFI').then(() => {
-                                Registry.setTimeout(() => {
-                                    Router.navigate('splash/networkList')
-                                }, (Router.isNavigating() ? 20 : 0));
-                            })
+                            Registry.setTimeout(() => {
+                                Router.navigate('splash/networkList')
+                            }, (Router.isNavigating() ? 20 : 0));
                         }
                     })
-                    console.log("Wifi")
+                    console.log("NetworkScreen.js Wifi")
                 }
             },
             class Ethernet extends this {
@@ -165,24 +163,25 @@ export default class NetworkScreen extends Lightning.Component {
                 }
                 _handleEnter() {
                     Network.get().setInterfaceEnabled('ETHERNET').then(res => {
-                        if (res) {
-                            Network.get().setDefaultInterface('ETHERNET').then(() => {
-                                Network.get().getInterfaces().then(res => {
-                                    let eth = res.filter((item) => item.interface == 'ETHERNET')
-                                    if (eth[0].interface == 'ETHERNET' && eth[0].enabled == true && eth[0].connected == true) {
-                                        Registry.setTimeout(() => {
-                                            Router.navigate('menu')
-                                        }, (Router.isNavigating() ? 20 : 0));
-                                    }
-                                    else if (eth[0].interface == 'ETHERNET' && eth[0].connected == false) {
-                                        Registry.setTimeout(() => {
-                                            Router.navigate('splash/networkPrompt')
-                                        }, (Router.isNavigating() ? 20 : 0));
-                                    }
-                                })
+						if (res) {
+							Network.get().getInterfaces().then(res => {
+								let eth = res.filter((item) => item.interface == 'ETHERNET')
+								if (eth[0].interface == 'ETHERNET' && eth[0].connected == true) {
+									Network.get().setDefaultInterface('ETHERNET');
+									Registry.setTimeout(() => {
+										Router.navigate('menu')
+									}, (Router.isNavigating() ? 20 : 0));
+								}
+								else if (eth[0].interface == 'ETHERNET' && eth[0].connected == false) {
+									// TODO: show 'Please connect Ethernet cable' message
+									Registry.setTimeout(() => {
+										Router.navigate('splash/networkPrompt')
+									}, (Router.isNavigating() ? 20 : 0));
+								}
                             })
                         }
-                    })
+					})
+					console.log("NetworkScreen.js Ethernet")
                 }
                 _handleDown() {
                     this._setState('Skip')
@@ -219,8 +218,8 @@ export default class NetworkScreen extends Lightning.Component {
                     if (AlexaApi.get().checkAlexaAuthStatus() !== "AlexaUserDenied" && GLOBALS.AlexaAvsstatus) {
                         Network.get().isConnectedToInternet().then(result => {
                             if (result)
-                                Registry.setTimeout(() => { 
-                                Router.navigate('AlexaLoginScreen') 
+                                Registry.setTimeout(() => {
+                                Router.navigate('AlexaLoginScreen')
                             }, (Router.isNavigating() ? 20 : 0));
                             else
                                 Registry.setTimeout(() => { Router.navigate('menu') }, (Router.isNavigating() ? 20 : 0));

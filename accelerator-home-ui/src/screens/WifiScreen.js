@@ -146,7 +146,8 @@ export default class WiFiScreen extends Lightning.Component {
   }
 
   _focus() {
-    if (this.wifiStatus) {
+	if (this.wifiStatus) {
+	  console.warn(new Date().toISOString() + " from: WiFiScreen.js starting wifi scan")
       WiFi.get().startScan()
       this.tag('Networks').visible = true
       this.tag('JoinAnotherNetwork').visible = true
@@ -177,6 +178,7 @@ export default class WiFiScreen extends Lightning.Component {
    * Function to be executed when the Wi-Fi screen is disabled.
    */
   _disable() {
+	console.warn(new Date().toISOString() + " from: WiFiScreen.js stopping wifi scan if WiFi is enabled")
     Network.get().isInterfaceEnabled("WIFI").then(enabled => {
       if (enabled) {
         WiFi.get().stopScan()
@@ -198,7 +200,7 @@ export default class WiFiScreen extends Lightning.Component {
    * Function to render list of Wi-Fi networks.
    */
   async renderDeviceList(ssids) {
-    console.log("WIFI renderDeviceList ssids.length:" + JSON.stringify(ssids.length))
+    console.log("from: WiFiScreen.js WIFI renderDeviceList ssids.length:" + JSON.stringify(ssids.length))
     ssids.sort((a, b) => { if (a.signalStrength >= b.signalStrength) return -1; else return 1 })
     this._pairedList = [];
     this.tag('Networks.PairedNetworks').h = 0;
@@ -209,7 +211,7 @@ export default class WiFiScreen extends Lightning.Component {
       if (state === WiFiState.CONNECTED) {
         await WiFi.get().getConnectedSSID().then(result => {
           if (result.ssid != '') {
-            console.log("Connected network detected " + JSON.stringify(result.ssid))
+            console.warn("from: WiFiScreen.js Connected network detected " + JSON.stringify(result.ssid))
             this._pairedList = [result]
             this.tag('Networks.PairedNetworks').h = this._pairedList.length * 90
             this.tag('Networks.PairedNetworks').tag('List').h = this._pairedList.length * 90
@@ -250,7 +252,7 @@ export default class WiFiScreen extends Lightning.Component {
         }
     })
     let IndexVal = 0
-    console.log("previousFocusedItemSSid:::", previousFocusedItemSSid)
+    console.log("previousFocusedItemSSid:::" + JSON.stringify(previousFocusedItemSSid))
     this.tag('Networks.AvailableNetworks').tag('List').items.forEach(element => {
       if (element._item.ssid == previousFocusedItemSSid) {
         IndexVal = element.index
@@ -332,15 +334,30 @@ export default class WiFiScreen extends Lightning.Component {
                 if (pairedssid === item.ssid) {
                   console.log("WiFiScreen getPairedSSID matched with current selection; try auto connect.");
                   WiFi.get().connect(true).then(() => {
-                    WiFi.get().thunder.on('onError', notification => {
+					  WiFi.get().thunder.on('onError', notification => {
+						console.warn("From WifiScreen.js Notification[onError]: " + JSON.stringify(notification))
                       if (notification.code === WiFiError.SSID_CHANGED || notification.code === WiFiError.INVALID_CREDENTIALS) {
                         WiFi.get().clearSSID().then(() => {
                           Router.navigate('settings/network/interface/wifi/connect', { wifiItem: this.tag('Networks.AvailableNetworks').tag('List').element._item })
                         })
                       }
                     })
-                    WiFi.get().thunder.on('onWIFIStateChanged', notification => {
-                      if (notification.state === WiFiState.CONNECTED) {
+					  WiFi.get().thunder.on('onWIFIStateChanged', notification => {
+					  console.warn("From WifiScreen.js Notification[onWIFIStateChanged]: " + JSON.stringify(notification))
+					  if (notification.state === WiFiState.CONNECTED) {
+						Network.get().getDefaultInterface().then(iface => {
+							console.warn("From WifiScreen.js Network.getDefaultInterface: " + JSON.stringify(iface))
+							Network.get().isInterfaceEnabled("ETHERNET").then(ethernetEnabled => {
+								console.warn("From WifiScreen.js Network.isInterfaceEnabled ETHERNET: " + JSON.stringify(ethernetEnabled))
+								if (ethernetEnabled) {
+								  Network.get().setInterfaceEnabled("ETHERNET", false).then(() => {
+									console.warn("From WifiScreen.js ETHERNET interface disabled successfully.")
+								  }).catch(err => {
+									console.error("From WifiScreen.js Could not disable ETHERNET interface: " + JSON.stringify(err))
+								  });
+								}
+							});
+						});
                         Network.get().setDefaultInterface("WIFI").then(() => {
                           console.log("Successfully set WIFI as default interface.")
                         }).catch(err => {
@@ -444,7 +461,7 @@ export default class WiFiScreen extends Lightning.Component {
    */
   async switch() {
     if (this.wifiStatus) {
-      console.log('Disabling Wi-Fi.')
+      console.warn('from WiFIScreen Disabling Wi-Fi.')
       await Network.get().setInterfaceEnabled('WIFI', false).then(result => {
         if (result) {
           this.wifiStatus = false
@@ -458,10 +475,11 @@ export default class WiFiScreen extends Lightning.Component {
         }
       })
     } else {
-      console.log('Enabling Wi-Fi.')
+      console.warn('from WiFIScreen Enabling Wi-Fi.')
       await Network.get().isInterfaceEnabled("WIFI").then(ifaceStatus => {
         if (!ifaceStatus) {
-          this.onInterfaceStatusChangedCB = Network.get()._thunder.on(Network.get().callsign, 'onInterfaceStatusChanged', ifaceStatus => {
+			this.onInterfaceStatusChangedCB = Network.get()._thunder.on(Network.get().callsign, 'onInterfaceStatusChanged', ifaceStatus => {
+			  console.warn('from WiFIScreen onInterfaceStatusChanged: ' + JSON.stringify(ifaceStatus))
             if ((ifaceStatus.interface === "WIFI") && ifaceStatus.enabled) {
               this.onInterfaceStatusChangedCB.dispose();
               this.wifiStatus = true
@@ -489,18 +507,30 @@ export default class WiFiScreen extends Lightning.Component {
   }
 
   wifiEventHandlers() {
-    this.onWIFIStateChangedCB = WiFi.get().thunder.on(WiFi.get().callsign, 'onWIFIStateChanged', notification => {
+	this.onWIFIStateChangedCB = WiFi.get().thunder.on(WiFi.get().callsign, 'onWIFIStateChanged', notification => {
+	  console.warn("WifiScreen.js Notification[onWIFIStateChanged]: " + JSON.stringify(notification))
       if (this.renderSSIDS.length) {
         this.renderDeviceList(this.renderSSIDS)
       }
-      if (notification.state === WiFiState.CONNECTED) {
-        WiFi.get().getConnectedSSID().then(result => {
+	  if (notification.state === WiFiState.CONNECTED) {
+		  Network.get().isInterfaceEnabled("ETHERNET").then(ethernetEnabled => {
+			console.warn("WifiScreen.js Network.isInterfaceEnabled ETHERNET: " + JSON.stringify(ethernetEnabled))
+			if (ethernetEnabled) {
+				Network.get().setInterfaceEnabled("ETHERNET", false).then(() => {
+					console.warn("WifiScreen.js ETHERNET interface disabled successfully.")
+				}).catch(err => {
+					console.error("WifiScreen.js Could not disable ETHERNET interface: " + JSON.stringify(err))
+				});
+			}
+		  });
+		WiFi.get().getConnectedSSID().then(result => {
           PersistentStoreApi.get().setValue('wifi', 'SSID', result.ssid).then((response) => { console.log(response) })
         })
       }
     });
 
-    this.onErrorCB = WiFi.get().thunder.on(WiFi.get().callsign, 'onError', notification => {
+	this.onErrorCB = WiFi.get().thunder.on(WiFi.get().callsign, 'onError', notification => {
+	  console.warn("WifiScreen.js Notification[onError]: " + JSON.stringify(notification))
       if (notification.code === WiFiError.INVALID_CREDENTIALS) {
         WiFi.get().clearSSID()
       }
@@ -514,7 +544,7 @@ export default class WiFiScreen extends Lightning.Component {
     });
 
     this.onAvailableSSIDsCB = WiFi.get().thunder.on(WiFi.get().callsign, 'onAvailableSSIDs', notification => {
-      console.log("Notification[onAvailableSSIDs]: found " + JSON.stringify(notification.ssids.length))
+      console.warn("WifiScreen.js Notification[onAvailableSSIDs]: found " + JSON.stringify(notification.ssids.length))
       this.ssids = [...this.ssids, ...notification.ssids]
       if (!notification.moreData) {
         this.renderSSIDS = this.ssids
@@ -526,7 +556,7 @@ export default class WiFiScreen extends Lightning.Component {
         }, 1000)
       }
       if (!notification.ssids.length) {
-        console.log("onAvailableSSIDs length is ZERO; scanning again.")
+        console.log("WifiScreen.js onAvailableSSIDs length is ZERO; scanning again.")
         Network.get().isInterfaceEnabled("WIFI").then(enabled => {
           if (enabled) {
             WiFi.get().startScan()
