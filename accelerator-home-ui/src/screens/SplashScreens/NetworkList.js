@@ -166,29 +166,29 @@ export default class NetworkList extends Lightning.Component {
             notification.newInterfaceName === "" &&
             notification.oldInterfaceName === "WIFI"
           ) {
-			  console.log('NetworkList.js emplty new old wifi')
-			  if (Network.get().getDefaultInterface() !== 'ETHERNET') {
-				  Network.get().setDefaultInterface('ETHERNET')
-			  } else {
-				  console.warn('NetworkList.js no default interface set')
-			  }
+              console.log('NetworkList.js emplty new old wifi')
+              if (Network.get().getDefaultInterface() !== 'ETHERNET') {
+                  Network.get().setDefaultInterface('ETHERNET')
+              } else {
+                  console.warn('NetworkList.js no default interface set')
+              }
           }
         })
 		Network.get()._thunder.on(Network.get().callsign, 'onConnectionStatusChanged', notification => {
-		  console.warn("NetworkList.js onConnectionStatusChanged: " + JSON.stringify(notification))
-			if (notification.interface === 'ETHERNET' && notification.status === 'CONNECTED') {
-				Network.get().getDefaultInterface().then(defIface => {
-					if (defIface !== 'ETHERNET') {
-						Network.get().setDefaultInterface('ETHERNET')
-					}
-				})
-			} else if (notification.interface === 'WIFI' && notification.status === 'CONNECTED') {
-				Network.get().isInterfaceEnabled('ETHERNET').then(enabled => {
-					if (enabled) {
-						Network.get().setInterfaceEnabled('ETHERNET', false).then(result => { });
-					}
-				});
-			}
+            console.warn("NetworkList.js onConnectionStatusChanged: " + JSON.stringify(notification))
+            if (notification.interface === 'ETHERNET' && notification.status === 'CONNECTED') {
+                Network.get().getDefaultInterface().then(defIface => {
+                    if (defIface !== 'ETHERNET') {
+                        Network.get().setDefaultInterface('ETHERNET')
+                    }
+                })
+            } else if (notification.interface === 'WIFI' && notification.status === 'CONNECTED') {
+                Network.get().isInterfaceEnabled('ETHERNET').then(enabled => {
+                    if (enabled) {
+                        Network.get().setInterfaceEnabled('ETHERNET', false).then(result => { });
+                    }
+                });
+            }
         })
       }
     })

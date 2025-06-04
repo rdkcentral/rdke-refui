@@ -341,29 +341,29 @@ export default class WiFiScreen extends Lightning.Component {
                           Router.navigate('settings/network/interface/wifi/connect', { wifiItem: this.tag('Networks.AvailableNetworks').tag('List').element._item })
                         })
                       }
-                    })
-					  WiFi.get().thunder.on('onWIFIStateChanged', notification => {
-					  console.warn("From WifiScreen.js Notification[onWIFIStateChanged]: " + JSON.stringify(notification))
-					  if (notification.state === WiFiState.CONNECTED) {
-						Network.get().getDefaultInterface().then(iface => {
-							console.warn("From WifiScreen.js Network.getDefaultInterface: " + JSON.stringify(iface))
-							Network.get().isInterfaceEnabled("ETHERNET").then(ethernetEnabled => {
-								console.warn("From WifiScreen.js Network.isInterfaceEnabled ETHERNET: " + JSON.stringify(ethernetEnabled))
-								if (ethernetEnabled) {
-								  Network.get().setInterfaceEnabled("ETHERNET", false).then(() => {
-									console.warn("From WifiScreen.js ETHERNET interface disabled successfully.")
-								  }).catch(err => {
-									console.error("From WifiScreen.js Could not disable ETHERNET interface: " + JSON.stringify(err))
-								  });
-								}
-							});
-						});
-                        Network.get().setDefaultInterface("WIFI").then(() => {
-                          console.log("Successfully set WIFI as default interface.")
-                        }).catch(err => {
-                          console.error("Could not set WIFI as default interface." + JSON.stringify(err))
-                        });
-                      }
+                      })
+                      WiFi.get().thunder.on('onWIFIStateChanged', notification => {
+                          console.warn("From WifiScreen.js Notification[onWIFIStateChanged]: " + JSON.stringify(notification))
+                          if (notification.state === WiFiState.CONNECTED) {
+                              Network.get().getDefaultInterface().then(iface => {
+                                  console.warn("From WifiScreen.js Network.getDefaultInterface: " + JSON.stringify(iface))
+                                  Network.get().isInterfaceEnabled("ETHERNET").then(ethernetEnabled => {
+                                      console.warn("From WifiScreen.js Network.isInterfaceEnabled ETHERNET: " + JSON.stringify(ethernetEnabled))
+                                      if (ethernetEnabled) {
+                                          Network.get().setInterfaceEnabled("ETHERNET", false).then(() => {
+                                              console.warn("From WifiScreen.js ETHERNET interface disabled successfully.")
+                                          }).catch(err => {
+                                              console.error("From WifiScreen.js Could not disable ETHERNET interface: " + JSON.stringify(err))
+                                          });
+                                      }
+                                  });
+                              });
+                              Network.get().setDefaultInterface("WIFI").then(() => {
+                                  console.log("Successfully set WIFI as default interface.")
+                              }).catch(err => {
+                                  console.error("Could not set WIFI as default interface." + JSON.stringify(err))
+                              });
+                          }
                     })
                   }).catch(err => {
                     console.error("WiFiScreen auto-connect error:", JSON.stringify(err));

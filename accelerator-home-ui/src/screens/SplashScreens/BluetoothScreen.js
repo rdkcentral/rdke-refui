@@ -221,7 +221,7 @@ export default class BluetoothScreen extends Lightning.Component {
                 if(cbDatastatus.pairingState != "SEARCHING" && cbDatastatus.pairingState != "PAIRING" ) {
                     for(let i=0;i<cbDatastatus.netTypesSupported.length;i++)
                     {
-                        //console.log("Netypesupported"+JSON.stringify(cbDatastatus.netTypesSupported[i]))
+                        console.log("Netypesupported"+JSON.stringify(cbDatastatus.netTypesSupported[i]))
                         RCApi.get().startPairing(30,cbDatastatus.netTypesSupported[i]).catch(err => {
                             console.err("RCInformationScreen startPairing error:", err);
                         });

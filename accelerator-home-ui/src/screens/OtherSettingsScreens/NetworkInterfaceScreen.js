@@ -190,8 +190,8 @@ export default class NetworkInterfaceScreen extends Lightning.Component {
                     this.tag('Ethernet.Loader').visible = true
                     this.loadingAnimation.start()
                     await Network.get().isInterfaceEnabled("ETHERNET").then(enabled => {
-						if (!enabled) {
-							console.warn(new Date().toISOString() + " from: NetworkInterfaceScreen.js - Ethernet interface is not enabled, enabling it now and setting it as default");
+                        if (!enabled) {
+                            console.warn(new Date().toISOString() + " from: NetworkInterfaceScreen.js - Ethernet interface is not enabled, enabling it now and setting it as default");
                             Network.get().setInterfaceEnabled("ETHERNET").then(() => {
                                 Network.get().setDefaultInterface("ETHERNET").then(result => {
                                     if (result) {
@@ -201,8 +201,8 @@ export default class NetworkInterfaceScreen extends Lightning.Component {
                                     }
                                 });
                             });
-						} else {
-							console.warn(new Date().toISOString() + " from: NetworkInterfaceScreen.js - Ethernet interface is already enabled, setting it as default");
+                        } else {
+                            console.warn(new Date().toISOString() + " from: NetworkInterfaceScreen.js - Ethernet interface is already enabled, setting it as default");
                             Network.get().setDefaultInterface("ETHERNET").then(result => {
                                 if (result) {
                                     this.loadingAnimation.stop()

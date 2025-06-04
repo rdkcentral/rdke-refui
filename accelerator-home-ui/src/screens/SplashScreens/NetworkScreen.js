@@ -163,25 +163,25 @@ export default class NetworkScreen extends Lightning.Component {
                 }
                 _handleEnter() {
                     Network.get().setInterfaceEnabled('ETHERNET').then(res => {
-						if (res) {
-							Network.get().getInterfaces().then(res => {
-								let eth = res.filter((item) => item.interface == 'ETHERNET')
-								if (eth[0].interface == 'ETHERNET' && eth[0].connected == true) {
-									Network.get().setDefaultInterface('ETHERNET');
-									Registry.setTimeout(() => {
-										Router.navigate('menu')
-									}, (Router.isNavigating() ? 20 : 0));
-								}
-								else if (eth[0].interface == 'ETHERNET' && eth[0].connected == false) {
-									// TODO: show 'Please connect Ethernet cable' message
-									Registry.setTimeout(() => {
-										Router.navigate('splash/networkPrompt')
-									}, (Router.isNavigating() ? 20 : 0));
-								}
+                        if (res) {
+                            Network.get().getInterfaces().then(res => {
+                                let eth = res.filter((item) => item.interface == 'ETHERNET')
+                                if (eth[0].interface == 'ETHERNET' && eth[0].connected == true) {
+                                    Network.get().setDefaultInterface('ETHERNET');
+                                    Registry.setTimeout(() => {
+                                        Router.navigate('menu')
+                                    }, (Router.isNavigating() ? 20 : 0));
+                                }
+                                else if (eth[0].interface == 'ETHERNET' && eth[0].connected == false) {
+                                    // TODO: show 'Please connect Ethernet cable' message
+                                    Registry.setTimeout(() => {
+                                        Router.navigate('splash/networkPrompt')
+                                    }, (Router.isNavigating() ? 20 : 0));
+                                }
                             })
                         }
-					})
-					console.log("NetworkScreen.js Ethernet")
+                    })
+                    console.log("NetworkScreen.js Ethernet")
                 }
                 _handleDown() {
                     this._setState('Skip')

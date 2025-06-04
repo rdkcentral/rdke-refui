@@ -222,17 +222,17 @@ export default class WifiPairingScreen extends Lightning.Component {
       }
     })
     this.onWIFIStateChangedCB = WiFi.get().thunder.on(WiFi.get().callsign, 'onWIFIStateChanged', notification => {
-	  console.warn("WiFiPairingScreen.js onWIFIStateChanged notification received: " + JSON.stringify(notification));
-	  if (notification.state === WiFiState.CONNECTED) {
-		  if (Network.get().getDefaultInterface() !== "WIFI") {
-			  Network.get().setDefaultInterface("WIFI").then(() => {
-				  console.log("Successfully set WIFI as default interface.")
-			  }).catch(err => {
-				  console.error("Could not set WIFI as default interface." + JSON.stringify(err))
-			  });
-		  }
-        this.onWIFIStateChangedCB.dispose()
-      }
+        console.warn("WiFiPairingScreen.js onWIFIStateChanged notification received: " + JSON.stringify(notification));
+        if (notification.state === WiFiState.CONNECTED) {
+            if (Network.get().getDefaultInterface() !== "WIFI") {
+                Network.get().setDefaultInterface("WIFI").then(() => {
+                    console.log("Successfully set WIFI as default interface.")
+                }).catch(err => {
+                    console.error("Could not set WIFI as default interface." + JSON.stringify(err))
+                });
+            }
+            this.onWIFIStateChangedCB.dispose()
+        }
     })
     WiFi.get().connect(false, this._item, password).then(() => {
       WiFi.get().saveSSID(this._item.ssid, password, this._item.security).then((response) => {
