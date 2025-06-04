@@ -180,7 +180,7 @@ export default class AdvanceSettingsScreen extends Lightning.Component {
                 this.tag('CECControl.Button').src = Utils.asset('images/settings/ToggleOnOrange.png')
                 this.performOTPAction()
             })
-        this._setState('CECControl')
+        this._setState('TTSOptions')
     }
     _focus() {
         this._setState(this.state)
