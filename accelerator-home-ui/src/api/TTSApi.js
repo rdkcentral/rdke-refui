@@ -62,9 +62,8 @@ export default class TTSApi {
               resolve(true)
             })
             .catch(err => {
-              //FIXME:
-              //console.log('Error enable', err)
-              //Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder TextToSpeech Speak " + JSON.stringify(err), false, null)
+              console.error("TTSApi TextToSpeech enable error:", JSON.stringify(err, 3, null))
+              Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder TextToSpeech enable " + JSON.stringify(err), false, null)
               resolve(false)
             })
         })
@@ -78,13 +77,42 @@ export default class TTSApi {
               resolve(result.isenabled)
             })
             .catch(err => {
-              //FIXME:
-              //console.error("AppAPI TextToSpeech speak error:", JSON.stringify(err, 3, null))
-              //Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder TextToSpeech Speak " + JSON.stringify(err), false, null)
+              console.error("TTSApi TextToSpeech isEnabled error:", JSON.stringify(err, 3, null))
+              Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder TextToSpeech isEnabled " + JSON.stringify(err), false, null)
               resolve(false)
             })
         })
     }
+
+      setTTSConfiguration(configuration) {
+        return new Promise((resolve) => {
+          thunder
+            .call(callsign, 'setttsconfiguration', configuration)
+            .then(() => {
+              resolve(true)
+            })
+            .catch(err => {
+              console.error("TTSApi TextToSpeech setTTSConfiguration error:", JSON.stringify(err, 3, null))
+              Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder TextToSpeech setTTSConfiguration " + JSON.stringify(err), false, null)
+              resolve(false)
+            })
+        })
+      }
+
+      getTTSConfiguration() {
+        return new Promise((resolve) => {
+          thunder
+            .call(callsign, 'getttsconfiguration')
+            .then(result => {
+              resolve(result)
+            })
+            .catch(err => {
+              console.error("TTSApi TextToSpeech getTTSConfiguration error:", JSON.stringify(err, 3, null))
+              Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder TextToSpeech getTTSConfiguration " + JSON.stringify(err), false, null)
+              resolve(false)
+            })
+        })
+      }
 
     ttsSpeak() {
       return new Promise((resolve) => {
@@ -96,8 +124,8 @@ export default class TTSApi {
             resolve(result)
           })
           .catch(err => {
-            //console.error("AppAPI TextToSpeech speak error:", JSON.stringify(err, 3, null))
-            //Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder TextToSpeech Speak " + JSON.stringify(err), false, null)
+            console.error("TTSAPI TextToSpeech speak error:", JSON.stringify(err, 3, null))
+            Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder TextToSpeech Speak " + JSON.stringify(err), false, null)
             resolve(false)
           })
       })
@@ -113,8 +141,8 @@ export default class TTSApi {
             resolve(result)
           })
           .catch(err => {
-            //console.error("AppAPI TextToSpeech resume error:", JSON.stringify(err, 3, null))
-            //Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder TextToSpeech resume " + JSON.stringify(err), false, null)
+            console.error("TTSAPI TextToSpeech resume error:", JSON.stringify(err, 3, null))
+            Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder TextToSpeech resume " + JSON.stringify(err), false, null)
             resolve(false)
           })
       })
@@ -130,8 +158,8 @@ export default class TTSApi {
             resolve(result)
           })
           .catch(err => {
-            //console.error("AppAPI TextToSpeech pause error:", JSON.stringify(err, 3, null))
-            //Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder TextToSpeech pause " + JSON.stringify(err), false, null)
+            console.error("TTSApi TextToSpeech pause error:", JSON.stringify(err, 3, null))
+            Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder TextToSpeech pause " + JSON.stringify(err), false, null)
             resolve(false)
           })
       })
@@ -147,8 +175,8 @@ export default class TTSApi {
             resolve(result)
           })
           .catch(err => {
-            //console.error("AppAPI TextToSpeech listvoices error:", JSON.stringify(err, 3, null))
-            //Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder TextToSpeech listVoices " + JSON.stringify(err), false, null)
+            console.error("TTSAPI TextToSpeech listvoices error:", JSON.stringify(err, 3, null))
+            Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder TextToSpeech listVoices " + JSON.stringify(err), false, null)
             resolve(false)
           })
       })

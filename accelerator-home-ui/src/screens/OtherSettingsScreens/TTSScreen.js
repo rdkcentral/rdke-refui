@@ -20,6 +20,8 @@ import { Lightning, Utils, Language, Router } from '@lightningjs/sdk'
 import SettingsMainItem from '../../items/SettingsMainItem'
 import { COLORS } from '../../colors/Colors'
 import { CONFIG } from '../../Config/Config'
+import { Keyboard } from '../../ui-components/index'
+import { KEYBOARD_FORMATS } from '../../ui-components/components/Keyboard'
 import TTSApi from '../../api/TTSApi';
 import UserSettingsApi from '../../api/UserSettingsApi';
 
@@ -41,7 +43,39 @@ export default class TTSScreen extends Lightning.Component {
             TTSScreenContents: {
                 x: 200,
                 y: 275,
+                Endpoint: {
+                    //type: SettingsMainItem,
+                    EndpointName: {
+                        x: 10,
+                        y: 45,
+                        mountY: 0.5,
+                        text: {
+                            text: Language.translate("TTS Endpoint") + ": ",
+                            fontFace: CONFIG.language.font,
+                            fontSize: 25,
+                        },
+                    },
+                    EndpointBox: {
+                        x: 320,
+                        texture: Lightning.Tools.getRoundRect(1273, 58, 0, 3, 0xffffffff, false)
+                    },
+                    EndpointText: {
+                        x: 340,
+                        y: 20,
+                        zIndex: 2,
+                        text: {
+                            text: '',
+                            fontSize: 25,
+                            fontFace: CONFIG.language.font,
+                            textColor: 0xffffffff,
+                            wordWrapWidth: 1300,
+                            wordWrap: false,
+                            textOverflow: 'ellipsis',
+                        },
+                    },
+                },
                 Enable: {
+                    y: 90,
                     type: SettingsMainItem,
                     Title: {
                         x: 10,
@@ -64,12 +98,20 @@ export default class TTSScreen extends Lightning.Component {
                         src: Utils.asset('images/settings/ToggleOffWhite.png'),
                     },
                 },
+                Keyboard: {
+                    y: 300,
+                    x: 200,
+                    type: Keyboard,
+                    visible: false,
+                    zIndex: 2,
+                    formats: KEYBOARD_FORMATS.qwerty
+                },
             },
         }
 
     }
 
-    refreshEnableButton() {
+    refreshEnableButtonState() {
         this.ttsApi.isEnabled()
             .then(ttsApiIsEnabled => {
                 this.userSettingsApi.getVoiceGuidance()
@@ -85,9 +127,32 @@ export default class TTSScreen extends Lightning.Component {
                 });
         });
     }
+    refreshEnableButtonOpacity() {
+        this.ttsApi.getTTSConfiguration()
+            .then(result => {
+                if((result.ttsendpoint && result.ttsendpoint !== " ") ||  (result.ttsendpointsecured && result.ttsendpointsecured !== " ") ){
+                    this.ttsEnableButtonActive = true;
+                    this.tag('Enable').alpha = 1;
+                }
+                else {
+                    this.ttsEnableButtonActive = false;
+                    this.tag('Enable').alpha = 0.3;
+                }
+        });
+    }
+
+    handleDone() {
+        this.tag("Keyboard").visible = false
+        this._setState("Endpoint");
+        this.ttsApi.setTTSConfiguration({
+              "ttsendpoint": this.textCollection,
+              "ttsendpointsecured": this.textCollection
+        });
+        this.refreshEnableButtonOpacity();
+    }
 
     _init() {
-        this._setState('Enable')
+        this._setState('Endpoint')
 
         this.ttsApi = new TTSApi();
         this.userSettingsApi = new UserSettingsApi();
@@ -95,12 +160,17 @@ export default class TTSScreen extends Lightning.Component {
         this.ttsApi.activate();
         this.userSettingsApi.activate();
 
-        this.refreshEnableButton();
+        this.refreshEnableButtonState();
+        this.refreshEnableButtonOpacity();
+
+        this.textCollection = '';
     }
 
     _focus() {
+        this.tag("EndpointText").text.text = Language.translate("Press OK to enter TTS endpoint");
         this._setState(this.state)
-        this.refreshEnableButton();
+        this.refreshEnableButtonState();
+        this.refreshEnableButtonOpacity();
     }
 
     _handleBack() {
@@ -122,6 +192,30 @@ export default class TTSScreen extends Lightning.Component {
 
     static _states() {
         return [
+            class Endpoint extends this{
+                $enter() {
+                    this.tag('EndpointBox').texture = Lightning.Tools.getRoundRect(1273, 58, 0, 3, CONFIG.theme.hex, false)
+                }
+                $exit() {
+                    this.tag('EndpointBox').texture = Lightning.Tools.getRoundRect(1273, 58, 0, 3, 0xffffffff, false)
+                }
+                _handleUp() {
+                    if(this.ttsEnableButtonActive){
+                        this._setState("Enable");
+                    }
+                }
+                _handleDown() {
+                    if(this.ttsEnableButtonActive){
+                        this._setState("Enable");
+                    }
+                }
+                _handleEnter() {
+                    this._setState('Keyboard')
+                    this.tag('EndpointText').text.text = this.textCollection
+                    this.tag('EndpointText').text.textColor = 0xffffffff
+                    this.tag("Keyboard").visible = true
+                }
+            },
             class Enable extends this{
                 $enter() {
                     this.tag('Enable')._focus()
@@ -130,14 +224,51 @@ export default class TTSScreen extends Lightning.Component {
                     this.tag('Enable')._unfocus()
                 }
                 _handleUp() {
+                    this._setState("Endpoint");
                 }
                 _handleDown() {
+                    this._setState("Endpoint");
                 }
                 _handleEnter() {
                     this.toggleTTS();
-                    this.refreshEnableButton();
+                    this.refreshEnableButtonState();
                 }
             },
+            class Keyboard extends this{
+                $enter() {
+                }
+                _getFocused() {
+                  return this.tag('Keyboard')
+                }
+                $onSoftKey({ key }) {
+                  if (key === 'Done') {
+                    this.handleDone();
+                  } else if (key === 'Clear') {
+                    this.textCollection = this.textCollection.substring(0, this.textCollection.length - 1);
+                    this.tag('EndpointText').text.text = this.textCollection;
+                  } else if (key === '#@!' || key === 'abc' || key === 'áöû' || key === 'shift') {
+                    console.log('no saving')
+                  } else if (key === 'Space') {
+                    this.textCollection += ' '
+                    this.tag('EndpointText').text.text = this.textCollection;
+                  } else if (key === 'Delete') {
+                    this.textCollection = ''
+                    this.tag('EndpointText').text.text = this.textCollection;
+                  } else {
+                    this.textCollection += key
+                    this.tag('EndpointText').text.text = this.textCollection;
+                  }
+                }
+                _handleUp() {
+                  this._setState("Endpoint");
+                }
+                _handleBack() {
+                  this.textCollection = '';
+                  this.tag('EndpointText').text.text = '';
+                  this.tag("Keyboard").visible = false
+                  this._setState("Endpoint");
+                }
+            }
         ]
     }
 }

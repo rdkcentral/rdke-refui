@@ -62,9 +62,8 @@ export default class UserSettingsApi {
               resolve(true)
             })
             .catch(err => {
-              //FIXME:
-              //console.log('Error enable', err)
-              //Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder TextToSpeech Speak " + JSON.stringify(err), false, null)
+              console.log('Error enable', err)
+              Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder UserSettings setVoiceGuidance " + JSON.stringify(err), false, null)
               resolve(false)
             })
         })
@@ -78,9 +77,8 @@ export default class UserSettingsApi {
               resolve(result)
             })
             .catch(err => {
-              //FIXME:
-              //console.error("AppAPI TextToSpeech speak error:", JSON.stringify(err, 3, null))
-              //Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder TextToSpeech Speak " + JSON.stringify(err), false, null)
+              console.log('Error enable', err)
+              Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder UserSettings getVoiceGuidance " + JSON.stringify(err), false, null)
               resolve(false)
             })
         })
