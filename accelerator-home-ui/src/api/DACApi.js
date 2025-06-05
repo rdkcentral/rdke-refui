@@ -264,20 +264,18 @@ export const startDACApp = async (app) => {
     return false
   } else if (!result.success) {
     // Could be same app is in suspended mode.
-    await thunderJS()['org.rdk.RDKShell'].getClients().then(response => {
-      if (Array.isArray(response.clients) && response.clients.includes(app.id.toLowerCase())) {
-        console.log("DACApi " + app.id + " got a match in getClients response; could be in suspended mode, resume it.");
-        thunderJS()['org.rdk.RDKShell'].resumeApplication({ client: app.id }).then(result => {
-          if (!result.success) {
-            return false;
-          } else if (result.success) {
-            if (GLOBALS.topmostApp === GLOBALS.selfClientName) {
-              thunder.call('org.rdk.RDKShell', 'setVisibility', { "client": GLOBALS.selfClientName, "visible": false })
-            }
-          }
-        })
+    const clientsResponse  = await thunderJS()['org.rdk.RDKShell'].getClients();
+    if (Array.isArray(clientsResponse.clients) && clientsResponse.clients.includes(app.id.toLowerCase())) {
+      console.log("DACApi " + app.id + " got a match in getClients clientsResponse ; could be in suspended mode, resume it.");
+      const resumeResult = await thunderJS()['org.rdk.RDKShell'].resumeApplication({ client: app.id });
+      if (!resumeResult.success) {
+        return false;
       }
-    })
+      if ((resumeResult.success) && (GLOBALS.topmostApp === GLOBALS.selfClientName)) {
+        thunder.call('org.rdk.RDKShell', 'setVisibility', { "client": GLOBALS.selfClientName, "visible": false });
+      }
+}
+
   } else if (result.success) {
     if (GLOBALS.topmostApp === GLOBALS.selfClientName) {
       thunder.call('org.rdk.RDKShell', 'setVisibility', { "client": GLOBALS.selfClientName, "visible": false })
