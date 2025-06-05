@@ -46,7 +46,6 @@ export default class AdvanceSettingsScreen extends Lightning.Component {
                 x: 200,
                 y: 275,
                 TTSOptions: {
-                    // alpha: 0.3, // disabled
                     type: SettingsMainItem,
                     Title: {
                         x: 10,

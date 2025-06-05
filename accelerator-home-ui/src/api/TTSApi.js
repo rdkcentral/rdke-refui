@@ -32,7 +32,7 @@ export default class TTSApi {
                     resolve(true)
                 })
                 .catch(err => {
-                    console.log('Error Activation', err)
+                    console.error('Error Activation', err)
                     Metrics.error(Metrics.ErrorType.OTHER, errorName, `Error while Thunder Controller ${callsign} activate ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
@@ -45,18 +45,18 @@ export default class TTSApi {
                     resolve(true)
                 })
                 .catch(err => {
-                    console.log('Error Deactivation', err)
+                    console.error('Error Deactivation', err)
                     Metrics.error(Metrics.ErrorType.OTHER, errorName, `Error while Thunder Controller ${callsign} deactivate ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
         })
     }
 
-    enable(enabletts) {
+    enabletts(enable) {
         return new Promise((resolve) => {
           thunder
             .call(callsign, 'enabletts', {
-              "enabletts": enabletts
+              "enabletts": enable
             })
             .then(() => {
               resolve(true)
@@ -69,7 +69,7 @@ export default class TTSApi {
         })
       }
 
-    isEnabled() {
+    isttsenabled() {
         return new Promise((resolve) => {
           thunder
             .call(callsign, 'isttsenabled')
@@ -84,7 +84,7 @@ export default class TTSApi {
         })
     }
 
-      setTTSConfiguration(configuration) {
+      setttsconfiguration(configuration) {
         return new Promise((resolve) => {
           thunder
             .call(callsign, 'setttsconfiguration', configuration)
@@ -99,7 +99,7 @@ export default class TTSApi {
         })
       }
 
-      getTTSConfiguration() {
+      getttsconfiguration() {
         return new Promise((resolve) => {
           thunder
             .call(callsign, 'getttsconfiguration')
@@ -114,11 +114,11 @@ export default class TTSApi {
         })
       }
 
-    ttsSpeak() {
+    speak(text) {
       return new Promise((resolve) => {
         thunder
           .call(callsign, 'speak', {
-            "text": "speech_1"
+            "text": text
           })
           .then(result => {
             resolve(result)
@@ -131,7 +131,7 @@ export default class TTSApi {
       })
     }
 
-    ttsResume() {
+    resume() {
       return new Promise((resolve) => {
         thunder
           .call(callsign, 'resume', {
@@ -148,7 +148,7 @@ export default class TTSApi {
       })
     }
 
-    ttsPause() {
+    pause() {
       return new Promise((resolve) => {
         thunder
           .call(callsign, 'pause', {

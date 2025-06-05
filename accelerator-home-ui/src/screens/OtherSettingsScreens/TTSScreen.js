@@ -44,7 +44,6 @@ export default class TTSScreen extends Lightning.Component {
                 x: 200,
                 y: 275,
                 Endpoint: {
-                    //type: SettingsMainItem,
                     EndpointName: {
                         x: 10,
                         y: 45,
@@ -112,7 +111,7 @@ export default class TTSScreen extends Lightning.Component {
     }
 
     refreshEnableButtonState() {
-        this.ttsApi.isEnabled()
+        this.ttsApi.isttsenabled()
             .then(ttsApiIsEnabled => {
                 this.userSettingsApi.getVoiceGuidance()
                     .then(userSettingsApiIsEnabled => {
@@ -128,7 +127,7 @@ export default class TTSScreen extends Lightning.Component {
         });
     }
     refreshEnableButtonOpacity() {
-        this.ttsApi.getTTSConfiguration()
+        this.ttsApi.getttsconfiguration()
             .then(result => {
                 if((result.ttsendpoint && result.ttsendpoint !== " ") ||  (result.ttsendpointsecured && result.ttsendpointsecured !== " ") ){
                     this.ttsEnableButtonActive = true;
@@ -142,12 +141,12 @@ export default class TTSScreen extends Lightning.Component {
     }
 
     handleDone() {
+        this.ttsApi.setttsconfiguration({
+            "ttsendpoint": this.textCollection,
+            "ttsendpointsecured": this.textCollection
+        });
         this.tag("Keyboard").visible = false
         this._setState("Endpoint");
-        this.ttsApi.setTTSConfiguration({
-              "ttsendpoint": this.textCollection,
-              "ttsendpointsecured": this.textCollection
-        });
         this.refreshEnableButtonOpacity();
     }
 
@@ -181,11 +180,11 @@ export default class TTSScreen extends Lightning.Component {
 
     toggleTTS() {
         if(this.ttsSupport) {
-            this.ttsApi.enable(false);
+            this.ttsApi.enabletts(false);
             this.userSettingsApi.setVoiceGuidance(false);
         }
         else {
-            this.ttsApi.enable(true);
+            this.ttsApi.enabletts(true);
             this.userSettingsApi.setVoiceGuidance(true);
         }
     }
