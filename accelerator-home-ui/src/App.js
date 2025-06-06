@@ -52,6 +52,7 @@ import { Localization, Metrics } from '@firebolt-js/sdk';
 import RDKShellApis from './api/RDKShellApis.js';
 import Miracast from './api/Miracast.js';
 import MiracastNotification from './screens/MiracastNotification.js';
+import OCIContainer from './api/OCIContainerApi.js';
 
 
 var powerState = 'ON';
@@ -63,6 +64,7 @@ var cecApi = new CECApi();
 var xcastApi = new XcastApi();
 var voiceApi = new VoiceApi();
 var miracast = new Miracast();
+var ocicontainer = new OCIContainer();
 
 export default class App extends Router.App {
 
@@ -635,6 +637,13 @@ export default class App extends Router.App {
           this.SubscribeToMiracastService()
         }
       }
+      if (noti.callsign === "org.rdk.OCIContainer") {
+        if(noti.data.state==="activated"){
+          console.log("subscribing the events for OCIContainer")
+          this.SubscribeToOCIContainer()
+        }
+      }
+      
     })
     this._subscribeToRDKShellNotifications()
     appApi.getPluginStatus("Cobalt").then(() => {
@@ -798,8 +807,33 @@ export default class App extends Router.App {
     this._subscribeToIOPortNotifications()
 
     this._updateLanguageToDefault()
+    appApi.getPluginStatus('org.rdk.OCIContainer').then(result => {
+      if (result[0].state === "activated")
+      {
+        this.SubscribeToOCIContainer()
+      }
+      else
+      {
+        ocicontainer.activate().then((res)=>{
+          console.log("activating the OCIContainer from app.js "+ JSON.stringify(res))
+        }).catch((err) => console.error(err))
+      }
+    })
   }
 
+  SubscribeToOCIContainer(){
+    thunder.on('org.rdk.OCIContainer', 'onContainerStarted', data => {
+      console.warn("[OCIContainer] onContainerStarted:", JSON.stringify(data));
+    });
+    thunder.on('org.rdk.OCIContainer', 'onContainerStopped', data => {
+      console.warn("[OCIContainer] onContainerStopped:", JSON.stringify(data));
+      if ((data.client != GLOBALS.selfClientName) && (GLOBALS.topmostApp != GLOBALS.selfClientName)) {
+        appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName).then(() => {
+        AlexaApi.get().reportApplicationState("menu", true);
+      });
+        }
+    });
+  }
   SubscribeToMiracastService() {
     thunder.on('org.rdk.MiracastService.1', 'onClientConnectionRequest', data => {
     console.log('onClientConnectionRequest ' + JSON.stringify(data));
