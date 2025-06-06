@@ -159,15 +159,17 @@ export default class TTSScreen extends Lightning.Component {
         this.ttsApi.activate();
         this.userSettingsApi.activate();
 
-        this.refreshEnableButtonState();
-        this.refreshEnableButtonOpacity();
-
         this.textCollection = '';
     }
 
     _focus() {
         this.tag("EndpointText").text.text = Language.translate("Press OK to enter TTS endpoint");
         this._setState(this.state)
+        this.refreshEnableButtonState();
+        this.refreshEnableButtonOpacity();
+    }
+
+    _enable() {
         this.refreshEnableButtonState();
         this.refreshEnableButtonOpacity();
     }
