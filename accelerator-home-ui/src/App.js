@@ -1572,7 +1572,7 @@ export default class App extends Router.App {
           Router.navigate(Storage.get("lastVisitedRoute"));
           this._moveApptoFront(GLOBALS.selfClientName, true)
           if (res) {
-            let params = { applicationName: "NetflixApp", state: "suspended" };
+            let params = { applicationName: "Netflix", state: "suspended" };
             this.xcastApi.onApplicationStateChanged(params);
           }
         });
