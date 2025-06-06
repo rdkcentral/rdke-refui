@@ -677,7 +677,8 @@ export const KEYBOARD_FORMATS = {
         { label: '_', announce: 'underscore, button' },
         { label: '.', announce: 'period, button' },
         { label: '-', announce: 'dash, button' },
-        { label: '+', announce: 'plus sign, button' }
+        { label: '+', announce: 'plus sign, button' },
+        { label: ':', announce: 'doublecolon, button' },
       ],
       [
         { label: 'Delete', size: 'large' },

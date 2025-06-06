@@ -46,7 +46,6 @@ export default class AdvanceSettingsScreen extends Lightning.Component {
                 x: 200,
                 y: 275,
                 TTSOptions: {
-                    alpha: 0.3, // disabled
                     type: SettingsMainItem,
                     Title: {
                         x: 10,
@@ -180,7 +179,7 @@ export default class AdvanceSettingsScreen extends Lightning.Component {
                 this.tag('CECControl.Button').src = Utils.asset('images/settings/ToggleOnOrange.png')
                 this.performOTPAction()
             })
-        this._setState('CECControl')
+        this._setState('TTSOptions')
     }
     _focus() {
         this._setState(this.state)
@@ -249,13 +248,15 @@ export default class AdvanceSettingsScreen extends Lightning.Component {
                     this.tag('TTSOptions')._unfocus()
                 }
                 _handleUp() {
-                    //this._setState('UIVoice');
+                    this._setState('Device')
                 }
                 _handleDown() {
-                    //this._setState('CECControl')
+                    this._setState('CECControl')
                 }
                 _handleEnter() {
-
+                    if(!Router.isNavigating()){
+                        Router.navigate('settings/advanced/tts')
+                    }
                 }
             },
             class CECControl extends this{
@@ -266,7 +267,7 @@ export default class AdvanceSettingsScreen extends Lightning.Component {
                     this.tag('CECControl')._unfocus()
                 }
                 _handleUp() {
-                    //this._setState('TTSOptions');
+                    this._setState('TTSOptions');
                 }
                 _handleDown() {
                     this._setState('Device')
