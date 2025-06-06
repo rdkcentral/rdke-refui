@@ -23,6 +23,7 @@ import LanguageScreen from '../screens/OtherSettingsScreens/LanguageScreen'
 import PrivacyScreen from '../screens/OtherSettingsScreens/PrivacyScreen'
 import PrivacyPolicyScreen from '../screens/OtherSettingsScreens/PrivacyPolicyScreen'
 import AdvancedSettingsScreen from '../screens/OtherSettingsScreens/AdvancedSettingsScreen'
+import TTSScreen from '../screens/OtherSettingsScreens/TTSScreen'
 import DeviceScreen from '../screens/OtherSettingsScreens/DeviceScreen'
 import DeviceInformationScreen from '../screens/OtherSettingsScreens/DeviceInformationScreen'
 import FirmwareScreen from '../screens/OtherSettingsScreens/FirmwareScreen'
@@ -80,6 +81,11 @@ export default {
     {
       path: 'settings/advanced',
       component: AdvancedSettingsScreen,
+      widgets: ['Menu', 'Volume', "AppCarousel"],
+    },
+    {
+      path: 'settings/advanced/tts',
+      component: TTSScreen,
       widgets: ['Menu', 'Volume', "AppCarousel"],
     },
     {
