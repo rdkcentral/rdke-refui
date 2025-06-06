@@ -165,11 +165,11 @@ export default class TTSApi {
       })
     }
 
-    ttsGetListVoices() {
+    listvoices(language) {
       return new Promise((resolve) => {
         thunder
           .call(callsign, 'listvoices', {
-            "language": "en-US"
+            "language": language ? language : "en-US"
           })
           .then(result => {
             resolve(result)
