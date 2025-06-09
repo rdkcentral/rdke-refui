@@ -23,7 +23,6 @@ export default class OCIContainer {
     constructor() {
         this._thunder = ThunderJS(CONFIG.thunderConfig);
     }
-//callsign
     activate() {
         return new Promise((resolve,reject) => {
         this._thunder.Controller.activate({ callsign: 'org.rdk.OCIContainer' }).then((res) => {
