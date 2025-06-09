@@ -59,6 +59,7 @@ export const WiFiError = {
   INVALID_CREDENTIALS: 4,
   NO_SSID: 5,
   UNKNOWN: 6,
+  WIFI_AUTH_FAILED,
 }
 
 export const WiFiSecurityModes = {
