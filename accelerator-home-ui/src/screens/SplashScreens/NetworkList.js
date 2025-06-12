@@ -413,7 +413,7 @@ export default class NetworkList extends Lightning.Component {
     })
     WiFi.get().thunder.on(WiFi.get().callsign, 'onWIFIStateChanged', notification => {
       console.log(JSON.stringify(notification))
-      if (notification.state === WiFiState.CONNECTED && ! Storage.get("setup")) {
+      if (notification.state === WiFiState.CONNECTED && ! GLOBALS.Setup) {
         this.tag('Info').text.text = Language.translate("Connection successful");
         Registry.setTimeout(() => {
           Router.navigate('menu')

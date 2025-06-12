@@ -511,7 +511,10 @@ export default class App extends Router.App {
     if (GLOBALS.topmostApp !== "HDMI") { //to default to hdmi, if previous input was hdmi
       GLOBALS.topmostApp = GLOBALS.selfClientName;//to set the application type to none
     }
+    GLOBALS.LastvisitedRoute=Storage.get("lastVisitedRoute")
+    GLOBALS.Setup=Storage.get("setup")
     Storage.set("lastVisitedRoute", "menu"); //setting to menu so that it will be always defaulted to #menu
+    GLOBALS.LastvisitedRoute="menu";
     appApi.enableDisplaySettings().then(res => { console.log(`results : ${JSON.stringify(res)}`) }).catch(err => {
       console.error("error while enabling displaysettings:" + JSON.stringify(err));
     })
@@ -871,7 +874,7 @@ export default class App extends Router.App {
       if(data.state === "STOPPED")
       {
         RDKShellApis.setVisibility(GLOBALS.selfClientName,true)
-        Router.navigate(Storage.get("lastVisitedRoute"));
+        Router.navigate(GLOBALS.LastvisitedRoute);
         if(data.reason_code!=200){
           if(GLOBALS.topmostApp===GLOBALS.selfClientName)
           {
@@ -1094,7 +1097,7 @@ export default class App extends Router.App {
         console.log(">>notification.callsign: ", notification.callsign, " applicationType: ", GLOBALS.topmostApp);
         if (Router.getActiveHash().startsWith("tv-overlay") || Router.getActiveHash().startsWith("overlay") || Router.getActiveHash().startsWith("applauncher")) { //navigate to last visited route when exiting from any app
           console.log("navigating to lastVisitedRoute")
-          Router.navigate(Storage.get("lastVisitedRoute"));
+          Router.navigate((GLOBALS.LastvisitedRoute));
         }
         if (notification.callsign === GLOBALS.topmostApp) { //only launch residentApp iff notification is from currentApp
           console.log(notification.callsign + " is in: " + notification.state + " state, and application type in Storage is still: " + GLOBALS.topmostApp + " calling launchResidentApp")
@@ -1161,7 +1164,7 @@ export default class App extends Router.App {
     let self = this;
     thunder.on("org.rdk.HdcpProfile", "onDisplayConnectionChanged", notification => {
       GLOBALS.previousapp_onActiveSourceStatusUpdated=null
-      console.log(new Date().toISOString() + " onDisplayConnectionChanged ", notification.HDCPStatus)
+      console.log(new Date().toISOString() + " onDisplayConnectionChanged " + notification.HDCPStatus)
       let temp = notification.HDCPStatus
       if (!Storage.get("ResolutionChangeInProgress") && (temp.isConnected != Storage.get("UICacheonDisplayConnectionChanged"))) {
         if (temp.isConnected) {
@@ -1169,11 +1172,11 @@ export default class App extends Router.App {
           if(GLOBALS.previousapp_onDisplayConnectionChanged !== null) {
                 currentApp=GLOBALS.previousapp_onDisplayConnectionChanged
               }
-          if(currentApp === "ResidentApp") {
-            Router.navigate(Storage.get("lastVisitedRoute"));
+          if(currentApp === "ResidentApp" && GLOBALS.Setup) {
+            Router.navigate(GLOBALS.LastvisitedRoute);
           }
           let launchLocation = Storage.get(currentApp + "LaunchLocation")
-          console.log("App HdcpProfile onDisplayConnectionChanged current app is:", currentApp)
+          console.log("App HdcpProfile onDisplayConnectionChanged current app is:"  + currentApp)
           let params = {
             launchLocation: launchLocation,
             appIdentifier: self.appIdentifiers[currentApp]
@@ -1187,11 +1190,11 @@ export default class App extends Router.App {
                  appApi.launchApp(currentApp, params)
                  .then(()=>GLOBALS.previousapp_onDisplayConnectionChanged=null)
                  .catch(err => {
-                  Router.navigate(Storage.get("lastVisitedRoute"))
+                  Router.navigate(GLOBALS.LastvisitedRoute)
                  console.error(`Error in launching ${currentApp} : ` + JSON.stringify(err))
                 });
               } else {
-                console.log("App HdcpProfile onDisplayConnectionChanged skipping; " + currentApp + " is already: ", JSON.stringify(result[0].state));
+                console.log("App HdcpProfile onDisplayConnectionChanged skipping; " + currentApp + " is already: " + JSON.stringify(result[0].state));
               }
             })
           }
@@ -1204,7 +1207,7 @@ export default class App extends Router.App {
                 appApi.exitApp(currentApp, true)
                 .then(()=>GLOBALS.previousapp_onDisplayConnectionChanged=currentApp)
                 .catch(err => {
-                  Router.navigate(Storage.get("lastVisitedRoute"))
+                  Router.navigate(GLOBALS.LastvisitedRoute)
                  console.error(`Error in exit app ${currentApp} : ` + JSON.stringify(err))
                 });
               } else {
@@ -1212,6 +1215,8 @@ export default class App extends Router.App {
               }
             })
           }
+          Storage.set("lastVisitedRoute",Router.getActiveHash())
+          GLOBALS.LastvisitedRoute= Router.getActiveHash()
         }
         Storage.set("UICacheonDisplayConnectionChanged", temp.isConnected)
       } else {
@@ -1225,18 +1230,18 @@ export default class App extends Router.App {
     switch (state) {
       case "activated":
         this.onApplicationStateChanged=thunder.on("org.rdk.HdmiCecSource", "onActiveSourceStatusUpdated", notification => {
-          console.log(new Date().toISOString() + " onActiveSourceStatusUpdated ", notification)
+          console.log(new Date().toISOString() + " onActiveSourceStatusUpdated "+ JSON.stringify(notification))
           if (notification.status != Storage.get("UICacheCECActiveSourceStatus")) {
             if (notification.status) {
               let currentApp = GLOBALS.topmostApp
               if(GLOBALS.previousapp_onActiveSourceStatusUpdated !== null) {
                 currentApp=GLOBALS.previousapp_onActiveSourceStatusUpdated
               }
-              if(currentApp === "ResidentApp") {
-                Router.navigate(Storage.get("lastVisitedRoute"));
+              if(currentApp === "ResidentApp" && GLOBALS.Setup) {
+                Router.navigate(GLOBALS.LastvisitedRoute);
               }
               let launchLocation = Storage.get(currentApp + "LaunchLocation")
-              console.log("current app is ", currentApp)
+              console.log("current app is " + JSON.stringify(currentApp))
               let params = {
                 launchLocation: launchLocation,
                 appIdentifier: appIdentifiers[currentApp]
@@ -1250,11 +1255,11 @@ export default class App extends Router.App {
                     appApi.launchApp(currentApp, params)
                     .then(()=>GLOBALS.previousapp_onActiveSourceStatusUpdated=null)
                     .catch(err => {
-                      Router.navigate(Storage.get("lastVisitedRoute"))
+                      Router.navigate(GLOBALS.LastvisitedRoute)
                       console.error(`Error in launching ${currentApp} : ` + JSON.stringify(err))
                     });
                   } else {
-                    console.log("App HdmiCecSource onActiveSourceStatusUpdated skipping; " + currentApp + " is already:", JSON.stringify(result[0].state));
+                    console.log("App HdmiCecSource onActiveSourceStatusUpdated skipping; " + currentApp + " is already:" + JSON.stringify(result[0].state));
                   }
                 })
               }
@@ -1267,17 +1272,19 @@ export default class App extends Router.App {
                     appApi.exitApp(currentApp, true)
                     .then(()=>GLOBALS.previousapp_onActiveSourceStatusUpdated=currentApp)
                     .catch(err => {
-                      Router.navigate(Storage.get("lastVisitedRoute"))
+                      Router.navigate(GLOBALS.LastvisitedRoute)
                      console.error(`Error in launching ${currentApp} : ` + JSON.stringify(err))
                     });
                   } else {
-                    console.log("App HdmiCecSource onActiveSourceStatusUpdated skipping; " + currentApp + " is already:", JSON.stringify(result[0].state));
+                    console.log("App HdmiCecSource onActiveSourceStatusUpdated skipping; " + currentApp + " is already:"+ JSON.stringify(result[0].state));
                   }
                 })
               }
+              Storage.set("lastVisitedRoute",Router.getActiveHash())
+              GLOBALS.LastvisitedRoute= Router.getActiveHash()
             }
             Storage.set("UICacheCECActiveSourceStatus", notification.status);
-            console.log("App HdmiCecSource onActiveSourceStatusUpdated UICacheCECActiveSourceStatus:", Storage.get("UICacheCECActiveSourceStatus"));
+            console.log("App HdmiCecSource onActiveSourceStatusUpdated UICacheCECActiveSourceStatus:"+ JSON.stringify(Storage.get("UICacheCECActiveSourceStatus")));
           } else {
             console.warn("App HdmiCecSource onActiveSourceStatusUpdated discarding.");
           }
@@ -1387,73 +1394,7 @@ export default class App extends Router.App {
     /* Subscribe to Volume status events to report to Alexa. */
     this._subscribeToAlexaNotifications()
   }
-  SubscribeToHdmiCecSourcevent(state,appIdentifiers){
-    switch (state) {
-      case "activated":
-        this.onApplicationStateChanged=thunder.on("org.rdk.HdmiCecSource", "onActiveSourceStatusUpdated", notification => {
-          console.log(new Date().toISOString() + " onActiveSourceStatusUpdated ", notification)
-          if (notification.status != Storage.get("UICacheCECActiveSourceStatus")) {
-            if (notification.status) {
-              let currentApp = GLOBALS.topmostApp
-              if(GLOBALS.previousapp_onActiveSourceStatusUpdated !== null) {
-                currentApp=GLOBALS.previousapp_onActiveSourceStatusUpdated
-              }
-              if(currentApp === "ResidentApp") {
-                Router.navigate(Storage.get("lastVisitedRoute"));
-              }
-              let launchLocation = Storage.get(currentApp + "LaunchLocation")
-              console.log("current app is ", currentApp)
-              let params = {
-                launchLocation: launchLocation,
-                appIdentifier: appIdentifiers[currentApp]
-              }
-              if (currentApp.startsWith("YouTube")||currentApp.startsWith("Amazon")||currentApp.startsWith("Netflix")) {
-                params["url"] = Storage.get(currentApp + "DefaultURL");
-                appApi.getPluginStatus(currentApp).then(result => {
-                  const isAppSuspendedEnabled = Settings.get("platform", "enableAppSuspended");
-                  const expectedState = isAppSuspendedEnabled ? ["hibernated", "suspended"] : ["deactivated"];
-                  if (expectedState.includes(result[0].state)) {
-                    appApi.launchApp(currentApp, params)
-                    .then(()=>GLOBALS.previousapp_onActiveSourceStatusUpdated=null)
-                    .catch(err => {
-                      Router.navigate(Storage.get("lastVisitedRoute"))
-                      console.error(`Error in launching ${currentApp} : ` + JSON.stringify(err))
-                    });
-                  } else {
-                    console.log("App HdmiCecSource onActiveSourceStatusUpdated skipping; " + currentApp + " is already:", JSON.stringify(result[0].state));
-                  }
-                })
-              }
-            }
-            else {
-              let currentApp = GLOBALS.topmostApp
-              if (currentApp.startsWith("YouTube")||currentApp.startsWith("Amazon")||currentApp.startsWith("Netflix")) {
-                appApi.getPluginStatus(currentApp).then(result => {
-                  if (result[0].state !== (Settings.get("platform", "enableAppSuspended") ? "suspended" : "deactivated")) {
-                    appApi.exitApp(currentApp, true)
-                    .then(()=>GLOBALS.previousapp_onActiveSourceStatusUpdated=currentApp)
-                    .catch(err => {
-                      Router.navigate(Storage.get("lastVisitedRoute"))
-                     console.error(`Error in launching ${currentApp} : ` + JSON.stringify(err))
-                    });
-                  } else {
-                    console.log("App HdmiCecSource onActiveSourceStatusUpdated skipping; " + currentApp + " is already:", JSON.stringify(result[0].state));
-                  }
-                })
-              }
-            }
-            Storage.set("UICacheCECActiveSourceStatus", notification.status);
-            console.log("App HdmiCecSource onActiveSourceStatusUpdated UICacheCECActiveSourceStatus:", Storage.get("UICacheCECActiveSourceStatus"));
-          } else {
-            console.warn("App HdmiCecSource onActiveSourceStatusUpdated discarding.");
-          }
-        })
-          break;
-      case "deactivated":
-        this.onApplicationStateChanged.dispose()
-          break;
-  }
-  }
+  
   async listenToVoiceControl() {
     console.log("App listenToVoiceControl method got called, configuring VoiceControl Plugin")
     await voiceApi.activate().then(() => {
@@ -1569,7 +1510,7 @@ export default class App extends Router.App {
         break;
       case "Netflix":
         appApi.suspendPremiumApp("Netflix").then((res) => {
-          Router.navigate(Storage.get("lastVisitedRoute"));
+          Router.navigate(GLOBALS.LastvisitedRoute);
           this._moveApptoFront(GLOBALS.selfClientName, true)
           if (res) {
             let params = { applicationName: "Netflix", state: "suspended" };
@@ -2027,7 +1968,7 @@ export default class App extends Router.App {
             AlexaApi.get().setAlexaAuthStatus("AlexaAuthPending")
           } else if ((notification.xr_speech_avs.state === "unrecoverable error") && (GLOBALS.topmostApp === GLOBALS.selfClientName)) {
             // Could be AUTH token Timeout; refresh it.
-            if (Storage.get("setup") === true) {
+            if (GLOBALS.Setup === true) {
               Router.navigate("FailureScreen");
             } else {
               Storage.set("alexaOTPReset", true);
@@ -2356,6 +2297,7 @@ export default class App extends Router.App {
         console.log("jumpToRoute err: " + err)
       });
       Storage.set("lastVisitedRoute", route);// incase any state change event tries to navigate, it need to be navigated to alexa requested route
+      GLOBALS.LastvisitedRoute= route
       Router.navigate(route);
     } else {
       if (!Router.isNavigating()) {
@@ -2374,6 +2316,7 @@ export default class App extends Router.App {
         }
         Storage.set("lastVisitedRoute", route);
         Router.navigate(route);
+        GLOBALS.LastvisitedRoute= route
       }
     }
   }
