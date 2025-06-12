@@ -511,6 +511,8 @@ export default class App extends Router.App {
     if (GLOBALS.topmostApp !== "HDMI") { //to default to hdmi, if previous input was hdmi
       GLOBALS.topmostApp = GLOBALS.selfClientName;//to set the application type to none
     }
+    GLOBALS.LastvisitedRoute=Storage.get("lastVisitedRoute")
+    GLOBALS.Setup=Storage.get("setup")
     Storage.set("lastVisitedRoute", "menu"); //setting to menu so that it will be always defaulted to #menu
     GLOBALS.LastvisitedRoute="menu";
     appApi.enableDisplaySettings().then(res => { console.log(`results : ${JSON.stringify(res)}`) }).catch(err => {
@@ -799,8 +801,6 @@ export default class App extends Router.App {
     this._subscribeToIOPortNotifications()
 
     this._updateLanguageToDefault()
-    GLOBALS.LastvisitedRoute=Storage.get("lastVisitedRoute")
-    GLOBALS.Setup=Storage.get("setup")
   }
 
   SubscribeToMiracastService() {
@@ -1164,7 +1164,7 @@ export default class App extends Router.App {
     let self = this;
     thunder.on("org.rdk.HdcpProfile", "onDisplayConnectionChanged", notification => {
       GLOBALS.previousapp_onActiveSourceStatusUpdated=null
-      console.log(new Date().toISOString() + " onDisplayConnectionChanged ", notification.HDCPStatus)
+      console.log(new Date().toISOString() + " onDisplayConnectionChanged " + notification.HDCPStatus)
       let temp = notification.HDCPStatus
       if (!Storage.get("ResolutionChangeInProgress") && (temp.isConnected != Storage.get("UICacheonDisplayConnectionChanged"))) {
         if (temp.isConnected) {
@@ -1176,7 +1176,7 @@ export default class App extends Router.App {
             Router.navigate(GLOBALS.LastvisitedRoute);
           }
           let launchLocation = Storage.get(currentApp + "LaunchLocation")
-          console.log("App HdcpProfile onDisplayConnectionChanged current app is:", currentApp)
+          console.log("App HdcpProfile onDisplayConnectionChanged current app is:"  + currentApp)
           let params = {
             launchLocation: launchLocation,
             appIdentifier: self.appIdentifiers[currentApp]
@@ -1194,7 +1194,7 @@ export default class App extends Router.App {
                  console.error(`Error in launching ${currentApp} : ` + JSON.stringify(err))
                 });
               } else {
-                console.log("App HdcpProfile onDisplayConnectionChanged skipping; " + currentApp + " is already: ", JSON.stringify(result[0].state));
+                console.log("App HdcpProfile onDisplayConnectionChanged skipping; " + currentApp + " is already: " + JSON.stringify(result[0].state));
               }
             })
           }
@@ -1230,7 +1230,7 @@ export default class App extends Router.App {
     switch (state) {
       case "activated":
         this.onApplicationStateChanged=thunder.on("org.rdk.HdmiCecSource", "onActiveSourceStatusUpdated", notification => {
-          console.log(new Date().toISOString() + " onActiveSourceStatusUpdated ", JSON.stringify(notification))
+          console.log(new Date().toISOString() + " onActiveSourceStatusUpdated "+ JSON.stringify(notification))
           if (notification.status != Storage.get("UICacheCECActiveSourceStatus")) {
             if (notification.status) {
               let currentApp = GLOBALS.topmostApp
@@ -1241,7 +1241,7 @@ export default class App extends Router.App {
                 Router.navigate(GLOBALS.LastvisitedRoute);
               }
               let launchLocation = Storage.get(currentApp + "LaunchLocation")
-              console.log("current app is ", JSON.stringify(currentApp))
+              console.log("current app is " + JSON.stringify(currentApp))
               let params = {
                 launchLocation: launchLocation,
                 appIdentifier: appIdentifiers[currentApp]
@@ -1259,7 +1259,7 @@ export default class App extends Router.App {
                       console.error(`Error in launching ${currentApp} : ` + JSON.stringify(err))
                     });
                   } else {
-                    console.log("App HdmiCecSource onActiveSourceStatusUpdated skipping; " + currentApp + " is already:", JSON.stringify(result[0].state));
+                    console.log("App HdmiCecSource onActiveSourceStatusUpdated skipping; " + currentApp + " is already:" + JSON.stringify(result[0].state));
                   }
                 })
               }
@@ -1276,7 +1276,7 @@ export default class App extends Router.App {
                      console.error(`Error in launching ${currentApp} : ` + JSON.stringify(err))
                     });
                   } else {
-                    console.log("App HdmiCecSource onActiveSourceStatusUpdated skipping; " + currentApp + " is already:", JSON.stringify(result[0].state));
+                    console.log("App HdmiCecSource onActiveSourceStatusUpdated skipping; " + currentApp + " is already:"+ JSON.stringify(result[0].state));
                   }
                 })
               }
@@ -1284,7 +1284,7 @@ export default class App extends Router.App {
               GLOBALS.LastvisitedRoute= Router.getActiveHash()
             }
             Storage.set("UICacheCECActiveSourceStatus", notification.status);
-            console.log("App HdmiCecSource onActiveSourceStatusUpdated UICacheCECActiveSourceStatus:", JSON.stringify(Storage.get("UICacheCECActiveSourceStatus")));
+            console.log("App HdmiCecSource onActiveSourceStatusUpdated UICacheCECActiveSourceStatus:"+ JSON.stringify(Storage.get("UICacheCECActiveSourceStatus")));
           } else {
             console.warn("App HdmiCecSource onActiveSourceStatusUpdated discarding.");
           }
