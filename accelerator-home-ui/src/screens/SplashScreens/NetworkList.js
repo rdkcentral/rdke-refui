@@ -19,7 +19,7 @@
 
 import { Lightning, Utils, Router, Registry, Language, Storage } from '@lightningjs/sdk'
 import { COLORS } from '../../colors/Colors'
-import { CONFIG } from '../../Config/Config'
+import { CONFIG,GLOBALS } from '../../Config/Config'
 import SettingsMainItem from '../../items/SettingsMainItem'
 import Network from '../../api/NetworkApi'
 import WiFi, { WiFiError, WiFiState, WiFiErrorMessages } from '../../api/WifiApi'
