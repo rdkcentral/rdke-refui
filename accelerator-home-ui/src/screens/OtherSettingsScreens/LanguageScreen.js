@@ -90,6 +90,9 @@ export default class LanguageScreen extends Lightning.Component {
     RDKShellApis.moveToFront(GLOBALS.selfClientName)
     RDKShellApis.setFocus(GLOBALS.selfClientName).then(result => {
       console.log('LanguageScreen: ResidentApp moveToFront Success');
+      RDKShellApis.getVisibility(GLOBALS.selfClientName).then(visible => {
+        if (!visible) RDKShellApis.setVisibility(GLOBALS.selfClientName, true);
+      })
     }).catch(err => {
       console.log('LanguageScreen: Error', err);
       Metrics.error(Metrics.ErrorType.OTHER, "AppLangugaeError", 'Thunder RDKShell setFocus Error' + JSON.stringify(err), false, null)

@@ -19,7 +19,7 @@
 
 import { Lightning, Utils, Router, Registry, Language, Storage } from '@lightningjs/sdk'
 import { COLORS } from '../../colors/Colors'
-import { CONFIG } from '../../Config/Config'
+import { CONFIG,GLOBALS } from '../../Config/Config'
 import SettingsMainItem from '../../items/SettingsMainItem'
 import Network from '../../api/NetworkApi'
 import WiFi, { WiFiError, WiFiState, WiFiErrorMessages } from '../../api/WifiApi'
@@ -413,7 +413,7 @@ export default class NetworkList extends Lightning.Component {
     })
     WiFi.get().thunder.on(WiFi.get().callsign, 'onWIFIStateChanged', notification => {
       console.log(JSON.stringify(notification))
-      if (notification.state === WiFiState.CONNECTED && ! Storage.get("setup")) {
+      if (notification.state === WiFiState.CONNECTED && ! GLOBALS.Setup) {
         this.tag('Info').text.text = Language.translate("Connection successful");
         Registry.setTimeout(() => {
           Router.navigate('menu')
