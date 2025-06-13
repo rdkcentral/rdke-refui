@@ -547,7 +547,7 @@ export default class App extends Router.App {
                   await appApi.getPluginStatus("Amazon").then(async res=>{
                     let params = {"applications": []}
                     params.applications.push({
-                        "names": ["Prime Video"],
+                        "names": ["AmazonInstantVideo"],
                         "prefixes": ["myPrimeVideo"],
                         "cors": [".amazon.com"],
                         "properties": { "allowStop": true },
