@@ -42,10 +42,10 @@ export default class LISA {
   activate() {
     return new Promise((resolve, reject) => {
       this.thunder.call('Controller', 'activate', { callsign: this.callsign }).then(result => {
-        this.INFO("LISA: activate result:", result)
+        this.INFO("LISA: activate result:" + JSON.stringify(result))
         resolve(true)
       }).catch(err => {
-        this.ERR("LISA: activate error: ", err)
+        this.ERR("LISA: activate error: " + JSON.stringify(err))
         Metrics.error(Metrics.ErrorType.OTHER,"LisaApiError", "Error while Thunder Controller LisaApi activate "+JSON.stringify(err), false, null)
         reject(err)
       });
@@ -55,10 +55,10 @@ export default class LISA {
   deactivate() {
     return new Promise((resolve, reject) => {
       this.thunder.call('Controller', 'deactivate', { callsign: this.callsign }).then(result => {
-        this.INFO("LISA: deactivate result:", result)
+        this.INFO("LISA: deactivate result:" + JSON.stringify(result))
         resolve(true)
       }).catch(err => {
-        this.ERR("LISA: deactivate error: ", err)
+        this.ERR("LISA: deactivate error:" + JSON.stringify(err))
         Metrics.error(Metrics.ErrorType.OTHER,"LisaApiError", "Error while Thunder Controller LisaApi deactivate "+JSON.stringify(err), false, null)
         reject(err)
       });
@@ -77,7 +77,7 @@ export default class LISA {
         // "version" is reserved by ThunderJS; use "versionAsParameter" to avoid "unsupported version error".
         let params = { "id": "lisa.dac.config", "type": "application/LISA", "versionAsParameter": "0" };
         this.thunder.call(this.callsign, 'getMetadata', params).then(result => {
-          this.INFO("LISA: getMetadata result: ", result)
+          this.INFO("LISA: getMetadata result: " + JSON.stringify(result))
           if (Object.prototype.hasOwnProperty.call(result, "auxMetadata")) {
             let metadata = {}
             result.auxMetadata.forEach(item => {
@@ -88,7 +88,7 @@ export default class LISA {
           }
           reject(false)
         }).catch(err => {
-          this.ERR("LISA: getMetadata error: ", err)
+          this.ERR("LISA: getMetadata error: " + JSON.stringify(err))
           Metrics.error(Metrics.ErrorType.OTHER,"LisaApiError", "Error in Thunder LisaApi getMetaData "+JSON.stringify(err), false, null)
           this.metadata = null;
           reject(err)
@@ -99,13 +99,13 @@ export default class LISA {
 
   install(params) {
     return new Promise((resolve, reject) => {
-      this.LOG("LISA: install params:", params);
+      this.LOG("LISA: install params:" + JSON.stringify(params));
       this.thunder.call(this.callsign, 'install', params).then(result => {
-        this.INFO("LISA: install result: ", result)
+        this.INFO("LISA: install result: " + JSON.stringify(result))
         resolve(result)
       }).catch(err => {
         Metrics.error(Metrics.ErrorType.OTHER,"LisaApiError", "Error in Thunder LisaApi install "+JSON.stringify(err), false, null)
-        this.ERR("LISA: install error: ", err)
+        this.ERR("LISA: install error: " + JSON.stringify(err))
         reject(err)
       })
     })
@@ -113,13 +113,13 @@ export default class LISA {
 
   uninstall(params) {
     return new Promise((resolve, reject) => {
-      this.LOG("LISA: uninstall params:", params);
+      this.LOG("LISA: uninstall params:" + JSON.stringify(params));
       this.thunder.call(this.callsign, 'uninstall', params).then(result => {
-        this.INFO("LISA: uninstall result: ", result)
+        this.INFO("LISA: uninstall result: " + JSON.stringify(result))
         resolve(result)
       }).catch(err => {
         Metrics.error(Metrics.ErrorType.OTHER,"LisaApiError", "Error in Thunder LisaApi uninstall "+JSON.stringify(err), false, null)
-        this.ERR("LISA: uninstall error: ", err)
+        this.ERR("LISA: uninstall error:" + JSON.stringify(err))
         reject(err)
       })
     })
@@ -127,13 +127,13 @@ export default class LISA {
 
   getStorageDetails(params) {
     return new Promise((resolve, reject) => {
-      this.LOG("LISA: getStorageDetails params:", params);
+      this.LOG("LISA: getStorageDetails params:" + JSON.stringify(params));
       this.thunder.call(this.callsign, 'getStorageDetails', params).then(result => {
-        this.INFO("LISA: getStorageDetails result: ", result)
+        this.INFO("LISA: getStorageDetails result: " + JSON.stringify(result))
         resolve(result)
       }).catch(err => {
         Metrics.error(Metrics.ErrorType.OTHER,"LisaApiError", "Error in Thunder LisaApi getStaorageDetails "+JSON.stringify(err), false, null)
-        this.ERR("LISA: getStorageDetails error: ", err)
+        this.ERR("LISA: getStorageDetails error" + JSON.stringify(err))
         reject(err)
       })
     })
@@ -142,11 +142,11 @@ export default class LISA {
   getList() {
     return new Promise((resolve, reject) => {
       this.thunder.call(this.callsign, 'getList').then(result => {
-        this.INFO("LISA: getList result: ", result)
+        this.INFO("LISA: getList result: " + JSON.stringify(result))
         resolve(result)
       }).catch(err => {
         Metrics.error(Metrics.ErrorType.OTHER,"LisaApiError", "Error in Thunder LisaApi getList "+JSON.stringify(err), false, null)
-        this.ERR("LISA: getList error: ", err)
+        this.ERR("LISA: getList error:" + JSON.stringify(err))
         reject(err)
       })
     })
@@ -155,11 +155,11 @@ export default class LISA {
   getProgress(handle) {
     return new Promise((resolve, reject) => {
       this.thunder.call(this.callsign, 'getProgress', { handle: handle }).then(result => {
-        this.LOG("LISA: getProgress result: ", result)
+        this.LOG("LISA: getProgress result: " + JSON.stringify(result))
         resolve(result)
       }).catch(err => {
         Metrics.error(Metrics.ErrorType.OTHER,"LisaApiError", "Error in Thunder LisaApi getProgress "+JSON.stringify(err), false, null)
-        this.ERR("LISA: getProgress error: ", err)
+        this.ERR("LISA: getProgress error:" + JSON.stringify(err))
         reject(err)
       })
     })
