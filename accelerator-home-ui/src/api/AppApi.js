@@ -401,8 +401,10 @@ export default class AppApi {
     const lastVisitedRoute = Router.getActiveHash();
     if (saveAbleRoutes.includes(lastVisitedRoute)) {
       Storage.set("lastVisitedRoute", lastVisitedRoute);
+      GLOBALS.LastvisitedRoute= lastVisitedRoute
     } else {
       Storage.set("lastVisitedRoute", "menu");
+      GLOBALS.LastvisitedRoute="menu"
     }
     Router.navigate("applauncher");
     console.log("AppAPI launchApp called with: ", callsign, args);
@@ -457,7 +459,7 @@ export default class AppApi {
 
     if (!availableCallsigns.includes(callsign)) {
       Storage.set("appSwitchingInProgress", false);
-      Router.navigate(Storage.get("lastVisitedRoute"));
+      Router.navigate(GLOBALS.LastvisitedRoute);
       return Promise.reject("Can't launch App: " + callsign + " | Error: callsign not found!");
     }
 
@@ -465,7 +467,7 @@ export default class AppApi {
       let internet = await Network.get().isConnectedToInternet();
       if (!internet) {
         Storage.set("appSwitchingInProgress", false);
-        Router.navigate(Storage.get("lastVisitedRoute"));
+        Router.navigate(GLOBALS.LastvisitedRoute);
         return Promise.reject("No Internet Available, can't launchApp.");
       }
     }
@@ -481,7 +483,7 @@ export default class AppApi {
     } catch (err) {
       console.error(err);
       Storage.set("appSwitchingInProgress", false);
-      Router.navigate(Storage.get("lastVisitedRoute"));
+      Router.navigate(GLOBALS.LastvisitedRoute);
       return Promise.reject("AppAPI PluginError: " + callsign + ": App not supported on this device | Error: " + JSON.stringify(err));
     }
     console.log("AppAPI " + callsign + " : pluginStatus: " + JSON.stringify(pluginStatus) + " pluginState: ", JSON.stringify(pluginState));
@@ -650,7 +652,7 @@ export default class AppApi {
           } else {
             console.error("AppAPI failed to launchApp(success false) : ", callsign, " ERROR: ", JSON.stringify(res))
             Storage.set("appSwitchingInProgress", false);
-            Router.navigate(Storage.get("lastVisitedRoute"));
+            Router.navigate(GLOBALS.LastvisitedRoute);
             Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder RDKShell launchApplication " + JSON.stringify(res), false, null)
             reject(res)
           }
@@ -660,7 +662,7 @@ export default class AppApi {
           this.launchResidentApp(GLOBALS.selfClientName);
           Storage.set("appSwitchingInProgress", false);
           Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder RDKShell launchApplication " + JSON.stringify(err), false, null)
-          Router.navigate(Storage.get("lastVisitedRoute"));
+          Router.navigate(GLOBALS.LastvisitedRoute);
           reject(err)
         })
       } else {
@@ -734,7 +736,7 @@ export default class AppApi {
           } else {
             console.error("AppAPI failed to launchApp(success false) : ", callsign, " ERROR: ", JSON.stringify(res))
             Storage.set("appSwitchingInProgress", false);
-            Router.navigate(Storage.get("lastVisitedRoute"));
+            Router.navigate(GLOBALS.LastvisitedRoute);
             Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder RDKShell launch " + JSON.stringify(err), false, null)
             reject(res)
           }
@@ -749,7 +751,7 @@ export default class AppApi {
           })
           this.launchResidentApp(GLOBALS.selfClientName);
           Storage.set("appSwitchingInProgress", false);
-          Router.navigate(Storage.get("lastVisitedRoute"));
+          Router.navigate(GLOBALS.LastvisitedRoute);
           reject(err)
         })
       }

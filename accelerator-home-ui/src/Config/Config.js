@@ -68,6 +68,8 @@ export var CONFIG = {
 }
 
 export const GLOBALS = {
+  _LastvisitedRoute:null,
+  _Setup:null,
   _TofocusVOD:false,
   _AlexaAvsstatus:false,
   _RCSkipStatus:false,
@@ -133,5 +135,21 @@ export const GLOBALS = {
   get TofocusVOD()
   {
     return this._TofocusVOD
-  }
+  },
+  set LastvisitedRoute(route)
+  {
+    this._LastvisitedRoute = route
+  },
+  get LastvisitedRoute()
+  {
+    return this._LastvisitedRoute
+  },
+  set Setup(status)
+  {
+    this._Setup = status
+  },
+  get Setup()
+  {
+    return this._Setup
+  },
 }

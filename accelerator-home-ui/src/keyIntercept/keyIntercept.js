@@ -42,7 +42,8 @@ export function keyIntercept(clientName = GLOBALS.selfClientName) {
                         { "keyCode": Keymap.Netflix, "modifiers": [] },
                         { "keyCode": Keymap.Settings_Shortcut, "modifiers": [] },
                         { "keyCode": Keymap.Guide_Shortcut, "modifiers": [] },
-                        { "keyCode": Keymap.AppCarousel, "modifiers": [] }
+                        { "keyCode": Keymap.AppCarousel, "modifiers": [] },
+                        { "keyCode": Keymap.Escape, "modifiers": [] }
                     ]
                 }]
             }

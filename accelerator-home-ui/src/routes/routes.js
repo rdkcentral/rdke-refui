@@ -210,6 +210,7 @@ export default {
       /* To prevent the onboarding screen appearing next time. */
       GLOBALS.RCSkipStatus=true;
       Storage.set("setup", true);
+      GLOBALS.Setup=true
     }
   }
 }

@@ -94,7 +94,7 @@ export default class AppLauncherScreen extends Lightning.Component {
       RDKShellApis.moveToFront(GLOBALS.selfClientName);
       RDKShellApis.setFocus(GLOBALS.selfClientName);
       RDKShellApis.setVisibility(GLOBALS.selfClientName, true);
-      Router.navigate(Storage.get("lastVisitedRoute"));
+      Router.navigate(GLOBALS.LastvisitedRoute);
     } else {
       RDKShellApis.moveToFront(GLOBALS.topmostApp);
       RDKShellApis.setFocus(GLOBALS.topmostApp);
