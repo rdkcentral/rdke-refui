@@ -1181,7 +1181,7 @@ export default class App extends Router.App {
             launchLocation: launchLocation,
             appIdentifier: self.appIdentifiers[currentApp]
           }
-          if (currentApp.startsWith("YouTube")||currentApp.startsWith("Amazon")||currentApp.startsWith("Netflix")) {
+          if (currentApp.startsWith("YouTube")||currentApp.startsWith("Netflix")) {
             params["url"] = Storage.get(currentApp + "DefaultURL");
             appApi.getPluginStatus(currentApp).then(result => {
               const isAppSuspendedEnabled = Settings.get("platform", "enableAppSuspended");
@@ -1201,7 +1201,7 @@ export default class App extends Router.App {
         }
         else {
           let currentApp = GLOBALS.topmostApp
-          if (currentApp.startsWith("YouTube")||currentApp.startsWith("Amazon")||currentApp.startsWith("Netflix")) {
+          if (currentApp.startsWith("YouTube")||currentApp.startsWith("Netflix")) {
             appApi.getPluginStatus(currentApp).then(result => {
               if (result[0].state !== (Settings.get("platform", "enableAppSuspended") ? "suspended" : "deactivated")) {
                 appApi.exitApp(currentApp, true)
@@ -1246,7 +1246,7 @@ export default class App extends Router.App {
                 launchLocation: launchLocation,
                 appIdentifier: appIdentifiers[currentApp]
               }
-              if (currentApp.startsWith("YouTube")||currentApp.startsWith("Amazon")||currentApp.startsWith("Netflix")) {
+              if (currentApp.startsWith("YouTube")||currentApp.startsWith("Netflix")) {
                 params["url"] = Storage.get(currentApp + "DefaultURL");
                 appApi.getPluginStatus(currentApp).then(result => {
                   const isAppSuspendedEnabled = Settings.get("platform", "enableAppSuspended");
@@ -1266,7 +1266,7 @@ export default class App extends Router.App {
             }
             else {
               let currentApp = GLOBALS.topmostApp
-              if (currentApp.startsWith("YouTube")||currentApp.startsWith("Amazon")||currentApp.startsWith("Netflix")) {
+              if (currentApp.startsWith("YouTube")||currentApp.startsWith("Netflix")) {
                 appApi.getPluginStatus(currentApp).then(result => {
                   if (result[0].state !== (Settings.get("platform", "enableAppSuspended") ? "suspended" : "deactivated")) {
                     appApi.exitApp(currentApp, true)
