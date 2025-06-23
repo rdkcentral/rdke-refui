@@ -307,7 +307,7 @@ export const startDACApp = async (app) => {
 /* WorkAround until proper cloud based App Catalog support */
 export const getAppCatalogInfo = async () => {
   Storage.set("CloudAppStore", true);
-  let appListArray = null
+  let appListArray = []
   try {
     let data = new HomeApi().getPartnerAppsInfo();
     if (data) {
@@ -362,6 +362,8 @@ export const getAppCatalogInfo = async () => {
         }
       }
     } else {
+      let hasmore=true
+      let offset =0
       let asms = await getAsmsUrlObj()
       let myHeaders = new Headers();
       if ((asms.password !== null) && (asms.username !== null)) {
@@ -372,25 +374,39 @@ export const getAppCatalogInfo = async () => {
         headers: myHeaders,
         redirect: 'follow'
       };
-
-      await fetch(asms.url, requestOptions)
+      while(hasmore){
+        let url = asms.url +"?offset="+offset+"&platformName=" + await getPlatformNameForDAC() + "&firmwareVer=" + await getFirmwareVersion()
+        await fetch(url, requestOptions)
         .then(response => response.json())
         .then(result => {
           if (Object.prototype.hasOwnProperty.call(result, "applications")) {
-            appListArray = result["applications"];
+            const apps = result["applications"];
+            appListArray = appListArray.concat(apps);
+            const count = result?.meta?.resultSet?.count || 0;
+
+            if (count < 10) {
+              hasmore= false; 
+            } else {
+              offset += 10; 
+            }
           } else {
             console.error("DACApi result does not have applications")
-            Metrics.error(Metrics.ErrorType.OTHER, "DACApiError", "DACApi result does not have applications", false, null)
+            Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", "DACApi result does not have applications", false, null)
+            hasmore = false;
           }
         })
         .catch(error => {
           console.log("DACApi fetch error from cloud", error)
           Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", error, false, null)
+          hasmore = false;
         });
+        }
     }
   } catch (error) {
     console.log("DACApi Using new getMetadata API.")
     Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", "DACApi Using new getMetadata API.", false, null)
+    let hasmore=true
+    let offset =0
     let asms = await getAsmsUrlObj()
     let myHeaders = new Headers();
     if ((asms.password !== null) && (asms.username !== null)) {
@@ -401,23 +417,34 @@ export const getAppCatalogInfo = async () => {
       headers: myHeaders,
       redirect: 'follow'
     };
-
-    await fetch(asms.url, requestOptions)
+    while(hasmore){
+      let url = asms.url +"?offset="+offset+"&platformName=" + await getPlatformNameForDAC() + "&firmwareVer=" + await getFirmwareVersion()
+       await fetch(url, requestOptions)
       .then(response => response.json())
       .then(result => {
         if (Object.prototype.hasOwnProperty.call(result, "applications")) {
-          appListArray = result["applications"];
+          appListArray = appListArray.concat(result["applications"]);
+          const count = result?.meta?.resultSet?.count || 0;
+
+          if (count < 10) {
+            hasmore= false; 
+          } else {
+            offset += 10; 
+          }
         } else {
           console.error("DACApi result does not have applications")
           Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", "DACApi result does not have applications", false, null)
+          hasmore = false;
         }
       })
       .catch(error => {
         console.log("DACApi fetch error from cloud", error)
         Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", error, false, null)
+        hasmore = false;
       });
   }
-  return appListArray == null ? undefined : appListArray;
+    }
+  return appListArray == [] ? undefined : appListArray;
 }
 
 export const getFirmwareVersion = async () => {
