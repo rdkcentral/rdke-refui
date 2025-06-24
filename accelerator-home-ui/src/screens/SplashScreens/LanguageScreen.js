@@ -140,6 +140,15 @@ export default class LanguageScreen extends Lightning.Component {
 
   }
 
+  updateUILanguage(index) {
+    if ("ResidentApp" === GLOBALS.selfClientName) {
+        appApi.setUILanguage(availableLanguageCodes[availableLanguages[index]])
+    } else {
+        FireBoltApi.get().localization.setlanguage(availableLanguages[index]).then(res => console.log("sucess language set ::::",res))
+    }
+    localStorage.setItem('Language',availableLanguages[index])
+  }
+
   static _states() {
     return [
       class Languages extends this{
@@ -162,13 +171,7 @@ export default class LanguageScreen extends Lightning.Component {
         _handleEnter() {
           //need to verify
           if (Language.get() !== availableLanguages[this._Languages.tag('List').index]) {
-            let updatedLanguage = availableLanguageCodes[availableLanguages[this._Languages.tag('List').index]]
-            if ("ResidentApp" === GLOBALS.selfClientName) {
-              appApi.setUILanguage(updatedLanguage)
-            } else {
-              FireBoltApi.get().localization.setlanguage(availableLanguages[this._Languages.tag('List').index]).then(res => console.log("sucess language set ::::",res))
-            }
-            localStorage.setItem('Language',availableLanguages[this._Languages.tag('List').index])
+            this.updateUILanguage(this._Languages.tag('List').index)
             let path = location.pathname.split('index.html')[0]
             let url = path.slice(-1) === '/' ? "static/loaderApp/index.html" : "/static/loaderApp/index.html"
             let notification_url = location.origin + path + url
@@ -208,6 +211,7 @@ export default class LanguageScreen extends Lightning.Component {
         }
 
         _handleEnter() {
+          this.updateUILanguage(this._Languages.tag('List').index)
           Router.navigate('splash/network')
         }
 
