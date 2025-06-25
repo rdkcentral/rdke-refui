@@ -171,7 +171,9 @@ export default class LanguageScreen extends Lightning.Component {
         _handleEnter() {
           //need to verify
           if (Language.get() !== availableLanguages[this._Languages.tag('List').index]) {
-            this.updateUILanguage(this._Languages.tag('List').index)
+            const index = this._Languages.tag('List').index
+            localStorage.setItem('LanguageSelectedIndex', index)
+            this.updateUILanguage(index)
             let path = location.pathname.split('index.html')[0]
             let url = path.slice(-1) === '/' ? "static/loaderApp/index.html" : "/static/loaderApp/index.html"
             let notification_url = location.origin + path + url
@@ -211,7 +213,8 @@ export default class LanguageScreen extends Lightning.Component {
         }
 
         _handleEnter() {
-          this.updateUILanguage(this._Languages.tag('List').index)
+          const languageSelectedIndex = localStorage.getItem('LanguageSelectedIndex')
+          this.updateUILanguage(languageSelectedIndex ? languageSelectedIndex : 0)
           Router.navigate('splash/network')
         }
 
