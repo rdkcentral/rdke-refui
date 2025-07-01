@@ -852,14 +852,14 @@ export default class App extends Router.App {
     });
   }
 
-   SubscribeToMiracastPlayer() {
+  SubscribeToMiracastPlayer() {
     thunder.on('org.rdk.MiracastPlayer.1', 'onStateChange', data => {
+      console.log('onStateChange ' + JSON.stringify(data));
       GLOBALS.Miracastclientdevicedetails=data
       if(data.state==="PLAYING")
       {
         if (GLOBALS.topmostApp != GLOBALS.selfClientName) {
-        appApi.exitApp(GLOBALS.topmostApp).then(()=>{
-
+          appApi.exitApp(GLOBALS.topmostApp).then(()=>{
               RDKShellApis.setVisibility(GLOBALS.topmostApp,GLOBALS.topmostApp,false)
               miracast.updatePlayerState(data.mac,data.state,data.reason_code,data.reason)
               GLOBALS.topmostApp="MiracastPlayer"
@@ -871,7 +871,6 @@ export default class App extends Router.App {
             miracast.updatePlayerState(data.mac,data.state,data.reason_code,data.reason)
             GLOBALS.topmostApp="MiracastPlayer"
           }
-          
 
       }
       if(data.state === "STOPPED")
@@ -886,7 +885,6 @@ export default class App extends Router.App {
         GLOBALS.Miracastclientdevicedetails={mac: null,name: null,reason_code: null,state:null}
         GLOBALS.topmostApp=GLOBALS.selfClientName
       }      
-        console.log('onStateChange ' + JSON.stringify(data));
       });
   }
 
@@ -1632,8 +1630,8 @@ export default class App extends Router.App {
     }
   }
 
-   _moveApptoFront(appName, visibility) {
-     RDKShellApis.moveToFront(appName).then(() => {
+  _moveApptoFront(appName, visibility) {
+    RDKShellApis.moveToFront(appName).then(() => {
       RDKShellApis.setVisibility(appName, visibility);
       RDKShellApis.setFocus(appName).then(() => {
       }).catch((err) => {
