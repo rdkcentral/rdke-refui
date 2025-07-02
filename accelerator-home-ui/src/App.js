@@ -52,6 +52,7 @@ import { Localization, Metrics } from '@firebolt-js/sdk';
 import RDKShellApis from './api/RDKShellApis.js';
 import Miracast from './api/Miracast.js';
 import MiracastNotification from './screens/MiracastNotification.js';
+import OCIContainer from './api/OCIContainerApi.js';
 
 
 var powerState = 'ON';
@@ -63,6 +64,7 @@ var cecApi = new CECApi();
 var xcastApi = new XcastApi();
 var voiceApi = new VoiceApi();
 var miracast = new Miracast();
+var ocicontainer = new OCIContainer();
 
 export default class App extends Router.App {
 
@@ -638,6 +640,13 @@ export default class App extends Router.App {
           this.SubscribeToMiracastService()
         }
       }
+      if (noti.callsign === "org.rdk.OCIContainer") {
+        if(noti.data.state==="activated"){
+          console.log("subscribing the events for OCIContainer")
+          this.SubscribeToOCIContainer()
+        }
+      }
+
     })
     this._subscribeToRDKShellNotifications()
     appApi.getPluginStatus("Cobalt").then(() => {
@@ -795,14 +804,75 @@ export default class App extends Router.App {
             Storage.set("UICacheCECActiveSourceStatus", res);
             console.log("App getActiveSourceStatus: " + res + " UICacheCECActiveSourceStatus:" + Storage.get("UICacheCECActiveSourceStatus"));
           });
-        }).catch((err) => console.log(err))
+        }).catch((err) => console.error("error while activating the hdmi cec plugin from app.js " + JSON.stringify(err)))
       }
     })
     this._subscribeToIOPortNotifications()
 
     this._updateLanguageToDefault()
+    appApi.getPluginStatus('org.rdk.OCIContainer').then(result => {
+      if (result[0].state === "activated")
+      {
+        this.SubscribeToOCIContainer()
+      }
+      else
+      {
+        ocicontainer.activate().then((res)=>{
+          console.log("activating the OCIContainer from app.js "+ JSON.stringify(res))
+        }).catch((err) => console.error(err))
+      }
+    })
   }
 
+  SubscribeToOCIContainer(){
+    thunder.on('org.rdk.OCIContainer', 'onContainerStarted', data => {
+      console.warn("[OCIContainer] onContainerStarted:"+ JSON.stringify(data));
+    });
+    thunder.on('org.rdk.OCIContainer', 'onContainerStopped', async data => {
+		console.warn("[OCIContainer] onContainerStopped:", JSON.stringify(data));
+
+		const isSubstringMatch = (a, b) => a && b && (a.includes(b) || b.includes(a));
+		const isTopmostAppMatch = isSubstringMatch(GLOBALS.topmostApp, data.name);
+
+		// Only skip launching resident app if another app (not self) is topmost and matches the stopped container
+		if (
+			data.name !== GLOBALS.selfClientName &&
+			GLOBALS.topmostApp !== GLOBALS.selfClientName &&
+			isTopmostAppMatch
+		) {
+			console.warn("[OCIContainer] Not launching resident app as another app is running.");
+			try {
+				const clients = await RDKShellApis.getClients();
+				const otherClients = (clients || []).filter(
+					c =>
+					c.name !== GLOBALS.selfClientName &&
+					!isSubstringMatch(c.name, GLOBALS.topmostApp)
+				);
+				const launchResident = async () => {
+					await appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName);
+					AlexaApi.get().reportApplicationState("menu", true);
+				};
+				if (otherClients.length > 0) {
+					console.warn("Other clients running. Delaying resident app launch.");
+					setTimeout(launchResident, 1000);
+				} else {
+					console.warn("No other clients running. Launching resident app.");
+					launchResident();
+				}
+			} catch (err) {
+				console.error("Error in onContainerStopped handler:", err);
+			}
+		} else {
+			console.warn("[OCIContainer] Launching resident app as no other app is running.");
+			try {
+				await appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName);
+				AlexaApi.get().reportApplicationState("menu", true);
+			} catch (err) {
+				console.error("Error launching resident app in onContainerStopped handler:", err);
+			}
+		}
+	});
+  }
   SubscribeToMiracastService() {
     thunder.on('org.rdk.MiracastService.1', 'onClientConnectionRequest', data => {
     console.log('onClientConnectionRequest ' + JSON.stringify(data));
@@ -1669,7 +1739,7 @@ export default class App extends Router.App {
       if (this.xcastApps(notification.applicationName)) {
         let applicationName = this.xcastApps(notification.applicationName);
         let baseUrl = Storage.get(notification.applicationName + "DefaultURL");
-        let pairingCode = notification.parameters.payload; 
+        let pairingCode = notification.parameters.payload;
         let additionalDataUrl = notification.parameters.additionalDataUrl;
         let url = `${baseUrl}${pairingCode}&additionalDataUrl=${additionalDataUrl}`;
           let params = {
