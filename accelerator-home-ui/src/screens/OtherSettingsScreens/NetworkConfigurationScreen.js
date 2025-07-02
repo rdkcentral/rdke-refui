@@ -149,6 +149,7 @@ export default class NetworkConfigurationScreen extends Lightning.Component {
         })
 
         this.onDefaultIfaceChangedCB = Network.get()._thunder.on(Network.get().callsign, 'onDefaultInterfaceChanged', data => {
+            console.warn("NetworkConfigurationScreen: onDefaultInterfaceChanged", JSON.stringify(data));
             this.$NetworkInterfaceText(data.newInterfaceName)
             this.tag('TestInternetAccess.Title').text.text = Language.translate('Test Internet Access: ')
             Metrics.action("user", "User changed the network interface", null)
