@@ -1672,8 +1672,11 @@ export default class App extends Router.App {
         let pairingCode = notification.parameters.payload; 
         let additionalDataUrl = notification.parameters.additionalDataUrl;
         let url = `${baseUrl}${pairingCode}&additionalDataUrl=${additionalDataUrl}`;
+        if(applicationName.startsWith("Netflix")){
+          url =`${baseUrl}&dial=${pairingCode}&additionalDataUrl=${additionalDataUrl}`
+        }
           let params = {
-            url: applicationName.startsWith("YouTube") ? url : notification.parameters.pluginUrl ,
+            url: applicationName.startsWith("YouTube") || applicationName.startsWith("Netflix")  ? url : notification.parameters.pluginUrl ,
             launchLocation: "dial",
             appIdentifier: self.appIdentifiers[applicationName]
           }
