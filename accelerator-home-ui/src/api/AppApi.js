@@ -805,7 +805,7 @@ export default class AppApi {
       }
     }
 
-    if (!exitInBackground) { //means resident App needs to be launched
+    if (!exitInBackground && GLOBALS.Miracastclientdevicedetails.state != "PLAYING") { //means resident App needs to be launched
       this.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName).then(() => {
         AlexaApi.get().reportApplicationState("menu", true);
       });
