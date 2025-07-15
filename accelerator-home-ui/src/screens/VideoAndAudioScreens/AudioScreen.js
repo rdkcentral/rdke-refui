@@ -20,7 +20,7 @@
 import { Lightning, Utils, Language, Router, Storage } from '@lightningjs/sdk'
 import SettingsMainItem from '../../items/SettingsMainItem'
 import { COLORS } from '../../colors/Colors'
-import { CONFIG } from '../../Config/Config'
+import { CONFIG, GLOBALS } from '../../Config/Config'
 import AppApi from '../../api/AppApi.js';
 
 /**
@@ -295,7 +295,7 @@ export default class AudioScreen extends Lightning.Component {
             console.log(err)
           })
 
-          this.appApi.setVolumeLevel(((Storage.get("deviceType")=="IpTv")?"SPEAKER0":"HDMI0"), 100).then(res => {
+          this.appApi.setVolumeLevel(((GLOBALS.deviceType=="IpTv")?"SPEAKER0":"HDMI0"), 100).then(res => {
             this.appApi.getVolumeLevel().catch(err => {
               console.log(err)
             })
@@ -308,7 +308,7 @@ export default class AudioScreen extends Lightning.Component {
             console.log(err)
           })
           // gets the enabled Audio Port
-          this.appApi.getEnableAudioPort(((Storage.get("deviceType")=="IpTv")?"SPEAKER0":"HDMI0")).then(res => {
+          this.appApi.getEnableAudioPort(((GLOBALS.deviceType=="IpTv")?"SPEAKER0":"HDMI0")).then(res => {
           }).catch(err => {
             console.log(err)
           })
@@ -318,9 +318,9 @@ export default class AudioScreen extends Lightning.Component {
           });
 
           // set enable Audio POrt
-          this.appApi.setEnableAudioPort(((Storage.get("deviceType")=="IpTv")?"SPEAKER0":"HDMI0")).then(res => {
+          this.appApi.setEnableAudioPort(((GLOBALS.deviceType=="IpTv")?"SPEAKER0":"HDMI0")).then(res => {
 
-            this.appApi.getEnableAudioPort(((Storage.get("deviceType")=="IpTv")?"SPEAKER0":"HDMI0")).then(res => {
+            this.appApi.getEnableAudioPort(((GLOBALS.deviceType=="IpTv")?"SPEAKER0":"HDMI0")).then(res => {
 
             }).catch(err => {
               console.log(err)

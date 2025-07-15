@@ -459,8 +459,9 @@ export default class App extends Router.App {
     console.log("Acknowledge challenge provider registered")
 
     appApi.deviceType().then(result => {
-      console.log("App detected deviceType as:", ((result.devicetype != null) ? result.devicetype : "IpTv"));
-      Storage.set("deviceType", ((result.devicetype != null) ? result.devicetype : "IpTv"));
+        console.log("App detected deviceType as:", ((result.devicetype != null) ? result.devicetype : "IpTv"));
+        GLOBALS.deviceType = ((result.devicetype != null) ? result.devicetype : "IpTv");
+        Storage.set("deviceType", ((result.devicetype != null) ? result.devicetype : "IpTv"));
     });
     thunder.Controller.activate({ callsign: 'org.rdk.UserPreferences' }).then(result => {
       console.log("App UserPreferences plugin activation result: " + result)
@@ -1427,8 +1428,8 @@ export default class App extends Router.App {
         /* Alexa device volume state report. */
         appApi.getConnectedAudioPorts().then(audioport => {
           for (let i = 0; i < audioport.connectedAudioPorts.length && !audioport.connectedAudioPorts[i].startsWith("SPDIF"); i++) {
-            if ((Storage.get("deviceType") == "IpTv" && audioport.connectedAudioPorts[i].startsWith("SPEAKER")) ||
-              (Storage.get("deviceType") != "IpTv" && audioport.connectedAudioPorts[i].startsWith("HDMI"))) {
+            if ((GLOBALS.deviceType == "IpTv" && audioport.connectedAudioPorts[i].startsWith("SPEAKER")) ||
+              (GLOBALS.deviceType != "IpTv" && audioport.connectedAudioPorts[i].startsWith("HDMI"))) {
               appApi.getMuted(audioport.connectedAudioPorts[i]).then(muteRes => {
                 appApi.getVolumeLevel(audioport.connectedAudioPorts[i]).then(volres => {
                   AlexaApi.get().reportVolumeState((volres.success ? (Number.isInteger(volres.volumeLevel) ? volres.volumeLevel : parseInt(volres.volumeLevel)) : undefined), (muteRes.success ? muteRes.muted : undefined))
@@ -2157,8 +2158,8 @@ export default class App extends Router.App {
             VolumePayload.msgPayload.event.header.messageId = header.messageId
             appApi.getConnectedAudioPorts().then(audioport => {
               for (let i = 0; i < audioport.connectedAudioPorts.length && !audioport.connectedAudioPorts[i].startsWith("SPDIF"); i++) {
-                if ((Storage.get("deviceType") == "IpTv" && audioport.connectedAudioPorts[i].startsWith("SPEAKER")) ||
-                  (Storage.get("deviceType") != "IpTv" && audioport.connectedAudioPorts[i].startsWith("HDMI"))) {
+                if ((GLOBALS.deviceType == "IpTv" && audioport.connectedAudioPorts[i].startsWith("SPEAKER")) ||
+                  (GLOBALS.deviceType != "IpTv" && audioport.connectedAudioPorts[i].startsWith("HDMI"))) {
                   appApi.getVolumeLevel(audioport.connectedAudioPorts[i]).then(volres => {
                     console.log("getVolumeLevel[" + audioport.connectedAudioPorts[i] + "] is:" + parseInt(volres.volumeLevel))
                     if ((parseInt(volres.volumeLevel) >= 0) || (parseInt(volres.volumeLevel) <= 100)) {
@@ -2207,8 +2208,8 @@ export default class App extends Router.App {
             }
             appApi.getConnectedAudioPorts().then(audioport => {
               for (let i = 0; i < audioport.connectedAudioPorts.length && !audioport.connectedAudioPorts[i].startsWith("SPDIF"); i++) {
-                if ((Storage.get("deviceType") == "IpTv" && audioport.connectedAudioPorts[i].startsWith("SPEAKER")) ||
-                  (Storage.get("deviceType") != "IpTv" && audioport.connectedAudioPorts[i].startsWith("HDMI"))) {
+                if ((GLOBALS.deviceType == "IpTv" && audioport.connectedAudioPorts[i].startsWith("SPEAKER")) ||
+                  (GLOBALS.deviceType != "IpTv" && audioport.connectedAudioPorts[i].startsWith("HDMI"))) {
                     let volumeIncremented
                   appApi.getVolumeLevel(audioport.connectedAudioPorts[i]).then(volres => {
                     volumeIncremented = parseInt(volres.volumeLevel) < VolumePayload.msgPayload.event.payload.volume ? true : false

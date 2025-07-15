@@ -19,7 +19,7 @@
  import { Lightning, Utils, Language } from "@lightningjs/sdk";
  import { COLORS } from "../../colors/Colors";
  import SettingsMainItem from "../../items/SettingsMainItem";
- import { CONFIG } from "../../Config/Config";
+ import { CONFIG, GLOBALS } from "../../Config/Config";
  import DTVApi from "../../api/DTVApi";
  import LiveTvScanOverlay from './LiveTvScanOverlay'
 
@@ -129,7 +129,7 @@
             this._setState("Scan");
           }
           _handleEnter() {
-            if (Storage.get("deviceType") != "IpStb") {
+            if (GLOBALS.deviceType != "IpStb") {
               if (active) {
                 this.dtvApi.deactivate().then((res) => {
                   console.log(res);
