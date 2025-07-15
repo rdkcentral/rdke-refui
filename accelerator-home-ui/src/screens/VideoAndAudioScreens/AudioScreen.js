@@ -285,8 +285,8 @@ export default class AudioScreen extends Lightning.Component {
            * 1 - get DRC Mode which doesnot return a drc mode and the success value is mostly false
            * 2- set Volume - able to set the value to 100
            * 3- get Volume - able to get the volume successfully as well
-           * 4- 
-           * 
+           * 4-
+           *
            */
           //console.log(`Enter input was given to dynamic range ... `);
           // gets the drc mode
@@ -295,7 +295,7 @@ export default class AudioScreen extends Lightning.Component {
             console.log(err)
           })
 
-          this.appApi.setVolumeLevel(((Storage.get("deviceType")=="tv")?"SPEAKER0":"HDMI0"), 100).then(res => {
+          this.appApi.setVolumeLevel(((Storage.get("deviceType")=="IpTv")?"SPEAKER0":"HDMI0"), 100).then(res => {
             this.appApi.getVolumeLevel().catch(err => {
               console.log(err)
             })
@@ -308,7 +308,7 @@ export default class AudioScreen extends Lightning.Component {
             console.log(err)
           })
           // gets the enabled Audio Port
-          this.appApi.getEnableAudioPort(((Storage.get("deviceType")=="tv")?"SPEAKER0":"HDMI0")).then(res => {
+          this.appApi.getEnableAudioPort(((Storage.get("deviceType")=="IpTv")?"SPEAKER0":"HDMI0")).then(res => {
           }).catch(err => {
             console.log(err)
           })
@@ -318,9 +318,9 @@ export default class AudioScreen extends Lightning.Component {
           });
 
           // set enable Audio POrt
-          this.appApi.setEnableAudioPort(((Storage.get("deviceType")=="tv")?"SPEAKER0":"HDMI0")).then(res => {
+          this.appApi.setEnableAudioPort(((Storage.get("deviceType")=="IpTv")?"SPEAKER0":"HDMI0")).then(res => {
 
-            this.appApi.getEnableAudioPort(((Storage.get("deviceType")=="tv")?"SPEAKER0":"HDMI0")).then(res => {
+            this.appApi.getEnableAudioPort(((Storage.get("deviceType")=="IpTv")?"SPEAKER0":"HDMI0")).then(res => {
 
             }).catch(err => {
               console.log(err)
