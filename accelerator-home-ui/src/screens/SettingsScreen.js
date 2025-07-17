@@ -20,7 +20,7 @@ import { Lightning, Utils, Language, Router, Storage } from '@lightningjs/sdk'
 import ThunderJS from 'ThunderJS';
 import { COLORS } from '../colors/Colors'
 import SettingsMainItem from '../items/SettingsMainItem'
-import { CONFIG } from '../Config/Config'
+import { CONFIG, GLOBALS } from '../Config/Config'
 import DTVApi from '../api/DTVApi';
 import AppApi from '../api/AppApi';
 import { Metrics } from '@firebolt-js/sdk';
@@ -268,7 +268,7 @@ export default class SettingsScreen extends Lightning.Component {
 
     this.dtvApi = new DTVApi();
     this.dtvPlugin = false; //plugin availability
-    if (Storage.get("deviceType") != "IpStb") {
+    if (GLOBALS.deviceType != "IpStb") {
       this.dtvApi.activate().then(() => {
         this.dtvPlugin = true;
         this.tag("DTVSettings").alpha = 1;

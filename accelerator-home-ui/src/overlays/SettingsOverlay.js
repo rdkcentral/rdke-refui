@@ -279,7 +279,7 @@ export default class SettingsOverlay extends Lightning.Component {
     this.appApi = new AppApi();
     this.dtvApi = new DTVApi();
     this.dtvPlugin = false; //plugin availability
-    if (Storage.get("deviceType") != "IpStb") {
+    if (GLOBALS.deviceType != "IpStb") {
       this.dtvApi.activate().then(() => {
         this.dtvPlugin = true;
         this.tag("DTVSettings").alpha = 1;

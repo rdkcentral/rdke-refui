@@ -19,7 +19,7 @@
 
 import { Lightning, Registry, Utils, Storage } from "@lightningjs/sdk";
 import AppApi from "../../api/AppApi";
-import { CONFIG } from "../../Config/Config";
+import { CONFIG, GLOBALS } from "../../Config/Config";
 
 export default class Volume extends Lightning.Component {
     static _template() {
@@ -141,8 +141,8 @@ export default class Volume extends Lightning.Component {
     setVolume = async (val) => {
         let audioport = await this.getAudioPorts()
         for (let i = 0; i < audioport.length; i++) {
-            if ((Storage.get("deviceType") == "tv" && audioport[i].startsWith("SPEAKER")) ||
-                (Storage.get("deviceType") != "tv" && audioport[i].startsWith("HDMI"))) {
+            if ((GLOBALS.deviceType == "IpTv" && audioport[i].startsWith("SPEAKER")) ||
+                (GLOBALS.deviceType != "IpTv" && audioport[i].startsWith("HDMI"))) {
                 await this.appApi.setVolumeLevel(audioport[i], val)
             }
         }
@@ -152,8 +152,8 @@ export default class Volume extends Lightning.Component {
     setMute = async (val) => {
         let audioport = await this.getAudioPorts()
         for (let i = 0; i < audioport.length; i++) {
-            if ((Storage.get("deviceType") == "tv" && audioport[i].startsWith("SPEAKER")) ||
-                (Storage.get("deviceType") != "tv" && audioport[i].startsWith("HDMI"))) {
+            if ((GLOBALS.deviceType == "IpTv" && audioport[i].startsWith("SPEAKER")) ||
+                (GLOBALS.deviceType != "IpTv" && audioport[i].startsWith("HDMI"))) {
                 this.appApi.audio_mute(audioport[i], val)
             }
         }
@@ -163,8 +163,8 @@ export default class Volume extends Lightning.Component {
     getMuteStatus = async () => {
         let audioport = await this.getAudioPorts()
         for (let i = 0; i < audioport.length; i++) {
-            if ((Storage.get("deviceType") == "tv" && audioport[i].startsWith("SPEAKER")) ||
-                (Storage.get("deviceType") != "tv" && audioport[i].startsWith("HDMI"))) {
+            if ((GLOBALS.deviceType == "IpTv" && audioport[i].startsWith("SPEAKER")) ||
+                (GLOBALS.deviceType != "IpTv" && audioport[i].startsWith("HDMI"))) {
                 this.appApi.getMuted(audioport[i]).then(result => {
                     if (result.success) {
                         this.mute = result.muted;
@@ -233,8 +233,8 @@ export default class Volume extends Lightning.Component {
             let audioport = await this.getAudioPorts()
             /* Returns an array. */
             for (let i = 0; i < audioport.length; i++) {
-                if ((Storage.get("deviceType") == "tv" && audioport[i].startsWith("SPEAKER")) ||
-                    (Storage.get("deviceType") != "tv" && audioport[i].startsWith("HDMI"))) {
+                if ((GLOBALS.deviceType == "IpTv" && audioport[i].startsWith("SPEAKER")) ||
+                    (GLOBALS.deviceType != "IpTv" && audioport[i].startsWith("HDMI"))) {
                     this.appApi.getVolumeLevel(audioport[i]).then(async res1 => {
                         await this.updateIcon(audioport[i])
                         if (res1) {

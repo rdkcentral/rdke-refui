@@ -68,6 +68,7 @@ export var CONFIG = {
 }
 
 export const GLOBALS = {
+  _deviceType:null,
   _LastvisitedRoute:null,
   _Setup:null,
   _TofocusVOD:false,
@@ -152,4 +153,10 @@ export const GLOBALS = {
   {
     return this._Setup
   },
+  set deviceType(type) {
+	this._deviceType = type;
+  },
+  get deviceType() {
+	return this._deviceType;
+  }
 }
