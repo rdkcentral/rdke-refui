@@ -17,7 +17,7 @@
  * limitations under the License.
  **/
 import { Language, Lightning, Registry, Router } from '@lightningjs/sdk'
-import { CONFIG } from '../Config/Config'
+import { CONFIG, GLOBALS } from '../Config/Config'
 import ConfirmAndCancel from '../items/ConfirmAndCancel'
 import PasswordSwitch from './PasswordSwitch'
 import { Keyboard } from '../ui-components/index'
@@ -188,12 +188,19 @@ export default class WifiPairingScreen extends Lightning.Component {
     if (this.waitToConnectTO) Registry.clearTimeout(this.waitToConnectTO);
   }
 
-  pressEnter(option) {
+   async pressEnter(option) {
     if (option === 'Cancel') {
       Router.back()
     } else if (option === 'Connect') {
+      GLOBALS.Wificonnectinprogress = true
+      const wificurrentstate=await WiFi.get().getCurrentState()
+      if(wificurrentstate === WiFiState.CONNECTED){
+        setTimeout(() => {
+          GLOBALS.Wificonnectinprogress = false
+        }, 5000);
+      }
       if (this._item) {
-        WiFi.get().connect(false, this._item, '').then(() => { })
+         WiFi.get().connect(false, this._item, '').then(() => { })
           .catch(err => {
             console.error('Not able to connect to wifi', JSON.stringify(err))
           })
@@ -208,7 +215,14 @@ export default class WifiPairingScreen extends Lightning.Component {
     }
   }
 
-  startConnect(password = "") {
+   async startConnect(password = "") {
+    GLOBALS.Wificonnectinprogress = true
+      const wificurrentstate=await WiFi.get().getCurrentState()
+      if(wificurrentstate === WiFiState.CONNECTED){
+        setTimeout(() => {
+          GLOBALS.Wificonnectinprogress = false
+        }, 5000);
+      }
     let flag = 0
     this.onErrorCB = WiFi.get().thunder.on(WiFi.get().callsign, 'onError', notification => {
       if (notification.code === WiFiError.INVALID_CREDENTIALS || notification.code === WiFiError.SSID_CHANGED) {
@@ -230,7 +244,7 @@ export default class WifiPairingScreen extends Lightning.Component {
         this.onWIFIStateChangedCB.dispose()
       }
     })
-    WiFi.get().connect(false, this._item, password).then(() => {
+     WiFi.get().connect(false, this._item, password).then(() => {
       WiFi.get().saveSSID(this._item.ssid, password, this._item.security).then((response) => {
         if (response.result === 0 && response.success === true && flag === 0) {
           PersistentStoreApi.get().setValue('wifi', 'SSID', this._item.ssid)
