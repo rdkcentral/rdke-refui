@@ -200,7 +200,7 @@ export default class WifiPairingScreen extends Lightning.Component {
         }, 5000);
       }
       if (this._item) {
-         WiFi.get().connect(false, this._item, '').then(() => { })
+        WiFi.get().connect(false, this._item, '').then(() => { })
           .catch(err => {
             console.error('Not able to connect to wifi', JSON.stringify(err))
           })
@@ -244,7 +244,7 @@ export default class WifiPairingScreen extends Lightning.Component {
         this.onWIFIStateChangedCB.dispose()
       }
     })
-     WiFi.get().connect(false, this._item, password).then(() => {
+    WiFi.get().connect(false, this._item, password).then(() => {
       WiFi.get().saveSSID(this._item.ssid, password, this._item.security).then((response) => {
         if (response.result === 0 && response.success === true && flag === 0) {
           PersistentStoreApi.get().setValue('wifi', 'SSID', this._item.ssid)

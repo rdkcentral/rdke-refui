@@ -507,7 +507,7 @@ export default class WiFiScreen extends Lightning.Component {
       if (this.renderSSIDS.length) {
         this.renderDeviceList(this.renderSSIDS)
       }
-      if (this.widgets && !((notification.code === 1) && GLOBALS.Wificonnectinprogress)) {
+      if (this.widgets && !((notification.code === WiFiError.CONNECTION_LOST) && GLOBALS.Wificonnectinprogress)) {
         this.widgets.fail.notify({ title: 'WiFi Status', msg: Language.translate(`Error Code : ${notification.code} \t Error Msg : ${WiFiErrorMessages[notification.code]}`) })
         Router.focusWidget('Fail')
       }
