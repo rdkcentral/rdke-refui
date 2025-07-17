@@ -68,6 +68,7 @@ export var CONFIG = {
 }
 
 export const GLOBALS = {
+  _Wificonnectinprogress:false,
   _deviceType:null,
   _LastvisitedRoute:null,
   _Setup:null,
@@ -144,6 +145,14 @@ export const GLOBALS = {
   get LastvisitedRoute()
   {
     return this._LastvisitedRoute
+  },
+  set Wificonnectinprogress(state)
+  {
+    this._Wificonnectinprogress = state
+  },
+  get Wificonnectinprogress()
+  {
+    return this._Wificonnectinprogress
   },
   set Setup(status)
   {
