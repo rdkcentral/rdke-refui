@@ -120,6 +120,7 @@
   "Settings  Network Configuration  Network Info": "Ajustes / Configuración de red / Información de red",
   "Settings  Network Configuration  Network Interface": "Ajustes / Configuración de red / Interfaz de red",
   "Settings  Other Settings  Advanced Settings": "Ajustes / Otras configuraciones / Configuración avanzada",
+  "Settings  Other Settings  Advanced Settings  TTS": "Ajustes / Otras configuraciones / Configuración avanzada / TTS",
   "Settings  Other Settings  Advanced Settings  Device  Info": "Ajustes / Otras configuraciones / Configuración avanzada / Dispositivo / Información",
   "Settings  Other Settings  Advanced Settings  Device  Time": "Ajustes / Otras configuraciones / Configuración avanzada / Dispositivo / Zona Horaria",
   "Settings  Other Settings  Advanced Settings  Device": "Ajustes / Otras configuraciones / Configuración avanzada / Dispositivo",
@@ -177,6 +178,7 @@
   "No Shows are being aired at the moment": "No Shows se están emitiendo en este momento",
   "Press OK to enter Password": "Presione OK para ingresar la contraseña",
   "Press OK to enter SSID": "Presione OK para ingresar SSID",
+  "Press OK to enter TTS endpoint": "Presione OK para ingresar el punto final TTS",
   "Alexa welcome message": "Alexa te permite usar tu voz para escuchar las noticias, consultar el clima, controlar tu hogar inteligente y más.",
   "Alexa something went wrong message": "Algo salió mal. Por favor, vuelva a intentarlo",
   "Retry": "Rever",
@@ -275,5 +277,6 @@
   "MAC:Default MAC":"MAC: MAC predeterminada",
   "Miracast Status":"Estado de Miracast",
   "Reason Code :":"Código de motivo:",
-  "Reason :":"Razón :"
+  "Reason :":"Razón :",
+  "TTS Endpoint":"Punto final TTS"
 }
