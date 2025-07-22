@@ -189,7 +189,7 @@ export default class WiFiScreen extends Lightning.Component {
           PersistentStoreApi.get().deleteNamespace('wifi')
         });
       }
-      this.tag("FailScreen").notify({ title: 'WiFi Status', msg: Language.translate(`Error Code : ${notification.code} \t Error Msg : ${WiFiErrorMessages[notification.code]}`) })
+      this.tag("FailScreen").notify({ title: Language.translate('WiFi Status'), msg: `${Language.translate("Error Code :")} ${notification.code}    ${Language.translate("Error Msg :")} ${Language.translate(WiFiErrorMessages[notification.code])}`})
       this._setState('FailScreen');
     })
   }

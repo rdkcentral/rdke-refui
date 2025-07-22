@@ -44,7 +44,10 @@ export default class FailComponent extends Lightning.Component {
 
     _active() {
         this.tag('Timer').text.text =""
-        this.initTimer()
+        if(this.timeout>0)
+        {
+            this.initTimer()
+        }
     }
     initTimer() {
         this.timeInterval = Registry.setInterval(() => {
