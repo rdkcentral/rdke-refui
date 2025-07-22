@@ -80,9 +80,9 @@ export default class LanguageScreen extends Lightning.Component {
           },
 
           Continue: {
-            x: 820, y: 250, w: 300, mountX: 0.5, h: 60, rect: true, color: 0xFFFFFFFF,
+            x: 820, y: 250, w: 400, mountX: 0.5, h: 60, rect: true, color: 0xFFFFFFFF,
             Title: {
-              x: 150,
+              x: 200,
               y: 30,
               mount: 0.5,
               text: {
