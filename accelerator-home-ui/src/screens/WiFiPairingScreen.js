@@ -173,7 +173,7 @@ export default class WifiPairingScreen extends Lightning.Component {
     this._setState('Pair')
   }
   _unfocus() {
-
+    GLOBALS.NetworkListStatus = false
   }
 
   _active() {
@@ -261,6 +261,17 @@ export default class WifiPairingScreen extends Lightning.Component {
         }, 5000);
       });
     })
+    .catch(err => {
+      console.error('Not able to connect to wifi', JSON.stringify(err));
+      if(GLOBALS.NetworkListStatus){
+        Router.navigate('splash/networkList',{ wifiError: err });
+      }
+      else{
+        Router.back(); 
+        this.widgets.fail.notify({ title: 'WiFi Status', msg: Language.translate(`Error Code : ${err.code} \t Error Msg : ${err.message}`) })
+        Router.focusWidget('Fail')
+      }
+      })
   }
 
   static _states() {
