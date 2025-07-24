@@ -68,7 +68,6 @@ export var CONFIG = {
 }
 
 export const GLOBALS = {
-  _NetworkListStatus: false,
   _Wificonnectinprogress:false,
   _deviceType:null,
   _LastvisitedRoute:null,
@@ -168,11 +167,5 @@ export const GLOBALS = {
   },
   get deviceType() {
 	return this._deviceType;
-  },
-  set NetworkListStatus(status) {
-    this._NetworkListStatus = status; 
-  },
-  get NetworkListStatus() { 
-    return this._NetworkListStatus; 
-  } 
+  }
 }
