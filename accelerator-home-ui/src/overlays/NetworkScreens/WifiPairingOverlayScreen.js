@@ -24,6 +24,7 @@ import PasswordSwitch from '../../screens/PasswordSwitch'
 import { Keyboard } from '../../ui-components/index'
 import { KEYBOARD_FORMATS } from '../../ui-components/components/Keyboard'
 import WiFi from '../../api/WifiApi'
+import FailComponent from './FailComponent'
 
 export default class WifiPairingScreen extends Lightning.Component {
   static _template() {
@@ -109,6 +110,10 @@ export default class WifiPairingScreen extends Lightning.Component {
           formats: KEYBOARD_FORMATS.qwerty
         }
       },
+      FailScreen: {
+        type: FailComponent,
+        visible: false
+      }
     }
   }
 
@@ -181,8 +186,16 @@ export default class WifiPairingScreen extends Lightning.Component {
       });
     }).catch(err => {
       console.log('Not able to connect to wifi', JSON.stringify(err))
-      this.fireAncestors("$navigateBack")
+      this.tag("FailScreen").notify({ title: 'WiFi Status', msg: Language.translate(`Error Code : ${err.code} \t Error Msg : ${err.message}`) })
+      this._setState('FailScreen');
     });
+  }
+  hide() {
+    this.tag('PairingScreen').visible = false
+  }
+
+  show() {
+    this.tag('PairingScreen').visible = true
   }
 
   static _states() {
@@ -276,6 +289,25 @@ export default class WifiPairingScreen extends Lightning.Component {
         }
         $exit() {
           this.tag("PasswordBox").texture = Lightning.Tools.getRoundRect(1279, 88, 0, 3, 0xffffffff, false)
+        }
+      },
+      class FailScreen extends this {
+        $enter() {
+          this.hide()
+          this.tag('FailScreen').visible = true
+        }
+        $exit() {
+          this.show()
+          this.tag('FailScreen').visible = false
+        }
+        _getFocused() {
+          return this.tag('FailScreen')
+        }
+        _handleBack() {
+          this.fireAncestors("$navigateBack")
+        }
+        _handleEnter() {
+          this.fireAncestors("$navigateBack")
         }
       }
     ]

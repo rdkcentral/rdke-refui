@@ -56,7 +56,7 @@ export default class FailComponent extends Lightning.Component {
                 --this.timeout
             }
             else {
-                Router.focusPage();
+                this.fireAncestors("$navigateBack")
             }
         }, 1000)
     }

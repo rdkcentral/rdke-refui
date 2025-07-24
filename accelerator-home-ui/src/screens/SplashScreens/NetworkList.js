@@ -126,7 +126,11 @@ export default class NetworkList extends Lightning.Component {
   pageTransition() {
     return 'left'
   }
-
+  set params(args) {
+    if (args.wifiError) {
+      this.tag('Info').text.text = Language.translate(`Error Code : ${args.wifiError.code} \t Error Msg : ${args.wifiError.message}`);
+    }
+  }
   _firstEnable() {
     this.wifiLoading = this.tag('Loader').animation({
       duration: 3,
@@ -207,7 +211,9 @@ export default class NetworkList extends Lightning.Component {
       }
     })
   }
-
+  _handleBack(){
+    Router.navigate('splash/network')
+  }
   /**
 * Function to be executed when the Wi-Fi screen is enabled.
 */
@@ -315,6 +321,7 @@ export default class NetworkList extends Lightning.Component {
         }
         _handleEnter() {
           console.log(this.tag('Networks.AvailableNetworks').tag('List').element._item)
+          GLOBALS.NetworkListStatus = true
           Router.navigate('settings/network/interface/wifi/connect', { wifiItem: this.tag('Networks.AvailableNetworks').tag('List').element._item })
         }
       },
