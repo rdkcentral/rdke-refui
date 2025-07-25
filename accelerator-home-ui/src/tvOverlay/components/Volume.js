@@ -82,6 +82,10 @@ export default class Volume extends Lightning.Component {
         if (this.volume > 0) {
             this.volume -= 5;
             if (this.setVolume(this.volume)) {
+                if(this.mute) {
+                    this._updateIcon((!this.mute))
+                    this.setMute(!this.mute)
+                }
                 this._updateText(this.volume)
             }
         }
@@ -105,6 +109,13 @@ export default class Volume extends Lightning.Component {
                 }
                 this._updateText(this.volume)
             }
+        }
+        else{
+            this.setVolume(this.volume)
+            if(this.mute) {
+                    this._updateIcon((!this.mute))
+                    this.setMute(!this.mute)
+                }
         }
     }
 
