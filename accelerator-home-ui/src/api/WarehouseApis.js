@@ -26,8 +26,8 @@ export default class Warehouse {
   constructor() {
     this.thunder = ThunderJS(CONFIG.thunderConfig);
     this.callsign = 'org.rdk.Warehouse';
-    this.INFO = function(){};
-    this.LOG = function(){};
+    this.INFO = console.info;
+    this.LOG = console.log;
     this.ERR = console.error;
   }
 
@@ -41,7 +41,7 @@ export default class Warehouse {
   activate() {
     return new Promise((resolve, reject) => {
       this.thunder.call('Controller', 'activate', { callsign: this.callsign }).then(result => {
-        this.INFO(this.callsign + " activate result:" + result)
+        this.INFO(this.callsign + " activate result:" + JSON.stringify(result))
         resolve(true)
       }).catch(err => {
         this.ERR(this.callsign + " activate error: " + err)
@@ -109,9 +109,9 @@ export default class Warehouse {
   lightReset() {
     return new Promise((resolve, reject) => {
       this.thunder.call(this.callsign, 'lightReset').then(result => {
-        this.INFO(this.callsign + " lightReset result: " + result)
-        if (result.success)resolve(result.success)
-        reject(false)
+        this.INFO(this.callsign + " lightReset result: " + JSON.stringify(result))
+        if (result.success){resolve(result.success)}
+        else{reject(false)}
       }).catch(err => {
         this.ERR(this.callsign + " lightReset error: " + err)
         Metrics.error(Metrics.ErrorType.OTHER,"WarehouseApiError", "Error while Thunder warehouseApi lightReset "+JSON.stringify(err), false, null)

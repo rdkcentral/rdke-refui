@@ -20,15 +20,18 @@ import AppApi from '../../api/AppApi'
 import { Lightning, Utils, Storage, Language } from '@lightningjs/sdk'
 import SettingsMainItem from '../../items/SettingsMainItem'
 import { COLORS } from '../../colors/Colors'
-import { CONFIG } from '../../Config/Config'
+import { CONFIG, GLOBALS } from '../../Config/Config'
 import XcastApi from '../../api/XcastApi'
 import UsbApi from '../../api/UsbApi'
 import PrivacyPolicyScreen from './PrivacyPolicyOverlay'
+import Warehouse from '../../api/WarehouseApis'
+import AlexaApi from '../../api/AlexaApi'
 /**
  * Class for Privacy Screen.
  */
 
 const xcastApi = new XcastApi()
+let cookieToggle = false
 
 export default class PrivacyScreen extends Lightning.Component {
     static _template() {
@@ -122,6 +125,15 @@ export default class PrivacyScreen extends Lightning.Component {
                             fontSize: 25,
                         }
                     },
+                    Button: {
+                        h: 45,
+                        w: 67,
+                        x: 1600,
+                        mountX: 1,
+                        y: 45,
+                        mountY: 0.5,
+                        src: Utils.asset('images/settings/ToggleOffWhite.png'),
+                    },
                 },
                 PrivacyPolicy: {
                     y: 360,
@@ -162,6 +174,7 @@ export default class PrivacyScreen extends Lightning.Component {
         this.checkLocalDeviceStatus()
         this.USBApi = new UsbApi()
         this.AppApi = new AppApi()
+        this.Warehouse= new Warehouse()
     }
 
 
@@ -311,10 +324,66 @@ export default class PrivacyScreen extends Lightning.Component {
                     this._setState('PrivacyPolicy')
                 }
                 _handleEnter() {
-                    this.AppApi.clearCache()
-                        .then(() => {
-                            //location.reload(true)
-                        })
+                    cookieToggle = !cookieToggle
+
+                    //TOGGLE BUTTON
+                    if(cookieToggle){
+                        this.tag('ClearCookies.Button').src = Utils.asset('images/settings/ToggleOnOrange.png')
+                        this.tag('ClearCookies.Title').text = Language.translate('Clear Cookies and App Data') + " - " + Language.translate('In Progress')
+                    }
+                    else{
+                        this.tag('ClearCookies.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
+                        this.tag('ClearCookies.Title').text = Language.translate('Clear Cookies and App Data')
+                    }
+
+                    setTimeout(async () => {
+                        if(GLOBALS.AlexaAvsstatus){
+                        AlexaApi.get().resetAVSCredentials().then((result) => {
+                            console.log("Triggering AVS credential reset." ,result)
+                            if (result.success) {
+                                AlexaApi.get().setAlexaAuthStatus("AlexaAuthPending");
+                                this.tag('ClearCookies.Title').text = Language.translate('Clear Cookies and App Data') + " - " + Language.translate('Finished')
+                                setTimeout(() => {
+                                    this.tag('ClearCookies.Title').text = Language.translate('Clear Cookies and App Data')
+                                    this.tag('ClearCookies.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
+                                    cookieToggle = !cookieToggle
+                                }, 2000)
+                            } else {
+                                //UNSUCCESSFULL API CALL
+                                this.tag('ClearCookies.Title').text = Language.translate('Clear Cookies and App Data')+ " - " + Language.translate("Error!")
+                                setTimeout(() => {
+                                    this.tag('ClearCookies.Title').text = Language.translate('Clear Cookies and App Data')
+                                    this.tag('ClearCookies.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
+                                    cookieToggle = !cookieToggle
+                                }, 2000)
+                            }
+                        })}
+                        else{
+                            try {
+                            await this.Warehouse.activate()
+                            await this.Warehouse.lightReset()}
+                            catch (err) {
+                                console.error("FactoryReset: warehouse plugin activation failed; feature may not work."+JSON.stringify(err));
+                            }
+                            this.AppApi.clearCache()
+                            .then(() =>{
+                                this.tag('ClearCookies.Title').text = Language.translate('Clear Cookies and App Data') + " - " + Language.translate('Finished')
+                                setTimeout(() => {
+                                    this.tag('ClearCookies.Title').text = Language.translate('Clear Cookies and App Data')
+                                    this.tag('ClearCookies.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
+                                    cookieToggle = !cookieToggle
+                                }, 2000)
+                            })
+                            .catch((err) => {
+                                    console.error("Error clearing cache: ", err);
+                                    this.tag('ClearCookies.Title').text = Language.translate('Clear Cookies and App Data') + " - " + Language.translate("Error!")
+                                    setTimeout(() => {
+                                        this.tag('ClearCookies.Title').text = Language.translate('Clear Cookies and App Data')
+                                        this.tag('ClearCookies.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
+                                        cookieToggle = !cookieToggle
+                                    }, 2000)
+                                })
+                    }}, 2000)
                 }
             },
             class PrivacyPolicy extends this {
