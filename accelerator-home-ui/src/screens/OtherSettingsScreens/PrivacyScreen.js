@@ -24,6 +24,7 @@ import { COLORS } from '../../colors/Colors'
 import { CONFIG,GLOBALS } from '../../Config/Config'
 import XcastApi from '../../api/XcastApi'
 import UsbApi from '../../api/UsbApi'
+import Warehouse from '../../api/WarehouseApis'
 
 /**
  * Class for Privacy Screen.
@@ -181,6 +182,7 @@ export default class PrivacyScreen extends Lightning.Component {
         this.checkLocalDeviceStatus()
         this.USBApi = new UsbApi()
         this.AppApi = new AppApi()
+        this.Warehouse= new Warehouse()
     }
 
     _focus() {
@@ -336,12 +338,8 @@ export default class PrivacyScreen extends Lightning.Component {
                         this.tag('ClearCookies.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
                         this.tag('ClearCookies.Title').text = Language.translate('Clear Cookies and App Data')
                     }
-                    this.AppApi.clearCache()
-                        .then(() => {
-                            //location.reload(true)
-                    })
 
-                    setTimeout(() => {
+                    setTimeout(async () => {
                         if(GLOBALS.AlexaAvsstatus){
                         AlexaApi.get().resetAVSCredentials().then((result) => {
                             console.log("Triggering AVS credential reset." ,result)
@@ -364,14 +362,31 @@ export default class PrivacyScreen extends Lightning.Component {
                             }
                         })}
                         else{
-                            this.tag('ClearCookies.Title').text = Language.translate('Clear Cookies and App Data') + " - " + Language.translate('Finished')
-                            setTimeout(() => {
-                                this.tag('ClearCookies.Title').text = Language.translate('Clear Cookies and App Data')
-                                this.tag('ClearCookies.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
-                                cookieToggle = !cookieToggle
-                            }, 2000)
-                        }
-                    }, 2000)
+                            try {
+                            await this.Warehouse.activate()
+                            await this.Warehouse.lightReset()}
+                            catch (err) {
+                                console.error("FactoryReset: warehouse plugin activation failed; feature may not work."+JSON.stringify(err));
+                            }
+                            this.AppApi.clearCache()
+                            .then(() =>{
+                                this.tag('ClearCookies.Title').text = Language.translate('Clear Cookies and App Data') + " - " + Language.translate('Finished')
+                                setTimeout(() => {
+                                    this.tag('ClearCookies.Title').text = Language.translate('Clear Cookies and App Data')
+                                    this.tag('ClearCookies.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
+                                    cookieToggle = !cookieToggle
+                                }, 2000)
+                            })
+                            .catch((err) => {
+                                    console.error("Error clearing cache: ", err);
+                                    this.tag('ClearCookies.Title').text = Language.translate('Clear Cookies and App Data') + " - " + Language.translate("Error!")
+                                    setTimeout(() => {
+                                        this.tag('ClearCookies.Title').text = Language.translate('Clear Cookies and App Data')
+                                        this.tag('ClearCookies.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
+                                        cookieToggle = !cookieToggle
+                                    }, 2000)
+                                })
+                    }}, 2000)
                 }
             },
             class PrivacyPolicy extends this {
