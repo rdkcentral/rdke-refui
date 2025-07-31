@@ -28,6 +28,14 @@ var defaultInterface = "";
 var currentInterface = [];
 export default class NetworkInfo extends Lightning.Component {
 
+    constructor(...args) {
+        super(...args);
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
+
     pageTransition() {
         return 'left'
     }
@@ -325,7 +333,7 @@ export default class NetworkInfo extends Lightning.Component {
                                 this.tag("SignalStrength.Value").text.text = `Poor`
                             }
                             this.tag("SSID.Value").text.text = `${result.ssid}`
-                        }).catch((error) => console.log(error));
+                        }).catch((error) => this.ERR("Error: " + JSON.stringify(error)));
                     } else if (result.interface === "ETHERNET") {
                         this.tag("ConnectionType.Value").text.text = 'Ethernet'
                         this.tag("SSID").alpha = 0
@@ -334,7 +342,7 @@ export default class NetworkInfo extends Lightning.Component {
                     this.tag('InternetProtocol.Value').text.text = result.ipversion
                     this.tag('IPAddress.Value').text.text = result.ipaddr
                     this.tag("Gateway.Value").text.text = result.gateway
-                }).catch((err) => console.error(err))
+                }).catch((err) => this.ERR("Error: " + JSON.stringify(err)))
 
                 Network.get().getInterfaces().then((interfaces) => {
                     currentInterface = interfaces.filter((data) => data.interface === defaultInterface)
@@ -345,8 +353,8 @@ export default class NetworkInfo extends Lightning.Component {
                         this.tag('Status.Value').text.text = Language.translate('Disconnected')
                     }
                     this.tag('MACAddress.Value').text.text = currentInterface[0].macAddress
-                }).catch((error) => console.log(error));
-            }).catch((error) => console.log(error));
+                }).catch((error) => this.ERR("Error: " + JSON.stringify(error)));
+            }).catch((error) => this.ERR("Error: " + JSON.stringify(error)));
         }
         else{
             await FireBoltApi.get().deviceinfo.getnetwork().then(res=>{
@@ -368,7 +376,7 @@ export default class NetworkInfo extends Lightning.Component {
                             this.tag("SignalStrength.Value").text.text = `Poor`
                         }
                         this.tag("SSID.Value").text.text = `${result.ssid}`
-                    }).catch((error) => console.log(error));
+                    }).catch((error) => this.ERR("Error: " + JSON.stringify(error)));
                 } else if (res.type === "ethernet") {
                     this.tag("ConnectionType.Value").text.text = 'Ethernet'
                     this.tag("SSID").alpha = 0
@@ -389,10 +397,10 @@ export default class NetworkInfo extends Lightning.Component {
                 Network.get().getInterfaces().then((interfaces) => {
                     currentInterface = interfaces.filter((data) => data.interface === defaultInterface)
                     this.tag('MACAddress.Value').text.text = currentInterface[0].macAddress
-                }).catch((error) => console.log(error));
+                }).catch((error) => this.ERR("Error: " + JSON.stringify(error)));
             })
 
-            }).catch((error) => console.log(error));
+            }).catch((error) => this.ERR("Error: " + JSON.stringify(error)));
         }
     }
 

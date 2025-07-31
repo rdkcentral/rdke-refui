@@ -25,6 +25,13 @@ const callsign = 'org.rdk.UserSettings'
 const errorName = 'UserSettingsError'
 
 export default class UserSettingsApi {
+    constructor() {
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
+
     activate() {
         return new Promise((resolve, reject) => {
             thunder.Controller.activate({ callsign: callsign })
@@ -32,7 +39,7 @@ export default class UserSettingsApi {
                     resolve(true)
                 })
                 .catch(err => {
-                    console.log('Error Activation', err)
+                    this.ERR("Error Activation " + JSON.stringify(err))
                     Metrics.error(Metrics.ErrorType.OTHER, errorName, `Error while Thunder Controller ${callsign} activate ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
@@ -45,7 +52,7 @@ export default class UserSettingsApi {
                     resolve(true)
                 })
                 .catch(err => {
-                    console.log('Error Deactivation', err)
+                    this.ERR("Error Deactivation " + JSON.stringify(err))
                     Metrics.error(Metrics.ErrorType.OTHER, errorName, `Error while Thunder Controller ${callsign} deactivate ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
@@ -62,7 +69,7 @@ export default class UserSettingsApi {
               resolve(true)
             })
             .catch(err => {
-              console.log('Error enable', err)
+              this.ERR("Error enable " + JSON.stringify(err))
               Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder UserSettings setVoiceGuidance " + JSON.stringify(err), false, null)
               resolve(false)
             })
@@ -77,11 +84,10 @@ export default class UserSettingsApi {
               resolve(result)
             })
             .catch(err => {
-              console.log('Error enable', err)
+              this.ERR("Error enable " + JSON.stringify(err))
               Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder UserSettings getVoiceGuidance " + JSON.stringify(err), false, null)
               resolve(false)
             })
         })
     }
-
 }

@@ -29,6 +29,14 @@ import AppApi from '../../api/AppApi.js';
 
 export default class AudioScreen extends Lightning.Component {
 
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
+
   pageTransition() {
     return 'left'
   }
@@ -292,29 +300,29 @@ export default class AudioScreen extends Lightning.Component {
           // gets the drc mode
           this.appApi.getDRCMode().then(res => {
           }).catch(err => {
-            console.log(err)
+            this.ERR("Error: " + JSON.stringify(err))
           })
 
           this.appApi.setVolumeLevel(((GLOBALS.deviceType=="IpTv")?"SPEAKER0":"HDMI0"), 100).then(res => {
             this.appApi.getVolumeLevel().catch(err => {
-              console.log(err)
+              this.ERR("Error: " + JSON.stringify(err))
             })
           }).catch(err => {
-            console.log(err)
+            this.ERR("Error: " + JSON.stringify(err))
           });
 
           this.appApi.getConnectedAudioPorts().then(res => {
           }).catch(err => {
-            console.log(err)
+            this.ERR("Error: " + JSON.stringify(err))
           })
           // gets the enabled Audio Port
           this.appApi.getEnableAudioPort(((GLOBALS.deviceType=="IpTv")?"SPEAKER0":"HDMI0")).then(res => {
           }).catch(err => {
-            console.log(err)
+            this.ERR("Error: " + JSON.stringify(err))
           })
 
           this.appApi.getSupportedAudioPorts().catch(err => {
-            console.log(`Error while getting the supported Audio ports ie. ${err}`);
+            this.ERR("Error while getting the supported Audio ports ie. " + JSON.stringify(err));
           });
 
           // set enable Audio POrt
@@ -323,20 +331,20 @@ export default class AudioScreen extends Lightning.Component {
             this.appApi.getEnableAudioPort(((GLOBALS.deviceType=="IpTv")?"SPEAKER0":"HDMI0")).then(res => {
 
             }).catch(err => {
-              console.log(err)
+              this.ERR("Error: " + JSON.stringify(err))
             })
           }).catch(err => {
-            console.log(err)
+            this.ERR("Error: " + JSON.stringify(err))
           });
 
           // set zoom setting ,possible values : FULL, NONE, Letterbox 16x9, Letterbox 14x9, CCO, PanScan, Letterbox 2.21 on 4x3, Letterbox 2.21 on 16x9, Platform, Zoom 16x9, Pillarbox 4x3, Widescreen 4x3
           this.appApi.setZoomSetting("FULL").then(res => {
             this.appApi.getZoomSetting().then(res => {
             }).catch(err => {
-              console.log(err)
+              this.ERR("Error: " + JSON.stringify(err))
             })
           }).catch(err => {
-            console.log(err)
+            this.ERR("Error: " + JSON.stringify(err))
           })
         }
       },

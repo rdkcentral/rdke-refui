@@ -23,6 +23,12 @@ import { Metrics } from '@firebolt-js/sdk';
 const thunder = ThunderJS(CONFIG.thunderConfig)
 
 export default class CECApi {
+    constructor() {
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
     activate() {
         return new Promise((resolve, reject) => {
             thunder.Controller.activate({ callsign: 'org.rdk.HdmiCecSource' })
@@ -30,7 +36,7 @@ export default class CECApi {
                     resolve(true)
                 })
                 .catch(err => {
-                    console.log('CEC Error Activation', err)
+                    this.ERR("CEC Error Activation: " + err)
                     Metrics.error(Metrics.ErrorType.OTHER, "HdmiCecSourceError", "Error while Thunder Controller HdmiCecSource activate "+JSON.stringify(err), false, null)
                     reject(err)
                 })
@@ -43,7 +49,7 @@ export default class CECApi {
                     resolve(true)
                 })
                 .catch(err => {
-                    console.log('CEC Error Deactivation', err)
+                    this.ERR("CEC Error Deactivation: " + err)
                     Metrics.error(Metrics.ErrorType.OTHER, "HdmiCecSourceError", "Error while Thunder Controller HdmiCecSource deactivate "+JSON.stringify(err), false, null)
                     reject(err)
                 })
@@ -56,7 +62,7 @@ export default class CECApi {
                     resolve(result)
                 })
                 .catch(err => {
-                    console.error('CEC Get Enabled', +JSON.stringify(err))
+                    this.ERR("CEC Get Enabled: " + JSON.stringify(err))
                     Metrics.error(Metrics.ErrorType.OTHER, "HdmiCecSourceError", "Error in Thunder HdmiCecSource getEnabled "+JSON.stringify(err), false, null)
                     resolve({ enabled: false })
                 })
@@ -70,7 +76,7 @@ export default class CECApi {
                     resolve(result)
                 })
                 .catch(err => {
-                    console.error('CEC Set Enabled', err)
+                    this.ERR("CEC Set Enabled: " + err)
                     Metrics.error(Metrics.ErrorType.OTHER, "HdmiCecSourceError", "Error in Thunder HdmiCecSource setEnabled "+JSON.stringify(err), false, null)
                     resolve({ success: false })
                 })
@@ -83,7 +89,7 @@ export default class CECApi {
                     resolve(result)
                 })
                 .catch(err => {
-                    console.error('getOSDName' + JSON.stringify(err))
+                    this.ERR("getOSDName: " + JSON.stringify(err))
                     Metrics.error(Metrics.ErrorType.OTHER, "HdmiCecSourceError", "Error in Thunder HdmiCecSource getOSDName "+JSON.stringify(err), false, null)
                     resolve({ enabled: false })
                 })
@@ -96,7 +102,7 @@ export default class CECApi {
                     resolve(result)
                 })
                 .catch(err => {
-                    console.error('setOSDName', err);
+                    this.ERR("setOSDName: " + err);
                     Metrics.error(Metrics.ErrorType.OTHER, "HdmiCecSourceError", "Error in Thunder HdmiCecSource setOSDName "+JSON.stringify(err), false, null)
                     resolve({ success: false })
                 })
@@ -110,7 +116,7 @@ export default class CECApi {
                     resolve(result)
                 })
                 .catch(err => {
-                    console.error('CEC Otp Error', err)
+                    this.ERR("CEC Otp Error: " + err)
                     Metrics.error(Metrics.ErrorType.OTHER, "HdmiCecSourceError", "Error in Thunder HdmiCecSource performOTPAction "+JSON.stringify(err), false, null)
                     resolve({ success: false })
                 })
@@ -124,7 +130,7 @@ export default class CECApi {
                     resolve(result.status)
                 })
                 .catch(err => {
-                    console.error("CECApi HdmiCecSource getActiveSourceStatus failed." + err);
+                    this.ERR("CECApi HdmiCecSource getActiveSourceStatus failed: " + err);
                     Metrics.error(Metrics.ErrorType.OTHER, "HdmiCecSourceError", "Error in Thunder HdmiCecSource getActiveSourceStatus "+JSON.stringify(err), false, null)
                     reject(err)
                 })

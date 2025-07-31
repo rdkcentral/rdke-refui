@@ -27,6 +27,14 @@ import { Metrics } from '@firebolt-js/sdk';
 var thunder = ThunderJS(CONFIG.thunderConfig);
 
 export default class FailureScreen extends Lightning.Component {
+    constructor(...args) {
+        super(...args);
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
+
     static _template() {
         return {
             Wrapper: {
@@ -102,7 +110,7 @@ export default class FailureScreen extends Lightning.Component {
         return [
             class RetryButton extends this{
                 $enter() {
-                    console.log("setState DoneButton CodeScreen")
+                    this.LOG("setState DoneButton CodeScreen")
                     this.tag("RetryButton")
                     this._focus()
                     this.tag('RetryButton.Title').text.textColor = CONFIG.theme.hex
@@ -111,9 +119,9 @@ export default class FailureScreen extends Lightning.Component {
                     if (GLOBALS.topmostApp !== GLOBALS.selfClientName) {
                         if(GLOBALS.AlexaAvsstatus){
                         AlexaApi.get().resetAVSCredentials().then(() => {
-                            console.log("avs credentials reseted")
+                            this.LOG("avs credentials reseted")
                         })}
-                        console.log("Current app: " + GLOBALS.topmostApp + ", moving the app to front")
+                        this.LOG("Current app: " + JSON.stringify(GLOBALS.topmostApp) + ", moving the app to front")
                         RDKShellApis.moveToFront(GLOBALS.topmostApp)
                         RDKShellApis.setFocus(GLOBALS.topmostApp).catch((err) => {
                             Metrics.error(Metrics.ErrorType.OTHER, 'PluginError', "Thunder RDKshell set focus error" + JSON.stringify(err), false, null)

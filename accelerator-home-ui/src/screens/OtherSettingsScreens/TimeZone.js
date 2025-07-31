@@ -7,6 +7,14 @@ import FireBoltApi from "../../api/firebolt/FireBoltApi";
 
 export default class TimeZone extends Lightning.Component {
 
+    constructor(...args) {
+        super(...args);
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
+
     _onChanged() {
         this.widgets.menu.updateTopPanelText(Language.translate('Settings  Other Settings  Advanced Settings  Device  Time'));
     }
@@ -87,7 +95,7 @@ export default class TimeZone extends Lightning.Component {
             this.zone = await FireBoltApi.get().localization.getTimeZone()
         }
         try {
-            console.log(this.resp, this.zone)
+            this.LOG(JSON.stringify(this.resp) + " " + JSON.stringify(this.zone))
             delete this.resp.Etc
             for (const i in this.resp) {
                 if (typeof this.resp[i] === 'object') {
@@ -98,10 +106,10 @@ export default class TimeZone extends Lightning.Component {
                 AlexaApi.get().updateDeviceTimeZoneInAlexa(this.zone)
             }
         } catch (error) {
-            console.log('no api present', error)
+            this.ERR('no api present' + JSON.stringify(error))
         }
 
-        console.log(data)
+        this.LOG("data: " + JSON.stringify(data))
         if (data.length > 1) {
             this.tag('List').h = data.length * 90
             this.tag('List').items = data.map((item, idx) => {

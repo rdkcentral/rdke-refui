@@ -34,6 +34,14 @@ const xcastApi = new XcastApi()
 let cookieToggle = false
 
 export default class PrivacyScreen extends Lightning.Component {
+    constructor(...args) {
+        super(...args);
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
+
     _onChanged() {
         this.widgets.menu.updateTopPanelText(Language.translate('Settings  Other Settings  Privacy'));
     }
@@ -237,7 +245,7 @@ export default class PrivacyScreen extends Lightning.Component {
                 })
             }
         }).catch(err => {
-            console.log('Service not active')
+            this.LOG('Service not active')
             this.tag('LocalDeviceDiscovery.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
         })
     }
@@ -283,7 +291,7 @@ export default class PrivacyScreen extends Lightning.Component {
                             this.tag('UsbMediaDevices.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
                             this.widgets.menu.refreshMainView()
                         }).catch(err => {
-                            console.error(`error while disabling the usb plugin = ${err}`)
+                            this.ERR("error while disabling the usb plugin = " + JSON.stringify(err))
                             this.fireAncestors('$registerUsbMount')
                         })
                     } else if (_UsbMedia === 'OFF') {
@@ -342,7 +350,7 @@ export default class PrivacyScreen extends Lightning.Component {
                     setTimeout(async () => {
                         if(GLOBALS.AlexaAvsstatus){
                         AlexaApi.get().resetAVSCredentials().then((result) => {
-                            console.log("Triggering AVS credential reset." ,result)
+                            this.LOG("Triggering AVS credential reset." + JSON.stringify(result))
                             if (result.success) {
                                 AlexaApi.get().setAlexaAuthStatus("AlexaAuthPending");
                                 this.tag('ClearCookies.Title').text = Language.translate('Clear Cookies and App Data') + " - " + Language.translate('Finished')
@@ -366,7 +374,7 @@ export default class PrivacyScreen extends Lightning.Component {
                             await this.Warehouse.activate()
                             await this.Warehouse.lightReset()}
                             catch (err) {
-                                console.error("FactoryReset: warehouse plugin activation failed; feature may not work."+JSON.stringify(err));
+                                this.ERR("FactoryReset: warehouse plugin activation failed; feature may not work." + JSON.stringify(err));
                             }
                             this.AppApi.clearCache()
                             .then(() =>{
@@ -378,7 +386,7 @@ export default class PrivacyScreen extends Lightning.Component {
                                 }, 2000)
                             })
                             .catch((err) => {
-                                    console.error("Error clearing cache: ", err);
+                                    this.ERR("Error clearing cache: " + JSON.stringify(err));
                                     this.tag('ClearCookies.Title').text = Language.translate('Clear Cookies and App Data') + " - " + Language.translate("Error!")
                                     setTimeout(() => {
                                         this.tag('ClearCookies.Title').text = Language.translate('Clear Cookies and App Data')

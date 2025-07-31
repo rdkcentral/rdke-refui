@@ -37,7 +37,7 @@ function thunderJS() {
 
 async function registerListener(plugin, eventname, cb) {
   return await LISAApi.get().thunder.on(plugin, eventname, (notification) => {
-    console.log("DACApi Received event " + plugin + ":" + eventname, notification)
+    console.log("DACApi Received event " + plugin + ":" + eventname + " " + JSON.stringify(notification))
     if (cb != null) {
       cb(notification, eventname, plugin)
     }
@@ -113,7 +113,7 @@ export const installDACApp = async (app, progress) => {
   }
 
   try {
-    console.info("installDACApp LISA.install with param:", JSON.stringify(param))
+    console.info("installDACApp LISA.install with param:"+ JSON.stringify(param))
     app.handle = await LISAApi.get().install(param)
   } catch (error) {
     console.error('DACApi Error on installDACApp: ' + error.code + ' ' + error.message)
@@ -143,7 +143,7 @@ export const uninstallDACApp = async (app, progress) => {
   }
 
   try {
-    console.info("uninstallDACApp LISA.uninstall with params:", JSON.stringify(param))
+    console.info("uninstallDACApp LISA.uninstall with params:"+ JSON.stringify(param))
     if (Object.prototype.hasOwnProperty.call(app, "errorCode")) delete app.errorCode;
     await LISAApi.get().uninstall(param)
   } catch (error) {
@@ -164,7 +164,7 @@ export const isInstalledDACApp = async (app) => {
       versionAsParameter: app.version,
     })
   } catch (error) {
-    console.error('DACApi Error on LISA getStorageDetails: ', error)
+    console.error('DACApi Error on LISA getStorageDetails: ' + JSON.stringify(error))
     Metrics.error(Metrics.ErrorType.OTHER, "DACApiError", 'DACApi Error on LISA getStorageDetails: '+JSON.stringify(error), false, null)
     return false
   }
@@ -177,7 +177,7 @@ export const getInstalledDACApps = async () => {
   try {
     result = await LISAApi.get().getList()
   } catch (error) {
-    console.error('DACApi Error on LISA getList: ', error)
+    console.error('DACApi Error on LISA getList: ' + JSON.stringify(error))
     Metrics.error(Metrics.ErrorType.OTHER, "DACApiError", 'DACApi Error on LISA getList: '+JSON.stringify(error), false, null)
   }
 
@@ -190,7 +190,7 @@ export const getPlatformNameForDAC = async () => {
   if (platform == null || platform === "") {
     platform = await getDeviceName()
     platform = platform.split('-')[0]
-    console.info("getPlatformNameForDAC platform after split: ", JSON.stringify(platform))
+    console.info("getPlatformNameForDAC platform after split: " + JSON.stringify(platform))
   }
   else {
     return platform
@@ -227,7 +227,7 @@ export const getDeviceName = async () => {
   try {
     result = await thunderJS().DeviceInfo.systeminfo()
   } catch (error) {
-    console.error('DAC Api Error on systeminfo: ', error)
+    console.error('DAC Api Error on systeminfo: '+ error)
     Metrics.error(Metrics.ErrorType.OTHER, "DACApiError", 'DAC Api Error on systeminfo: '+JSON.stringify(error), false, null)
   }
   return result == null ? "unknown" : result.devicename
@@ -254,13 +254,13 @@ export const startDACApp = async (app) => {
       return false
     }
   } catch (error) {
-    console.error('DACApi Error on launchApplication: ', error)
+    console.error('DACApi Error on launchApplication: ' + JSON.stringify(error))
     Metrics.error(Metrics.ErrorType.OTHER, "DACApiError", 'DACApi Error on launchApplication: '+JSON.stringify(error), false, null)
     return false
   }
 
   if (result == null) {
-    console.error('DACApi launch error returned result: ', result)
+    console.error('DACApi launch error returned result: ' + JSON.stringify(result))
     return false
   } else if (!result.success) {
     // Could be same app is in suspended mode.
@@ -289,7 +289,7 @@ export const startDACApp = async (app) => {
   try {
     result = await thunderJS()['org.rdk.RDKShell'].moveToFront({ client: app.id })
   } catch (error) {
-    console.log('DACApi Error on moveToFront: ', error)
+    console.log('DACApi Error on moveToFront: ' + JSON.stringify(error))
     Metrics.error(Metrics.ErrorType.OTHER, "DACApiError", "Error in Thunder RDKShell moveToFront DACApiError"+JSON.stringify(error), false, null)
   }
 
@@ -297,7 +297,7 @@ export const startDACApp = async (app) => {
     result = await thunderJS()['org.rdk.RDKShell'].setFocus({ client: app.id })
     GLOBALS.topmostApp = (app.id + ';' + app.version + ';' + app.type);
   } catch (error) {
-    console.log('DACApi Error on setFocus: ', error)
+    console.log('DACApi Error on setFocus: ' + JSON.stringify(error))
     Metrics.error(Metrics.ErrorType.OTHER, "DACApiError", "Error in Thunder DACApi setFocus"+JSON.stringify(error), false, null)
     return false
   }
@@ -320,7 +320,7 @@ export const getAppCatalogInfo = async () => {
           .then(response => response.text())
           .then(result => {
             result = JSON.parse(result)
-            console.log("DACApi fetch result: ", result)
+            console.log("DACApi fetch result: " + JSON.stringify(result))
             if (Object.prototype.hasOwnProperty.call(result, "applications")) {
               appListArray = result["applications"];
             } else {
@@ -344,7 +344,7 @@ export const getAppCatalogInfo = async () => {
             .then(response => response.text())
             .then(result => {
               result = JSON.parse(result)
-              console.log("DACApi fetch result: ", result)
+              console.log("DACApi fetch result: " + JSON.stringify(result))
               if (Object.prototype.hasOwnProperty.call(result, "applications")) {
                 appListArray = result["applications"];
               } else {
@@ -353,7 +353,7 @@ export const getAppCatalogInfo = async () => {
               }
             })
             .catch(error => {
-               console.log("DACApi fetch error from cloud", error)
+               console.log("DACApi fetch error from cloud: " + JSON.stringify(error))
                Metrics.error(Metrics.ErrorType.OTHER, "DACApiError", JSON.stringify(error), false, null)
             });
         } else {
@@ -396,7 +396,7 @@ export const getAppCatalogInfo = async () => {
           }
         })
         .catch(error => {
-          console.log("DACApi fetch error from cloud", error)
+          console.log("DACApi fetch error from cloud: " + JSON.stringify(error))
           Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", error, false, null)
           hasmore = false;
         });
@@ -438,7 +438,7 @@ export const getAppCatalogInfo = async () => {
         }
       })
       .catch(error => {
-        console.log("DACApi fetch error from cloud", error)
+        console.log("DACApi fetch error from cloud: " + JSON.stringify(error))
         Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", error, false, null)
         hasmore = false;
       });
@@ -480,7 +480,7 @@ export const getFirmwareVersion = async () => {
       firmwareVer = await getFirmareVer()
     }
   } catch (error) {
-    console.log("DACApi getFirmwareVersion Error: ", error)
+    console.log("DACApi getFirmwareVersion Error: " + JSON.stringify(error))
     //code temporarily added based on new api implementation
     Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", error, false, null)
     firmwareVer = await getFirmareVer()
@@ -501,7 +501,7 @@ export const fetchAppIcon = async (id, version) => {
           .then(response => response.text())
           .then(result => {
             result = JSON.parse(result)
-            console.log("fetchAppIcon fetch result: ", result)
+            console.log("fetchAppIcon fetch result: " + JSON.stringify(result))
             if (Object.prototype.hasOwnProperty.call(result, "header")) {
               appIcon = result.header.icon;
             } else {
@@ -510,7 +510,7 @@ export const fetchAppIcon = async (id, version) => {
             }
           })
           .catch(error => {
-            console.log("App Icon fetch error", error)
+            console.log("App Icon fetch error: " + JSON.stringify(error))
             Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", error, false, null)
           });
       }
@@ -541,12 +541,12 @@ export const fetchAppIcon = async (id, version) => {
           }
         })
         .catch(error => {
-          console.log("fetchAppIcon App Icon fetch error", error)
+          console.log("fetchAppIcon App Icon fetch error: " + JSON.stringify(error))
           Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", error, false, null)
         });
     }
   } catch (error) {
-    console.log("DACApi fetchAppIcon try block Error: ", error)
+    console.log("DACApi fetchAppIcon try block Error: " + JSON.stringify(error))
     //code temporarily added based on new api implementation
     let asms = await getAsmsUrlObj()
     let myHeaders = new Headers();
@@ -571,7 +571,7 @@ export const fetchAppIcon = async (id, version) => {
         }
       })
       .catch(error => {
-        console.log("fetchAppIcon App Icon fetch error", error)
+        console.log("fetchAppIcon App Icon fetch error: " + JSON.stringify(error))
         Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", error, false, null)
       });
   }
@@ -605,7 +605,7 @@ export const fetchLocalAppIcon = async (id) => {
             }
           })
           .catch(error => {
-            console.log("fetchLocalAppIcon App Icon fetch error", error)
+            console.log("fetchLocalAppIcon App Icon fetch error: " + JSON.stringify(error))
             Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", error, false, null)
           });
       }
@@ -614,7 +614,7 @@ export const fetchLocalAppIcon = async (id) => {
       Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", "etchLocalAppIcon Appstore info not available; DAC features won't work", false, null)
     }
   } catch (error) {
-    console.log("fetchLocalAppIcon Appstore info Error: ", error)
+    console.log("fetchLocalAppIcon Appstore info Error: " + JSON.stringify(error))
     Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", error, false, null)
   }
   return appIcon == null ? undefined : appIcon;
@@ -633,7 +633,7 @@ export const fetchAppUrl = async (id, version) => {
           .then(response => response.text())
           .then(result => {
             result = JSON.parse(result)
-            console.log("fetchAppUrl App fetch result: ", result)
+            console.log("fetchAppUrl App fetch result: " + JSON.stringify(result))
             if (Object.prototype.hasOwnProperty.call(result, "header")) {
               appUrl = result.header.url;
             } else {
@@ -642,7 +642,7 @@ export const fetchAppUrl = async (id, version) => {
             }
           })
           .catch(error => {
-            console.log("fetchAppUrl App URL fetch error", error)
+            console.log("fetchAppUrl App URL fetch error: " + JSON.stringify(error))
             Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", error, false, null)
           });
       }
@@ -672,12 +672,12 @@ export const fetchAppUrl = async (id, version) => {
           }
         })
         .catch(error => { 
-          console.log("fetchAppUrl App URL fetch error", error)
+          console.log("fetchAppUrl App URL fetch error: " + JSON.stringify(error))
           Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", error, false, null)
         });
     }
   } catch (error) {
-    console.log("fetchAppUrl DACApi Appstore info Error: ", error)
+    console.log("fetchAppUrl DACApi Appstore info Error: " + JSON.stringify(error))
     Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", error, false, null)
   }
   return appUrl == null ? undefined : appUrl;
@@ -709,7 +709,7 @@ export const getAsmsUrlObj = async () => {
       throw new Error('getAsmsUrlObj: Failed to parse data');
     }
   } catch (err) {
-    console.error("getAsmsUrlObj FETCH error: ", err);
+    console.error("getAsmsUrlObj FETCH error: " + JSON.stringify(err));
     Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", err, false, null)
     throw new Error('getAsmsUrlObj: Failed to parse data: ' + err);
   }

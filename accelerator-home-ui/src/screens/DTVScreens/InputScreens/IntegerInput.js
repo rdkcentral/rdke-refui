@@ -25,6 +25,14 @@ import { Keyboard } from "../../../ui-components";
 import { KEYBOARD_FORMATS } from "../../../ui-components/components/Keyboard";
 
 export default class IntegerInput extends Lightning.Component {
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
+
   static _template() {
     return {
       x: 200,
@@ -99,12 +107,12 @@ export default class IntegerInput extends Lightning.Component {
     this.tag("Content").text.text =
       this.prevVal === "" ? Language.translate("Enter the value and click Done") : this.prevVal;
     this.inputValue = this.prevVal;
-    console.log("presetValues: ",this.presetValues)
+    this.LOG("presetValues: " + JSON.stringify(this.presetValues))
     this.presetValuesLength = 0;
     this.presetIdx = -1; //to accomodate previous value of the input field
     if(Array.isArray(this.presetValues)){
       this.presetValuesLength = this.presetValues.length;
-      console.log(this.presetValues, this.presetValuesLength)
+      this.LOG(JSON.stringify(this.presetValues) + " " + JSON.stringify(this.presetValuesLength))
       this.tag("Arrows").visible = true;
     } else {
       this.tag("Arrows").visible = false;

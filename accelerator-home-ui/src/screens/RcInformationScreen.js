@@ -26,6 +26,14 @@ const _thunder = ThunderJS(CONFIG.thunderConfig)
 let onStatusCBhandle = null;
 
 export default class RCInformationScreen extends Lightning.Component {
+    constructor(...args) {
+        super(...args);
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
+
     _onChanged() {
         this.widgets.menu.updateTopPanelText(Language.translate('Settings  Bluetooth Voice Remote Control'));
     }
@@ -220,16 +228,16 @@ export default class RCInformationScreen extends Lightning.Component {
     }
 
     async _active() {
-        await RCApi.get().activate().catch(err => { console.error("RCInformationScreen error:", err) });
+        await RCApi.get().activate().catch(err => { this.ERR("RCInformationScreen error: " + JSON.stringify(err)) });
         await RCApi.get().getNetStatus().then(result => {
-            console.info("RCInformationScreen getNetStatus:", result)
+            this.INFO("RCInformationScreen getNetStatus: " + JSON.stringify(result))
             onStatusCBhandle = _thunder.on('org.rdk.RemoteControl', 'onStatus', data => { this.onStatusCB(data) });
             this.onStatusCB(result);
-        }).catch(err => console.error("RCInformationScreen error:", err));
+        }).catch(err => this.ERR("RCInformationScreen error: " + JSON.stringify(err)));
     }
 
     _inactive() {
-        console.warn("RCInformationScreen _inactive.");
+        this.WARN("RCInformationScreen _inactive.");
         if(onStatusCBhandle != null)onStatusCBhandle.dispose();
         this.tag("Status.Value").text.text = `N/A`
         this.tag("MacAddress.Value").text.text = `N/A`
@@ -250,7 +258,7 @@ export default class RCInformationScreen extends Lightning.Component {
                 cbDatastatus = cbData.status;
               }
             if (cbDatastatus.remoteData.length) {
-                console.log("RCInformationScreen rcPairingApis RemoteData Length", cbDatastatus.remoteData.length)
+                this.LOG("RCInformationScreen rcPairingApis RemoteData Length " + JSON.stringify(cbDatastatus.remoteData.length))
                 let RemoteName = []; let connectedStatus = []; let MacAddress = [];
                 let swVersion = []; let BatteryPercent = [];
 
@@ -278,9 +286,9 @@ export default class RCInformationScreen extends Lightning.Component {
                 if(cbDatastatus.pairingState != "SEARCHING" && cbDatastatus.pairingState != "PAIRING" ) {
                     for(let i=0;i<cbDatastatus.netTypesSupported.length;i++)
                     {
-                        console.log("Netypesupported"+ JSON.stringify(cbDatastatus.netTypesSupported[i]))
+                        this.LOG("Netypesupported" + JSON.stringify(cbDatastatus.netTypesSupported[i]))
                         RCApi.get().startPairing(30,cbDatastatus.netTypesSupported[i]).catch(err => {
-                            console.err("RCInformationScreen startPairing error:", err);
+                            this.ERR("RCInformationScreen startPairing error: " + JSON.stringify(err));
                         });
                     }
                 }

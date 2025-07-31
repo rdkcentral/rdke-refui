@@ -18,17 +18,24 @@
  **/
 import { Discovery, Metrics } from '@firebolt-js/sdk'
 export default class FBTDiscovery {
+    constructor() {
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
     
     launch(appId,intent){
         return new Promise((resolve,reject)=>{
             Discovery.launch(appId, intent).then(success => {
-                console.log( "Discovery.launch result:"+success)
+                this.LOG("Discovery.launch result:" + JSON.stringify(success))
                 resolve(success);
             })
         .catch(err => {
-            console.error('firebolt Discovery.launch error', err)
+            this.ERR("firebolt Discovery.launch error: " + JSON.stringify(err))
             Metrics.error(Metrics.ErrorType.OTHER, "fireboltDiscoveryError", "Discovery.launch error"+ err, false, null)
             reject(err)
           })
-        })}
+        })
+    }
 }

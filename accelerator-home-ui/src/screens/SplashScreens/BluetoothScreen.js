@@ -29,6 +29,14 @@ var bluetoothApi = new BluetoothApi();
 const _thunder = ThunderJS(CONFIG.thunderConfig)
 
 export default class BluetoothScreen extends Lightning.Component {
+    constructor(...args) {
+        super(...args);
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
+
     static _template() {
         return {
             w: 1920,
@@ -135,28 +143,28 @@ export default class BluetoothScreen extends Lightning.Component {
         //bluetoothApi.btactivate().then(enableResult =>{
         //  console.log('1')
         bluetoothApi.enable().then(res => {
-            console.log("SplashBluetoothScreen enable result: ", res)
+            this.LOG("SplashBluetoothScreen enable result: " + JSON.stringify(res))
             bluetoothApi.startScanBluetooth().then(startScanresult => {
-                console.log('SplashBluetoothScreen startScanresult ', startScanresult)
+                this.LOG('SplashBluetoothScreen startScanresult ' + JSON.stringify(startScanresult))
                 var SubscribeEvent = _thunder.on('org.rdk.Bluetooth', 'onDiscoveredDevice', notification => {
                     bluetoothApi.getDiscoveredDevices().then((getdocoveredInfo) => {
-                        console.log('SplashBluetoothScreen onDiscoveredDevice ', getdocoveredInfo[0].name)
+                        this.LOG('SplashBluetoothScreen onDiscoveredDevice ' + JSON.stringify(getdocoveredInfo[0].name))
                         this.tag('Info').text.text = `pairing this device ${getdocoveredInfo[0].name}`
                         //bluetoothApi.connect(getdocoveredInfo[0].deviceID, getdocoveredInfo[0].deviceType).then(connectresult=>{
                         //  console.log("connectresult",connectresult)
                         bluetoothApi.pair(getdocoveredInfo[0].deviceID).then(Pairresult => {
-                            console.log("SplashBluetoothScreen Pairresult", Pairresult)
+                            this.LOG("SplashBluetoothScreen Pairresult" + JSON.stringify(Pairresult))
                             bluetoothApi.getConnectedDevices().then(getCdresult => {
-                                console.log("SplashBluetoothScreen getConnectedDevices", getCdresult)
+                                this.LOG("SplashBluetoothScreen getConnectedDevices" + JSON.stringify(getCdresult))
                                 bluetoothApi.getPairedDevices().then(getpairedDevices => {
-                                    console.log("SplashBluetoothScreen getpairedDevices", getpairedDevices)
+                                    this.LOG("SplashBluetoothScreen getpairedDevices" + JSON.stringify(getpairedDevices))
                                     bluetoothApi.stopScan().then(stopScan => {
-                                        console.log("SplashBluetoothScreen stopscan", stopScan)
+                                        this.LOG("SplashBluetoothScreen stopscan" + JSON.stringify(stopScan))
                                         SubscribeEvent.dispose();
                                         //bluetoothApi.disable().then(disable =>{
                                         //console.log("disable")
                                         bluetoothApi.deactivateBluetooth().then(deactivateBluetooth => {
-                                            console.log("SplashBluetoothScreen DeactivatedBluetooth", deactivateBluetooth)
+                                            this.LOG("SplashBluetoothScreen DeactivatedBluetooth" + JSON.stringify(deactivateBluetooth))
                                             if (Router.getActiveHash() === "splash/bluetooth") {
                                                 Router.navigate('splash/language')
                                             }
@@ -164,26 +172,26 @@ export default class BluetoothScreen extends Lightning.Component {
 
                                     })
                                         .catch(err => {
-                                            console.error(`SplashBluetoothScreen cant stopscan device : ${JSON.stringify(err)}`)
+                                            this.ERR(`SplashBluetoothScreen cant stopscan device : ${JSON.stringify(err)}`)
                                         })
                                 })
                                     .catch(err => {
-                                        console.error(`SplashBluetoothScreen cant getpaired device : ${JSON.stringify(err)}`)
+                                        this.ERR("SplashBluetoothScreen cant stopscan device : " + JSON.stringify(err))
                                     })
-                            })
-                                .catch(err => {
-                                    console.error(`SplashBluetoothScreen Can't getconnected device : ${JSON.stringify(err)}`)
                                 })
-                        })
+                                .catch(err => {
+                                    this.ERR("SplashBluetoothScreen cant getpaired device : " + JSON.stringify(err))
+                                })
+                            })
                             .catch(err => {
-                                console.error(`SplashBluetoothScreen Can't pair device : ${JSON.stringify(err)}`)
+                                this.ERR(`SplashBluetoothScreen Can't pair device : ${JSON.stringify(err)}`)
                             })
                     })
                 })
             })
-                .catch(err => {
-                    console.error(`Can't scan enable : ${JSON.stringify(err)}`)
-                })
+            .catch(err => {
+                this.ERR("Can't scan enable : " + JSON.stringify(err))
+            })
         })
     }
 
@@ -221,9 +229,9 @@ export default class BluetoothScreen extends Lightning.Component {
                 if(cbDatastatus.pairingState != "SEARCHING" && cbDatastatus.pairingState != "PAIRING" ) {
                     for(let i=0;i<cbDatastatus.netTypesSupported.length;i++)
                     {
-                        console.log("Netypesupported"+JSON.stringify(cbDatastatus.netTypesSupported[i]))
+                        this.LOG("Netypesupported" + JSON.stringify(cbDatastatus.netTypesSupported[i]))
                         RCApi.get().startPairing(30,cbDatastatus.netTypesSupported[i]).catch(err => {
-                            console.err("RCInformationScreen startPairing error:", err);
+                            this.ERR("RCInformationScreen startPairing error: " + JSON.stringify(err));
                         });
                     }
                 }
@@ -234,7 +242,7 @@ export default class BluetoothScreen extends Lightning.Component {
     async rcPairingFlow(activatePlugin = false) {
         if (activatePlugin) {
             await RCApi.get().activate().catch(err => {
-                console.error("SplashBluetoothScreen org.rdk.RemoteControl activate error:", err)
+                this.ERR("SplashBluetoothScreen org.rdk.RemoteControl activate error: " + JSON.stringify(err))
                 return;
             });
         }
@@ -247,23 +255,23 @@ export default class BluetoothScreen extends Lightning.Component {
     _init() {
         appApi.getPluginStatus('org.rdk.RemoteControl').then(result => {
             if (result[0].state != "activated") {
-                console.log("SplashBluetoothScreen init RemoteControl activate.")
+                this.LOG("SplashBluetoothScreen init RemoteControl activate.")
                 this.rcPairingFlow(true);
             } else {
-                console.log("SplashBluetoothScreen init RemoteControl already activated.")
+                this.LOG("SplashBluetoothScreen init RemoteControl already activated.")
                 this.rcPairingFlow();
             }
         }).catch(err => {
-            console.log('SplashBluetoothScreen getPluginStatus org.rdk.RemoteControl error:', JSON.stringify(err))
+            this.ERR('SplashBluetoothScreen getPluginStatus org.rdk.RemoteControl error: ' + JSON.stringify(err))
             appApi.getPluginStatusParams('org.rdk.Bluetooth').then(pluginresult => {
-                console.log("SplashBluetoothScreen getPluginStatusParams org.rdk.Bluetooth:", pluginresult[1])
+                this.LOG("SplashBluetoothScreen getPluginStatusParams org.rdk.Bluetooth: " + JSON.stringify(pluginresult[1]))
                 if (pluginresult[1] === 'deactivated') {
                     bluetoothApi.btactivate().then(result => {
-                        console.log("SplashBluetoothScreen init pairing bluetooth")
+                        this.LOG("SplashBluetoothScreen init pairing bluetooth" + JSON.stringify(result))
                         this._PairingApis()
                     })
                 } else {
-                    console.log("SplashBluetoothScreen init status not deactivated")
+                    this.LOG("SplashBluetoothScreen init status not deactivated")
                     this._PairingApis()
                 }
             })

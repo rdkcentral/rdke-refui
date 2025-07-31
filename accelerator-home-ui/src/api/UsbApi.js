@@ -31,6 +31,13 @@ let thunder = ThunderJS(CONFIG.thunderConfig)
  */
 export default class UsbApi {
 
+    constructor() {
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
+
     /**
     *  Function to activate USB Access Plugin
     */
@@ -41,7 +48,7 @@ export default class UsbApi {
                 .then(res => {
                     resolve(res)
                 }).catch(err => {
-                    console.log('UsbAccess Plugin Activation Failed: ' + err)
+                    this.ERR('UsbAccess Plugin Activation Failed: ' + JSON.stringify(err))
                     Metrics.error(Metrics.ErrorType.OTHER,"UsbApiError", "Error while Thunder Controller usbAccess activate "+JSON.stringify(err), false, null)
                     reject(err)
                 })
@@ -58,7 +65,7 @@ export default class UsbApi {
                 .then(res => {
                     resolve(res)
                 }).catch(err => {
-                    console.log('UsbAccess Plugin Deactivation Failed: ' + err)
+                    this.ERR('UsbAccess Plugin Deactivation Failed: ' + JSON.stringify(err))
                     Metrics.error(Metrics.ErrorType.OTHER,"UsbApiError",  "Error while Thunder Controller usbAccess deactivate "+JSON.stringify(err), false, null)
                     reject(err)
                 })
@@ -76,7 +83,7 @@ export default class UsbApi {
                 .then(result => {
                     resolve(result)
                 }).catch(err => {
-                    console.error('UsbAccess Plugin ClearLink Failed: ' + JSON.stringify(err))
+                    this.ERR('UsbAccess Plugin ClearLink Failed: ' + JSON.stringify(err))
                     Metrics.error(Metrics.ErrorType.OTHER,"UsbApiError",  "Error in Thunder usbAccess clearLink "+JSON.stringify(err), false, null)
                     resolve(false)
                 })
@@ -94,7 +101,7 @@ export default class UsbApi {
                 .then(result => {
                     resolve(result)
                 }).catch(err => {
-                    console.error('UsbAccess Plugin CreateLink Failed: ' + JSON.stringify(err))
+                    this.ERR('UsbAccess Plugin CreateLink Failed: ' + JSON.stringify(err))
                     Metrics.error(Metrics.ErrorType.OTHER,"UsbApiError", "Error in Thunder usbAccess createLink "+JSON.stringify(err), false, null)
                     resolve(false)
                 })
@@ -113,7 +120,7 @@ export default class UsbApi {
                     .then(result => {
                         resolve(result.contents)
                     }).catch(err => {
-                        console.error('UsbAccess Plugin getFileList Failed: ' + JSON.stringify(err))
+                        this.ERR('UsbAccess Plugin getFileList Failed: ' + JSON.stringify(err))
                         Metrics.error(Metrics.ErrorType.OTHER,"UsbApiError", "Error in Thunder usbAccess getFileList "+JSON.stringify(err), false, null)
                         resolve(false)
                     })
@@ -127,7 +134,7 @@ export default class UsbApi {
                     .then(result => {
                         resolve(result.contents)
                     }).catch(err => {
-                        console.error('UsbAccess Plugin getFileList Failed: ' + JSON.stringify(err))
+                        this.ERR('UsbAccess Plugin getFileList Failed: ' + JSON.stringify(err))
                         Metrics.error(Metrics.ErrorType.OTHER,"UsbApiError", "Error in Thunder usbAccess getFileList "+JSON.stringify(err), false, null)
                         resolve(false)
                     })
@@ -192,7 +199,7 @@ export default class UsbApi {
                 })
                 .catch(err => {
                     reject(err)
-                    console.error(`Error while getting the mounted device ${JSON.stringify(err)}`);
+                    this.ERR("Error while getting the mounted device " + JSON.stringify(err));
                     Metrics.error(Metrics.ErrorType.OTHER,"UsbApiError", "Error in Thunder usbAccess getMounted "+JSON.stringify(err), false, null)
                 });
         });
@@ -210,7 +217,7 @@ export default class UsbApi {
         let extensionForAudio = ['.mp3', '.mpeg', '.MP3', '.MPEG'];
 
         this._discoveredC = result;
-        //   console.log("Discovered result :: " + JSON.stringify(result));
+        //   this.LOG("Discovered result :: " + JSON.stringify(result));
 
         this._discoveredC.filter(device => {
             for (let i in extensionForImage) {

@@ -26,6 +26,14 @@ import TTSApi from '../../api/TTSApi';
 import UserSettingsApi from '../../api/UserSettingsApi';
 
 export default class TTSScreen extends Lightning.Component {
+    constructor(...args) {
+        super(...args);
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
+
     _onChanged() {
         this.widgets.menu.updateTopPanelText(Language.translate('Settings  Other Settings  Advanced Settings  TTS'));
     }
@@ -116,7 +124,7 @@ export default class TTSScreen extends Lightning.Component {
                 this.userSettingsApi.getVoiceGuidance()
                     .then(userSettingsApiIsEnabled => {
                         this.ttsSupport = ttsApiIsEnabled && userSettingsApiIsEnabled;
-                        console.log(`TTS API: ${ttsApiIsEnabled} US: ${userSettingsApiIsEnabled}`)
+                        this.LOG("TTS API: " + JSON.stringify(ttsApiIsEnabled) + " US: " + JSON.stringify(userSettingsApiIsEnabled))
                         if (this.ttsSupport === true) {
                             this.tag('Enable.Button').src = Utils.asset('images/settings/ToggleOnOrange.png');
                         }
@@ -248,7 +256,7 @@ export default class TTSScreen extends Lightning.Component {
                     this.textCollection = this.textCollection.substring(0, this.textCollection.length - 1);
                     this.tag('EndpointText').text.text = this.textCollection;
                   } else if (key === '#@!' || key === 'abc' || key === 'áöû' || key === 'shift') {
-                    console.log('no saving')
+                    this.LOG("no saving")
                   } else if (key === 'Space') {
                     this.textCollection += ' '
                     this.tag('EndpointText').text.text = this.textCollection;

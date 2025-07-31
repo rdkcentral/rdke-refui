@@ -26,7 +26,7 @@ export default class LISA {
   constructor() {
     this.thunder = ThunderJS(CONFIG.thunderConfig);
     this.callsign = 'LISA';
-    this.INFO = function () { };
+    this.INFO = console.info;
     this.LOG = console.log;
     this.ERR = console.error;
     this.metadata = null;

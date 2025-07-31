@@ -33,6 +33,14 @@ const dtvApi = new DTVApi()
 
 export default class Epg extends Lightning.Component {
 
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
+
   static _template() {
     return {
       Background: {
@@ -286,14 +294,14 @@ export default class Epg extends Lightning.Component {
     } else {
       if (!Router.isNavigating()) {
         this.DTV.launchChannel(channel.dvburi).then(res => {
-          console.log("launchChannel method successful: ", JSON.stringify(res));
+          this.LOG("launchChannel method successful: " + JSON.stringify(res));
           this.widgets.channeloverlay.$focusChannel(this.D - 8 + this.currentlyFocusedRow);
           Router.navigate("dtvplayer");
         }).catch(err => {
-          console.log("launchChannel method failed: ", JSON.stringify(err));
+          this.ERR("launchChannel method failed: " + JSON.stringify(err));
         })
       } else {
-        console.error("Router is still navigating.")
+        this.ERR("Router is still navigating.")
       }
     }
   }
@@ -488,14 +496,14 @@ export default class Epg extends Lightning.Component {
     } else {
       this.D++
     }
-    console.log(`setting vertical scroll from ${this.D - 8} to ${this.D} based the value ${n}`)
+    this.LOG("setting vertical scroll from " + JSON.stringify(this.D - 8) + " to " + JSON.stringify(this.D) + " based the value " + JSON.stringify(n))
     this.activeChannels = this.channels.slice(this.D - 8, this.D)
     this.setChannels(this.activeChannels)
     this.setShows4Channels(this.activeChannels)
   }
 
   onDataProvidedX() {
-    console.log(`on Data Provided`)
+    this.LOG("on Data Provided")
     this.initialize()
     this.scrollVertically()
     this.cellTimeTracker = this.gridInstance[this.currentCellIndex].starttime
@@ -742,7 +750,7 @@ export default class Epg extends Lightning.Component {
           } else if (this.gridInstance[this.currentCellIndex].showIndex > 0) {
             this.scrollHorizontally(-1)
           } else {
-            console.log("can't traverse any left")
+            this.LOG("can't traverse any left")
             Router.focusWidget('Menu')
           }
           this.paintCell()
@@ -761,7 +769,7 @@ export default class Epg extends Lightning.Component {
           ) {
             //current Cell index has to be updated at last
             this.scrollHorizontally(1)
-          } else console.log("can't go further right")
+          } else this.LOG("can't go further right")
           this.paintCell()
         }
 
@@ -803,7 +811,7 @@ export default class Epg extends Lightning.Component {
             //---------------------------------
             this.currentCellIndex = idx
             this.updateCursor()
-          } else console.log("can't go any further ,it's the last row")
+          } else this.LOG("can't go any further ,it's the last row")
           this.setBoldText()
           this.paintCell()
         }
@@ -829,7 +837,7 @@ export default class Epg extends Lightning.Component {
             //---------------------------------
             this.currentCellIndex = idx
             this.updateCursor()
-          } else console.log("can't go any further , it's the first row")
+          } else this.LOG("can't go any further , it's the first row")
           this.setBoldText()
           this.paintCell()
         }
@@ -919,7 +927,7 @@ export default class Epg extends Lightning.Component {
         }
 
         $exit() {
-          console.log('exiting from state - CellSelector')
+          this.LOG('exiting from state - CellSelector')
         }
       },
     ]

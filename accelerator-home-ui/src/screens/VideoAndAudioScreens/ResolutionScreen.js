@@ -31,6 +31,14 @@ const thunder = thunderJS(CONFIG.thunderConfig)
 
 export default class ResolutionScreen extends Lightning.Component {
 
+    constructor(...args) {
+        super(...args);
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
+
     pageTransition() {
         return 'left'
     }
@@ -81,12 +89,12 @@ export default class ResolutionScreen extends Lightning.Component {
         });
 
         thunder.on('org.rdk.DisplaySettings', 'resolutionPreChange', notification => {
-            console.log(new Date().toISOString() + " ResolutionScreen got resolutionPreChange");
+            this.LOG(new Date().toISOString() + " ResolutionScreen got resolutionPreChange");
             Storage.set("ResolutionChangeInProgress", true);
         })
 
         thunder.on('org.rdk.DisplaySettings', 'resolutionChanged', notification => {
-            console.log(new Date().toISOString() + " ResolutionScreen got resolutionChanged");
+            this.LOG(new Date().toISOString() + " ResolutionScreen got resolutionChanged");
             const items = this.tag('List').items
             items.forEach(element => {
                 element.tag('Item.Tick').visible = false
@@ -141,7 +149,7 @@ export default class ResolutionScreen extends Lightning.Component {
                 this.tag('List').setIndex(sIndex)
                 this._setState("Options")
             }).catch(err => {
-                console.log(`error while fetching the supported resolution ${err}`);
+                this.ERR("error while fetching the supported resolution " + JSON.stringify(err));
             })
         })
     }

@@ -20,6 +20,14 @@ import { Lightning, Router, Utils, VideoPlayer, Language } from '@lightningjs/sd
 import { CONFIG } from '../Config/Config';
 
 export default class CameraStreamingScreen extends Lightning.Component {
+    constructor(...args) {
+        super(...args);
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
+
     static _template() {
         return {
          Background: {
@@ -210,11 +218,11 @@ export default class CameraStreamingScreen extends Lightning.Component {
           }
           _handleEnter() {
             if(this.tag("Switch1.Button").src == "static/images/settings/ToggleOnOrange.png") {
-            this.tag("Switch1.Button").src = "static/images/settings/ToggleOffWhite.png"
-            console.log("Switch1 Turned Off");
+              this.tag("Switch1.Button").src = "static/images/settings/ToggleOffWhite.png"
+              this.LOG("Switch1 Turned Off");
             } else {
               this.tag("Switch1.Button").src = "static/images/settings/ToggleOnOrange.png"
-              console.log("Switch1 Turned On");
+              this.LOG("Switch1 Turned On");
             }
           }
         },
@@ -236,11 +244,11 @@ export default class CameraStreamingScreen extends Lightning.Component {
           _handleEnter() {
             if(this.tag("Switch2.Button").src == "static/images/settings/ToggleOnOrange.png") {
               this.tag("Switch2.Button").src = "static/images/settings/ToggleOffWhite.png"
-              console.log("Switch2 Turned Off");
-              } else {
-                this.tag("Switch2.Button").src = "static/images/settings/ToggleOnOrange.png"
-                console.log("Switch2 Turned On");
-              }
+              this.LOG("Switch2 Turned Off");
+            } else {
+              this.tag("Switch2.Button").src = "static/images/settings/ToggleOnOrange.png"
+              this.LOG("Switch2 Turned On");
+            }
           }
         },
         class Switch3 extends this{
@@ -261,11 +269,11 @@ export default class CameraStreamingScreen extends Lightning.Component {
           _handleEnter() {
             if(this.tag("Switch3.Button").src == "static/images/settings/ToggleOnOrange.png") {
               this.tag("Switch3.Button").src = "static/images/settings/ToggleOffWhite.png"
-              console.log("Switch3 Turned Off");
-              } else {
-                this.tag("Switch3.Button").src = "static/images/settings/ToggleOnOrange.png"
-                console.log("Switch3 Turned On");
-              }
+              this.LOG("Switch3 Turned Off");
+            } else {
+              this.tag("Switch3.Button").src = "static/images/settings/ToggleOnOrange.png"
+              this.LOG("Switch3 Turned On");
+            }
           }
         },
         class Switch4 extends this{
@@ -283,11 +291,11 @@ export default class CameraStreamingScreen extends Lightning.Component {
           _handleEnter() {
             if(this.tag("Switch4.Button").src == "static/images/settings/ToggleOnOrange.png") {
               this.tag("Switch4.Button").src = "static/images/settings/ToggleOffWhite.png"
-              console.log("Switch4 Turned Off");
-              } else {
-                this.tag("Switch4.Button").src = "static/images/settings/ToggleOnOrange.png"
-                console.log("Switch4 Turned On");
-              }
+              this.LOG("Switch4 Turned Off");
+            } else {
+              this.tag("Switch4.Button").src = "static/images/settings/ToggleOnOrange.png"
+              this.LOG("Switch4 Turned On");
+            }
           }
         }
       ]

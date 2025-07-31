@@ -26,6 +26,14 @@ import PersistentStoreApi from '../api/PersistentStore';
 
 export default class JoinAnotherNetworkComponent extends Lightning.Component {
 
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
+
   pageTransition() {
     return 'left'
   }
@@ -410,7 +418,7 @@ export default class JoinAnotherNetworkComponent extends Lightning.Component {
           if (this.prevState === 'PasswordSwitchState') {
             this.prevState = "EnterPassword"
           }
-          console.log("Prev state:", this.prevState)
+          this.LOG("Prev state: " + JSON.stringify(this.prevState))
           if (key === 'Done') {
             this.handleDone();
           } else if (key === 'Clear') {
@@ -418,7 +426,7 @@ export default class JoinAnotherNetworkComponent extends Lightning.Component {
             this.star = (this.prevState === "EnterPassword") ? this.star.substring(0, this.star.length - 1) : this.star
             this.tag(this.element).text.text = this.encrypt() ? this.star : this.textCollection[this.prevState];
           } else if (key === '#@!' || key === 'abc' || key === 'áöû' || key === 'shift') {
-            console.log('no saving')
+            this.LOG('no saving')
           } else if (key === 'Space') {
             this.textCollection[this.prevState] += ' '
             this.star += (this.prevState === "EnterPassword") ? '\u25CF' : this.star

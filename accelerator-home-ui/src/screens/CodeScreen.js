@@ -25,6 +25,14 @@ import { Metrics } from '@firebolt-js/sdk'
 var thunder = ThunderJS(CONFIG.thunderConfig);
 
 export default class CodeScreen extends Lightning.Component {
+    constructor(...args) {
+        super(...args);
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
+
     static _template() {
         return {
             Wrapper: {
@@ -105,7 +113,7 @@ export default class CodeScreen extends Lightning.Component {
                     Storage.remove("alexaOTPReset");
                 }
                 thunder.on("org.rdk.VoiceControl", 'onServerMessage', notification => {
-                    console.log("VoiceControl.onServerMessage Notification: ", notification)
+                    this.LOG("VoiceControl.onServerMessage Notification: " + JSON.stringify(notification))
                     this.VoiceControlData = notification
                     if (notification.xr_speech_avs.url != undefined) {
                         this.tag('Description').text.text = Language.translate('Enter the code at') + ` ${notification.xr_speech_avs.url}`
@@ -125,16 +133,15 @@ export default class CodeScreen extends Lightning.Component {
                         Router.navigate("SuccessScreen");
                     }
                     else if ((notification.xr_speech_avs.state === "uninitialized") || (notification.xr_speech_avs.state === "authorizing")) {
-                        console.log("notification state is uninitialised")
+                        this.LOG("notification state is uninitialised")
                         AlexaApi.get().setAlexaAuthStatus("AlexaAuthPending")
                     } else if (notification.xr_speech_avs.state === "unrecoverable error") {
-                        console.log("notification state is unrecoverable error")
-                        // Could be AUTH token Timeout; refresh it.
+                        this.LOG("notification state is unrecoverable error")
                         Router.navigate("FailureScreen")
                     }
                 })
             }).catch(err => {
-                console.log("VoiceControl Plugin Activation ERROR!: ", err)
+                this.ERR("VoiceControl Plugin Activation ERROR!: " + JSON.stringify(err))
                 Metrics.error(Metrics.ErrorType.OTHER, 'PluginError', "Thunder Controller.activate Voice Error"+JSON.stringify(err), false, null)
             })
             this._setState('Description')

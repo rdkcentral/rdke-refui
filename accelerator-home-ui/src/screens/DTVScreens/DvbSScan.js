@@ -37,6 +37,14 @@ const systemcCallsign = "DTV";
  * Class for DVB Scan screen.
  */
 export default class DvbSScan extends Lightning.Component {
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
+
   _onChanged() {
     this.tag("Scroller").y = 2; //to reset the position when this route is hit
     this.widgets.menu.updateTopPanelText(
@@ -430,25 +438,16 @@ export default class DvbSScan extends Lightning.Component {
   }
   consoleLog() {
     //log it everywhere
-    console.log(
-      "selectedSatellite: ",
-      JSON.stringify(this.selectedSatellite),
-      " selectedFrequency: ",
-      this.selectedFrequency,
-      " selectedPolarity: ",
-      this.selectedPolarity,
-      " selectedSymbolRate: ",
-      this.selectedSymbolRate,
-      " selectedFEC: ",
-      this.selectedFEC,
-      " selectedDVBS2: ",
-      this.selectedDVBS2,
-      " selectedModulation: ",
-      this.selectedModulation,
-      " selectedSearchType: ",
-      this.selectedSearchType,
-      " selectedRetune: ",
-      this.selectedRetune
+    this.LOG(
+      "selectedSatellite: " + JSON.stringify(this.selectedSatellite) +
+      " selectedFrequency: " + JSON.stringify(this.selectedFrequency) +
+      " selectedPolarity: " + JSON.stringify(this.selectedPolarity) +
+      " selectedSymbolRate: " + JSON.stringify(this.selectedSymbolRate) +
+      " selectedFEC: " + JSON.stringify(this.selectedFEC) +
+      " selectedDVBS2: " + JSON.stringify(this.selectedDVBS2) +
+      " selectedModulation: " + JSON.stringify(this.selectedModulation) +
+      " selectedSearchType: " + JSON.stringify(this.selectedSearchType) +
+      " selectedRetune: " + JSON.stringify(this.selectedRetune)
     );
   }
   _focus() {
@@ -465,9 +464,9 @@ export default class DvbSScan extends Lightning.Component {
 
   _firstActive() {
     let searchEventListener = thunder.on(systemcCallsign, "searchstatus", (notification) => {
-      console.log("SearchStatus Notification: ", JSON.stringify(notification));
+      this.LOG("SearchStatus Notification: " + JSON.stringify(notification));
       if(notification.finished){
-        console.log("notification.finished: ", notification.finished)
+        this.LOG("notification.finished: " + JSON.stringify(notification.finished))
         this.setScanFinished();
         dtvApi.noOfServices().then(res => {
           this.tag("ErrorNotification.Content").text.text = Language.translate("Found ") + res + Language.translate(" services.");
@@ -1075,10 +1074,10 @@ export default class DvbSScan extends Lightning.Component {
                 dvbs2: this.selectedDVBS2,
               },
             };
-            console.log(JSON.stringify(serviceSearchParams));
+            this.LOG(JSON.stringify(serviceSearchParams));
             dtvApi.startServiceSearch(serviceSearchParams).then((res) => {
               this.setScanInProgress();
-              console.log(res);
+              this.LOG("Scan Result: " + JSON.stringify(res));
               setTimeout(() => {
                 this.setScanFinished() //to give back controls after 30 sec in case searchstatus event fails
                 dtvApi.noOfServices().then(res => {

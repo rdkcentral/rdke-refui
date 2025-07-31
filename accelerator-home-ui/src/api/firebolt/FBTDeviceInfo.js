@@ -20,241 +20,262 @@
 import { Device, Metrics } from '@firebolt-js/sdk'
 
 export default class FBTDeviceInfo {
-    
+    constructor() {
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
+
     getaudio(){
-            return new Promise((resolve,reject)=>{
+        return new Promise((resolve,reject)=>{
             Device.audio()
             .then(supportedAudioProfiles => {
-                console.log(supportedAudioProfiles)
+                this.LOG("supportedAudioProfiles: " + JSON.stringify(supportedAudioProfiles))
                 resolve(supportedAudioProfiles)
             })
             .catch(err => {
-                console.error('firebolt getaudio error', err)
+                this.ERR("firebolt getaudio error: " + JSON.stringify(err))
                 Metrics.error(Metrics.ErrorType.OTHER, "FireboltDevicePluginError", "firebolt get audio error "+err, false, null)
                 reject(err)
-              })
-            })}
+            })
+        })
+    }
     getdistributor(){
-            return new Promise((resolve,reject)=>{
+        return new Promise((resolve,reject)=>{
             Device.distributor()
                 .then(distributorId => {
-                    console.log(distributorId)
+                    this.LOG("distributorId: " + JSON.stringify(distributorId))
                     resolve(distributorId)
                 })
             .catch(err => {
-                console.error('firebolt getdistributor error', err)
+                this.ERR("firebolt getdistributor error: " + JSON.stringify(err))
                 Metrics.error(Metrics.ErrorType.OTHER, "FireboltDevicePluginError", "firebolt get distributor error "+err, false, null)
                 reject(err)
-              })
-            })}
+            })
+        })
+    }
     gethdcp(){
-            return new Promise((resolve,reject)=>{
+        return new Promise((resolve,reject)=>{
             Device.hdcp()
             .then(supportedHdcpProfiles => {
-                console.log(supportedHdcpProfiles)
+                this.LOG("supportedHdcpProfiles: " + JSON.stringify(supportedHdcpProfiles))
                 resolve(supportedHdcpProfiles)
             })
             .catch(err => {
-                console.error('firebolt gethdcp error', err)
+                this.ERR("firebolt gethdcp error: " + JSON.stringify(err))
                 Metrics.error(Metrics.ErrorType.OTHER, "FireboltDevicePluginError", "firebolt get hdcp error " + err, false, null)
                 reject(err)
-              })
-            })}
+            })
+        })
+    }
     gethdr(){
-            return new Promise((resolve,reject)=>{
+        return new Promise((resolve,reject)=>{
             Device.hdr()
             .then(supportedHdrProfiles => {
-                console.log(supportedHdrProfiles)
+                this.LOG("supportedHdrProfiles: " + JSON.stringify(supportedHdrProfiles))
                 resolve(supportedHdrProfiles)
             })
             .catch(err => {
-                console.error('firebolt gethdr error', err)
+                this.ERR("firebolt gethdr error: " + JSON.stringify(err))
                 Metrics.error(Metrics.ErrorType.OTHER, "FireboltDevicePluginError", "firebolt get hdr error "+err, false, null)
                 reject(err)
-              })
-            })}
+            })
+        })
+    }
     getid(){
         return new Promise((resolve,reject)=>{
             Device.id()
             .then(id => {
-                console.log(id)
+                this.LOG("id: " + JSON.stringify(id))
                 resolve(id)
             })
         .catch(err => {
-            console.error('firebolt getid error', err)
+            this.ERR("firebolt getid error: " + JSON.stringify(err))
             Metrics.error(Metrics.ErrorType.OTHER, "FireboltDevicePluginError", "firebolt get Id error "+err, false, null)
             reject(err)
-            })
-        })}
+        })
+        })
+    }
     getmake(){
         return new Promise((resolve,reject)=>{
             Device.make()
             .then(make => {
-                console.log(make)
+                this.LOG("make: " + JSON.stringify(make))
                 resolve(make)
             })
         .catch(err => {
-            console.error('firebolt getmake error', err)
+            this.ERR("firebolt getmake error: " + JSON.stringify(err))
             Metrics.error(Metrics.ErrorType.OTHER, "FireboltDevicePluginError", "firebolt get make error "+err, false, null)
             reject(err)
-            })
-        })}
+        })
+        })
+    }
     getmodel(){
         return new Promise((resolve,reject)=>{
         Device.model()
         .then(model => {
-            console.log(model)
+            this.LOG("model: " + JSON.stringify(model))
             resolve(model)
         })
         .catch(err => {
-            console.error('firebolt getmodel error', err)
+            this.ERR("firebolt getmodel error: " + JSON.stringify(err))
             Metrics.error(Metrics.ErrorType.OTHER, "FireboltDevicePluginError", "firebolt get model error " +err, false, null)
             reject(err)
-            })
-        })} 
-        
+        })
+        }) 
+    }
     getname(){
         return new Promise((resolve,reject)=>{
             Device.name()
             .then(value => {
-                console.log(value)
+                this.LOG("name: " + JSON.stringify(value))
                 resolve(value)
             })
         .catch(err => {
-            console.error('firebolt getname error', err)
+            this.ERR("firebolt getname error: " + JSON.stringify(err))
             Metrics.error(Metrics.ErrorType.OTHER, "FireboltDevicePluginError", "firebolt get name error "+err, false, null)
             reject(err)
-            })
-        })}
+        })
+        })
+    }
     getnetwork(){
         return new Promise((resolve,reject)=>{
             Device.network()
         .then(networkInfo => {
-            console.log(networkInfo)
+            this.LOG("networkInfo: " + JSON.stringify(networkInfo))
             resolve(networkInfo)
         })
         .catch(err => {
-            console.error('firebolt getnetwork error', err)
+            this.ERR("firebolt getnetwork error: " + JSON.stringify(err))
             Metrics.error(Metrics.ErrorType.OTHER, "FireboltDevicePluginError", "firebolt get network error "+err, false, null)
             reject(err)
-            })
-        })}
+        })
+        })
+    }
     getplatform(){
         return new Promise((resolve,reject)=>{
             Device.platform()
             .then(platformId => {
-                console.log(platformId)
+                this.LOG("platformId: " + JSON.stringify(platformId))
                 resolve(platformId)
             })
         .catch(err => {
-            console.error('firebolt getplatform error', err)
+            this.ERR("firebolt getplatform error: " + JSON.stringify(err))
             Metrics.error(Metrics.ErrorType.OTHER, "FireboltDevicePluginError", "firebolt get platform error " +err, false, null)
             reject(err)
-            })
-        })}
+        })
+        })
+    }
     getscreenresolution(){
         return new Promise((resolve,reject)=>{
             Device.screenResolution()
         .then(screenResolution => {
-            console.log(screenResolution)
+            this.LOG("screenResolution: " + JSON.stringify(screenResolution))
             resolve(screenResolution)
         })
         .catch(err => {
-            console.error('firebolt getscreenresolution error', err)
+            this.ERR("firebolt getscreenresolution error: " + JSON.stringify(err))
             Metrics.error(Metrics.ErrorType.OTHER, "FireboltDevicePluginError", "firebolt get screen resolution error " +err, false, null)
             reject(err)
-            })
-        })}
+        })
+        })
+    }
     getsku(){
         return new Promise((resolve,reject)=>{
             Device.sku()
         .then(sku => {
-            console.log(sku)
+            this.LOG("sku: " + JSON.stringify(sku))
             resolve(sku)
         })
         .catch(err => {
-            console.error('firebolt getsku error', err)
+            this.ERR("firebolt getsku error: " + JSON.stringify(err))
             Metrics.error(Metrics.ErrorType.OTHER, "FireboltDevicePluginError", "firebolt get sku error "+err, false, null)
             reject(err)
-            })
-        })}    
+        })
+        })    
+    }
     gettype(){
         return new Promise((resolve,reject)=>{
         Device.type()
         .then(deviceType => {
-            console.log(deviceType)
+            this.LOG("deviceType: " + JSON.stringify(deviceType))
             resolve(deviceType)
         })
         .catch(err => {
-            console.error('firebolt gettype error', err)
+            this.ERR("firebolt gettype error: " + JSON.stringify(err))
             Metrics.error(Metrics.ErrorType.OTHER, "FireboltDevicePluginError", "firebolt get type error "+err, false, null)
             reject(err)
-            })
-        })}
+        })
+        })
+    }
 
     getuid(){
         return new Promise((resolve,reject)=>{
             Device.uid()
             .then(uniqueId => {
-                console.log(uniqueId)
+                this.LOG("uniqueId: " + JSON.stringify(uniqueId))
                 resolve(uniqueId)
             })
         .catch(err => {
-            console.error('firebolt getuid error', err)
+            this.ERR("firebolt getuid error: " + JSON.stringify(err))
             Metrics.error(Metrics.ErrorType.OTHER, "FireboltDevicePluginError", "firebolt get uid error"+err, false, null)
             reject(err)
-            })
-        })}
+        })
+        })
+    }
     getversion(){
         return new Promise((resolve,reject)=>{
             Device.version()
         .then(versions => {
-            console.log(versions)
+            this.LOG("versions: " + JSON.stringify(versions))
             resolve(versions)
         })
         .catch(err => {
-            console.error('firebolt getversion error', err)
+            this.ERR("firebolt getversion error: " + JSON.stringify(err))
             Metrics.error(Metrics.ErrorType.OTHER, "FireboltDevicePluginErrorr", "firebolt get version error "+err, false, null)
             reject(err)
-            })
-        })}
+        })
+        })
+    }
     getvideoresolution(){
         return new Promise((resolve,reject)=>{
             Device.videoResolution()
         .then(videoResolution => {
-            console.log(videoResolution)
+            this.LOG("videoResolution: " + JSON.stringify(videoResolution))
             resolve(videoResolution)
         })
         .catch(err => {
-            console.error('firebolt getvideoresolution error', err)
+            this.ERR("firebolt getvideoresolution error: " + JSON.stringify(err))
             Metrics.error(Metrics.ErrorType.OTHER, "FireboltDevicePluginError", "firebolt get video resolution error "+err, false, null)
             reject(err)
-            })
-        })}    
-    
-    listen(event){
-    return new Promise((resolve,reject)=>{
-        Device.listen(event, value => {
-            console.log(value)
-            resolve(value)
-            })
-    .catch(err => {
-        console.error('firebolt listen error', err)
-        Metrics.error(Metrics.ErrorType.OTHER, "FireboltDevicePluginError", "firebolt listen error "+err, false, null)
-        reject(err)
         })
-    })}
+        })    
+    }
+    listen(event){
+        return new Promise((resolve,reject)=>{
+            Device.listen(event, value => {
+                this.LOG("listen value: " + JSON.stringify(value))
+                resolve(value)
+            })
+        .catch(err => {
+            this.ERR("firebolt listen error: " + JSON.stringify(err))
+            Metrics.error(Metrics.ErrorType.OTHER, "FireboltDevicePluginError", "firebolt listen error "+err, false, null)
+            reject(err)
+        })
+        })
+    }
     once(event){
         return new Promise((resolve,reject)=>{
             Device.once(event, value => {
-                console.log(value)
+                this.LOG("once value: " + JSON.stringify(value))
                 resolve(value)
-                })
+            })
         .catch(err => {
-            console.error('firebolt listen error', err)
+            this.ERR("firebolt once error: " + JSON.stringify(err))
             Metrics.error(Metrics.ErrorType.OTHER, "FireboltDevicePluginError", "firebolt once error "+err, false, null)
             reject(err)
-            })
-        })}  
-    
+        })
+        })  
+    }
 }
