@@ -32,6 +32,14 @@ const _btApi = new BluetoothApi()
  * Class for Reboot Confirmation Screen.
  */
 export default class RebootConfirmationScreen extends Lightning.Component {
+    constructor(...args) {
+        super(...args);
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
+
     pageTransition() {
         return 'left'
     }
@@ -132,10 +140,10 @@ export default class RebootConfirmationScreen extends Lightning.Component {
 
     _firstEnable() {
         this.AppApi.checkStatus(Warehouse.get().callsign).then(resp => {
-            console.log("FactoryReset: warehouse plugin status : ", resp[0].status);
+            this.LOG("FactoryReset: warehouse plugin status : " + JSON.stringify(resp[0].status));
             if (resp[0].status != 'activated') {
                 Warehouse.get().activate().catch(err => {
-                    console.error("FactoryReset: warehouse plugin activation failed; feature may not work.");
+                    this.ERR("FactoryReset: warehouse plugin activation failed; feature may not work." + JSON.stringify(err));
                 });
             }
         });
@@ -155,47 +163,46 @@ export default class RebootConfirmationScreen extends Lightning.Component {
         let getsuportedmode = await appApi.getSupportedAudioPorts();
         for (let i = 0; i < getsuportedmode.supportedAudioPorts.length; i++) {
             if(getsuportedmode.supportedAudioPorts[i] != 'SPDIF0'){
-            let rsbass = await appApi.resetBassEnhancer(getsuportedmode.supportedAudioPorts[i]).catch((err) =>{ console.log("resetBassEnhancer",err)});
-            if (rsbass.success != true) { console.log("resetBassEnhancer",rsbass)}//throw new Error(rsbass); }//{Promise.reject(false); return}
-            let rsDialog = await appApi.resetDialogEnhancement(getsuportedmode.supportedAudioPorts[i]).catch((err) =>{ console.log("resetDialogEnhancement",err)})//{Promise.reject(JSON.stringify(err))});
-            if (rsDialog.success != true) { console.log("resetDialogEnhancement",rsDialog) }
-            let rsVirtualizer = await appApi.resetSurroundVirtualizer(getsuportedmode.supportedAudioPorts[i]).catch(err =>{ console.log("resetSurroundVirtualizer",err)});
-            if (rsVirtualizer.success != true) { console.log("resetSurroundVirtualizer",rsVirtualizer) }
-            let rsvolumelvel = await appApi.resetVolumeLeveller(getsuportedmode.supportedAudioPorts[i]).catch(err =>{ console.log("resetVolumeLeveller",err)});
-            if (rsvolumelvel.success != true) { console.log("resetVolumeLeveller",rsvolumelvel) }
+                let rsbass = await appApi.resetBassEnhancer(getsuportedmode.supportedAudioPorts[i]).catch((err) =>{ this.ERR("resetBassEnhancer" + JSON.stringify(err)) });
+                if (rsbass.success != true) { this.LOG("resetBassEnhancer" + JSON.stringify(rsbass)) }
+                let rsDialog = await appApi.resetDialogEnhancement(getsuportedmode.supportedAudioPorts[i]).catch((err) =>{ this.ERR("resetDialogEnhancement" + JSON.stringify(err)) })
+                if (rsDialog.success != true) { this.LOG("resetDialogEnhancement" + JSON.stringify(rsDialog)) }
+                let rsVirtualizer = await appApi.resetSurroundVirtualizer(getsuportedmode.supportedAudioPorts[i]).catch(err =>{ this.ERR("resetSurroundVirtualizer" + JSON.stringify(err)) });
+                if (rsVirtualizer.success != true) { this.LOG("resetSurroundVirtualizer" + JSON.stringify(rsVirtualizer)) }
+                let rsvolumelvel = await appApi.resetVolumeLeveller(getsuportedmode.supportedAudioPorts[i]).catch(err =>{ this.ERR("resetVolumeLeveller" + JSON.stringify(err)) });
+                if (rsvolumelvel.success != true) { this.LOG("resetVolumeLeveller" + JSON.stringify(rsvolumelvel)) }
             }
         }
-        let btActivate = await _btApi.btactivate().then(result => console.log("Btactivate",result)).catch(err=> console.log(`error while activating bluetooth`))
+        let btActivate = await _btApi.btactivate().then(result => this.LOG("Btactivate" + JSON.stringify(result))).catch(err=> this.ERR("error while activating bluetooth"))
         let getPairedDevices = await _btApi.getPairedDevices().then(res=>res).catch(err => 0)
-        console.log("getpairedDevices", getPairedDevices)
+        this.LOG("getpairedDevices" + JSON.stringify(getPairedDevices))
         for(let i=0 ; i<getPairedDevices.length; i++){
             if(getPairedDevices.length > 0){
-                let btunpair =  await _btApi.unpair(getPairedDevices[i].deviceId).catch(err => { console.log("btunpair",err) });
-                if(btunpair.success != true){ console.log("btunpair",btunpair) }
+                let btunpair =  await _btApi.unpair(getPairedDevices[i].deviceId).catch(err => { this.ERR("btunpair" + JSON.stringify(err)) });
+                if(btunpair.success != true){ this.LOG("btunpair" + JSON.stringify(btunpair)) }
             }
         }
-        await RCApi.get().activate().then(()=>{ RCApi.get().factoryReset(); }).catch(err => console.log(`error while resetting remote control`));
+        await RCApi.get().activate().then(()=>{ RCApi.get().factoryReset(); }).catch(err => this.ERR("error while resetting remote control" + JSON.stringify(err)));
         let contollerStat = await appApi.checkStatus("Monitor")
         for(let i=0; i< contollerStat[0].configuration.observables.length; i++){
-            let monitorstat = await appApi.monitorStatus(contollerStat[0].configuration.observables[i].callsign).catch(err =>{ console.log("monitorStatus",err) });
-            if(monitorstat.length < 0){ console.log("monitorStatus",monitorstat) }
+            let monitorstat = await appApi.monitorStatus(contollerStat[0].configuration.observables[i].callsign).catch(err =>{ this.ERR("monitorStatus" + JSON.stringify(err)) });
+            if(monitorstat.length < 0){ this.LOG("monitorStatus" + JSON.stringify(monitorstat)) }
         }
-        // warehouse apis
-        await Warehouse.get().internalReset().catch(err => { console.error("internalReset",err) });
-        await Warehouse.get().isClean().catch(err => { console.error("isClean",err) });
-        await Warehouse.get().lightReset().catch(err => { console.error("lightReset",err)});
-        await Warehouse.get().resetDevice().catch(err => { console.error("resetDevice",err) });
+        await Warehouse.get().internalReset().catch(err => { this.ERR("internalReset" + JSON.stringify(err)) });
+        await Warehouse.get().isClean().catch(err => { this.ERR("isClean" + JSON.stringify(err)) });
+        await Warehouse.get().lightReset().catch(err => { this.ERR("lightReset" + JSON.stringify(err))});
+        await Warehouse.get().resetDevice().catch(err => { this.ERR("resetDevice" + JSON.stringify(err)) });
 
-        let rsactivitytime = await appApi.resetInactivityTime().catch(err => { console.error("resetInactivityTime",err) });
-        if (rsactivitytime.success != true) { console.log("rsactivitytime",rsactivitytime) }
-        let clearLastDeepSleepReason = await appApi.clearLastDeepSleepReason().catch(err => { console.error("clearLastDeepSleepReason",err) });
-        if (clearLastDeepSleepReason.success != true) { console.log("clearLastDeepSleepReason",clearLastDeepSleepReason) }
-        let clearSSID = await WiFi.get().clearSSID().catch(err =>  { console.error("clearSSID",err) });
-        if (clearSSID.success != true)  { console.log("clearSSID",clearSSID) }
-        let wifidisconnect = await WiFi.get().disconnect().catch(err =>{ console.error("wifidisconnect",err) });
-        if (wifidisconnect.success != true) { console.log("wifidisconnect",wifidisconnect) }
-        await appApi.clearCache().catch(err => { console.error("clearCache error: ", err)})
-        await appApi.reboot("User Trigger").then(result => { console.log('device rebooting' + JSON.stringify(result))})
+        let rsactivitytime = await appApi.resetInactivityTime().catch(err => { this.ERR("resetInactivityTime" + JSON.stringify(err)) });
+        if (rsactivitytime.success != true) { this.LOG("rsactivitytime" + JSON.stringify(rsactivitytime)) }
+        let clearLastDeepSleepReason = await appApi.clearLastDeepSleepReason().catch(err => { this.ERR("clearLastDeepSleepReason" + JSON.stringify(err)) });
+        if (clearLastDeepSleepReason.success != true) { this.LOG("clearLastDeepSleepReason" + JSON.stringify(clearLastDeepSleepReason)) }
+        let clearSSID = await WiFi.get().clearSSID().catch(err =>  { this.ERR("clearSSID" + JSON.stringify(err)) });
+        if (clearSSID.success != true)  { this.LOG("clearSSID" + JSON.stringify(clearSSID)) }
+        let wifidisconnect = await WiFi.get().disconnect().catch(err =>{ this.ERR("wifidisconnect" + JSON.stringify(err)) });
+        if (wifidisconnect.success != true) { this.LOG("wifidisconnect" + JSON.stringify(wifidisconnect)) }
+        await appApi.clearCache().catch(err => { this.ERR("clearCache error: " + JSON.stringify(err)) })
+        await appApi.reboot("User Trigger").then(result => { this.LOG('device rebooting' + JSON.stringify(result))})
     }
 
     static _states() {

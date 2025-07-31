@@ -27,6 +27,14 @@ import CECApi from '../../api/CECApi'
 
 export default class AdvanceSettingsScreen extends Lightning.Component {
 
+    constructor(...args) {
+        super(...args);
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
+
     _onChanged() {
         this.widgets.menu.updateTopPanelText(Language.translate('Settings  Other Settings  Advanced Settings'));
     }
@@ -196,7 +204,7 @@ export default class AdvanceSettingsScreen extends Lightning.Component {
             if (res.success) {
                 this.cecApi.performOTP().then(otpRes => {
                     if (otpRes.success) {
-                        console.log('Otp Action success full')
+                        this.LOG('Otp Action success full')
                     }
                 })
             }
@@ -206,7 +214,7 @@ export default class AdvanceSettingsScreen extends Lightning.Component {
     toggleCEC() {
         this.cecApi.getEnabled()
             .then(res => {
-                console.log(res)
+                this.LOG("cec getenabled result:" + JSON.stringify(res))
                 if (res.enabled) {
                     this.cecApi.deactivate()
                         .then(() => {

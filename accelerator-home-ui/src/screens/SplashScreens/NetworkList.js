@@ -26,6 +26,14 @@ import WiFi, { WiFiError, WiFiState, WiFiErrorMessages } from '../../api/WifiApi
 import WiFiItem from '../../items/WiFiItem'
 
 export default class NetworkList extends Lightning.Component {
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
+
   static _template() {
     return {
       w: 1920,
@@ -152,7 +160,7 @@ export default class NetworkList extends Lightning.Component {
     Network.get().activate().then(result => {
       if (result) {
         Network.get()._thunder.on(Network.get().callsign, 'onIPAddressStatusChanged', notification => {
-          console.log(JSON.stringify(notification))
+          this.LOG(JSON.stringify(notification))
           if (notification.status == 'ACQUIRED') {
             // Nothing to do here.
           } else if (notification.status == 'LOST') {
@@ -166,7 +174,7 @@ export default class NetworkList extends Lightning.Component {
           }
         })
         Network.get()._thunder.on(Network.get().callsign, 'onDefaultInterfaceChanged', notification => {
-          console.log(JSON.stringify(notification))
+          this.LOG(JSON.stringify(notification))
           if (notification.newInterfaceName === 'ETHERNET') {
             Network.get().setInterfaceEnabled('ETHERNET').then(result => {
               if (result) {
@@ -195,7 +203,7 @@ export default class NetworkList extends Lightning.Component {
             notification.newInterfaceName === "" &&
             notification.oldInterfaceName === "WIFI"
           ) {
-            console.log('emplty new old wifi')
+            this.LOG('emplty new old wifi')
             Network.get().setDefaultInterface('ETHERNET')
           }
         })
@@ -238,14 +246,14 @@ export default class NetworkList extends Lightning.Component {
    * Function to render list of Wi-Fi networks.
    */
   async renderDeviceList(ssids) {
-    console.log("WIFI renderDeviceList ssids.length:", ssids.length)
+    this.LOG("WIFI renderDeviceList ssids.length: " + JSON.stringify(ssids.length))
     this.tag('Networks.AvailableNetworks').tag('List').rollMax = ssids.length * 90
     this._pairedList = [];
     await WiFi.get().getCurrentState().then(async (state) => {
       if (state === WiFiState.CONNECTED) {
         await WiFi.get().getConnectedSSID().then(result => {
           if (result.ssid != '') {
-            console.log("Connected network detected " + JSON.stringify(result.ssid))
+            this.LOG("Connected network detected " + JSON.stringify(result.ssid))
             this._pairedList = [result]
             this.tag('Networks.PairedNetworks').h = this._pairedList.length * 90
             this.tag('Networks.PairedNetworks').tag('List').h = this._pairedList.length * 90
@@ -384,7 +392,7 @@ export default class NetworkList extends Lightning.Component {
   switch() {
     if (!this.wifiStatus) {
       WiFi.get().disconnect()
-      console.log('turning off wifi')
+      this.LOG('turning off wifi')
       Network.get().setInterfaceEnabled('ETHERNET', true).then(result => {
         if (result) {
           Network.get().setDefaultInterface('ETHERNET', true).then(result => {
@@ -400,7 +408,7 @@ export default class NetworkList extends Lightning.Component {
         }
       })
     } else {
-      console.log('turning on wifi')
+      this.LOG('turning on wifi')
       //this.wifiStatus = true
       this.tag('Networks').visible = true
       this.tag('JoinAnotherNetwork').visible = true
@@ -419,7 +427,7 @@ export default class NetworkList extends Lightning.Component {
       this.switch()
     })
     WiFi.get().thunder.on(WiFi.get().callsign, 'onWIFIStateChanged', notification => {
-      console.log(JSON.stringify(notification))
+      this.LOG(JSON.stringify(notification))
       if (notification.state === WiFiState.CONNECTED && ! GLOBALS.Setup) {
         this.tag('Info').text.text = Language.translate("Connection successful");
         Registry.setTimeout(() => {

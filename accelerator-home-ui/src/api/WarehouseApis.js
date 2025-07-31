@@ -29,6 +29,7 @@ export default class Warehouse {
     this.INFO = console.info;
     this.LOG = console.log;
     this.ERR = console.error;
+    this.WARN = console.warn;
   }
 
   static get() {
@@ -44,7 +45,7 @@ export default class Warehouse {
         this.INFO(this.callsign + " activate result:" + JSON.stringify(result))
         resolve(true)
       }).catch(err => {
-        this.ERR(this.callsign + " activate error: " + err)
+        this.ERR(this.callsign + " activate error: " + JSON.stringify(err))
         Metrics.error(Metrics.ErrorType.OTHER,"WarehouseApiError", "Error in Thunder controller warehouseApi activate "+JSON.stringify(err), false, null)
         reject(err)
       });
@@ -54,10 +55,10 @@ export default class Warehouse {
   deactivate() {
     return new Promise((resolve, reject) => {
       this.thunder.call('Controller', 'deactivate', { callsign: this.callsign }).then(result => {
-        this.INFO(this.callsign + " deactivate result:" + result)
+        this.INFO(this.callsign + " deactivate result:" + JSON.stringify(result))
         resolve(true)
       }).catch(err => {
-        this.ERR(this.callsign + " deactivate error: " + err)
+        this.ERR(this.callsign + " deactivate error: " + JSON.stringify(err))
         Metrics.error(Metrics.ErrorType.OTHER,"WarehouseApiError", "Error in Thunder controller warehouseApi deactivate "+JSON.stringify(err), false, null)
         reject(err)
       });
@@ -67,11 +68,11 @@ export default class Warehouse {
   executeHardwareTest() {
     return new Promise((resolve, reject) => {
       this.thunder.call(this.callsign, 'executeHardwareTest').then(result => {
-        this.INFO(this.callsign + " executeHardwareTest result: " + result)
+        this.INFO(this.callsign + " executeHardwareTest result: " + JSON.stringify(result))
         if (result.success) resolve(result.success)
         reject(false)
       }).catch(err => {
-        this.ERR(this.callsign + " executeHardwareTest error: " + err)
+        this.ERR(this.callsign + " executeHardwareTest error: " + JSON.stringify(err))
         Metrics.error(Metrics.ErrorType.OTHER,"WarehouseApiError", "Error while Thunder warehouseApi executeHardwareTest "+JSON.stringify(err), false, null)
         reject(err)
       })
@@ -81,11 +82,11 @@ export default class Warehouse {
   internalReset(passPhrase = "FOR TEST PURPOSES ONLY") {
     return new Promise((resolve, reject) => {
       this.thunder.call(this.callsign, 'internalReset', {passPhrase: passPhrase}).then(result => {
-        this.INFO(this.callsign + " internalReset result: " + result)
+        this.INFO(this.callsign + " internalReset result: " + JSON.stringify(result))
         if (result.success) resolve(result.success)
         reject(false)
       }).catch(err => {
-        this.ERR(this.callsign + " internalReset error: " + err)
+        this.ERR(this.callsign + " internalReset error: " + JSON.stringify(err))
         Metrics.error(Metrics.ErrorType.OTHER,"WarehouseApiError", "Error while Thunder warehouseApi internalReset "+JSON.stringify(err), false, null)
         reject(err)
       })
@@ -95,11 +96,11 @@ export default class Warehouse {
   isClean() {
     return new Promise((resolve, reject) => {
       this.thunder.call(this.callsign, 'isClean').then(result => {
-        this.INFO(this.callsign + " isClean result: " + result)
+        this.INFO(this.callsign + " isClean result: " + JSON.stringify(result))
         if (result.success) resolve(result)
         reject(false)
       }).catch(err => {
-        this.ERR(this.callsign + " isClean error: " + err)
+        this.ERR(this.callsign + " isClean error: " + JSON.stringify(err))
         Metrics.error(Metrics.ErrorType.OTHER,"WarehouseApiError", "Error while Thunder warehouseApi isClean "+JSON.stringify(err), false, null)
         reject(err)
       })
@@ -113,7 +114,7 @@ export default class Warehouse {
         if (result.success){resolve(result.success)}
         else{reject(false)}
       }).catch(err => {
-        this.ERR(this.callsign + " lightReset error: " + err)
+        this.ERR(this.callsign + " lightReset error: " + JSON.stringify(err))
         Metrics.error(Metrics.ErrorType.OTHER,"WarehouseApiError", "Error while Thunder warehouseApi lightReset "+JSON.stringify(err), false, null)
         reject(err)
       })
@@ -125,11 +126,11 @@ export default class Warehouse {
       let params = { resetType: resetType, suppressReboot: suppressReboot}
       this.INFO(this.callsign + " resetDevice params: " + JSON.stringify(params));
       this.thunder.call(this.callsign, 'resetDevice', params).then(result => {
-        this.INFO(this.callsign + " resetDevice result: " + result)
+        this.INFO(this.callsign + " resetDevice result: " + JSON.stringify(result))
         if (result.success)resolve(result.success)
         reject(false)
       }).catch(err => {
-        this.ERR(this.callsign + " resetDevice error: " + err)
+        this.ERR(this.callsign + " resetDevice error: " + JSON.stringify(err))
         Metrics.error(Metrics.ErrorType.OTHER,"WarehouseApiError", "Error while Thunder warehouseApi resetDevice "+JSON.stringify(err), false, null)
         reject(err)
       })
@@ -139,11 +140,11 @@ export default class Warehouse {
   setFrontPanelState(state = -1) { // -1 (NONE), 1 (DOWNLOAD IN PROGRESS), 3 (DOWNLOAD FAILED)
     return new Promise((resolve, reject) => {
       this.thunder.call(this.callsign, 'setFrontPanelState', {state: state}).then(result => {
-        this.INFO(this.callsign + " setFrontPanelState result: " + result)
+        this.INFO(this.callsign + " setFrontPanelState result: " + JSON.stringify(result))
         if (result.success)resolve(result.success)
         reject(false)
       }).catch(err => {
-        this.ERR(this.callsign + " setFrontPanelState error: " + err)
+        this.ERR(this.callsign + " setFrontPanelState error: " + JSON.stringify(err))
         Metrics.error(Metrics.ErrorType.OTHER,"WarehouseApiError", "Error while Thunder warehouseApi setFrontPanelState "+JSON.stringify(err), false, null)
         reject(err)
       })

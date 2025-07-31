@@ -36,11 +36,19 @@ export default class AlexaApi extends VoiceApi {
     return instance
   }
 
+  constructor() {
+    super();
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
+
   /* Can be used to reduce enableSmartScreen() call */
   isSmartScreenActiavated() {
     let appApi = new AppApi();
     appApi.checkStatus('SmartScreen').then(result => {
-      console.log("AlexaAPI: isSmartScreenActiavated result-" + JSON.stringify(result[0].state.toLowerCase()));
+      this.LOG("AlexaAPI: isSmartScreenActiavated result-" + JSON.stringify(result[0].state.toLowerCase()));
       switch (result[0].state.toLowerCase()) {
         case "resumed":
         case "activated": break;
@@ -49,14 +57,14 @@ export default class AlexaApi extends VoiceApi {
       }
       return true;
     }).catch(err => {
-      console.error("AlexaAPI: isSmartScreenActiavated error-", err);
+      this.ERR("AlexaAPI: isSmartScreenActiavated error-" + err);
       return (false);
     });
   }
 
   enableSmartScreen() {
     thunder.Controller.activate({ callsign: 'SmartScreen' }).then(res => {
-      console.log("AlexaAPI: Activate SmartScreen result: " + res);
+      this.LOG("AlexaAPI: Activate SmartScreen result: " + res);
     }).catch(err => {
       console.error("AlexaAPI: Activate SmartScreen ERROR!: ", err)
       Metrics.error(Metrics.ErrorType.OTHER, "AlexaAPIError", `Thunder Controller AlexaAPI: Activate SmartScreen error with ${err}`, false, null)
@@ -65,10 +73,10 @@ export default class AlexaApi extends VoiceApi {
 
   disableSmartScreen() {
     thunder.Controller.deactivate({ callsign: 'SmartScreen' }).then(res => {
-      console.log("AlexaAPI: Deactivate SmartScreen result: " + res);
+      this.LOG("AlexaAPI: Deactivate SmartScreen result: " + res);
     }).catch(err => {
-      console.error("AlexaAPI: Deactivate SmartScreen ERROR!: ", err)
-      Metrics.error(Metrics.ErrorType.OTHER, "AlexaAPIError", `Thunder Controller AlexaAPI: Deactivate SmartScreen error with ${err}`, false, null)
+      this.ERR("AlexaAPI: Deactivate SmartScreen ERROR!: " + err)
+      Metrics.error(Metrics.ErrorType.OTHER, "AlexaAPIError", "Thunder Controller AlexaAPI: Deactivate SmartScreen error with " + err, false, null)
     })
   }
 
@@ -100,14 +108,14 @@ export default class AlexaApi extends VoiceApi {
       }
       /* Send the new app state object if its a known app. */
       if (isListedApp) {
-        console.warn("Sending app statereport to Alexa:" + JSON.stringify(appStateReportPayload));
+        this.WARN("Sending app statereport to Alexa:" + JSON.stringify(appStateReportPayload));
         this.sendVoiceMessage(appStateReportPayload);
       } else {
-        console.error("Alexa reportApplicationState; no match found, won't send state report.");
-        Metrics.error(Metrics.ErrorType.OTHER, "AlexaAPIError", 'Alexa reportApplicationState; no match found, wont send state report.', false, null)
+        this.ERR("Alexa reportApplicationState; no match found, won't send state report.");
+        Metrics.error(Metrics.ErrorType.OTHER, "AlexaAPIError", "Alexa reportApplicationState; no match found, wont send state report.", false, null)
       }
     } else {
-      console.log("Alexa reportApplicationState: AlexaUserDenied/AlexaAuthPending, skip state reporting.");
+      this.LOG("Alexa reportApplicationState: AlexaUserDenied/AlexaAuthPending, skip state reporting.");
     }
   }
 
@@ -118,7 +126,7 @@ export default class AlexaApi extends VoiceApi {
       VolumePayload.msgPayload.event.payload.muted = muteStatus
     if (messageId != undefined)
       VolumePayload.msgPayload.event.header.messageId = messageId
-    console.log("Sending volume statereport to Alexa:", VolumePayload);
+    this.LOG("Sending volume statereport to Alexa:" + JSON.stringify(VolumePayload));
     this.sendVoiceMessage(VolumePayload);
   }
 
@@ -126,13 +134,13 @@ export default class AlexaApi extends VoiceApi {
     let updatedLan = []
     updatedLan.push(updatedLanguage)
     let payload = { "msgPayload": { "DeviceSettings": "Set Device Settings", "values": { "locale": updatedLan } } }
-    console.log("Sending language statereport to Alexa:", updatedLan);
+    this.LOG("Sending language statereport to Alexa:" + JSON.stringify(updatedLan));
     this.sendVoiceMessage(payload);
   }
 
   //reportDeviceTimeZone(updatedTimeZone) {
   updateDeviceTimeZoneInAlexa(updatedTimeZone) {
-    console.log("updateDeviceTimeZoneInAlexa sending :" + updatedTimeZone)
+    this.LOG("updateDeviceTimeZoneInAlexa sending :" + updatedTimeZone)
     let payload = { "msgPayload": { "DeviceSettings": "Set Device Settings", "values": { "timezone": updatedTimeZone } } }
     this.sendVoiceMessage(payload);
   }
@@ -144,13 +152,13 @@ export default class AlexaApi extends VoiceApi {
     errorPayload.msgPayload.event.header.payloadVersion = directive.header.payloadVersion
     errorPayload.msgPayload.event.endpoint.endpointId = directive.endpoint.endpointId
     errorPayload.msgPayload.event.header.messageId = directive.header.messageId
-    console.log("AlexaAPI: reportErrorState payload:", errorPayload)
+    this.LOG("AlexaAPI: reportErrorState payload:" + JSON.stringify(errorPayload))
     this.sendVoiceMessage(errorPayload);
   }
 
   reportPlaybackState(state = "STOPPED") {
     PlaybackStateReport.msgPayload.event.header.value = state;
-    console.log("AlexaAPI: reportPlaybackState payload:", PlaybackStateReport)
+    this.LOG("AlexaAPI: reportPlaybackState payload:" + JSON.stringify(PlaybackStateReport))
     this.sendVoiceMessage(PlaybackStateReport);
   }
 
@@ -169,16 +177,16 @@ export default class AlexaApi extends VoiceApi {
     return new Promise((resolve) => {
       Storage.set("AlexaVoiceAssitantState", "AlexaAuthPending");
       thunder.Controller.activate({ callsign: 'SmartScreen' }).then(() => {
-        console.log("AlexaAPI: resetAVSCredentials activating SmartScreen instance.")
+        this.LOG("AlexaAPI: resetAVSCredentials activating SmartScreen instance.")
       }).catch(err => {
-        console.error("AlexaAPI: resetAVSCredentials activate SmartScreen ERROR!: ", err)
-        Metrics.error(Metrics.ErrorType.OTHER, "AlexaAPIError", `Thunder Controller AlexaAPI: resetAVSCredentials activating SmartScreen error with ${JSON.stringify(err)}`, false, null)
+        this.ERR("AlexaAPI: resetAVSCredentials activate SmartScreen ERROR!: " + err)
+        Metrics.error(Metrics.ErrorType.OTHER, "AlexaAPIError", "Thunder Controller AlexaAPI: resetAVSCredentials activating SmartScreen error with " + JSON.stringify(err), false, null)
       })
       this.sendVoiceMessage({ "msgPayload": { "event": "ResetAVS" } }).then(result => {
         resolve(result)
       }).catch(err => {
-        console.error("AlexaAPI: resetAVSCredentials ERROR!: " + JSON.stringify(err))
-        Metrics.error(Metrics.ErrorType.OTHER, "AlexaAPIError", `Thunder Controller AlexaAPI: resetAVSCredentials Activate ERROR!: ${JSON.stringify(err)}`, false, null)
+        this.ERR("AlexaAPI: resetAVSCredentials ERROR!: " + JSON.stringify(err))
+        Metrics.error(Metrics.ErrorType.OTHER, "AlexaAPIError", "Thunder Controller AlexaAPI: resetAVSCredentials Activate ERROR!: " + JSON.stringify(err), false, null)
         resolve(false)
       })
     });
@@ -201,15 +209,15 @@ export default class AlexaApi extends VoiceApi {
       this.configureVoice({ "enable": false });
       /* Free up Smartscreen resources */
       thunder.Controller.deactivate({ callsign: 'SmartScreen' }).then(() => {
-        console.log("AlexaAPI: deactivated SmartScreen instance.")
+        this.LOG("AlexaAPI: deactivated SmartScreen instance.")
       }).catch(err => {
-        console.error("AlexaAPI: deactivate SmartScreen ERROR!: ", err)
-        Metrics.error(Metrics.ErrorType.OTHER, "AlexaAPIError", `Thunder Controller AlexaAPI: deactivate SmartScreen ERROR: ${JSON.stringify(err)}`, true, null)
+        this.ERR("AlexaAPI: deactivate SmartScreen ERROR!: " + err)
+        Metrics.error(Metrics.ErrorType.OTHER, "AlexaAPIError", "Thunder Controller AlexaAPI: deactivate SmartScreen ERROR: " + JSON.stringify(err), true, null)
       })
     } else {
       this.configureVoice({ "enable": true });
     }
-    console.warn("setAlexaAuthStatus with ", newState)
+    this.WARN("setAlexaAuthStatus with " + newState)
   }
 
   /**
@@ -223,6 +231,6 @@ export default class AlexaApi extends VoiceApi {
   }
   setAlexaSmartscreenAudioPlaybackState(newState = false) {
     Storage.set("AlexaSmartscreenAudioPlaybackState", newState)
-    console.log("setAlexaSmartscreenAudioPlaybackState with ", newState)
+    this.LOG("setAlexaSmartscreenAudioPlaybackState with " + newState)
   }
 }

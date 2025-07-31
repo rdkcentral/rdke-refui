@@ -22,16 +22,20 @@ import { Metrics } from "@firebolt-js/sdk";
 export default class Miracast {
     constructor() {
         this._thunder = ThunderJS(CONFIG.thunderConfig);
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
     }
 
     activateService() {
         return new Promise((resolve,reject) => {
         this._thunder.Controller.activate({ callsign: 'org.rdk.MiracastService' }).then((res) => {
-        console.log(res)
+        this.LOG("MiracastService: Activated " + JSON.stringify(res))
         resolve(res)
         }).catch(err => {
             reject(err)
-            console.error('MiracastService: Error Activation ', err);
+            this.ERR('MiracastService: Error Activation ' + JSON.stringify(err));
             Metrics.error(Metrics.ErrorType.OTHER,"MiracastServiceError", "Error while Thunder Controller MiracastService activate "+JSON.stringify(err), false, null)
         })
         })
@@ -40,11 +44,11 @@ export default class Miracast {
     activatePlayer() {
         return new Promise((resolve,reject) => {
         this._thunder.Controller.activate({ callsign: 'org.rdk.MiracastPlayer' }).then((res) => {
-        console.log(res)
+        this.LOG("MiracastPlayer: Activated " + JSON.stringify(res))
         resolve(res)
         }).catch(err => {
             reject(err)
-            console.error('MiracastPlayer: Error Activation ', err);
+            this.ERR('MiracastPlayer: Error Activation ' + JSON.stringify(err));
             Metrics.error(Metrics.ErrorType.OTHER,"MiracastPlayerError", "Error while Thunder Controller MiracastPlayer activate "+JSON.stringify(err), false, null)
         })
         })
@@ -54,11 +58,11 @@ export default class Miracast {
     {
     return new Promise((resolve,reject) => {
         this._thunder.Controller.deactivate({ callsign: 'org.rdk.MiracastService' }).then((res) => {
-            console.log("MiracastService: deactivated org.rdk.MiracastService" +res)
+            this.LOG("MiracastService: deactivated org.rdk.MiracastService" + JSON.stringify(res))
             resolve(res)
         }).catch(err => {
             reject(err)
-            console.error('MiracastService: Error deactivation ', err)
+            this.ERR('MiracastService: Error deactivation ' + JSON.stringify(err))
             Metrics.error(Metrics.ErrorType.OTHER,"MiracastServiceError", "Error while Thunder Controller MiracastService deactivate "+JSON.stringify(err), false, null)
         })
         })
@@ -68,11 +72,11 @@ export default class Miracast {
     {
     return new Promise((resolve,reject) => {
         this._thunder.Controller.deactivate({ callsign: 'org.rdk.MiracastPlayer' }).then((res) => {
-            console.log("MiracastPlayer: deactivated org.rdk.MiracastPlayer")
+            this.LOG("MiracastPlayer: deactivated org.rdk.MiracastPlayer" + JSON.stringify(res))
             resolve(res)
         }).catch(err => {
             reject(err)
-            console.error('MiracastPlayer: Error deactivation ', err)
+            this.ERR('MiracastPlayer: Error deactivation ' + JSON.stringify(err))
             Metrics.error(Metrics.ErrorType.OTHER,"MiracastPlayerError", "Error while Thunder Controller MiracastPlayer deactivate "+JSON.stringify(err), false, null)
         })
         })
@@ -82,11 +86,11 @@ export default class Miracast {
         return new Promise((resolve, reject) => {
             this._thunder.call('org.rdk.MiracastService', 'setEnable',{enabled:state})
                 .then(res => {
-                    console.log("Sucess response from setEnable "+JSON.stringify(res))
+                    this.LOG("Sucess response from setEnable " + JSON.stringify(res))
                     resolve(res)
                 })
                 .catch(err => {
-                    console.error("Error response from setEnable "+JSON.stringify(err))
+                    this.ERR("Error response from setEnable " + JSON.stringify(err))
                     Metrics.error(Metrics.ErrorType.OTHER,"setEnable", "Error while Thunder  setEnable status "+JSON.stringify(err), false, null)
                     reject(err)
                 })
@@ -98,11 +102,11 @@ export default class Miracast {
         return new Promise((resolve, reject) => {
             this._thunder.call('org.rdk.MiracastService', 'getEnable')
                 .then(res => {
-                    console.log("Sucess response from getEnable "+JSON.stringify(res))
+                    this.LOG("Sucess response from getEnable " + JSON.stringify(res))
                     resolve(res)
                 })
                 .catch(err => {
-                    console.error("Error response from getEnable "+JSON.stringify(err))
+                    this.ERR("Error response from getEnable " + JSON.stringify(err))
                     Metrics.error(Metrics.ErrorType.OTHER,"getEnable", "Error while Thunder  getEnable status "+JSON.stringify(err), false, null)
                     reject(err)
                 })
@@ -114,11 +118,11 @@ export default class Miracast {
         return new Promise((resolve, reject) => {
             this._thunder.call('org.rdk.MiracastService', 'acceptClientConnection',{requestStatus:status})
                 .then(res => {
-                    console.log("Sucess response from acceptClientConnection "+JSON.stringify(res))
+                    this.LOG("Sucess response from acceptClientConnection " + JSON.stringify(res))
                     resolve(res)
                 })
                 .catch(err => {
-                    console.error("Error response from acceptClientConnection "+JSON.stringify(err))
+                    this.ERR("Error response from acceptClientConnection " + JSON.stringify(err))
                     Metrics.error(Metrics.ErrorType.OTHER,"acceptClientConnection", "Error while Thunder  acceptClientConnection status "+JSON.stringify(err), false, null)
                     reject(err)
                 })
@@ -130,11 +134,11 @@ export default class Miracast {
         return new Promise((resolve, reject) => {
             this._thunder.call('org.rdk.MiracastService', 'updatePlayerState',{mac:mac,state:state,reason_code:reason_code,reason:reason})
                 .then(res => {
-                    console.log("Sucess response from updatePlayerState "+JSON.stringify(res))
+                    this.LOG("Sucess response from updatePlayerState " + JSON.stringify(res))
                     resolve(res)
                 })
                 .catch(err => {
-                    console.error("Error response from updatePlayerState "+JSON.stringify(err))
+                    this.ERR("Error response from updatePlayerState " + JSON.stringify(err))
                     Metrics.error(Metrics.ErrorType.OTHER,"updatePlayerState", "Error while Thunder  updatePlayerState status "+JSON.stringify(err), false, null)
                     reject(err)
                 })
@@ -146,11 +150,11 @@ export default class Miracast {
         return new Promise((resolve, reject) => {
             this._thunder.call('org.rdk.MiracastService', 'stopClientConnection',{mac:mac,name:name})
                 .then(res => {
-                    console.log("Sucess response from stopClientConnection "+JSON.stringify(res))
+                    this.LOG("Sucess response from stopClientConnection " + JSON.stringify(res))
                     resolve(res)
                 })
                 .catch(err => {
-                    console.error("Error response from stopClientConnection "+JSON.stringify(err))
+                    this.ERR("Error response from stopClientConnection " + JSON.stringify(err))
                     Metrics.error(Metrics.ErrorType.OTHER,"stopClientConnection", "Error while Thunder  stopClientConnection status "+JSON.stringify(err), false, null)
                     reject(err)
                 })
@@ -162,11 +166,11 @@ export default class Miracast {
         return new Promise((resolve, reject) => {
             this._thunder.call('org.rdk.MiracastService', 'setLogging',{level:level,separate_logger:{logfilename:logfilename,status:status}})
                 .then(res => {
-                    console.log("Sucess response from setLogging "+JSON.stringify(res))
+                    this.LOG("Sucess response from setLogging " + JSON.stringify(res))
                     resolve(res)
                 })
                 .catch(err => {
-                    console.error("Error response from setLogging "+JSON.stringify(err))
+                    this.ERR("Error response from setLogging " + JSON.stringify(err))
                     Metrics.error(Metrics.ErrorType.OTHER,"setLogging", "Error while Thunder  setLogging status "+JSON.stringify(err), false, null)
                     reject(err)
                 })
@@ -180,11 +184,11 @@ export default class Miracast {
                 {source_dev_ip:source_dev_ip,source_dev_mac:source_dev_mac,source_dev_name:source_dev_name,sink_dev_ip:sink_dev_ip},
                 video_rectangle:{X:X,Y:Y,W:W,H:H}})
                 .then(res => {
-                    console.log("Sucess response from playRequest "+JSON.stringify(res))
+                    this.LOG("Sucess response from playRequest " + JSON.stringify(res))
                     resolve(res)
                 })
                 .catch(err => {
-                    console.error("Error response from playRequest "+JSON.stringify(err))
+                    this.ERR("Error response from playRequest " + JSON.stringify(err))
                     Metrics.error(Metrics.ErrorType.OTHER,"playRequest", "Error while Thunder  playRequest status "+JSON.stringify(err), false, null)
                     reject(err)
                 })
@@ -196,11 +200,11 @@ export default class Miracast {
         return new Promise((resolve, reject) => {
             this._thunder.call('org.rdk.MiracastPlayer', 'stopRequest',{mac:mac,name:name,reason_code:reason_code})
                 .then(res => {
-                    console.log("Sucess response from stopRequest "+JSON.stringify(res))
+                    this.LOG("Sucess response from stopRequest " + JSON.stringify(res))
                     resolve(res)
                 })
                 .catch(err => {
-                    console.error("Error response from stopRequest "+JSON.stringify(err))
+                    this.ERR("Error response from stopRequest " + JSON.stringify(err))
                     Metrics.error(Metrics.ErrorType.OTHER,"stopRequest", "Error while Thunder  stopRequest status "+JSON.stringify(err), false, null)
                     reject(err)
                 })
@@ -212,11 +216,11 @@ export default class Miracast {
         return new Promise((resolve, reject) => {
             this._thunder.call('org.rdk.MiracastPlayer', 'setPlayerState',{state:state})
                 .then(res => {
-                    console.log("Sucess response from setPlayerState "+JSON.stringify(res))
+                    this.LOG("Sucess response from setPlayerState " + JSON.stringify(res))
                     resolve(res)
                 })
                 .catch(err => {
-                    console.error("Error response from setPlayerState "+JSON.stringify(err))
+                    this.ERR("Error response from setPlayerState " + JSON.stringify(err))
                     Metrics.error(Metrics.ErrorType.OTHER,"setPlayerState", "Error while Thunder  setPlayerState status "+JSON.stringify(err), false, null)
                     reject(err)
                 })
@@ -228,11 +232,11 @@ export default class Miracast {
         return new Promise((resolve, reject) => {
             this._thunder.call('org.rdk.MiracastPlayer', 'setVideoRectangle',{X:X,Y:Y,W:W,H:H})
                 .then(res => {
-                    console.log("Sucess response from setVideoRectangle "+JSON.stringify(res))
+                    this.LOG("Sucess response from setVideoRectangle " + JSON.stringify(res))
                     resolve(res)
                 })
                 .catch(err => {
-                    console.error("Error response from setVideoRectangle "+JSON.stringify(err))
+                    this.ERR("Error response from setVideoRectangle " + JSON.stringify(err))
                     Metrics.error(Metrics.ErrorType.OTHER,"setVideoRectangle", "Error while Thunder  setVideoRectangle status "+JSON.stringify(err), false, null)
                     reject(err)
                 })
@@ -244,11 +248,11 @@ export default class Miracast {
         return new Promise((resolve, reject) => {
             this._thunder.call('org.rdk.MiracastPlayer', 'setRTSPWaitTimeout',{Request:Request,Response:Response})
                 .then(res => {
-                    console.log("Sucess response from setRTSPWaitTimeout "+JSON.stringify(res))
+                    this.LOG("Sucess response from setRTSPWaitTimeout " + JSON.stringify(res))
                     resolve(res)
                 })
                 .catch(err => {
-                    console.error("Error response from setRTSPWaitTimeout "+JSON.stringify(err))
+                    this.ERR("Error response from setRTSPWaitTimeout " + JSON.stringify(err))
                     Metrics.error(Metrics.ErrorType.OTHER,"setRTSPWaitTimeout", "Error while Thunder  setRTSPWaitTimeout status "+JSON.stringify(err), false, null)
                     reject(err)
                 })
@@ -260,11 +264,11 @@ export default class Miracast {
         return new Promise((resolve, reject) => {
             this._thunder.call('org.rdk.MiracastPlayer', 'setLogging',{level:level,separate_logger:{logfilename:logfilename,status:status}})
                 .then(res => {
-                    console.log("Sucess response from setLogging "+JSON.stringify(res))
+                    this.LOG("Sucess response from setLogging " + JSON.stringify(res))
                     resolve(res)
                 })
                 .catch(err => {
-                    console.error("Error response from setLogging "+JSON.stringify(err))
+                    this.ERR("Error response from setLogging " + JSON.stringify(err))
                     Metrics.error(Metrics.ErrorType.OTHER,"setLogging", "Error while Thunder  setLogging status "+JSON.stringify(err), false, null)
                     reject(err)
                 })
@@ -281,11 +285,11 @@ export default class Miracast {
                     video_frame_skip_support:video_frame_skip_support,max_skip_intervals:max_skip_intervals,
                     video_frame_rate_change_support:video_frame_rate_change_support}})
                 .then(res => {
-                    console.log("Sucess response from setVideoFormats "+JSON.stringify(res))
+                    this.LOG("Sucess response from setVideoFormats " + JSON.stringify(res))
                     resolve(res)
                 })
                 .catch(err => {
-                    console.error("Error response from setVideoFormats "+JSON.stringify(err))
+                    this.ERR("Error response from setVideoFormats " + JSON.stringify(err))
                     Metrics.error(Metrics.ErrorType.OTHER,"setVideoFormats", "Error while Thunder  playResetVideoFormatsquest status "+JSON.stringify(err), false, null)
                     reject(err)
                 })
@@ -297,11 +301,11 @@ export default class Miracast {
         return new Promise((resolve, reject) => {
             this._thunder.call('org.rdk.MiracastPlayer', 'setAudioFormats',{audio_format:audio_format,modes:modes,latency:latency})
                 .then(res => {
-                    console.log("Sucess response from setAudioFormats "+JSON.stringify(res))
+                    this.LOG("Sucess response from setAudioFormats " + JSON.stringify(res))
                     resolve(res)
                 })
                 .catch(err => {
-                    console.error("Error response from setAudioFormats "+JSON.stringify(err))
+                    this.ERR("Error response from setAudioFormats " + JSON.stringify(err))
                     Metrics.error(Metrics.ErrorType.OTHER,"setAudioFormats", "Error while Thunder  setAudioFormats status "+JSON.stringify(err), false, null)
                     reject(err)
                 })
