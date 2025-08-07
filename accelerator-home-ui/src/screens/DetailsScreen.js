@@ -24,6 +24,14 @@
  
  var homeApi = new HomeApi();
  export default class DetailsScreen extends Lightning.Component {
+   constructor(...args) {
+     super(...args);
+     this.INFO = console.info;
+     this.LOG = console.log;
+     this.ERR = console.error;
+     this.WARN = console.warn;
+   }
+
    _onChanged() {
      this.widgets.menu.updateTopPanelText(this.name);
    }
@@ -173,7 +181,9 @@
          this._setState("Subscriptions");
          this.tag("Subscriptions.List").setIndex(0);
        })
-       .catch((error) => console.log(error));
+       .catch((error) => {
+         this.ERR("DetailsScreen getMovieSubscriptions error: " + JSON.stringify(error));
+       });
    }
  
    _init() {}
@@ -223,4 +233,3 @@
      ];
    }
  }
- 

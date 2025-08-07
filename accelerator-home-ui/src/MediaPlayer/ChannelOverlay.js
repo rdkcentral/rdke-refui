@@ -23,6 +23,13 @@ import ChannelItem from './ChannelItem'
 import HomeApi from '../api/HomeApi';
 
 export default class ChannelOverlay extends Lightning.Component {
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
   /**
    * Function to create components for the player controls.
    */
@@ -75,7 +82,7 @@ export default class ChannelOverlay extends Lightning.Component {
         }
       })
     }).catch(err => {
-      console.log("Failed to fetch channels: ", JSON.stringify(err))
+      this.ERR("Failed to fetch channels: " + JSON.stringify(err))
     })
     this._overlayAnimation = this.tag("Wrapper").animation({
       delay: 0.3,
@@ -178,18 +185,18 @@ export default class ChannelOverlay extends Lightning.Component {
     } else {
       if (focusedChannelIdx !== this.activeChannelIdx) {
         this.dtvApi.exitChannel().then(res => {
-          console.log("Current channel exit successful, launching new channel: ", JSON.stringify(res));
+          this.LOG("Current channel exit successful, launching new channel: " + JSON.stringify(res));
           this.dtvApi
             .launchChannel(this.options[focusedChannelIdx].dvburi)
             .then((res) => {
-              console.log("Change Channel successfull: ", JSON.stringify(res));
+              this.LOG("Change Channel successfull: " + JSON.stringify(res));
               this.activeChannelIdx = focusedChannelIdx;
             })
             .catch((err) => {
-              console.log("Failed to launch new channel", JSON.stringify(err));
+              this.ERR("Failed to launch new channel: " + JSON.stringify(err));
             });
         }).catch(err => {
-          console.log("Failed to exit current playing channel: ", JSON.stringify(err));
+          this.ERR("Failed to exit current playing channel: " + JSON.stringify(err));
         })
       }
     }

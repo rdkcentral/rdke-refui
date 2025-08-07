@@ -26,6 +26,14 @@ import FireBoltApi from '../api/firebolt/FireBoltApi.js';
   */
  export default class TimeOverlayItems extends Lightning.Component {
 
+    constructor(...args) {
+        super(...args);
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
+
      static _template() {
          return {
              TimeItemsContents: {
@@ -46,22 +54,22 @@ import FireBoltApi from '../api/firebolt/FireBoltApi.js';
          }
      }
 
-     /**
-      * Function refresh the list.
-      */
-     refreshList(item) {
-         console.log("item from refreshList",item)
-         this._item = item
-         this.tag('List').items = Object.keys(item.time_region).map((ele, idx) => {
-             return {
-                 ref: 'Time' + idx,
-                 w: 1620,
-                 h: 90,
-                 type: TimeItem,
-                 item: [ele, ele === item.isActive],
-             }
-         })
-     }
+    /**
+     * Function refresh the list.
+     */
+    refreshList(item) {
+        this.LOG("item from refreshList: " + JSON.stringify(item))
+        this._item = item
+        this.tag('List').items = Object.keys(item.time_region).map((ele, idx) => {
+            return {
+                ref: 'Time' + idx,
+                w: 1620,
+                h: 90,
+                type: TimeItem,
+                item: [ele, ele === item.isActive],
+            }
+        })
+    }
 
      _firstEnable() {
          this.appApi = new AppApi()
@@ -70,7 +78,7 @@ import FireBoltApi from '../api/firebolt/FireBoltApi.js';
      _init(){
         if ("ResidentApp" !== GLOBALS.selfClientName){
             FireBoltApi.get().localization.listen("timeZoneChanged",value =>{
-                console.log('timezone changed successfully to ', JSON.stringify(value))
+                this.LOG('timezone changed successfully to ' + JSON.stringify(value))
             })
         }
      }
@@ -84,9 +92,9 @@ import FireBoltApi from '../api/firebolt/FireBoltApi.js';
          this.tag('List').setPrevious()
      }
 
-     _handleEnter() {
-         console.log(`${this._item.zone}/${this.tag('List').element._item[0]}`)
-         this.fireAncestors("$updateTimeZone",`${this._item.zone}/${this.tag('List').element._item[0]}`)
+    _handleEnter() {
+        this.LOG(`${this._item.zone}/${this.tag('List').element._item[0]}`)
+        this.fireAncestors("$updateTimeZone",`${this._item.zone}/${this.tag('List').element._item[0]}`)
         //  this.widgets.menu.updateTimeZone(`${this._item.zone}/${this.tag('List').element._item[0]}`)
         if ("ResidentApp" === GLOBALS.selfClientName) {
             this.appApi.setZone(`${this._item.zone}/${this.tag('List').element._item[0]}`)

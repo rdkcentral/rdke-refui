@@ -29,6 +29,14 @@
   * Class for Live TV settings screen.
   */
  export default class LiveTVSettings extends Lightning.Component {
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
+
    static _template() {
      return {
        LiveTVSettingsScreenContents: {
@@ -116,72 +124,72 @@
     this.tag("LiveTVSettingsScreenContents").visible = true;
   }
 
-   static _states() {
-      return [
-        class Activate extends this {
-          $enter() {
-            this.tag("Activate")._focus();
-          }
-          $exit() {
-            this.tag("Activate")._unfocus();
-          }
-          _handleDown() {
-            this._setState("Scan");
-          }
-          _handleEnter() {
-            if (GLOBALS.deviceType != "IpStb") {
-              if (active) {
-                this.dtvApi.deactivate().then((res) => {
-                  console.log(res);
-                  active = false;
-                  this.tag("Activate.Button").src = Utils.asset(
-                    "images/settings/ToggleOffWhite.png"
-                  );
-                });
-              } else {
-                this.dtvApi.activate().then((res) => {
-                  console.log(res);
-                  active = true;
-                  this.tag("Activate.Button").src = Utils.asset(
-                    "images/settings/ToggleOnOrange.png"
-                  );
-                });
-              }
+  static _states() {
+    return [
+      class Activate extends this {
+        $enter() {
+          this.tag("Activate")._focus();
+        }
+        $exit() {
+          this.tag("Activate")._unfocus();
+        }
+        _handleDown() {
+          this._setState("Scan");
+        }
+        _handleEnter() {
+          if (GLOBALS.deviceType != "IpStb") {
+            if (active) {
+              this.dtvApi.deactivate().then((res) => {
+                this.LOG("Deactivate result: " + JSON.stringify(res));
+                active = false;
+                this.tag("Activate.Button").src = Utils.asset(
+                  "images/settings/ToggleOffWhite.png"
+                );
+              });
+            } else {
+              this.dtvApi.activate().then((res) => {
+                this.LOG("Activate result: " + JSON.stringify(res));
+                active = true;
+                this.tag("Activate.Button").src = Utils.asset(
+                  "images/settings/ToggleOnOrange.png"
+                );
+              });
             }
           }
-        },
-        class Scan extends this {
-          $enter() {
-            this.tag("Scan")._focus();
-          }
-          $exit() {
-            this.tag("Scan")._unfocus();
-          }
-          _handleUp() {
-            this._setState("Activate");
-          }
-          _handleEnter() {
-              this._setState("LiveTvScanOverlay")
-          }
-        },
-        class LiveTvScanOverlay extends this {
-          $enter() {
-              this.hide()
-              this.tag('LiveTvScanOverlay').visible = true
-              this.fireAncestors('$updatePageTitle', Language.translate('Settings / Live TV / Scan'))
-          }
-          $exit() {
-              this.show()
-              this.tag('LiveTvScanOverlay').visible = false
-              this.fireAncestors('$updatePageTitle', Language.translate('Settings / Live TV'))
-          }
-          _getFocused() {
-              return this.tag('LiveTvScanOverlay')
-          }
-          _handleBack() {
-              this._setState('Scan')
-          }
-        },
-      ];
-    }
+        }
+      },
+      class Scan extends this {
+        $enter() {
+          this.tag("Scan")._focus();
+        }
+        $exit() {
+          this.tag("Scan")._unfocus();
+        }
+        _handleUp() {
+          this._setState("Activate");
+        }
+        _handleEnter() {
+          this._setState("LiveTvScanOverlay")
+        }
+      },
+      class LiveTvScanOverlay extends this {
+        $enter() {
+          this.hide()
+          this.tag('LiveTvScanOverlay').visible = true
+          this.fireAncestors('$updatePageTitle', Language.translate('Settings / Live TV / Scan'))
+        }
+        $exit() {
+          this.show()
+          this.tag('LiveTvScanOverlay').visible = false
+          this.fireAncestors('$updatePageTitle', Language.translate('Settings / Live TV'))
+        }
+        _getFocused() {
+          return this.tag('LiveTvScanOverlay')
+        }
+        _handleBack() {
+          this._setState('Scan')
+        }
+      },
+    ];
+  }
  }

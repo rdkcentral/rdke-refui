@@ -29,6 +29,14 @@ import FireBoltApi from '../../api/firebolt/FireBoltApi';
  */
 
 export default class VideoScreen extends Lightning.Component {
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
+
   static _template() {
     return {
       VideoScreenContents: {
@@ -206,7 +214,7 @@ export default class VideoScreen extends Lightning.Component {
       this._appApi.getResolution().then(resolution => {
         this.tag("Resolution.Title").text.text = Language.translate('Resolution: ') + resolution;
       }).catch(err => {
-        console.log("Error fetching the Resolution" + JSON.stringify(err))
+        this.ERR("Error fetching the Resolution" + JSON.stringify(err))
       })
       this._appApi.getHDCPStatus().then(result => {
         if (result.isHDCPCompliant && result.isHDCPEnabled) {

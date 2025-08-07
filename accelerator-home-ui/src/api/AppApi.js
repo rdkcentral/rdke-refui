@@ -39,6 +39,7 @@ export default class AppApi {
     this.INFO = console.info;
     this.LOG = console.log;
     this.ERR = console.error;
+    this.WARN = console.warn;
   }
 
   /**
@@ -410,7 +411,7 @@ export default class AppApi {
       GLOBALS.LastvisitedRoute="menu"
     }
     Router.navigate("applauncher");
-    this.LOG("AppAPI launchApp called with: ", callsign, args);
+    this.LOG("AppAPI launchApp called with: " + JSON.stringify(callsign) + JSON.stringify(args));
     if (callsign.startsWith("YouTube")) {
       Storage.set(callsign + "LaunchLocation", args.launchLocation)
     }
@@ -443,7 +444,7 @@ export default class AppApi {
       }
     }
 
-    this.LOG("AppAPI launchApp with callsign: " + callsign + " | url: " + url + " | preventInternetCheck: " + preventInternetCheck + " | preventCurrentExit: " + preventCurrentExit + " | launchLocation: " + launchLocation);
+    this.LOG("AppAPI launchApp with callsign: " + JSON.stringify(callsign) + " | url: " + JSON.stringify(url) + " | preventInternetCheck: " + JSON.stringify(preventInternetCheck) + " | preventCurrentExit: " + JSON.stringify(preventCurrentExit) + " | launchLocation: " + JSON.stringify(launchLocation));
 
     let IIDqueryString = "";
     if (callsign === "Netflix") {
@@ -454,7 +455,7 @@ export default class AppApi {
           IIDqueryString = "&" + IIDqueryString; //so that IIDqueryString can be appended with url later.
         }
       } else {
-        console.warn("AppAPI launchLocation(IID) not specified while launching netflix");
+        this.WARN("AppAPI launchLocation(IID) not specified while launching netflix");
       }
     }
 
@@ -484,7 +485,7 @@ export default class AppApi {
         pluginState = pluginStatus[0].state;
       }
     } catch (err) {
-      this.ERR(err);
+      this.ERR("Getplugin status error"+err);
       Storage.set("appSwitchingInProgress", false);
       Router.navigate(GLOBALS.LastvisitedRoute);
       return Promise.reject("AppAPI PluginError: " + callsign + ": App not supported on this device | Error: " + JSON.stringify(err));
@@ -581,7 +582,7 @@ export default class AppApi {
           }
           url += "vs=2" // YT Dev Doc specific to Alexa
         }
-        this.LOG("AppAPI " + callsign + " is being launched using the url: " + url)
+        this.LOG("AppAPI " + callsign + " is being launched using the url: " + JSON.stringify(url))
       }
 
       params.configuration = { //for gracenote cold launch url needs to be re formatted to youtube.com/tv/
@@ -625,7 +626,7 @@ export default class AppApi {
     if (JSON.stringify(params.configuration) === '{}') {
       delete params.configuration;
     }
-    this.LOG("AppAPI RDKShell launch with params: ", params);
+    this.LOG("AppAPI RDKShell launch with params: " + JSON.stringify(params));
     return new Promise((resolve, reject) => {
       if (callsign === "NativeApp") {
         // Could be coming from PartnerApp.
@@ -670,7 +671,7 @@ export default class AppApi {
         })
       } else {
         RDKShellApis.launch(params).then(res => {
-          this.LOG(`AppAPI ${callsign} : Launch results in ${JSON.stringify(res)}`)
+          this.LOG("AppAPI " + callsign + " : Launch results in " + JSON.stringify(res))
           if (res.success) {
             if ((callsign === "HtmlApp") || (callsign === "LightningApp")) {
               AlexaApi.get().reportApplicationState(url);
@@ -694,13 +695,13 @@ export default class AppApi {
 
             if (callsign !== "Netflix") { //if app is not netflix, move it to front(netflix will be moved to front from applauncherScreen.)
               RDKShellApis.getZOrder().then(res => {
-                console.warn("AppAPI zOrder:" + JSON.stringify(res));
+                this.WARN("AppAPI zOrder:" + JSON.stringify(res));
               }).catch(err => {
-                this.ERR("AppAPI failed to zOrder : ", callsign, " ERROR: ", JSON.stringify(err))
+                this.ERR("AppAPI failed to zOrder : " + JSON.stringify(callsign) + " ERROR: " + JSON.stringify(err))
                 Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder RDKShell zOrder " + JSON.stringify(err), false, null)
               })
               RDKShellApis.moveToFront(callsign, callsign).catch(err => {
-                this.ERR("AppAPI failed to moveToFront : ", callsign, " ERROR: ", JSON.stringify(err), " | fail reason can be since app is already in front")
+                this.ERR("AppAPI failed to moveToFront : " + JSON.stringify(callsign) + " ERROR: " + JSON.stringify(err) + " | fail reason can be since app is already in front")
                 Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder RDKShell moveToFront " + JSON.stringify(err), false, null)
               })
             }
@@ -737,19 +738,19 @@ export default class AppApi {
             GLOBALS.topmostApp = callsign;
             resolve(res);
           } else {
-            this.ERR("AppAPI failed to launchApp(success false) : ", callsign, " ERROR: ", JSON.stringify(res))
+            this.ERR("AppAPI failed to launchApp(success false) : "+ JSON.stringify(callsign), " ERROR: ", JSON.stringify(res))
             Storage.set("appSwitchingInProgress", false);
             Router.navigate(GLOBALS.LastvisitedRoute);
             Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder RDKShell launch " + JSON.stringify(err), false, null)
             reject(res)
           }
         }).catch(err => {
-          this.ERR("AppAPI failed to launchApp: ", callsign, " ERROR: ", JSON.stringify(err), " | Launching residentApp back")
+          this.ERR("AppAPI failed to launchApp: " + JSON.stringify(callsign) + " ERROR: " + JSON.stringify(err) + " | Launching residentApp back")
           Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder RDKShell launch " + JSON.stringify(err), false, null)
 
           //destroying the app incase it's stuck in launching | if taking care of ResidentApp as callsign, make sure to prevent destroying it
           RDKShellApis.destroy(callsign).catch(err => {
-            this.ERR("AppAPI failed to destroy : ", callsign, " ERROR: ", JSON.stringify(err))
+            this.ERR("AppAPI failed to destroy : " + JSON.stringify(callsign) + " ERROR: " + JSON.stringify(err))
             Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder RDKShell destroy " + JSON.stringify(err), false, null)
           })
           this.launchResidentApp(GLOBALS.selfClientName);
@@ -898,17 +899,17 @@ export default class AppApi {
     if (!data) {
       return defaultIIDs;
     }
-    this.LOG("AppAPI homedata: ", data);
+    this.LOG("AppAPI homedata: " + JSON.stringify(data));
     try {
       data = await JSON.parse(data);
       if (data != null && Object.prototype.hasOwnProperty.call(data, "netflix-iid-file-path")) {
         let url = data["netflix-iid-file-path"]
-        this.LOG(`AppAPI Netflix : requested to fetch iids from `, url)
+        this.LOG("AppAPI Netflix : requested to fetch iids from " + JSON.stringify(url))
         const fetchResponse = await fetch(url);
         const fetchData = await fetchResponse.json();
         return fetchData;
       } else {
-        this.LOG("AppAPI Netflix IID file path not found in conf file, using deffault IIDs");
+        this.LOG("AppAPI Netflix IID file path not found in conf file, using deffault IIDs" + JSON.stringify(undefined));
         return defaultIIDs;
       }
     } catch (err) {
@@ -1178,7 +1179,7 @@ export default class AppApi {
           resolve(result)
         })
         .catch(err => {
-          this.LOG("org.rdk.System: getWakeupReason: Error in getting wake up reason: ", err)
+          this.ERR("org.rdk.System: getWakeupReason: Error in getting wake up reason: " + JSON.stringify(err))
           Metrics.error(Metrics.ErrorType.OTHER, "PowerStateFailure", "Error in Thunder System getWakeupReason " + JSON.stringify(err), false, null)
           reject(err)
         })
@@ -1426,7 +1427,7 @@ export default class AppApi {
       thunder.call('DeviceInfo', 'modelname').then(result => {
         resolve(result.model)
       }).catch(err => {
-        this.ERR("AppAPI DeviceInfo modelname failed:", err);
+        this.ERR("AppAPI DeviceInfo modelname failed:" + JSON.stringify(err));
         Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder DeviceInfo modelname " + JSON.stringify(err), false, null)
         resolve("RDK-VA")
       })
@@ -1455,7 +1456,7 @@ export default class AppApi {
           resolve(result)
         })
         .catch(err => {
-          this.ERR("AppAPI System getSystemVersions error:", JSON.stringify(err, 3, null))
+          this.ERR("AppAPI System getSystemVersions error:" + JSON.stringify(err, 3, null))
           Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder system getSystemVersions " + JSON.stringify(err), false, null)
           resolve(false)
         })

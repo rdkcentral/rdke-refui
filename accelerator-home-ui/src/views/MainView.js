@@ -33,6 +33,13 @@ import FireBoltApi from '../api/firebolt/FireBoltApi.js'
 
 /** Class for main view component in home UI */
 export default class MainView extends Lightning.Component {
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
   /**
    * Function to render various elements in main view.
    */
@@ -349,7 +356,7 @@ export default class MainView extends Lightning.Component {
       }
     } catch (e) {
       appdetails_format = appItems
-      console.log('Query data is not proper: ' + e)
+      this.LOG('Query data is not proper: ' + JSON.stringify(e))
     }
     this.firstRowItems = appdetails_format
     this.tempRow = JSON.parse(JSON.stringify(this.firstRowItems));
@@ -363,15 +370,15 @@ export default class MainView extends Lightning.Component {
       .then(() => {
         this.hdmiApi.registerEvent('onDevicesChanged', notification => {
           this.fireAncestors("$hideImage", 0);
-          console.log('onDevicesChanged ', JSON.stringify(notification))
+          this.LOG('onDevicesChanged ' + JSON.stringify(notification))
         })
         this.hdmiApi.registerEvent('onInputStatusChanged', notification => {
           this.fireAncestors("$hideImage", 0);
-          console.log('onInputStatusChanged ', JSON.stringify(notification))
+          this.LOG('onInputStatusChanged ' + JSON.stringify(notification))
         })
         this.hdmiApi.registerEvent('onSignalChanged', notification => {
           this.fireAncestors("$hideImage", 0);
-          console.log('onSignalChanged ', JSON.stringify(notification))
+          this.LOG('onSignalChanged ' + JSON.stringify(notification))
           if (notification.signalStatus !== 'stableSignal') {
             RDKShellApis.setVisibility(GLOBALS.selfClientName, true)
             this.widgets.fail.notify({ title: this.tag('Inputs.Slider').items[this.tag('Inputs.Slider').index].data.displayName, msg: Language.translate("Input disconnected") })
@@ -380,7 +387,7 @@ export default class MainView extends Lightning.Component {
         })
         this.hdmiApi.registerEvent('videoStreamInfoUpdate', notification => {
           this.fireAncestors("$hideImage", 0);
-          console.log('videoStreamInfoUpdate ', JSON.stringify(notification))
+          this.LOG('videoStreamInfoUpdate ' + JSON.stringify(notification))
         })
         if(GLOBALS.deviceType == "IpTv")
         {
@@ -394,7 +401,7 @@ export default class MainView extends Lightning.Component {
           })
       })
       .catch(err => {
-        console.log('HDMIInput Plugin not activated', err)
+        this.ERR('HDMIInput Plugin not activated' + JSON.stringify(err))
       })
     //get the available input methods from the api
 
@@ -404,7 +411,7 @@ export default class MainView extends Lightning.Component {
       let listener;
 
       listener = thunder.on('org.rdk.UsbAccess', 'onUSBMountChanged', (notification) => {
-        console.log('onUsbMountChanged notification: ', JSON.stringify(notification))
+        this.LOG('onUsbMountChanged notification: ' + JSON.stringify(notification))
         Storage.set('UsbMountedStatus', notification.mounted ? 'mounted' : 'unmounted')
         const currentPage = window.location.href.split('#').slice(-1)[0]
         if (Storage.get('UsbMedia') === 'ON') {
@@ -416,10 +423,10 @@ export default class MainView extends Lightning.Component {
             this.appItems = this.tempRow
             this._setState('AppList.0')
           }
-          console.log(`app items = ${this.appItems} ; `);
+          this.LOG('app items = ' + JSON.stringify(this.appItems));
 
           if (currentPage === 'menu') { //refresh page to hide or show usb icon
-            console.log('page refreshed on unplug/plug')
+            this.LOG('page refreshed on unplug/plug')
 
           }
 
@@ -430,13 +437,13 @@ export default class MainView extends Lightning.Component {
             }
           }
         }
-        console.log(`usb event successfully registered`);
+        this.LOG('usb event successfully registered');
       })
 
       return listener;
     }
     Network.get()._thunder.on('org.rdk.Network.1', 'onInternetStatusChange', notification => {
-      console.log('on InternetStatus Change', JSON.stringify(notification))
+      this.LOG('on InternetStatus Change' + JSON.stringify(notification))
       this.refreshSecondRow()
     })
 
@@ -467,9 +474,9 @@ export default class MainView extends Lightning.Component {
     } else if (Storage.get('UsbMedia') === 'OFF') {
       // deactivate usb Plugin here
       this.usbApi.deactivate().then(() => {
-        console.log(`disabled the Usb Plugin`);
+        this.LOG(`disabled the Usb Plugin`);
       }).catch(err => {
-        console.error(`error while disabling the usb plugin = ${err}`)
+        this.ERR(`error while disabling the usb plugin = ${err}`)
       })
     }
 
@@ -495,7 +502,7 @@ export default class MainView extends Lightning.Component {
 
   _firstEnable() {
     console.timeEnd('PerformanceTest')
-    console.log('Mainview Screen timer end - ', new Date().toUTCString())
+    this.LOG('Mainview Screen timer end - ' + JSON.stringify(new Date().toUTCString()))
     this.internetConnectivity = false;
   }
 
@@ -767,17 +774,17 @@ export default class MainView extends Lightning.Component {
         }
 
         _handleEnter() {
-          console.log(this.tag('Inputs.Slider').items[this.tag('Inputs.Slider').index].data)
+          this.LOG(JSON.stringify(this.tag('Inputs.Slider').items[this.tag('Inputs.Slider').index].data))
           this.hdmiApi.setHDMIInput(this.tag('Inputs.Slider').items[this.tag('Inputs.Slider').index].data)
             .then(() => {
-              console.log('completed')
+              this.LOG('completed')
               GLOBALS.topmostApp = 'HDMI';
               const currentInput = this.tag('Inputs.Slider').items[this.tag('Inputs.Slider').index].data
               Storage.set("_currentInputMode", { id: currentInput.id, locator: currentInput.locator });
               RDKShellApis.setVisibility(GLOBALS.selfClientName, false)
             })
             .catch(err => {
-              console.log('failed', err)
+              this.ERR('failed' + JSON.stringify(err))
               this.widgets.fail.notify({ title: this.tag('Inputs.Slider').items[this.tag('Inputs.Slider').index].data.displayName, msg: 'Select a different input.' })
               Router.focusWidget('Fail')
             })
@@ -838,7 +845,7 @@ export default class MainView extends Lightning.Component {
               appIdentifier: appIdentifier
             }
             this.appApi.launchApp(applicationType, params).catch(err => {
-              console.log("ApplaunchError: ", err)
+              this.ERR("ApplaunchError: "+ JSON.stringify(err))
             });
           }
         }
@@ -895,7 +902,7 @@ export default class MainView extends Lightning.Component {
             .then(result => {
               if (result) {
                 this.appApi.launchApp(applicationType, params).catch(err => {
-                  console.log("ApplaunchError: ", JSON.stringify(err), err)
+                  this.ERR("ApplaunchError: " + JSON.stringify(err))
                 });
               }
               else {
@@ -904,7 +911,7 @@ export default class MainView extends Lightning.Component {
               }
             })
             .catch(err => {
-              console.log(err)
+              this.ERR("isconnectedtointernet failed" + JSON.stringify(err))
             })
         }
       },
@@ -954,7 +961,7 @@ export default class MainView extends Lightning.Component {
           } catch {
             this.internetConnectivity = false
           }
-          console.log("MainView: internetConnectivity ", JSON.stringify(this.internetConnectivity));
+          this.LOG("MainView: internetConnectivity " + JSON.stringify(this.internetConnectivity));
           let params ={url: this.tag('TVShows').items[this.tag('TVShows').index].data.uri,
           }
           if (this.internetConnectivity) {
@@ -1020,13 +1027,13 @@ export default class MainView extends Lightning.Component {
           }
           if (applicationType == "FireboltApp") {
             FireBoltApi.get().discovery.launch(appId, intent).then(res => {
-              console.log(res)
+              this.LOG("Firebolt launch response" + JSON.stringify(res))
               GLOBALS.topmostApp = "FireboltApp";
             })
           }
           else {
             this.appApi.launchApp(applicationType, params).catch(err => {
-              console.log("ApplaunchError: ", JSON.stringify(err), err)
+              this.ERR("ApplaunchError: " + JSON.stringify(err))
             });
           }
         }
@@ -1082,7 +1089,7 @@ export default class MainView extends Lightning.Component {
             Router.navigate("camera/player", cameraParams)
           } else {
             this.appApi.launchApp(applicationType, params).catch(err => {
-              console.log("ApplaunchError: ", JSON.stringify(err), err)
+              this.ERR("ApplaunchError: " + JSON.stringify(err))
             });
           }
         }

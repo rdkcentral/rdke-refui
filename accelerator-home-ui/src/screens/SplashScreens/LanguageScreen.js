@@ -125,12 +125,12 @@ export default class LanguageScreen extends Lightning.Component {
     appApi.deactivateResidentApp(loader)
     RDKShellApis.moveToFront(GLOBALS.selfClientName)
     RDKShellApis.setFocus(GLOBALS.selfClientName).then(result => {
-      this.LOG('LanguageScreen: ResidentApp moveToFront Success');
+      this.LOG('LanguageScreen: ResidentApp moveToFront Success')
       RDKShellApis.getVisibility(GLOBALS.selfClientName).then(visible => {
-        if (!visible) RDKShellApis.setVisibility(GLOBALS.selfClientName, true);
+        if (!visible) RDKShellApis.setVisibility(GLOBALS.selfClientName, true)
       })
     }).catch(err => {
-      this.ERR('LanguageScreen: Error' + JSON.stringify(err));
+      this.ERR('LanguageScreen: Error' + JSON.stringify(err))
       Metrics.error(Metrics.ErrorType.OTHER, "AppLangugaeError", 'Thunder RDKShell setFocus Error' + JSON.stringify(err), false, null)
     });
   }
@@ -184,7 +184,7 @@ export default class LanguageScreen extends Lightning.Component {
             let path = location.pathname.split('index.html')[0]
             let url = path.slice(-1) === '/' ? "static/loaderApp/index.html" : "/static/loaderApp/index.html"
             let notification_url = location.origin + path + url
-            console.log(notification_url)
+            this.LOG("LanguageScreen notification_url: " + JSON.stringify(notification_url))
             appApi.launchResident(notification_url, loader).catch(err => { })
             RDKShellApis.setVisibility(GLOBALS.selfClientName, false)
             location.reload();

@@ -26,6 +26,14 @@
 
  export default class NetworkInterfaceScreen extends Lightning.Component {
 
+    constructor(...args) {
+        super(...args);
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
+
     _construct() {
         this.LoadingIcon = Utils.asset('images/settings/Loading.png')
     }
@@ -96,7 +104,7 @@
 
     _active() {
         this.onDefaultInterfaceChangedCB = Network.get()._thunder.on(Network.get().callsign, 'onDefaultInterfaceChanged', (notification) => {
-            console.log('onDefaultInterfaceChanged notification from networkInterfaceScreen: ', notification)
+            this.LOG('onDefaultInterfaceChanged notification from networkInterfaceScreen: ' + JSON.stringify(notification))
             if (notification.newInterfaceName === "ETHERNET") {
                 this.loadingAnimation.stop()
                 this.tag('Ethernet.Loader').visible = false
@@ -112,7 +120,7 @@
             }
         });
         this.onConnectionStatusChangedCB = Network.get()._thunder.on(Network.get().callsign, 'onConnectionStatusChanged', (notification) => {
-            console.log('onConnectionStatusChanged notification from networkInterfaceScreen: ', notification)
+            this.LOG('onConnectionStatusChanged notification from networkInterfaceScreen: ' + JSON.stringify(notification))
             if (notification.interface === "ETHERNET") {
                 this.tag('Ethernet.Title').text.text = 'Ethernet: ' + Language.translate(notification.status.toLowerCase())
             }
@@ -206,7 +214,7 @@
             },
             class WifiScreen extends this {
                 $enter() {
-                    console.log("wifiscreen")
+                    this.LOG("wifiscreen")
                     this.hide()
                     this.tag('WifiScreen').visible = true
                     this.fireAncestors('$updatePageTitle', 'Settings  Network Configuration  Network Interface  WiFi')

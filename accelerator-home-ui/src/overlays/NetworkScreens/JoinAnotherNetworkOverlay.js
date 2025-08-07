@@ -25,6 +25,14 @@ import WiFi from '../../api/WifiApi';
 import PersistentStoreApi from '../../api/PersistentStore';
 
 export default class JoinAnotherNetworkComponent extends Lightning.Component {
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
+
   handleDone() {
     this.tag("Keyboard").visible = false
     let securityCode = this.securityCodes[this.securityCodeIndex].value;

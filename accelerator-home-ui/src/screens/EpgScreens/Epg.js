@@ -329,15 +329,15 @@ export default class Epg extends Lightning.Component {
 
         shows[i].endtime = shows[i].duration + shows[i].starttime
         if (i >= shows.length) {
-          console.warn("Reached the end of data , can't traverse shows any further!")
+          self.WARN("Reached the end of data , can't traverse shows any further!")
           break
         } else if (new Date(shows[i].starttime) <= ltp && new Date(shows[i].endtime) > ltp) {
           break
         } else if (new Date(shows[i].starttime) > ltp) {
-          console.warn("there's chance that an empty space appear in one of the rows")
+          self.WARN("there's chance that an empty space appear in one of the rows")
           break
         } else if (i === shows.length - 1) {
-          console.warn(
+          self.WARN(
             'traversed all of the shows and none of them are airing at this time for this channel'
           )
           return
@@ -563,7 +563,7 @@ export default class Epg extends Lightning.Component {
           diff = shows[i + 1].starttime - currentShowETime
           if (diff > 0) {
             if (memLeakAlert < 0) {
-              console.warn('Memory leak alert; aborting black cell insert')
+              self.WARN("Memory leak alert; aborting black cell insert")
             }
             shows.splice(i + 1, 0, {
               name: '',
@@ -611,7 +611,7 @@ export default class Epg extends Lightning.Component {
                 ]
 
                 if (channels.length - 1 === traversedChannels) {
-                  console.log(`premium apps exclusive resolve`);
+                  self.LOG("premium apps exclusive resolve")
                   page.channels = channels
                   resolve(true)
                 }
@@ -642,14 +642,13 @@ export default class Epg extends Lightning.Component {
                   }
                 })
                 .catch(err => {
-                  // console.error(err)
-                  // return "Home"
-                  console.error('error', err)
+                  self.ERR("error: " + JSON.stringify(err))
                   reject(err)
                 })
             })
           })
           .catch(err => {
+            self.ERR("error: " + JSON.stringify(err))
             reject(err)
           })
       })
@@ -661,7 +660,7 @@ export default class Epg extends Lightning.Component {
       loader.visible = false;
       wrapper.visible = true;
     }).catch(err => {
-      console.log(`error while fetching data from dtv`, err)
+      this.ERR("error while fetching data from dtv: " + JSON.stringify(err))
       Router.navigate('menu')
     })
 

@@ -30,6 +30,14 @@ var usbApi = new UsbApi();
 
 export default class UsbAppsScreen extends Lightning.Component {
 
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
+
   _onChanged() {
     this.widgets.menu.updateTopPanelText('USB')
   }
@@ -233,7 +241,7 @@ export default class UsbAppsScreen extends Lightning.Component {
         this.cwd.pop();
         this.loadData();
       }).catch(err => {
-        console.error(`error while getting the usb contents; error = ${JSON.stringify(err)}`);
+        this.ERR("error while getting the usb contents; error = " + JSON.stringify(err));
       });
     } else {
       Router.navigate('menu');
@@ -438,7 +446,7 @@ export default class UsbAppsScreen extends Lightning.Component {
             // `);
             this.loadData();
           }).catch(err => {
-            console.error(`error while getting the usb contents; error = ${JSON.stringify(err)}`);
+            this.ERR("error while getting the usb contents; error = " + JSON.stringify(err));
           });
 
         }
@@ -533,7 +541,7 @@ export default class UsbAppsScreen extends Lightning.Component {
 
 
   loadData() {
-    // console.log(`loading data from the directory ${this.cwd}`);
+    this.LOG("loading data from the directory " + JSON.stringify(this.cwd));
     let sumY = 0;
     this.index = 0;
     this.traversableRows = [];
@@ -614,7 +622,6 @@ export default class UsbAppsScreen extends Lightning.Component {
       }
       this._setState(this.traversableRows[0]);
     }
-
   }
 
   _focus() {
@@ -626,7 +633,7 @@ export default class UsbAppsScreen extends Lightning.Component {
           this.loadData();
           this._setState(this.traversableRows[this.index] + `.${this.currentIndex}`)//focus on first element
         }).catch(err => {
-          console.error(`error while getting the usb contents; error = ${JSON.stringify(err)}`);
+          this.ERR("error while getting the usb contents; error = " + JSON.stringify(err));
         });
       }
     } else {
@@ -637,7 +644,7 @@ export default class UsbAppsScreen extends Lightning.Component {
         this.loadData();
         this._setState(this.traversableRows[this.index])
       }).catch(err => {
-        console.error(`error while getting the usb contents; error = ${JSON.stringify(err)}`);
+        this.ERR("error while getting the usb contents; error = " + JSON.stringify(err));
       })
     }
     // this._setState(this.traversableRows[this.index])

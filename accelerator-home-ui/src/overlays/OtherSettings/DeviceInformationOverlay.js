@@ -27,6 +27,13 @@ import FireBoltApi from '../../api/firebolt/FireBoltApi';
  */
 
 export default class DeviceInformationScreen extends Lightning.Component {
+    constructor(...args) {
+        super(...args);
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
     static _template() {
         return {
             DeviceInfoWrapper: {
@@ -198,19 +205,19 @@ export default class DeviceInformationScreen extends Lightning.Component {
             this.appApi.getSystemVersions().then(res => {
                 this.tag('FirmwareVersions.Value').text.text = `UI Version - ${Settings.get('platform', 'version')} \nBuild Version - ${res.stbVersion} \nTime Stamp - ${res.stbTimestamp} `
             }).catch(err => {
-                console.error(`error while getting the system versions` + JSON.stringify(err))
+                this.ERR("error while getting the system versions" + JSON.stringify(err))
             })
         } else {
             FireBoltApi.get().deviceinfo.getversion().then(res => {
-                console.log(`build verion${res.firmware.readable} Firebolt API Version - ${res.api.readable}`)
+                this.LOG("build verion" + JSON.stringify(res.firmware.readable) + " Firebolt API Version - " + JSON.stringify(res.api.readable))
                 this.tag('FirmwareVersions.Value').text.text = `UI Version - ${Settings.get('platform', 'version')} \nBuild Version - ${res.firmware.readable} \nFirebolt API Version - ${res.api.readable} `
             }).catch(err => {
-                console.error(`error while getting the system versions from Firebolt.getversion API` + JSON.stringify(err))
+                this.ERR("error while getting the system versions from Firebolt.getversion API" + JSON.stringify(err))
             })
         }
 
         this.appApi.getDRMS().then(result => {
-            console.log('from device info supported drms ' + JSON.stringify(result))
+            this.LOG("from device info supported drms " + JSON.stringify(result))
             let drms = ""
             result.forEach(element => {
                 drms += `${element.name} :`
@@ -235,37 +242,37 @@ export default class DeviceInformationScreen extends Lightning.Component {
             self.appApi.getPluginStatus('Netflix')
                 .then(result => {
                     let sel = self;
-                    console.log(`Netflix : plugin status : `, JSON.stringify(result));
+                    this.LOG("Netflix : plugin status : " + JSON.stringify(result));
                     if (result[0].state === 'deactivated' || result[0].state === 'deactivation') {
                         sel.appApi.launchPremiumAppInSuspendMode("Netflix").then(res => {
-                            console.log("Netflix : netflix launch for esn value in suspend mode returns : ", JSON.stringify(res));
+                            this.LOG("Netflix : netflix launch for esn value in suspend mode returns : " + JSON.stringify(res));
                             let se = sel;
                             se.appApi.getNetflixESN()
                                 .then(res => {
                                     Storage.set('Netflix_ESN', res)
-                                    console.log(`Netflix : netflix esn call returns : `, JSON.stringify(res));
+                                    this.LOG("Netflix : netflix esn call returns : " + JSON.stringify(res));
                                     se.netflixESN = `YouTube: NA \nAmazon Prime: NA \nNetflix ESN: ${res}`
                                 })
                                 .catch(err => {
-                                    console.error(`Netflix : error while getting netflix esn : `, JSON.stringify(err))
+                                    this.ERR("Netflix : error while getting netflix esn : " + JSON.stringify(err))
                                 })
                         }).catch(err => {
-                            console.error(`Netflix : error while launching netflix in suspendMode : `, JSON.stringify(err))
+                            this.ERR("Netflix : error while launching netflix in suspendMode : " + JSON.stringify(err))
                         })
                     }
                     else {
                         self.appApi.getNetflixESN()
                             .then(res => {
                                 Storage.set('Netflix_ESN', res)
-                                console.log(`Netflix : netflix esn call returns : `, JSON.stringify(res));
+                                this.LOG("Netflix : netflix esn call returns : " + JSON.stringify(res));
                                 self.netflixESN = `YouTube: NA \nAmazon Prime: NA \nNetflix ESN: ${res}`;
                             })
                             .catch(err => {
-                                console.error(`Netflix : error while getting netflix esn : `, JSON.stringify(err))
+                                this.ERR("Netflix : error while getting netflix esn : " + JSON.stringify(err))
                             })
                     }
                 }).catch(err => {
-                    console.error(`Netflix : error while getting netflix plugin status ie. `, JSON.stringify(err))
+                    this.ERR("Netflix : error while getting netflix plugin status ie. " + JSON.stringify(err))
                 })
         }
 
@@ -273,7 +280,7 @@ export default class DeviceInformationScreen extends Lightning.Component {
     }
 
     set netflixESN(v) {
-        console.log(`setting netflix ESN value to ${v}`);
+        this.LOG("setting netflix ESN value to " + JSON.stringify(v));
         this.tag('AppVersions.Value').text.text = v;
     }
 

@@ -57,26 +57,26 @@ export default class AlexaApi extends VoiceApi {
       }
       return true;
     }).catch(err => {
-      this.ERR("AlexaAPI: isSmartScreenActiavated error-" + err);
+      this.ERR("AlexaAPI: isSmartScreenActiavated error-" + JSON.stringify(err));
       return (false);
     });
   }
 
   enableSmartScreen() {
     thunder.Controller.activate({ callsign: 'SmartScreen' }).then(res => {
-      this.LOG("AlexaAPI: Activate SmartScreen result: " + res);
+      this.LOG("AlexaAPI: Activate SmartScreen result: " + JSON.stringify(res));
     }).catch(err => {
-      console.error("AlexaAPI: Activate SmartScreen ERROR!: ", err)
+      this.ERR("AlexaAPI: Activate SmartScreen ERROR!: " + JSON.stringify(err))
       Metrics.error(Metrics.ErrorType.OTHER, "AlexaAPIError", `Thunder Controller AlexaAPI: Activate SmartScreen error with ${err}`, false, null)
     })
   }
 
   disableSmartScreen() {
     thunder.Controller.deactivate({ callsign: 'SmartScreen' }).then(res => {
-      this.LOG("AlexaAPI: Deactivate SmartScreen result: " + res);
+      this.LOG("AlexaAPI: Deactivate SmartScreen result: " + JSON.stringify(res));
     }).catch(err => {
-      this.ERR("AlexaAPI: Deactivate SmartScreen ERROR!: " + err)
-      Metrics.error(Metrics.ErrorType.OTHER, "AlexaAPIError", "Thunder Controller AlexaAPI: Deactivate SmartScreen error with " + err, false, null)
+      this.ERR("AlexaAPI: Deactivate SmartScreen ERROR!: " + JSON.stringify(err))
+      Metrics.error(Metrics.ErrorType.OTHER, "AlexaAPIError", "Thunder Controller AlexaAPI: Deactivate SmartScreen error with " + JSON.stringify(err), false, null)
     })
   }
 
@@ -140,7 +140,7 @@ export default class AlexaApi extends VoiceApi {
 
   //reportDeviceTimeZone(updatedTimeZone) {
   updateDeviceTimeZoneInAlexa(updatedTimeZone) {
-    this.LOG("updateDeviceTimeZoneInAlexa sending :" + updatedTimeZone)
+    this.LOG("updateDeviceTimeZoneInAlexa sending :" + JSON.stringify(updatedTimeZone))
     let payload = { "msgPayload": { "DeviceSettings": "Set Device Settings", "values": { "timezone": updatedTimeZone } } }
     this.sendVoiceMessage(payload);
   }
@@ -179,7 +179,7 @@ export default class AlexaApi extends VoiceApi {
       thunder.Controller.activate({ callsign: 'SmartScreen' }).then(() => {
         this.LOG("AlexaAPI: resetAVSCredentials activating SmartScreen instance.")
       }).catch(err => {
-        this.ERR("AlexaAPI: resetAVSCredentials activate SmartScreen ERROR!: " + err)
+        this.ERR("AlexaAPI: resetAVSCredentials activate SmartScreen ERROR!: " + JSON.stringify(err))
         Metrics.error(Metrics.ErrorType.OTHER, "AlexaAPIError", "Thunder Controller AlexaAPI: resetAVSCredentials activating SmartScreen error with " + JSON.stringify(err), false, null)
       })
       this.sendVoiceMessage({ "msgPayload": { "event": "ResetAVS" } }).then(result => {
@@ -211,13 +211,13 @@ export default class AlexaApi extends VoiceApi {
       thunder.Controller.deactivate({ callsign: 'SmartScreen' }).then(() => {
         this.LOG("AlexaAPI: deactivated SmartScreen instance.")
       }).catch(err => {
-        this.ERR("AlexaAPI: deactivate SmartScreen ERROR!: " + err)
+        this.ERR("AlexaAPI: deactivate SmartScreen ERROR!: " + JSON.stringify(err))
         Metrics.error(Metrics.ErrorType.OTHER, "AlexaAPIError", "Thunder Controller AlexaAPI: deactivate SmartScreen ERROR: " + JSON.stringify(err), true, null)
       })
     } else {
       this.configureVoice({ "enable": true });
     }
-    this.WARN("setAlexaAuthStatus with " + newState)
+    this.WARN("setAlexaAuthStatus with " + JSON.stringify(newState))
   }
 
   /**
@@ -231,6 +231,6 @@ export default class AlexaApi extends VoiceApi {
   }
   setAlexaSmartscreenAudioPlaybackState(newState = false) {
     Storage.set("AlexaSmartscreenAudioPlaybackState", newState)
-    this.LOG("setAlexaSmartscreenAudioPlaybackState with " + newState)
+    this.LOG("setAlexaSmartscreenAudioPlaybackState with " + JSON.stringify(newState))
   }
 }
