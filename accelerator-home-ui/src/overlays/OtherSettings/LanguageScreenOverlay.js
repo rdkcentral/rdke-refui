@@ -31,6 +31,14 @@ const thunder = thunderJS(CONFIG.thunderConfig)
 const loader = 'Loader'
 
 export default class LanguageScreen extends Lightning.Component {
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
+
   static _template() {
     return {
       LanguageScreenContents: {
@@ -67,14 +75,14 @@ export default class LanguageScreen extends Lightning.Component {
       }
     })
     RDKShellApis.destroy(loader).catch(err => {
-      console.log("LanguageScreenOverlay: Error destroy loader: " + JSON.stringify(err))
+      this.ERR("LanguageScreenOverlay: Error destroy loader: " + JSON.stringify(err))
     });
     RDKShellApis.setVisibility(GLOBALS.selfClientName, true);
     RDKShellApis.moveToFront(GLOBALS.selfClientName);
     RDKShellApis.setFocus(GLOBALS.selfClientName).then(() => {
-      console.log('LanguageScreenOverlay: ResidentApp moveToFront Success');
+      this.LOG('LanguageScreenOverlay: ResidentApp moveToFront Success');
     }).catch(err => {
-      console.log('LanguageScreenOverlay: Error', err);
+      this.ERR('LanguageScreenOverlay: Error: ' + JSON.stringify(err));
       Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Thunder RDKShell Failed to moveToFront " + JSON.stringify(err), false, null)
     });
   }
@@ -102,7 +110,7 @@ export default class LanguageScreen extends Lightning.Component {
           if (Language.get() !== availableLanguages[this._Languages.tag('List').index]) {
             let updatedLanguage = availableLanguageCodes[availableLanguages[this._Languages.tag('List').index]]
             if ("ResidentApp" !== GLOBALS.selfClientName) {
-              FireBoltApi.get().localization.setlanguage(availableLanguages[this._Languages.tag('List').index]).then(res => console.log(`language set successfully`))
+              FireBoltApi.get().localization.setlanguage(availableLanguages[this._Languages.tag('List').index]).then(res => this.LOG("language set successfully"))
             } else {
               appApi.setUILanguage(updatedLanguage)
             }
@@ -110,9 +118,9 @@ export default class LanguageScreen extends Lightning.Component {
             let path = location.pathname.split('index.html')[0]
             let url = path.slice(-1) === '/' ? "static/loaderApp/index.html" : "/static/loaderApp/index.html"
             let notification_url = location.origin + path + url
-            console.log(notification_url)
+            this.LOG(notification_url)
             appApi.launchResident(notification_url, loader).catch(err => {
-              console.log("Error launchResident: " + JSON.stringify(err))
+              this.ERR("Error launchResident: " + JSON.stringify(err))
             })
             RDKShellApis.setVisibility(GLOBALS.selfClientName, false)
             location.reload();

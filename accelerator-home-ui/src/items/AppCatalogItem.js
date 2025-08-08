@@ -24,6 +24,13 @@ import { installDACApp, getInstalledDACApps, fetchAppUrl } from '../api/DACApi'
 import LISAApi from '../api/LISAApi';
 
 export default class AppCatalogItem extends Lightning.Component {
+    constructor(...args) {
+        super(...args);
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
     static _template() {
         return {
             Shadow: {
@@ -118,10 +125,10 @@ export default class AppCatalogItem extends Lightning.Component {
 
     updateStatus() {
         if (this._app.isRunning) {
-            this.tag('StatusProgress').setProgress(1.0, Language.translate('Running') + "!")
+            this.tag('StatusProgress').setProgress(1.0, Language.translate('Running') + "!");
         } else {
             if (this._app.isInstalled) {
-                console.log("App is installed")
+                this.LOG("App is installed")
                 this.tag('StatusProgress').setProgress(1.0, Language.translate('Installed') + '!')
             } else {
                 this.tag('StatusProgress').reset()
@@ -155,7 +162,7 @@ export default class AppCatalogItem extends Lightning.Component {
             return
         }
         if (this._app.isInstalled) {
-            console.log("App is already installed")
+            this.LOG("App is already installed")
             this.tag("Overlay").alpha = 0.7
             this.tag("OverlayText").alpha = 1
             this.tag("OverlayText").text.text = Language.translate('Already installed') + "!";
@@ -197,7 +204,7 @@ export default class AppCatalogItem extends Lightning.Component {
             this._app.size = this.data.size
             this._app.category = this.data.category
             this._app.url = await fetchAppUrl(this._app.id, this._app.version)
-            console.log("fetchAppUrl:", this._app.url)
+            this.LOG("fetchAppUrl: " + JSON.stringify(this._app.url))
         }
         else {
             this._app.url = this.data.uri
@@ -212,6 +219,6 @@ export default class AppCatalogItem extends Lightning.Component {
             this.myfireINSTALL()
         }
         else
-            console.error("App url undefined")
+            this.ERR("App url undefined")
     }
 }

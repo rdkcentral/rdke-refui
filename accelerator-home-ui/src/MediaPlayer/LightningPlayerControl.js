@@ -28,6 +28,13 @@ var timeout
  * Class to render the UI controls for the video player.
  */
 export default class LightningPlayerControls extends Lightning.Component {
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
   /**
    * Function to create components for the player controls.
    */
@@ -139,7 +146,7 @@ export default class LightningPlayerControls extends Lightning.Component {
    * @param {String} duration video duration to be set.
    */
    set duration(duration) {
-    console.log(`duration was set = ${duration}`);
+    this.LOG("duration was set = " + JSON.stringify(duration));
     this.videoDuration = duration
     this.tag('Duration').text.text = this.SecondsTohhmmss(duration)
   }

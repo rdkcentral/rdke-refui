@@ -23,8 +23,16 @@ const errorTitle = 'Error Title'
 const errorMsg = 'Error Message'
 export default class Failscreen extends Lightning.Component {
 
+    constructor(...args) {
+        super(...args);
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
+
     notify(args) {
-        console.log(args)
+        this.LOG("notify args: " + JSON.stringify(args))
         if (args.title && args.msg) {
             this.tag('FailScreen.Title').text.text = args.title
             this.tag('FailScreen.Message').text.text = Language.translate(args.msg)

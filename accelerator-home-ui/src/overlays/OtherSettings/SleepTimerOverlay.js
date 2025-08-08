@@ -20,6 +20,13 @@ import { Lightning, Storage } from '@lightningjs/sdk'
 import SettingsItem from '../../items/SettingsItem'
 
 export default class SleepTimerScreen extends Lightning.Component {
+    constructor(...args) {
+        super(...args);
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
     static _template() {
         return {
             SleepTimer: {
@@ -69,7 +76,7 @@ export default class SleepTimerScreen extends Lightning.Component {
         this.fireAncestors('$registerInactivityMonitoringEvents').then(() => {
             this.fireAncestors('$resetSleepTimer', timeoutInterval);
         }).catch(err => {
-            console.error(`error while registering the inactivity monitoring event` + JSON.stringify(err));
+            this.ERR("error while registering the inactivity monitoring event" + JSON.stringify(err));
         })
 
         this._setState('Options')

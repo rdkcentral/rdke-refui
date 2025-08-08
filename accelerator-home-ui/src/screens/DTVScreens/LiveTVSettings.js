@@ -28,6 +28,14 @@ let active = true; //expecting dtv plugin is active by default
  * Class for Live TV settings screen.
  */
 export default class LiveTVSettings extends Lightning.Component {
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
+
   _onChanged() {
     this.widgets.menu.updateTopPanelText(
       Language.translate("Settings / Live TV")
@@ -136,7 +144,7 @@ export default class LiveTVSettings extends Lightning.Component {
         _handleEnter() {
           if (active) {
             this.dtvApi.deactivate().then((res) => {
-              console.log(res);
+              this.LOG("Deactivate: " + JSON.stringify(res));
               active = false;
               this.tag("Activate.Button").src = Utils.asset(
                 "images/settings/ToggleOffWhite.png"
@@ -144,7 +152,7 @@ export default class LiveTVSettings extends Lightning.Component {
             });
           } else {
             this.dtvApi.activate().then((res) => {
-              console.log(res);
+              this.LOG("Activate: " + JSON.stringify(res));
               active = true;
               this.tag("Activate.Button").src = Utils.asset(
                 "images/settings/ToggleOnOrange.png"

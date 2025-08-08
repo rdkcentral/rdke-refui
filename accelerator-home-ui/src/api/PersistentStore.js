@@ -29,9 +29,10 @@ export default class PersistentStoreApi {
     this._events = new Map();
     this.callsign = "org.rdk.PersistentStore";
     this.thunder = ThunderJS(CONFIG.thunderConfig);
-    this.INFO = function () { };
-    this.LOG = function () { };
+    this.INFO = console.info;
+    this.LOG = console.log;
     this.ERR = console.error;
+    this.WARN = console.warn;
 
     PersistentStoreApi.instance = this;
   }
@@ -65,7 +66,7 @@ export default class PersistentStoreApi {
         });
         resolve(true);
       }).catch(err => {
-        this.ERR('PersistentStoreApi: Error Activation ', err);
+        this.ERR('PersistentStoreApi: Error Activation ' + JSON.stringify(err));
         Metrics.error(Metrics.ErrorType.OTHER,"PersistentStoreApiError", "Error while Thunder Controller PersistentStore activate "+JSON.stringify(err), false, null)
         reject(err);
       })
@@ -85,7 +86,7 @@ export default class PersistentStoreApi {
   }
   deleteKey(namespace, key) {
     return new Promise((resolve, reject) => {
-      this.INFO("PersistentStoreApi: deleteKey:" + namespace + " & " + key);
+      this.INFO("PersistentStoreApi: deleteKey:" + JSON.stringify(namespace) + " & " + JSON.stringify(key));
       this.thunder.call(this.callsign, 'deleteKey', {
         namespace: namespace,
         key: key
@@ -101,7 +102,7 @@ export default class PersistentStoreApi {
   }
   deleteNamespace(namespace) {
     return new Promise((resolve, reject) => {
-      this.INFO("PersistentStoreApi: deleteNamespace params:", namespace);
+      this.INFO("PersistentStoreApi: deleteNamespace params:" + JSON.stringify(namespace));
       this.thunder.call(this.callsign, 'deleteNamespace', { namespace: namespace }).then(result => {
         this.LOG("PersistentStoreApi: deleteNamespace result:" + JSON.stringify(result))
         resolve(result);
@@ -126,7 +127,7 @@ export default class PersistentStoreApi {
   }
   getKeys(namespace) {
     return new Promise((resolve, reject) => {
-      this.INFO("PersistentStoreApi: getKeys params:", namespace);
+      this.INFO("PersistentStoreApi: getKeys params:" + JSON.stringify(namespace));
       this.thunder.call(this.callsign, 'getKeys', { namespace: namespace }).then(result => {
         this.LOG("PersistentStoreApi: getKeys result: " + JSON.stringify(result))
         resolve(result);
@@ -163,7 +164,7 @@ export default class PersistentStoreApi {
   }
   getValue(namespace, key) {
     return new Promise((resolve, reject) => {
-      this.INFO("PersistentStoreApi: getValue " + namespace + " & " + key);
+      this.INFO("PersistentStoreApi: getValue " + JSON.stringify(namespace) + " & " + JSON.stringify(key));
       this.thunder.call(this.callsign, 'getValue', { namespace: namespace, key: key }).then(result => {
         this.LOG("PersistentStoreApi: getValue result: " + JSON.stringify(result))
         resolve(result);
@@ -176,7 +177,7 @@ export default class PersistentStoreApi {
   }
   setValue(namespace, key, value) {
     return new Promise((resolve, reject) => {
-      this.INFO("PersistentStoreApi: setValue:" + namespace + " & " + key + " & " + value);
+      this.INFO("PersistentStoreApi: setValue:" + JSON.stringify(namespace) + " & " + JSON.stringify(key) + " & " + JSON.stringify(value));
       this.thunder.call(this.callsign, 'setValue', { namespace: namespace, key: key, value: value }).then(result => {
         this.LOG("PersistentStoreApi: setValue result: " + JSON.stringify(result))
         resolve(result);

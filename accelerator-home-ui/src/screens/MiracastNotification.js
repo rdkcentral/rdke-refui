@@ -25,10 +25,17 @@ var devicemac = ''
 var miracast = new Miracast()
 
 export default class MiracastNotification extends Lightning.Component {
+    constructor(...args) {
+        super(...args);
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
     
     notify(args) {
         if (!args || !args.mac || !args.name) {
-            console.warn("Invalid arguments passed to notify");
+            this.WARN("Invalid arguments passed to notify");
             return;
         }
         devicename = args.name;
@@ -37,9 +44,8 @@ export default class MiracastNotification extends Lightning.Component {
     }
 
     set params(args){
-        console.log(args)
+        this.LOG("params: " + JSON.stringify(args))
         this.notify(args)
-
     }
     pageTransition() {
         return 'left'
@@ -136,7 +142,7 @@ export default class MiracastNotification extends Lightning.Component {
       this.tag('Timer').text.text =""
       this.timeout=30
       this.initTimer()
-      console.info('MiracastNotification initialized');
+      this.INFO('MiracastNotification initialized');
       this._setState("Accept");
     }
     _inactive() {
@@ -158,7 +164,7 @@ export default class MiracastNotification extends Lightning.Component {
   }
     _focus() {
       this.alpha=1
-        console.log('MiracastNotification focused');
+      this.LOG('MiracastNotification focused');
     }
     _unfocus() {
         this.alpha = 0

@@ -30,6 +30,14 @@ import { CONFIG } from '../Config/Config'
  */
 export default class BluetoothScreen extends Lightning.Component {
 
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
+
   _onChanged() {
     this.widgets.menu.updateTopPanelText(Language.translate('Settings  Bluetooth On/Off'));
   }
@@ -571,7 +579,7 @@ export default class BluetoothScreen extends Lightning.Component {
         }
       })
         .catch(() => {
-          console.log('Cannot turn off Bluetooth')
+          this.ERR('Cannot turn off Bluetooth')
         })
     } else {
       this._bt.enable().then(result => {
@@ -585,7 +593,7 @@ export default class BluetoothScreen extends Lightning.Component {
         }
       })
         .catch(() => {
-          console.log('Cannot turn on Bluetooth')
+          this.ERR('Cannot turn on Bluetooth')
         })
     }
   }
@@ -595,7 +603,7 @@ export default class BluetoothScreen extends Lightning.Component {
    */
   _activateBluetooth() {
     this._bt.activate().then((res) => {
-      console.log(res)
+      this.LOG('Bluetooth activate result: ' + JSON.stringify(res))
       this._bluetooth = true
       this._bt.registerEvent('onDiscoveredDevice', () => {
         this.renderDeviceList()
@@ -635,11 +643,10 @@ export default class BluetoothScreen extends Lightning.Component {
           this.widgets.fail.notify({ title: notification.name, msg: notification.newStatus })
           Router.focusWidget('Fail')
         }
-
       })
     })
       .catch(err => {
-        console.log(err)
+        this.ERR('Bluetooth activate error: ' + JSON.stringify(err))
       })
   }
 

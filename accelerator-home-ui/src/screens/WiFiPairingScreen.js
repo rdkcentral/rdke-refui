@@ -28,6 +28,14 @@ import PersistentStoreApi from '../api/PersistentStore'
 
 export default class WifiPairingScreen extends Lightning.Component {
 
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
+
   pageTransition() {
     return 'left'
   }
@@ -201,7 +209,7 @@ export default class WifiPairingScreen extends Lightning.Component {
       if (this._item) {
         WiFi.get().connect(false, this._item, '').then(() => { })
           .catch(err => {
-            console.error('Not able to connect to wifi', JSON.stringify(err))
+            this.ERR("Not able to connect to wifi" + JSON.stringify(err))
           })
       }
       Router.back()
@@ -225,7 +233,7 @@ export default class WifiPairingScreen extends Lightning.Component {
     let flag = 0
     this.onErrorCB = WiFi.get().thunder.on(WiFi.get().callsign, 'onError', notification => {
       if (notification.code === WiFiError.INVALID_CREDENTIALS || notification.code === WiFiError.SSID_CHANGED) {
-        console.log("INVALID_CREDENTIALS; deleting WiFi Persistence data.")
+        this.LOG("INVALID_CREDENTIALS; deleting WiFi Persistence data.")
         WiFi.get().clearSSID().then(() => {
           PersistentStoreApi.get().deleteNamespace('wifi')
         });
@@ -236,9 +244,9 @@ export default class WifiPairingScreen extends Lightning.Component {
     this.onWIFIStateChangedCB = WiFi.get().thunder.on(WiFi.get().callsign, 'onWIFIStateChanged', notification => {
       if (notification.state === WiFiState.CONNECTED) {
         Network.get().setDefaultInterface("WIFI").then(() => {
-          console.log("Successfully set WIFI as default interface.")
+          this.LOG("Successfully set WIFI as default interface.")
         }).catch(err => {
-          console.error("Could not set WIFI as default interface." + JSON.stringify(err))
+          this.ERR("Could not set WIFI as default interface." + JSON.stringify(err))
         });
         this.onWIFIStateChangedCB.dispose()
       }
@@ -260,16 +268,16 @@ export default class WifiPairingScreen extends Lightning.Component {
         }, 5000);
       });
     })
-    .catch(err => {
-      console.error('Not able to connect to wifi', JSON.stringify(err));
-      if(GLOBALS.Setup !== true){
-        Router.navigate('splash/networkList',{ wifiError: err });
-      }
-      else{
-        Router.back(); 
-        this.widgets.fail.notify({ title: 'WiFi Status', msg: Language.translate(`Error Code : ${err.code} \t Error Msg : ${err.message}`) })
-        Router.focusWidget('Fail')
-      }
+      .catch(err => {
+        this.ERR("Not able to connect to wifi" + JSON.stringify(err));
+        if (GLOBALS.Setup !== true) {
+          Router.navigate('splash/networkList', { wifiError: err });
+        }
+        else {
+          Router.back();
+          this.widgets.fail.notify({ title: 'WiFi Status', msg: Language.translate(`Error Code : ${err.code} \t Error Msg : ${err.message}`) })
+          Router.focusWidget('Fail')
+        }
       })
   }
 

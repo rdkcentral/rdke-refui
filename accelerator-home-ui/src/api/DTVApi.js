@@ -45,6 +45,12 @@ getCustomServiceList(); //call this method in activate
 
 //plugin is activated by default, no need to call explicitly
 export default class DTVApi {
+  constructor() {
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
   activate() {
     return new Promise((resolve, reject) => {
       thunder.Controller.activate({ callsign: "DTV" })
@@ -52,7 +58,7 @@ export default class DTVApi {
           resolve(true);
         })
         .catch((err) => {
-          console.log("DTV Error Activation", err);
+          this.ERR("DTV Error Activation: " + JSON.stringify(err));
           Metrics.error(Metrics.ErrorType.OTHER,"DTVApiError", "Error while Thunder Controller DTV activate "+JSON.stringify(err), false, null)
           reject(err);
         });
@@ -65,7 +71,7 @@ export default class DTVApi {
           resolve(true);
         })
         .catch((err) => {
-          console.log("DTV Error Deactivation", err);
+          this.ERR("DTV Error Deactivation: " + JSON.stringify(err));
           Metrics.error(Metrics.ErrorType.OTHER,"DTVApiError", "Error while Thunder Controller DTV deactivate "+JSON.stringify(err), false, null)
           reject(err);
         });
@@ -80,7 +86,7 @@ export default class DTVApi {
           resolve(result);
         })
         .catch((err) => {
-          console.log("Error: noOfCountries: ", JSON.stringify(err));
+          this.ERR("Error: noOfCountries: " + JSON.stringify(err));
           Metrics.error(Metrics.ErrorType.OTHER,"DTVApiError", "Error in Thunder DTV numberOfCountries "+JSON.stringify(err), false, null)
           reject(err);
         });
@@ -95,7 +101,7 @@ export default class DTVApi {
           resolve(result);
         })
         .catch((err) => {
-          console.log("Error: countryList: ", JSON.stringify(err));
+          this.ERR("Error: countryList: " + JSON.stringify(err));
           Metrics.error(Metrics.ErrorType.OTHER,"DTVApiError", "Error in Thunder DTV countryList "+JSON.stringify(err), false, null)
           reject(err);
         });
@@ -113,17 +119,17 @@ export default class DTVApi {
     if (customServiceList) {
       arr = arr.concat(JSON.parse(JSON.stringify(customServiceList)));
     }
-    console.log("arr from serviceList: ", arr)
+    this.LOG("arr from serviceList: " + JSON.stringify(arr))
     return new Promise((resolve) => {
       thunder
         .call("DTV", "serviceList@dvbs")
         .then((result) => {
           arr = arr.concat(result)
-          console.log("serviceListResult: ", JSON.stringify(arr));
+          this.LOG("serviceListResult: " + JSON.stringify(arr));
           resolve(arr);
         })
         .catch((err) => {
-          console.log("Error: serviceList: ", JSON.stringify(err));
+          this.ERR("Error: serviceList: " + JSON.stringify(err));
           Metrics.error(Metrics.ErrorType.OTHER,"DTVApiError", "Error in Thunder DTV serviceList@dvbs "+JSON.stringify(err), false, null)
           resolve(arr);
         });
@@ -149,7 +155,7 @@ export default class DTVApi {
           }
           resolve(data);
         } else {
-          console.log("Error: getting schedule from custom channels");
+          this.ERR("Error: getting schedule from custom channels");
           Metrics.error(Metrics.ErrorType.OTHER,"DTVApiError", "Error: getting schedule from custom channels", false, null)
           resolve([]);
         }
@@ -157,7 +163,7 @@ export default class DTVApi {
         thunder
           .call("DTV", method)
           .then((result) => {
-            console.log("scheduleEventsResult: ", JSON.stringify(result));
+            this.LOG("scheduleEventsResult: " + JSON.stringify(result));
             for (let show of result) {
               show.starttime *= 1000;
               show.duration *= 1000;
@@ -165,7 +171,7 @@ export default class DTVApi {
             resolve(result);
           })
           .catch((err) => {
-            console.log("Error: scheduleEvents: ", JSON.stringify(err));
+            this.ERR("Error: scheduleEvents: " + JSON.stringify(err));
             Metrics.error(Metrics.ErrorType.OTHER,"DTVApiError", "Error in Thunder DTV scheduleEvents@dvbs "+JSON.stringify(err), false, null)
             reject(err);
           });
@@ -186,7 +192,7 @@ export default class DTVApi {
           resolve(result);
         })
         .catch((err) => {
-          console.log("Error: satelliteList: ", JSON.stringify(err));
+          this.ERR("Error: satelliteList: " + JSON.stringify(err));
           Metrics.error(Metrics.ErrorType.OTHER,"DTVApiError", "Error in Thunder DTV satelliteList "+JSON.stringify(err), false, null)
           reject(err);
         });
@@ -247,7 +253,7 @@ export default class DTVApi {
           resolve(result);
         })
         .catch((err) => {
-          console.log("serviceSearchError: ", JSON.stringify(err));
+          this.ERR("serviceSearchError: " + JSON.stringify(err));
           Metrics.error(Metrics.ErrorType.OTHER,"DTVApiError", "Error in Thunder DTV startServiceSearch "+JSON.stringify(err), false, null)
           reject(err);
         });
@@ -263,7 +269,7 @@ export default class DTVApi {
           resolve(result);
         })
         .catch((err) => {
-          console.log("Error: numberOfServices: ", JSON.stringify(err));
+          this.ERR("Error: numberOfServices: " + JSON.stringify(err));
           Metrics.error(Metrics.ErrorType.OTHER,"DTVApiError", "Error in Thunder DTV numberOfServices "+JSON.stringify(err), false, null)
           reject(err);
         });
@@ -281,7 +287,7 @@ export default class DTVApi {
           resolve(result);
         })
         .catch((err) => {
-          console.log("Error: nowNextEvents: ", JSON.stringify(err));
+          this.ERR("Error: nowNextEvents: " + JSON.stringify(err));
           Metrics.error(Metrics.ErrorType.OTHER,"DTVApiError", "Error in Thunder DTV nowNextEvents@dvbs "+JSON.stringify(err), false, null)
           reject(err);
         });
@@ -291,7 +297,7 @@ export default class DTVApi {
 
   startPlaying(params) {
     //params contains dvburi and lcn
-    console.log("PARAMS: startPlaying: ", JSON.stringify(params));
+    this.LOG("PARAMS: startPlaying: " + JSON.stringify(params));
     if (playerID !== -1) {
       this.stopPlaying();
       return Promise.reject("something is still playing Please retry");
@@ -300,7 +306,7 @@ export default class DTVApi {
       thunder
         .call("DTV", "startPlaying", params)
         .then((result) => {
-          console.log("RESULT: startPlaying: ", JSON.stringify(result));
+          this.LOG("RESULT: startPlaying: " + JSON.stringify(result));
           if (result === -1) {
             reject("Can't be played");
           } else {
@@ -309,7 +315,7 @@ export default class DTVApi {
           }
         })
         .catch((err) => {
-          console.log("ERROR: startPlaying: ", JSON.stringify(err));
+          this.ERR("ERROR: startPlaying: " + JSON.stringify(err));
           Metrics.error(Metrics.ErrorType.OTHER,"DTVApiError", "Error in Thunder DTV startPlaying "+JSON.stringify(err), false, null)
           reject(err);
         });
@@ -322,12 +328,12 @@ export default class DTVApi {
         .call("DTV", "stopPlaying", playerID)
         .then((result) => {
           //playerID is retuned from startPlaying method
-          console.log("RESULT: stopPlaying: ", JSON.stringify(result)); //result is always null
+          this.LOG("RESULT: stopPlaying: " + JSON.stringify(result)); //result is always null
           playerID = -1; //to set that nothing is being played currently
           resolve(true);
         })
         .catch((err) => {
-          console.log("ERROR: stopPlaying: ", JSON.stringify(err));
+          this.ERR("ERROR: stopPlaying: " + JSON.stringify(err));
           Metrics.error(Metrics.ErrorType.OTHER,"DTVApiError", "Error in Thunder DTV stopPlaying "+JSON.stringify(err), false, null)
           reject(err);
         });
@@ -335,10 +341,10 @@ export default class DTVApi {
   }
 
   launchChannel(dvburi) {
-    console.log("PARAMS: launchChannel: ", JSON.stringify(dvburi));
+    this.LOG("PARAMS: launchChannel: " + JSON.stringify(dvburi));
     if (playerID !== -1) {
       this.exitChannel()
-      console.log("launchChannel: FAIL: something is still playing, trying to call exitChannel")
+      this.LOG("launchChannel: FAIL: something is still playing, trying to call exitChannel")
       return Promise.reject("Fail: something is still playing")
     }
     return new Promise((resolve, reject) => {
@@ -361,14 +367,14 @@ export default class DTVApi {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       };
-      console.log("launchChannel: url & params: ", JSON.stringify(url), JSON.stringify(params))
+      this.LOG("launchChannel: url & params: " + JSON.stringify(url) + JSON.stringify(params))
       fetch(url, params).then(response => response.json()).then(result => {
-        console.log("launchChannel: SUCCESS: ", JSON.stringify(result))
+        this.LOG("launchChannel: SUCCESS: " + JSON.stringify(result))
         playerID = result.openStatus.sessionId
-        console.log("launchChannel: SESSIONID: ", playerID)
+        this.LOG("launchChannel: SESSIONID: " + JSON.stringify(playerID))
         resolve(result)
       }).catch(err => {
-        console.log("launchChannel: FAILED: ", JSON.stringify(err))
+        this.ERR("launchChannel: FAILED: " + JSON.stringify(err))
         Metrics.error(Metrics.ErrorType.OTHER,"DTVApiError", JSON.stringify(err), false, null)
         reject(err)
       })
@@ -386,13 +392,13 @@ export default class DTVApi {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       };
-      console.log("exitChannel: url & params: ", JSON.stringify(url), JSON.stringify(params))
+      this.LOG("exitChannel: url & params: " + JSON.stringify(url) + JSON.stringify(params))
       fetch(url, params).then(response => response.json()).then(result => {
-        console.log("exitChannel: SUCCESS: ", JSON.stringify(result))
+        this.LOG("exitChannel: SUCCESS: " + JSON.stringify(result))
         playerID = -1
         resolve(result)
       }).catch(err => {
-        console.log("exitChannel: FAILED: ", JSON.stringify(err))
+        this.ERR("exitChannel: FAILED: " + JSON.stringify(err))
         Metrics.error(Metrics.ErrorType.OTHER,"DTVApiError", JSON.stringify(err), false, null)
         reject(err)
       })

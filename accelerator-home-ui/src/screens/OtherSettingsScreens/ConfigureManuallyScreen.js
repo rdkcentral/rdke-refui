@@ -22,6 +22,13 @@ import { Keyboard } from '../../ui-components/index'
 import { KEYBOARD_FORMATS } from '../../ui-components/components/Keyboard'
 
 export default class ConfigureManuallyScreen extends Lightning.Component {
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
   static _template() {
     return {
       Text: {
@@ -146,7 +153,6 @@ export default class ConfigureManuallyScreen extends Lightning.Component {
     this.tag("SubnetText").text.text = "";
     this.tag("GatewayText").text.text = "";
     this.fireAncestors("$hideSideAndTopPanels");
-
   }
 
   _unfocus() {
@@ -226,7 +232,6 @@ export default class ConfigureManuallyScreen extends Lightning.Component {
           this.prevState = state.prevState
           if (this.prevState === 'EnterIPv4') {
             this.element = 'IPv4Text'
-
           }
           if (this.prevState === 'EnterSubnet') {
             this.element = 'SubnetText'
@@ -246,7 +251,7 @@ export default class ConfigureManuallyScreen extends Lightning.Component {
             this.textCollection[this.prevState] = this.textCollection[this.prevState].substring(0, this.textCollection[this.prevState].length - 1);
             this.tag(this.element).text.text = this.textCollection[this.prevState];
           } else if (key === '#@!' || key === 'abc' || key === 'áöû' || key === 'shift') {
-            console.log('no saving')
+            this.LOG("no saving")
           } else if (key === 'Space') {
             this.textCollection[this.prevState] += ' '
             this.tag(this.element).text.text = this.textCollection[this.prevState];

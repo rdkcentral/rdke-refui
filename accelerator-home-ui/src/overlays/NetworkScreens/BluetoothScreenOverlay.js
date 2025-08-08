@@ -29,6 +29,13 @@ import FailComponent from './FailComponent'
  * Class for Bluetooth screen.
  */
 export default class BluetoothScreen extends Lightning.Component {
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
   static _template() {
     return {
       Bluetooth: {
@@ -531,7 +538,7 @@ export default class BluetoothScreen extends Lightning.Component {
         }
       })
         .catch(() => {
-          console.log('Cannot turn off Bluetooth')
+          this.ERR('Cannot turn off Bluetooth')
         })
     } else {
       this._bt.enable().then(result => {
@@ -545,7 +552,7 @@ export default class BluetoothScreen extends Lightning.Component {
         }
       })
         .catch(() => {
-          console.log('Cannot turn on Bluetooth')
+          this.ERR('Cannot turn on Bluetooth')
         })
     }
   }
@@ -555,7 +562,7 @@ export default class BluetoothScreen extends Lightning.Component {
    */
   _activateBluetooth() {
     this._bt.activate().then((res) => {
-      console.log(res)
+      this.LOG("Bluetooth activate result: " + JSON.stringify(res))
       this._bluetooth = true
       this._bt.registerEvent('onDiscoveredDevice', () => {
         this.renderDeviceList()
@@ -593,7 +600,7 @@ export default class BluetoothScreen extends Lightning.Component {
       })
     })
       .catch(err => {
-        console.log(err)
+        this.ERR("Bluetooth activate error: " + JSON.stringify(err))
       })
   }
 

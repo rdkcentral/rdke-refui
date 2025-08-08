@@ -29,6 +29,14 @@ var thunder = ThunderJS(CONFIG.thunderConfig);
 
 export default class SreenSaverScreen extends Lightning.Component {
 
+    constructor(...args) {
+        super(...args);
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
+
     _onChanged() {
         this.widgets.menu.updateTopPanelText(Language.translate('Settings  Other Settings  Screen Saver'));
     }
@@ -36,7 +44,6 @@ export default class SreenSaverScreen extends Lightning.Component {
     pageTransition() {
         return 'left'
     }
-
 
     static _template() {
         return {
@@ -99,10 +106,10 @@ export default class SreenSaverScreen extends Lightning.Component {
                 return "Off";
             }
         }).catch(err => {
-            console.error("App PersistentStoreApi getValue error: " + JSON.stringify(err));
+            this.ERR("App PersistentStoreApi getValue error: " + JSON.stringify(err));
             return "Off";
         });
-        console.log("PersistentStoreApi focusedValue", FocusedValue);
+        this.LOG("PersistentStoreApi focusedValue" + JSON.stringify(FocusedValue));
 
         this.options = [
             { value: 'Off', tick: true },
@@ -139,27 +146,27 @@ export default class SreenSaverScreen extends Lightning.Component {
 
     setTimerValue(time) {
         if (time === "Off" || time === undefined || time === null) {
-            RDKShellApis.enableInactivityReporting(false).then(resp => console.log(resp))
+            RDKShellApis.enableInactivityReporting(false).then(resp => this.LOG("setTimerValue response: " + JSON.stringify(resp)))
             Storage.remove('ScreenSaverTimeoutInterval')
         }
         else {
             // 10
             RDKShellApis.enableInactivityReporting(true).then(() => {
                 RDKShellApis.setInactivityInterval(parseInt(time)).then(res => {
-                    console.log("setinactivityres", res)
+                    this.LOG("setinactivityres" + JSON.stringify(res))
                     Storage.set('ScreenSaverTimeoutInterval', time)
-                    console.log(`successfully set the timer to ${time} minutes`)
+                    this.LOG("successfully set the timer to " + JSON.stringify(time) + " minutes")
                     thunder.on('org.rdk.RDKShell', 'onUserInactivity', notification => {
-                        console.log("UserInactivityStatusNotification: ", JSON.stringify(notification))
+                        this.LOG("UserInactivityStatusNotification: " + JSON.stringify(notification))
                         appApi.getAvCodeStatus().then(result => {
-                            console.log("Avdecoder", result.avDecoderStatus);
+                            this.LOG("Avdecoder" + JSON.stringify(result.avDecoderStatus));
                             if ((result.avDecoderStatus === "IDLE" || result.avDecoderStatus === "PAUSE") && GLOBALS.topmostApp === GLOBALS.selfClientName) {
                                 this.fireAncestors("$hideImage", 1);
                             }
                         })
                     })
                 }).catch(err => {
-                    console.error(`error while setting the timer` + JSON.stringify(err))
+                    this.ERR("error while setting the timer" + JSON.stringify(err))
                 });
             })
         }
@@ -184,9 +191,9 @@ export default class SreenSaverScreen extends Lightning.Component {
                     this.tag('List').element.tag('Tick').visible = true
                     this.timerValue = this.options[this.tag('List').index].value//10 minutes
                     this.timerValue = this.timerValue === "Off" ? "Off" : this.timerValue.substring(0, 2) // 10
-                    console.log("ScreenSaverTime Value:" + JSON.stringify(this.timerValue))
+                    this.LOG("ScreenSaverTime Value:" + JSON.stringify(this.timerValue))
                     await PersistentStoreApi.get().setValue('ScreenSaverTime', 'timerValue', this.timerValue).catch(err => {
-                        console.error("App PersistentStoreApi setValue error: " + JSON.stringify(err));
+                        this.ERR("App PersistentStoreApi setValue error: " + JSON.stringify(err));
                     });
                     this.setTimerValue(this.timerValue);// enable and setinactivity process
                     this.fireAncestors('$screenSaverTime', this.options[this.tag('List').index].value)

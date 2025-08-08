@@ -26,6 +26,14 @@ const appApi = new AppApi()
  */
 export default class RebootConfirmationScreen extends Lightning.Component {
 
+    constructor(...args) {
+        super(...args);
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
+
     pageTransition() {
         return 'left'
     }
@@ -136,7 +144,7 @@ export default class RebootConfirmationScreen extends Lightning.Component {
                 }
                 _handleEnter() {
                     appApi.reboot("User Trigger").then(result => {
-                        console.log('device rebooting' + JSON.stringify(result))
+                        this.LOG('device rebooting' + JSON.stringify(result))
                         this._setState('Rebooting')
                     })
                 }

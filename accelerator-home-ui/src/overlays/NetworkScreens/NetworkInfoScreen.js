@@ -27,6 +27,13 @@ import WiFi from '../../api/WifiApi';
 var currentInterface = [];
 
 export default class NetworkInfo extends Lightning.Component {
+    constructor(...args) {
+        super(...args);
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
     static _template() {
         return {
             NetworkInfoScreenContents: {
@@ -303,7 +310,9 @@ export default class NetworkInfo extends Lightning.Component {
                             this.tag("SignalStrength.Value").text.text = `Poor`
                         }
                         this.tag("SSID.Value").text.text = `${result.ssid}`
-                    }).catch((error) => console.log(error));
+                    }).catch((error) => {
+                        this.ERR("WiFi.get().getConnectedSSID error: " + JSON.stringify(error))
+                    });
                 } else if (result.interface === "ETHERNET") {
                     this.tag("ConnectionType.Value").text.text = 'Ethernet'
                     this.tag("SSID").alpha = 0
@@ -312,7 +321,9 @@ export default class NetworkInfo extends Lightning.Component {
                 this.tag('InternetProtocol.Value').text.text = result.ipversion
                 this.tag('IPAddress.Value').text.text = result.ipaddr
                 this.tag("Gateway.Value").text.text = result.gateway
-            }).catch((err) => console.error(err))
+            }).catch((err) => {
+                this.ERR("Network.get().getIPSettings error: " + JSON.stringify(err))
+            })
 
             Network.get().getInterfaces().then((interfaces) => {
                 currentInterface = interfaces.filter((data) => data.interface === defaultInterface)
@@ -323,8 +334,12 @@ export default class NetworkInfo extends Lightning.Component {
                     this.tag('Status.Value').text.text = Language.translate('Disconnected')
                 }
                 this.tag('MACAddress.Value').text.text = currentInterface[0].macAddress
-            }).catch((error) => console.log(error));
-        }).catch((error) => console.log(error));
+            }).catch((error) => {
+                this.ERR("Network.get().getInterfaces error: " + JSON.stringify(error))
+            });
+        }).catch((error) => {
+            this.ERR("Network.get().getDefaultInterface error: " + JSON.stringify(error))
+        });
     }
 
     _focus() {

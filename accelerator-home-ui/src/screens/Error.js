@@ -20,6 +20,14 @@ import { Lightning, Router } from '@lightningjs/sdk'
 import { CONFIG } from '../Config/Config'
 
 export default class Error extends Lightning.Component {
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
+
   static _template() {
     return {
       rect: true,
@@ -57,7 +65,7 @@ export default class Error extends Lightning.Component {
   }
 
   _focus() {
-    console.log('focus error page')
+    this.LOG("focus error page")
   }
 
   pageTransition() {

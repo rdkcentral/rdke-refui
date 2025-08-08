@@ -23,8 +23,16 @@ import { KEYBOARD_FORMATS } from '../../../ui-components/components/Keyboard'
 import { CONSTANTS } from './constant';
 import { PinChallenge } from '@firebolt-js/manage-sdk'
 export default class SecurityPinScreen extends Lightning.Component {
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
+
   set params(args) {
-    console.log("args:", args)
+    this.LOG("args: " + JSON.stringify(args))
     if (args.message !== "") {
       this.tag('Description').text.text = Language.translate(args.message)
     }
@@ -38,7 +46,7 @@ export default class SecurityPinScreen extends Lightning.Component {
   }
 
   handleDone() {
-    console.log("Inside handle done")
+    this.LOG("Inside handle done")
     this.onPinEntered(this.textCollection['TextBox'])
   }
 
@@ -114,14 +122,14 @@ export default class SecurityPinScreen extends Lightning.Component {
   }
   onPinEntered(pin) {
     if (pin === CONSTANTS.PINS[this.challenge.pinSpace]) {
-      console.log("Correct pin")
+      this.LOG("Correct pin")
       this.responder({
         granted: true,
         reason: PinChallenge.ResultReason.CORRECT_PIN
       })
       Router.back()
     } else {
-      console.log("Wrong pin")
+      this.LOG("Wrong pin")
       this.numFailures++
       if (this.numFailures >= CONSTANTS.MAX_FAILURES) {
         this.lockedTime = Date.now()

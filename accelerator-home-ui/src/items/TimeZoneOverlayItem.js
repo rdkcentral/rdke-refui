@@ -24,6 +24,14 @@
   */
  export default class TimeZoneOverlayItem extends Lightning.Component {
 
+    constructor(...args) {
+        super(...args);
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
+
      _construct() {
          this.Arrow = Utils.asset('/images/settings/Arrow.png')
          this.Tick = Utils.asset('/images/settings/Tick.png')
@@ -84,8 +92,8 @@
          })
      }
 
-     _handleEnter() {
-        console.log('enter', this._item[1])
+    _handleEnter() {
+        this.LOG("enter: " + JSON.stringify(this._item[1]))
         this.fireAncestors("$navigateAndRefreshItems",{ time_region: this._item[1], zone: this._item[0], isActive: this.zone });
         // Router.navigate('settings/advanced/device/timezone/item', { time_region: this._item[1], zone: this._item[0], isActive: this.zone })
      }

@@ -20,6 +20,14 @@ import { Lightning, Router } from "@lightningjs/sdk";
 import AppApi from "../api/AppApi";
 import DTVApi from "../api/DTVApi";
 export default class DTVPlayer extends Lightning.Component {
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
+
   static _template() {
     return {
       Player: {
@@ -38,10 +46,10 @@ export default class DTVPlayer extends Lightning.Component {
     this.dtvApi
       .exitChannel()
       .then((res) => {
-        console.log("exit channel: ", JSON.stringify(res));
+        this.LOG("exit channel: " + JSON.stringify(res));
       })
       .catch((err) => {
-        console.log("failed to exit channel: ", JSON.stringify(err));
+        this.ERR("failed to exit channel: " + JSON.stringify(err));
       });
     Router.back();
   }

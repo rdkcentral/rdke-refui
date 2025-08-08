@@ -9,6 +9,14 @@ import { getInstalledDACApps, getAppCatalogInfo } from "../api/DACApi"
 
 export default class AppStore extends Lightning.Component {
 
+    constructor(...args) {
+        super(...args);
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
+
     _onChanged() {
         this.widgets.menu.updateTopPanelText(Language.translate('Apps'))
     }
@@ -76,7 +84,7 @@ export default class AppStore extends Lightning.Component {
         try {
              Catalog = await getAppCatalogInfo()
         } catch (error) {
-            console.error("Failed to get App Catalog Info:", error)
+            this.ERR("Failed to get App Catalog Info:" + JSON.stringify(error))
         }
         const options = ['My Apps', 'App Catalog', 'Manage Apps']
         this.tag('Options').add(options.map((element, idx) => {

@@ -37,6 +37,13 @@ const thunder = ThunderJS(CONFIG.thunderConfig);
  * Class for DVB Scan screen.
  */
 export default class DvbSScan extends Lightning.Component {
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
   static _template() {
     return {
       DvbSScanScreenContents: {
@@ -415,44 +422,36 @@ export default class DvbSScan extends Lightning.Component {
   }
   consoleLog() {
     //log it everywhere
-    console.log(
-      "selectedSatellite: ",
-      JSON.stringify(this.selectedSatellite),
-      " selectedFrequency: ",
-      this.selectedFrequency,
-      " selectedPolarity: ",
-      this.selectedPolarity,
-      " selectedSymbolRate: ",
-      this.selectedSymbolRate,
-      " selectedFEC: ",
-      this.selectedFEC,
-      " selectedDVBS2: ",
-      this.selectedDVBS2,
-      " selectedModulation: ",
-      this.selectedModulation,
-      " selectedSearchType: ",
-      this.selectedSearchType,
-      " selectedRetune: ",
-      this.selectedRetune
+    this.LOG(
+      "selectedSatellite: " + JSON.stringify(this.selectedSatellite) +
+      " selectedFrequency: " + JSON.stringify(this.selectedFrequency) +
+      " selectedPolarity: " + JSON.stringify(this.selectedPolarity) +
+      " selectedSymbolRate: " + JSON.stringify(this.selectedSymbolRate) +
+      " selectedFEC: " + JSON.stringify(this.selectedFEC) +
+      " selectedDVBS2: " + JSON.stringify(this.selectedDVBS2) +
+      " selectedModulation: " + JSON.stringify(this.selectedModulation) +
+      " selectedSearchType: " + JSON.stringify(this.selectedSearchType) +
+      " selectedRetune: " + JSON.stringify(this.selectedRetune)
     );
   }
+
   _focus() {
-    // console.log("dvbscan screen in focus");
+    // this.LOG("dvbscan screen in focus");
     this.resetForm();
     this._setState("Satellite");
     this.consoleLog();
-    // console.log(this.satelliteList);
-    // console.log(this.polarityList);
-    // console.log(this.fecList);
-    // console.log(this.modulationList);
-    // console.log(this.searchtypeList);
+    // this.LOG(JSON.stringify(this.satelliteList));
+    // this.LOG(JSON.stringify(this.polarityList));
+    // this.LOG(JSON.stringify(this.fecList));
+    // this.LOG(JSON.stringify(this.modulationList));
+    // this.LOG(JSON.stringify(this.searchtypeList));
   }
 
   _firstActive() {
     thunder.on("DTV", "searchstatus", (notification) => {
-      console.log("SearchStatus Notification: ", JSON.stringify(notification));
+      this.LOG("SearchStatus Notification: " + JSON.stringify(notification));
       if (notification.finished) {
-        console.log("notification.finished: ", notification.finished)
+        this.LOG("notification.finished: " + JSON.stringify(notification.finished))
         this.setScanFinished();
       }
     })
@@ -1042,10 +1041,10 @@ export default class DvbSScan extends Lightning.Component {
                 dvbs2: this.selectedDVBS2,
               },
             };
-            console.log(JSON.stringify(serviceSearchParams));
+            this.LOG("serviceSearchParams: " + JSON.stringify(serviceSearchParams));
             dtvApi.startServiceSearch(serviceSearchParams).then((res) => {
               this.setScanInProgress();
-              console.log(res);
+              this.LOG("startServiceSearch result: " + JSON.stringify(res));
               setTimeout(() => {
                 this.setScanFinished() //to give back controls after 30 sec in case searchstatus event fails
               }, 30000)

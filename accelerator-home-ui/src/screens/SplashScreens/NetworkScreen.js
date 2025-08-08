@@ -26,6 +26,13 @@ import AlexaApi from '../../api/AlexaApi'
 import AppApi from '../../api/AppApi'
 
 export default class NetworkScreen extends Lightning.Component {
+    constructor(...args) {
+        super(...args);
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
     static _template() {
         return {
             w: 1920,
@@ -153,7 +160,7 @@ export default class NetworkScreen extends Lightning.Component {
                             })
                         }
                     })
-                    console.log("Wifi")
+                    this.LOG("Wifi")
                 }
             },
             class Ethernet extends this {

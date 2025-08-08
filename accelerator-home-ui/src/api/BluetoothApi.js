@@ -32,6 +32,10 @@ export default class BluetoothApi {
     this._connectedDevices = []
     this.btStatus = false
     this._thunder = ThunderJS(CONFIG.thunderConfig)
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
   }
 
   /**
@@ -107,7 +111,7 @@ export default class BluetoothApi {
           resolve('Blutooth activated')
         })
         .catch(err => {
-          console.error('Activation failure', err)
+          this.ERR('Activation failure', err)
           Metrics.error(Metrics.ErrorType.OTHER, "BluetoothError", "Error while Thunder Controller Bluetooth activate "+JSON.stringify(err), false, null)
           reject('Bluetooth activation failed', err)
         })
@@ -143,7 +147,7 @@ export default class BluetoothApi {
           resolve(result)
         })
         .catch(err => {
-          console.error(`Can't disable : ${JSON.stringify(err)}`)
+          this.ERR("Can't disable : " + JSON.stringify(err))
           Metrics.error(Metrics.ErrorType.OTHER, "BluetoothError", "Error while Thunder Bluetooth disable "+JSON.stringify(err), false, null)
         })
     })
@@ -161,7 +165,7 @@ export default class BluetoothApi {
           this.btStatus = true
         })
         .catch(err => {
-          console.error(`Can't enable : ${JSON.stringify(err)}`)
+          this.ERR("Can't enable : " + JSON.stringify(err))
           Metrics.error(Metrics.ErrorType.OTHER, "BluetoothError", "Error while Thunder Bluetooth enable "+JSON.stringify(err), false, null)
           reject()
         })
@@ -186,7 +190,7 @@ export default class BluetoothApi {
           else reject()
         })
         .catch(err => {
-          console.error('Error', err)
+          this.ERR("Error: " + JSON.stringify(err))
           Metrics.error(Metrics.ErrorType.OTHER, "BluetoothError", "Error while Thunder Bluetooth startScan "+JSON.stringify(err), false, null)
           reject()
         })
@@ -208,7 +212,7 @@ export default class BluetoothApi {
           else reject(result)
         })
         .catch(err => {
-          console.error('Error', err)
+          this.ERR("Error: " + JSON.stringify(err))
           Metrics.error(Metrics.ErrorType.OTHER, "BluetoothError", "Error while Thunder Bluetooth startScan "+JSON.stringify(err), false, null)
           reject(err)
         })
@@ -227,7 +231,7 @@ export default class BluetoothApi {
           else reject()
         })
         .catch(err => {
-          console.error('Error', err)
+          this.ERR("Error: " + JSON.stringify(err))
           Metrics.error(Metrics.ErrorType.OTHER, "BluetoothError", "Error while Thunder Bluetooth stopScan "+JSON.stringify(err), false, null)
           reject()
         })
@@ -246,7 +250,7 @@ export default class BluetoothApi {
           resolve(result.discoveredDevices)
         })
         .catch(err => {
-          console.error(`Can't get discovered devices : ${JSON.stringify(err)}`)
+          this.ERR("Can't get discovered devices : " + JSON.stringify(err))
           Metrics.error(Metrics.ErrorType.OTHER, "BluetoothError", "Error while Thunder Bluetooth getDiscoveredDevices "+JSON.stringify(err), false, null)
         })
     })
@@ -267,7 +271,7 @@ export default class BluetoothApi {
           resolve(result.pairedDevices)
         })
         .catch(err => {
-          console.error(`Can't get paired devices : ${err}`)
+          this.ERR("Can't get paired devices : " + JSON.stringify(err))
           Metrics.error(Metrics.ErrorType.OTHER, "BluetoothError", "Error while Thunder Bluetooth getPairedDevices "+JSON.stringify(err), false, null)
           reject(false)
         })
@@ -289,7 +293,7 @@ export default class BluetoothApi {
           resolve(result.connectedDevices)
         })
         .catch(err => {
-          console.error(`Can't get connected devices : ${err}`)
+          this.ERR("Can't get connected devices : " + JSON.stringify(err))
           Metrics.error(Metrics.ErrorType.OTHER, "BluetoothError", "Error while Thunder Bluetooth getConnectedDevices "+JSON.stringify(err), false, null)
           reject()
         })
@@ -318,7 +322,7 @@ export default class BluetoothApi {
           resolve(result.success)
         })
         .catch(err => {
-          console.error('Connection failed', err)
+          this.ERR("Connection failed: " + JSON.stringify(err))
           Metrics.error(Metrics.ErrorType.OTHER, "BluetoothError", "Error while Thunder Bluetooth connect "+JSON.stringify(err), false, null)
           reject()
         })
@@ -342,7 +346,7 @@ export default class BluetoothApi {
           else reject()
         })
         .catch(err => {
-          console.error('disconnect failed', err)
+          this.ERR("disconnect failed: " + JSON.stringify(err))
           Metrics.error(Metrics.ErrorType.OTHER, "BluetoothError", "Error while Thunder Bluetooth disconnect "+JSON.stringify(err), false, null)
           reject()
         })
@@ -362,7 +366,7 @@ export default class BluetoothApi {
           else resolve(false)
         })
         .catch(err => {
-          console.error('unpair failed', err)
+          this.ERR("unpair failed: " + JSON.stringify(err))
           Metrics.error(Metrics.ErrorType.OTHER, "BluetoothError", "Error while Thunder Bluetooth unpair "+JSON.stringify(err), false, null)
           resolve(false)
         })
@@ -382,7 +386,7 @@ export default class BluetoothApi {
           else reject(result)
         })
         .catch(err => {
-          console.error('Error on pairing', err)
+          this.ERR("Error on pairing: " + JSON.stringify(err))
           Metrics.error(Metrics.ErrorType.OTHER, "BluetoothError", "Error while Thunder Bluetooth pair "+JSON.stringify(err), false, null)
           reject()
         })
@@ -408,7 +412,7 @@ export default class BluetoothApi {
           else reject()
         })
         .catch(err => {
-          console.error('Error on respondToEvent', err)
+          this.ERR("Error on respondToEvent: " + JSON.stringify(err))
           Metrics.error(Metrics.ErrorType.OTHER, "BluetoothError", "Error while Thunder Bluetooth respondToEvent "+JSON.stringify(err), false, null)
           reject()
         })
@@ -431,13 +435,12 @@ export default class BluetoothApi {
       this._thunder
         .call('org.rdk.Bluetooth', 'setAudioStream', { "deviceID": deviceID, "audioStreamName": "AUXILIARY" })
         .then(result => {
-
-          // console.log(JSON.stringify(result))
+          // this.LOG(JSON.stringify(result))
           this._connectedDevices = result.connectedDevices
           resolve(result.connectedDevices)
         })
         .catch(err => {
-          console.error(`Can't get connected devices : ${err}`)
+          this.ERR("Can't get connected devices : " + JSON.stringify(err))
           Metrics.error(Metrics.ErrorType.OTHER, "BluetoothError", "Error while Thunder Bluetooth setAudioStream "+JSON.stringify(err), false, null)
           reject()
         })

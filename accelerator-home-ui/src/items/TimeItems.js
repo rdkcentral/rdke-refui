@@ -26,6 +26,14 @@ import FireBoltApi from '../api/firebolt/FireBoltApi.js'
  */
 export default class TimeItems extends Lightning.Component {
 
+    constructor(...args) {
+        super(...args);
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
+
     pageTransition() {
         return 'left'
     }
@@ -55,7 +63,7 @@ export default class TimeItems extends Lightning.Component {
      * Function to set contents for an item in settings screen.
      */
     set params(item) {
-        console.log(item)
+        this.LOG("params: " + JSON.stringify(item))
         this._item = item
         this.tag('List').h = Object.keys(item.time_region).length * 90
         this.tag('List').items = Object.keys(item.time_region).map((ele, idx) => {
@@ -76,7 +84,7 @@ export default class TimeItems extends Lightning.Component {
     _active() {
         if ("ResidentApp" !== GLOBALS.selfClientName){
             FireBoltApi.get().localization.listen("timeZoneChanged",value =>{
-                console.log('timezone changed successfully to ', JSON.stringify(value))
+                this.LOG('timezone changed successfully to ' + JSON.stringify(value))
             })
         }
     }
@@ -90,7 +98,7 @@ export default class TimeItems extends Lightning.Component {
     }
 
     _handleEnter() {
-        console.log(`${this._item.zone}/${this.tag('List').element._item[0]}`)
+        this.LOG(`${this._item.zone}/${this.tag('List').element._item[0]}`)
         this.widgets.menu.updateTimeZone(`${this._item.zone}/${this.tag('List').element._item[0]}`)
         if ("ResidentApp" === GLOBALS.selfClientName) {
             this.appApi.setZone(`${this._item.zone}/${this.tag('List').element._item[0]}`)

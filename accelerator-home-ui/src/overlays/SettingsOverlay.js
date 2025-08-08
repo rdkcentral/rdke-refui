@@ -37,6 +37,13 @@ var thunder = ThunderJS(CONFIG.thunderConfig);
  * Class for settings screen.
  */
 export default class SettingsOverlay extends Lightning.Component {
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
   static _template() {
     return {
       Wrapper: {
@@ -269,11 +276,11 @@ export default class SettingsOverlay extends Lightning.Component {
   }
   _firstActive() {
     if (Storage.get("NFRStatus")) {
-      console.log(`Netflix : NFRStatus is found to be enabled`)
+      this.LOG("Netflix : NFRStatus is found to be enabled")
       this.tag("NFRStatus.Button").src = "static/images/settings/ToggleOnOrange.png"
     }
     else {
-      console.log(`Netflix : NFRStatus is found to be disabled`)
+      this.LOG("Netflix : NFRStatus is found to be disabled")
       this.tag("NFRStatus.Button").src = "static/images/settings/ToggleOffWhite.png"
     }
     this.appApi = new AppApi();
@@ -288,7 +295,7 @@ export default class SettingsOverlay extends Lightning.Component {
   }
 
   _handleBack() {
-    console.log("application Type = ", GLOBALS.topmostApp);
+    this.LOG("application Type = " + JSON.stringify(GLOBALS.topmostApp));
     if (GLOBALS.topmostApp === GLOBALS.selfClientName) {
       if (Router.getActiveHash() === "player" || Router.getActiveHash() === "dtvplayer" || Router.getActiveHash() === "usb/player") {
         Router.focusPage();
@@ -317,7 +324,7 @@ export default class SettingsOverlay extends Lightning.Component {
   }
 
   $updatePageTitle(title, alreadyTranslated) {
-    console.log("title", title)
+    this.LOG("title" + JSON.stringify(title))
     if (alreadyTranslated) {
       this.tag("BreadCrumbs").text.text = title;
     } else {
@@ -451,11 +458,11 @@ export default class SettingsOverlay extends Lightning.Component {
             thunder.call("Netflix.1", "nfrstatus", { "params": "disable" }).then(nr => {
               self.tag("NFRStatus.Button").src = "static/images/settings/ToggleOffWhite.png"
               Storage.set("NFRStatus", false)
-              console.log(`Netflix : nfr disable updation results in ${nr}`)
+              self.LOG("Netflix : nfr disable updation results in " + JSON.stringify(nr))
             }).catch(nerr => {
-              console.error(`Netflix : error while updating nfrstatus`)
+              self.ERR("Netflix : error while updating nfrstatus")
               Metrics.error(Metrics.ErrorType.OTHER,"PluginError", "Thunder Netflix.1 error disabling nfrstatus "+JSON.stringify(nerr), false, null)
-              console.error(nerr)
+              self.ERR(JSON.stringify(nerr))
             })
 
           }
@@ -464,11 +471,11 @@ export default class SettingsOverlay extends Lightning.Component {
             thunder.call("Netflix.1", "nfrstatus", { "params": "enable" }).then(nr => {
               self.tag("NFRStatus.Button").src = "static/images/settings/ToggleOnOrange.png"
               Storage.set("NFRStatus", true)
-              console.log(`Netflix : nfr enable results in ${nr}`)
+              self.LOG("Netflix : nfr enable results in " + JSON.stringify(nr))
             }).catch(nerr => {
-              console.error(`Netflix : error while updating nfrstatus `)
+              self.ERR("Netflix : error while updating nfrstatus ")
               Metrics.error(Metrics.ErrorType.OTHER,"PluginError", "Thunder Netflix.1 error enabling nfrstatus "+JSON.stringify(nerr), false, null)
-              console.error(nerr)
+              self.ERR("Netflix : nfr enable results in error:" + JSON.stringify(nerr))
             })
 
           }

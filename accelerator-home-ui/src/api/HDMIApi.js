@@ -39,6 +39,10 @@ export default class HDMIApi {
             Resolution1080: [1920, 1080],
             Resolution2160: [3840, 2160]
         }
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
     }
 
     activate() {
@@ -46,7 +50,7 @@ export default class HDMIApi {
             this._thunder
                 .call('Controller', 'activate', { callsign: this.callsign })
                 .then(result => {
-                    console.log('Activated HdmiInput plugin')
+                    this.LOG("Activated HdmiInput plugin")
                     this._thunder.on(this.callsign, 'onInputStatusChanged', notification => {
                         if (this._events.has('onInputStatusChanged')) {
                             this._events.get('onInputStatusChanged')(notification)
@@ -73,7 +77,7 @@ export default class HDMIApi {
                         resolve(false)
                 })
                 .catch(err => {
-                    console.log('Failed to activate HdmiInput plugin', JSON.stringify(err))
+                    this.ERR("Failed to activate HdmiInput plugin" + " " + JSON.stringify(err))
                     Metrics.error(Metrics.ErrorType.OTHER,"HdmiApiError", "Error while Thunder Controller HdmiApi activate "+JSON.stringify(err), false, null)
                     reject(false)
                 })
@@ -90,7 +94,7 @@ export default class HDMIApi {
                 })
                 .catch(err => {
                     // reject(err) // #forTesting //make the api reject, instead of resolving empty array
-                    console.log("getHDMIDevices Error: ", JSON.stringify(err), " resolving empty array")
+                    this.ERR("getHDMIDevices Error: " + JSON.stringify(err) + " resolving empty array")
                     Metrics.error(Metrics.ErrorType.OTHER,"HdmiApiError", "Error in Thunder HdmiApi getHDMIInputDevices "+JSON.stringify(err), false, null)
                     resolve([])
                 })
@@ -101,11 +105,11 @@ export default class HDMIApi {
         return new Promise((resolve, reject) => {
             this._thunder.call('Controller.1', 'status@' + plugin)
                 .then(res => {
-                    console.log(JSON.stringify(res))
+                    this.LOG(JSON.stringify(res))
                     resolve(res)
                 })
                 .catch(err => {
-                    console.error(JSON.stringify(err))
+                    this.ERR(JSON.stringify(err))
                     Metrics.error(Metrics.ErrorType.OTHER,"HdmiApiError", "Error while Thunder Controller.1 HdmiApi status "+JSON.stringify(err), false, null)
                     reject(err)
                 })
@@ -123,7 +127,7 @@ export default class HDMIApi {
                     resolve(this.resolution[result1])
                 })
                 .catch(err => {
-                    console.log('Failed to fetch dimensions', err)
+                    this.ERR('Failed to fetch dimensions' + " " + JSON.stringify(err))
                     Metrics.error(Metrics.ErrorType.OTHER,"HdmiApiError", "Error in Thunder playerInfo resolution "+JSON.stringify(err), false, null)
                     resolve([1920, 1080])
                 })

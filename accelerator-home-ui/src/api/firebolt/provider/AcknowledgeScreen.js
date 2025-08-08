@@ -21,13 +21,21 @@ import { CONFIG } from '../../../Config/Config'
 
 export default class AcknowledgeScreen extends Lightning.Component {
 
+    constructor(...args) {
+        super(...args);
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
+
     pageTransition() {
         return 'left'
     }
 
     set params(args)
     {
-      console.log("args:",args)
+      this.LOG("args: " + JSON.stringify(args))
         if(args.message!=="")
         {
             this.tag('Info').text.text=Language.translate(args.message)

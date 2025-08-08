@@ -29,6 +29,13 @@ import { Metrics } from '@firebolt-js/sdk';
 const thunder = ThunderJS(CONFIG.thunderConfig)
 
 export default class FirmwareScreen extends Lightning.Component {
+    constructor(...args) {
+        super(...args);
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
     static _template() {
         return {
             FirmwareContents: {
@@ -111,11 +118,11 @@ export default class FirmwareScreen extends Lightning.Component {
         thunder.Controller.activate({ callsign: "org.rdk.System" })
             .then(() => {
                 thunder.on("org.rdk.System", "onFirmwareUpdateStateChange", notification => {
-                    console.log(`FirmwareOverlay: on Firmware update state changed notifcation = ${JSON.stringify(notification)}`);
+                    this.LOG("FirmwareOverlay: on Firmware update state changed notifcation = " + JSON.stringify(notification));
 
                     if (state[notification.firmwareUpdateStateChange] == "Downloading") {
                         this.downloadInterval = setInterval(() => {
-                            console.log(`Downloading...`);
+                            this.LOG("Downloading...");
                             this.getDownloadPercent();
                         }, 1000)
                     } else if (state[notification.firmwareUpdateStateChange] != "Downloading" && this.downloadInterval) {
@@ -123,12 +130,12 @@ export default class FirmwareScreen extends Lightning.Component {
                         this.downloadInterval = null
                     }
                 }, err => {
-                    console.error(`FirmwareOverlay: error while fetching notification ie. ${err}`)
+                    this.ERR("FirmwareOverlay: error while fetching notification ie. " + JSON.stringify(err))
                     Metrics.error(Metrics.ErrorType.OTHER,"PluginError", "Thunder system error while fetching onFirmwareUpdateStateChange notification "+JSON.stringify(err), false, null)
                 })
             })
             .catch(err => {
-                console.error(`FirmwareOverlay: error while activating the system plugin` + JSON.stringify(err))
+                this.ERR("FirmwareOverlay: error while activating the system plugin" + JSON.stringify(err))
                 Metrics.error(Metrics.ErrorType.OTHER,"PluginError", "Thunder Controller.activate system error "+JSON.stringify(err), false, null)
             })
 
@@ -145,16 +152,16 @@ export default class FirmwareScreen extends Lightning.Component {
         let state = ['Uninitialized', 'Requesting', 'Downloading', 'Failed', 'DownLoad Complete', 'Validation Complete', 'Preparing to Reboot']
         this.onFirmwareUpdateStateChangeCB = thunder.on('org.rdk.System', 'onFirmwareUpdateStateChange', notification => {
             this.tag('State.Title').text.text = Language.translate("Firmware State: ") + state[notification.firmwareUpdateStateChange]
-            console.log('onFirmwareUpdateStateChange:' + JSON.stringify(notification));
+            this.LOG("onFirmwareUpdateStateChange:" + JSON.stringify(notification));
             if (state[notification.firmwareUpdateStateChange] === "Downloading") {
                 this.downloadInterval = setInterval(() => {
-                    console.log(`Downloading...`);
+                    this.LOG("Downloading...");
                     this.getDownloadPercent();
                 }, 1000)
             } else if (state[notification.firmwareUpdateStateChange] != "Downloading") {
                 this.tag('DownloadedPercent.Title').visible = false;
                 if (this.downloadInterval) {
-                    console.log("");
+                    this.LOG("");
                     clearInterval(this.downloadInterval);
                     this.downloadInterval = null
                 }
@@ -165,7 +172,7 @@ export default class FirmwareScreen extends Lightning.Component {
 
     showDownloadPercentage() {
         this.downloadInterval = setInterval(() => {
-            console.log(`showDownloadPercentage Downloading...`);
+            this.LOG("showDownloadPercentage Downloading...");
             this.getDownloadPercent();
         }, 1000)
     }
@@ -179,7 +186,7 @@ export default class FirmwareScreen extends Lightning.Component {
         this._appApi = new AppApi();
         const downloadState = ['Uninitialized', 'Requesting', 'Downloading', 'Failed', 'DownLoad Complete', 'Validation Complete', 'Preparing to Reboot']
         await this._appApi.getFirmwareUpdateState().then(res => {
-            console.log("FirmwareOverlay: getFirmwareUpdateState " + JSON.stringify(res))
+            this.LOG("FirmwareOverlay: getFirmwareUpdateState " + JSON.stringify(res))
             this.tag('State.Title').text.text = Language.translate("Firmware State: ") + downloadState[res.firmwareUpdateState]
             if (res.firmwareUpdateState === "Downloading") {
                 this.showDownloadPercentage();
@@ -187,7 +194,7 @@ export default class FirmwareScreen extends Lightning.Component {
         })
 
         this._appApi.getDownloadFirmwareInfo().then(res => {
-            console.log("FirmwareOverlay: getDownloadFirmwareInfo " + JSON.stringify(res))
+            this.LOG("FirmwareOverlay: getDownloadFirmwareInfo " + JSON.stringify(res))
             this.tag('Version.Title').text.text = Language.translate("Firmware Versions: ") + res.currentFWVersion
         })
         this._setState('FirmwareUpdate')
@@ -196,7 +203,7 @@ export default class FirmwareScreen extends Lightning.Component {
     getDownloadPercent() {
         this._appApi = new AppApi();
         this._appApi.getFirmwareDownloadPercent().then(res => {
-            console.log(`FirmwareOverlay: getFirmwareDownloadPercent ${JSON.stringify(res)}`);
+            this.LOG("FirmwareOverlay: getFirmwareDownloadPercent " + JSON.stringify(res));
             if (res.downloadPercent < 0) {
                 this.tag('DownloadedPercent.Title').visible = false;
                 this.tag('DownloadedPercent.Title').text.text = "";
@@ -211,7 +218,7 @@ export default class FirmwareScreen extends Lightning.Component {
                 }
             }
         }).catch(err => {
-            console.error(err);
+            this.ERR("getDownloadperecent error:"+ JSON.stringify(err));
         })
     }
 
@@ -219,13 +226,13 @@ export default class FirmwareScreen extends Lightning.Component {
         this._appApi = new AppApi();
         this._appApi.updateFirmware().then(() => {
             this._appApi.getDownloadFirmwareInfo().then(result => {
-                console.log(`FirmwareOverlay: getDownloadFirmwareInfo : ${JSON.stringify(result.downloadFWVersion)}`);
+                this.LOG("FirmwareOverlay: getDownloadFirmwareInfo : " + JSON.stringify(result.downloadFWVersion));
                 this.tag('DownloadedVersion.Title').text.text = Language.translate('Downloaded Firmware Version: ') + `${result.downloadFWVersion ? result.downloadFWVersion : 'NA'}`
             }).catch(err => {
-                console.error(err);
+                this.ERR("getDownloadFirmwareInfo error" + JSON.stringify(err));
             })
         }).catch(err => {
-            console.error(err);
+            this.ERR("updateFirmware error" + JSON.stringify(err));
         })
     }
 

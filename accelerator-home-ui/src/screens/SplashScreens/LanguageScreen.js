@@ -29,6 +29,14 @@ const appApi = new AppApi()
 const loader = 'Loader'
 
 export default class LanguageScreen extends Lightning.Component {
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
+
   static _template() {
     return {
       w: 1920,
@@ -117,16 +125,15 @@ export default class LanguageScreen extends Lightning.Component {
     appApi.deactivateResidentApp(loader)
     RDKShellApis.moveToFront(GLOBALS.selfClientName)
     RDKShellApis.setFocus(GLOBALS.selfClientName).then(result => {
-      console.log('LanguageScreen: ResidentApp moveToFront Success');
+      this.LOG('LanguageScreen: ResidentApp moveToFront Success')
       RDKShellApis.getVisibility(GLOBALS.selfClientName).then(visible => {
-        if (!visible) RDKShellApis.setVisibility(GLOBALS.selfClientName, true);
+        if (!visible) RDKShellApis.setVisibility(GLOBALS.selfClientName, true)
       })
     }).catch(err => {
-      console.log('LanguageScreen: Error', err);
+      this.ERR('LanguageScreen: Error' + JSON.stringify(err))
       Metrics.error(Metrics.ErrorType.OTHER, "AppLangugaeError", 'Thunder RDKShell setFocus Error' + JSON.stringify(err), false, null)
     });
   }
-
 
   pageTransition() {
     return 'left'
@@ -144,7 +151,7 @@ export default class LanguageScreen extends Lightning.Component {
     if ("ResidentApp" === GLOBALS.selfClientName) {
         appApi.setUILanguage(availableLanguageCodes[availableLanguages[index]])
     } else {
-        FireBoltApi.get().localization.setlanguage(availableLanguages[index]).then(res => console.log("sucess language set ::::",res))
+        FireBoltApi.get().localization.setlanguage(availableLanguages[index]).then(res => this.LOG("sucess language set ::::" + JSON.stringify(res)))
     }
     localStorage.setItem('Language',availableLanguages[index])
   }
@@ -177,7 +184,7 @@ export default class LanguageScreen extends Lightning.Component {
             let path = location.pathname.split('index.html')[0]
             let url = path.slice(-1) === '/' ? "static/loaderApp/index.html" : "/static/loaderApp/index.html"
             let notification_url = location.origin + path + url
-            console.log(notification_url)
+            this.LOG("LanguageScreen notification_url: " + JSON.stringify(notification_url))
             appApi.launchResident(notification_url, loader).catch(err => { })
             RDKShellApis.setVisibility(GLOBALS.selfClientName, false)
             location.reload();

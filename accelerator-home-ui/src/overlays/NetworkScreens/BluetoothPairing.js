@@ -23,6 +23,13 @@
   * Class for pairing screen for the Bluetooth.
   */
  export default class BluetoothPairingScreen extends Lightning.Component {
+    constructor(...args) {
+        super(...args);
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
      static _template() {
          return {
              BluetoothPair: {
@@ -103,7 +110,7 @@
      }
 
      getData(item) {
-        console.log("setting pairing screen item: ",item)
+        this.LOG("setting pairing screen item: " + JSON.stringify(item))
          _item = item
          this._setState('ConnectDisconnect')
          this.tag('Title').text = item.name

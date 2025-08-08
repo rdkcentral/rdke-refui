@@ -23,6 +23,14 @@ import AppApi from '../api/AppApi'
 
 export default class VideoAndAudioItem extends Lightning.Component {
 
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
+
   _construct() {
     this.Tick = Utils.asset('/images/settings/Tick.png')
   }
@@ -64,7 +72,7 @@ export default class VideoAndAudioItem extends Lightning.Component {
   _handleEnter() {
     if (this.videoElement === true) {
       this.appApi.setResolution(this._item).catch(err => {
-        console.log(`there was an error while setting the resolution.` + JSON.stringify(err));
+        this.ERR("there was an error while setting the resolution." + JSON.stringify(err));
       });
     }
     else {
@@ -79,7 +87,7 @@ export default class VideoAndAudioItem extends Lightning.Component {
           this.fireAncestors("$updateSoundMode", this._item)
         })
         .catch(err => {
-          console.log('Some error while setting the sound mode ', err)
+          this.ERR('Some error while setting the sound mode ' + JSON.stringify(err))
         })
     }
   }

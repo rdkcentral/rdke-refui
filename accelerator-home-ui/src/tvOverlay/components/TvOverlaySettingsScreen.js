@@ -22,6 +22,14 @@ import TvOverlaySettingsItem from "../../items/TvOverlaySettingsItem";
 import PictureSettingsApi from "../../api/PictureSettingsApi";
 
 export default class TvOverlaySettingsScreen extends Lightning.Component {
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
+
   static _template() {
     return {
       Contents: {
@@ -69,10 +77,7 @@ export default class TvOverlaySettingsScreen extends Lightning.Component {
         }
       })
       .catch((err) => {
-        console.log(
-          "ERROR from settings overlay screen firstEnable: getSupportedPictureModes: ",
-          JSON.stringify(err)
-        );
+        this.ERR("ERROR from settings overlay screen firstEnable: getSupportedPictureModes: " + JSON.stringify(err));
       });
     //the getSupportedColorTemps api call has some issue when working on chrome browser
     this.pictureApi
@@ -84,15 +89,12 @@ export default class TvOverlaySettingsScreen extends Lightning.Component {
         }
       })
       .catch((err) => {
-        console.log(
-          "ERROR from settings overlay screen firstEnable: getSupportedColorTemps: ",
-          JSON.stringify(err)
-        );
+        this.ERR("ERROR from settings overlay screen firstEnable: getSupportedColorTemps: " + JSON.stringify(err));
       });
   }
 
   refreshList() {
-    console.log("this.refreshList got called");
+    this.LOG("this.refreshList got called");
     this.tag("List").items = this.options.map((item) => {
       return {
         w: 500,
@@ -105,7 +107,7 @@ export default class TvOverlaySettingsScreen extends Lightning.Component {
 
   _focus() {
     this.fireAncestors('$focusOverlay');
-    console.log("index: ", this.tag("List").index);
+    this.LOG("index: " + JSON.stringify(this.tag("List").index));
     // this.tag("List").setIndex(0);//not necessary
   }
 
@@ -126,7 +128,7 @@ export default class TvOverlaySettingsScreen extends Lightning.Component {
         if (!this.customLock) { //customLock value is true means api call is happening wait before moving down
           this.moveDownOnCustom()
         } else {
-          console.log("changing the preset value cant moveDown now!!")
+          this.LOG("changing the preset value cant moveDown now!!")
         }
       } else {
         this.tag("List").setNext();
@@ -153,14 +155,14 @@ export default class TvOverlaySettingsScreen extends Lightning.Component {
     try {
       const pictureMode = await this.pictureApi.getPictureMode();
       const colorTemp = await this.pictureApi.getColorTemperature();
-      console.log("picture mode: ", pictureMode, " color temperature: ", colorTemp);
+      this.LOG("picture mode: " + JSON.stringify(pictureMode) + " color temperature: " + JSON.stringify(colorTemp));
       if (pictureMode === "custom" && colorTemp === "User Defined") {
         this.tag("List").setNext();
       } else {
         this.tag("List").setIndex(1);
       }
-    } catch {
-      console.log("error occoured in api call");
+    } catch (err) {
+      this.ERR("error occoured in api call" + JSON.stringify(err));
     }
   }
 

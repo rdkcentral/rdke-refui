@@ -22,6 +22,14 @@ import { CONFIG } from "../Config/Config";
 import HDMIApi from "../api/HDMIApi";
 
 export default class TvOverlayInputItem extends Lightning.Component {
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
+
   _construct() {
     this.Tick = Utils.asset("/images/settings/Tick.png");
   }
@@ -92,7 +100,7 @@ export default class TvOverlayInputItem extends Lightning.Component {
   }
 
   _init() {
-    console.log("_init from inputItem: list is getting rendered");
+    this.LOG("_init from inputItem: list is getting rendered");
     this.hdmiApi = new HDMIApi();
     this.loadingAnimation = this.tag("Item.Loader").animation({
       duration: 3,
@@ -138,7 +146,7 @@ export default class TvOverlayInputItem extends Lightning.Component {
       this.hdmiApi
         .getHDMIDevices() //api does not throw error, just consider error condition when result is empty
         .then((res) => {
-          console.log("getHDMIDevices from input Item: ", JSON.stringify(res));
+          this.LOG("getHDMIDevices from input Item: " + JSON.stringify(res));
           if (res.length > 0) {
             res.map((item) => {
               if (item.id === this.uniqID.id) {
@@ -147,7 +155,7 @@ export default class TvOverlayInputItem extends Lightning.Component {
                   this.hdmiApi
                     .setHDMIInput(item)
                     .then(() => {
-                      console.log("input set to: ", JSON.stringify(item));
+                      this.LOG("input set to: " + JSON.stringify(item));
                       //to stop the loader and show tickmark
                       setTimeout(() => {
                         this.loadingAnimation.stop();
@@ -157,10 +165,7 @@ export default class TvOverlayInputItem extends Lightning.Component {
                       }, minLoaderDuration);
                     })
                     .catch((err) => {
-                      console.log(
-                        "Failed to setHDMIInput",
-                        JSON.stringify(err)
-                      );
+                      this.ERR("Failed to setHDMIInput: " + JSON.stringify(err));
                       //to stop the loader
                       setTimeout(() => {
                         this.loadingAnimation.stop();
@@ -170,10 +175,7 @@ export default class TvOverlayInputItem extends Lightning.Component {
                       //display the error in the notification
                     });
                 } else {
-                  console.log(
-                    "device not connected! item: ",
-                    JSON.stringify(item)
-                  );
+                  this.LOG("device not connected! item: " + JSON.stringify(item));
                   setTimeout(() => {
                     this.loadingAnimation.stop();
                     this.tag("Item.Loader").visible = false;
@@ -181,16 +183,11 @@ export default class TvOverlayInputItem extends Lightning.Component {
                   }, minLoaderDuration);
                 }
               } else {
-                console.log(
-                  "ID not match! uniqID: ",
-                  JSON.stringify(this.uniqID),
-                  " item: ",
-                  JSON.stringify(item)
-                );
+                this.LOG("ID not match! uniqID: " + JSON.stringify(this.uniqID) + " item: " + JSON.stringify(item));
               }
             });
           } else {
-            console.log("getHDMIDevices returned empty array"); //in case of error, getHDMIDevices api return empty array
+            this.LOG("getHDMIDevices returned empty array"); //in case of error, getHDMIDevices api return empty array
             setTimeout(() => {
               this.loadingAnimation.stop();
               this.tag("Item.Loader").visible = false;
@@ -198,7 +195,7 @@ export default class TvOverlayInputItem extends Lightning.Component {
           }
         })
         .catch((err) => {
-          console.log("Failed to getHDMIDevices", JSON.stringify(err));
+          this.ERR("Failed to getHDMIDevices: " + JSON.stringify(err));
           //to stop the loader
           setTimeout(() => {
             this.loadingAnimation.stop();
@@ -206,7 +203,7 @@ export default class TvOverlayInputItem extends Lightning.Component {
           }, minLoaderDuration);
         });
     } else {
-      console.log(Storage.get("_currentInputMode"));
+      this.LOG("Current input mode: " + JSON.stringify(Storage.get("_currentInputMode")));
     }
   }
 
