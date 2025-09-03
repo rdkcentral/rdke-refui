@@ -1,8 +1,8 @@
 [Unit]
 Description=Resident app service for RDK platform
-After=wpeframework.service wpeframework-system.service wpeframework-powermanager.service wpeframework-rdkshell.service lighttpd.service wpeframework-ocicontainer.service ermgr.service wpeframework-displayinfo.service wpeframework-playerinfo.service wpeframework-ocdm.service
+After=webkit-browser-cache-cleanup.service wpeframework.service wpeframework-system.service wpeframework-powermanager.service wpeframework-rdkshell.service lighttpd.service wpeframework-ocicontainer.service ermgr.service wpeframework-displayinfo.service wpeframework-playerinfo.service wpeframework-ocdm.service
 Requires=wpeframework.service wpeframework-system.service wpeframework-powermanager.service wpeframework-rdkshell.service lighttpd.service wpeframework-ocicontainer.service ermgr.service wpeframework-displayinfo.service wpeframework-playerinfo.service
-Wants=wpeframework-ocdm.service
+Wants=webkit-browser-cache-cleanup.service wpeframework-ocdm.service
 
 [Service]
 Environment="LOGPATH=/opt/logs"
