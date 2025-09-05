@@ -20,7 +20,6 @@ import { Lightning, Language, Settings, Storage } from '@lightningjs/sdk'
 import { COLORS } from '../../colors/Colors'
 import { CONFIG, GLOBALS } from '../../Config/Config'
 import AppApi from '../../api/AppApi.js';
-import NetworkManager from '../../api/NetworkManagerAPI.js';
 import FireBoltApi from '../../api/firebolt/FireBoltApi';
 /**
  * Class for Video and Audio screen.

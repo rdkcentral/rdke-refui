@@ -150,8 +150,8 @@ export default class NetworkConfigurationScreen extends Lightning.Component {
         })
 
         this.onDefaultIfaceChangedCB = NetworkManager.thunder.on(NetworkManager.callsign, 'onActiveInterfaceChange', data => {
-            if(data.newInterfaceName === "eth0"){this.$NetworkInterfaceText("ETHERNET")}
-            if(data.newInterfaceName === "wlan0"){this.$NetworkInterfaceText("WIFI")}
+            if(data.currentActiveInterface === "eth0"){this.$NetworkInterfaceText("ETHERNET")}
+            else{this.$NetworkInterfaceText("WIFI")}
             this.tag('TestInternetAccess.Title').text.text = Language.translate('Test Internet Access: ')
             Metrics.action("user", "User changed the network interface", null)
         });

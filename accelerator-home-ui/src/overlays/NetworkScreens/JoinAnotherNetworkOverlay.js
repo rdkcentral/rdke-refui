@@ -57,11 +57,11 @@ export default class JoinAnotherNetworkComponent extends Lightning.Component {
     }
   }
 
-  startConnectForAnotherNetwork(device, passphrase) {
-    NetworkManager.WiFiConnect(false, device, passphrase).then(() => {
+  async startConnectForAnotherNetwork(device, passphrase) {
+    await NetworkManager.WiFiConnect(false, { ssid: device.ssid, security: device.security }, passphrase).then(() => {
       NetworkManager.AddToKnownSSIDs(device.ssid, passphrase, device.security).then((response) => {
         if (response === true ) {
-          PersistentStoreApi.get().setValue('wifi', 'SSID', this._item.ssid)
+          PersistentStoreApi.get().setValue('wifi', 'SSID', device.ssid)
         } else  {
           NetworkManager.RemoveKnownSSID(device.ssid)
           PersistentStoreApi.get().deleteNamespace('wifi')
@@ -400,7 +400,7 @@ export default class JoinAnotherNetworkComponent extends Lightning.Component {
           if (this.prevState === 'PasswordSwitchState') {
             this.prevState = "EnterPassword"
           }
-          console.log("Prev state:", this.prevState)
+          this.LOG("Prev state:", this.prevState)
           if (key === 'Done') {
             this.handleDone();
           } else if (key === 'Clear') {
@@ -408,7 +408,7 @@ export default class JoinAnotherNetworkComponent extends Lightning.Component {
             this.star = (this.prevState === "EnterPassword") ? this.star.substring(0, this.star.length - 1) : this.star
             this.tag(this.element).text.text = this.encrypt() ? this.star : this.textCollection[this.prevState];
           } else if (key === '#@!' || key === 'abc' || key === 'áöû' || key === 'shift') {
-            console.log('no saving')
+            this.LOG('no saving')
           } else if (key === 'Space') {
             this.textCollection[this.prevState] += ' '
             this.star += (this.prevState === "EnterPassword") ? '\u25CF' : this.star

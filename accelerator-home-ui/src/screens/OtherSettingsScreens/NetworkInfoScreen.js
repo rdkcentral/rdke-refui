@@ -277,13 +277,16 @@ export default class NetworkInfo extends Lightning.Component {
     }
 
     _active() {
-        this.onInterfaceStatusChangedCB = NetworkManager.thunder.on(NetworkManager.callsign,'onInterfaceStatusChanged', data => {
+        this.onInterfaceStatusChangedCB = NetworkManager.thunder.on(NetworkManager.callsign,'onInterfaceStateChange', data => {
+            this.WARN("Oninterfacestatuschanged" + JSON.stringify(data))
             this.refreshDetails();
         })
         this.onIPAddressStatusChangedCB = NetworkManager.thunder.on(NetworkManager.callsign,'onAddressChange', data => {
+            this.WARN("OnAdrresschanged" + JSON.stringify(data))
             this.refreshDetails();
         })
         this.onDefaultInterfaceChangedCB = NetworkManager.thunder.on(NetworkManager.callsign,'onActiveInterfaceChange', data => {
+            this.WARN("OnActiveInterfaceChange" + JSON.stringify(data))
             this.refreshDetails();
         })
         if ("ResidentApp" !== GLOBALS.selfClientName)

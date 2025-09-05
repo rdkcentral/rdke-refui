@@ -225,24 +225,16 @@ export default class WifiPairingScreen extends Lightning.Component {
 
    async startConnect(password = "") {
     GLOBALS.Wificonnectinprogress = true
-      const wificurrentstate=await WiFi.get().getCurrentState()
-      if(wificurrentstate === WiFiState.CONNECTED){
+      const wificurrentstate=await NetworkManager.GetWifiState()
+      if(wificurrentstate === WiFiState.WIFI_STATE_CONNECTED){
         setTimeout(() => {
           GLOBALS.Wificonnectinprogress = false
         }, 5000);
       }
     let flag = 0
-    this.onWIFIStateChangedCB = NetworkManager.thunder.on(NetworkManager.callsign, 'onWIFIStateChange', notification => {
-      if (notification.state === WiFiState.WIFI_STATE_CONNECTED) {
-       NetworkManager.SetPrimaryInterface("wlan0").then(() => {
-          console.log("Successfully set WIFI as default interface.")
-        }).catch(err => {
-          this.ERR("Could not set WIFI as default interface." + JSON.stringify(err))
-        });
-        this.onWIFIStateChangedCB.dispose()
-      }
-      else if (notification.state === WiFiState.WIFI_STATE_INVALID_CREDENTIALS|| notification.state === WiFiState.WIFI_STATE_SSID_CHANGED) {
-        console.log("INVALID_CREDENTIALS; deleting WiFi Persistence data.")
+    this.onWIFIStateChangedCB = NetworkManager.thunder.on(NetworkManager.callsign, 'onWiFiStateChange', notification => {
+      if (notification.state === WiFiState.WIFI_STATE_INVALID_CREDENTIALS|| notification.state === WiFiState.WIFI_STATE_SSID_CHANGED) {
+        this.LOG("INVALID_CREDENTIALS; deleting WiFi Persistence data.")
         NetworkManager.RemoveKnownSSID(Ssid).then(() => {
           PersistentStoreApi.get().deleteNamespace('wifi')
         });
@@ -269,11 +261,11 @@ export default class WifiPairingScreen extends Lightning.Component {
       .catch(err => {
         this.ERR("Not able to connect to wifi" + JSON.stringify(err));
         if (GLOBALS.Setup !== true) {
-          Router.navigate('splash/networkList', { wifiError: err });
+          Router.navigate('splash/networkList', { wifiError: `Wificonnect API response: ${err}` });
         }
         else {
           Router.back();
-          this.widgets.fail.notify({ title: 'WiFi Status', msg: Language.translate(`Error Code : ${err.code} \t Error Msg : ${err.message}`) })
+          this.widgets.fail.notify({ title: 'WiFi Status', msg: Language.translate(`Wificonnect API response: ${err}`) })
           Router.focusWidget('Fail')
         }
       })

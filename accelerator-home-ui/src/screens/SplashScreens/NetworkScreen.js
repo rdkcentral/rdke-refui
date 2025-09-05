@@ -154,11 +154,9 @@ export default class NetworkScreen extends Lightning.Component {
                     // this._setState('WiFiScreen')
                     NetworkManager.SetInterfaceState('wlan0').then(res => {
                         if (res) {
-                            NetworkManager.SetPrimaryInterface('wlan0').then(() => {
                                 Registry.setTimeout(() => {
                                     Router.navigate('splash/networkList')
                                 }, (Router.isNavigating() ? 20 : 0));
-                            })
                         }
                     })
                     this.LOG("Wifi")
@@ -174,7 +172,6 @@ export default class NetworkScreen extends Lightning.Component {
                 _handleEnter() {
                     NetworkManager.SetInterfaceState('eth0').then(res => {
                         if (res) {
-                            NetworkManager.SetPrimaryInterface('eth0').then(() => {
                                 NetworkManager.GetAvailableInterfaces().then(res => {
                                     console.log(JSON.stringify(res))
                                     let eth = res.filter((item) => item.type == 'ETHERNET')
@@ -189,7 +186,6 @@ export default class NetworkScreen extends Lightning.Component {
                                         }, (Router.isNavigating() ? 20 : 0));
                                     }
                                 })
-                            })
                         }
                     })
                 }

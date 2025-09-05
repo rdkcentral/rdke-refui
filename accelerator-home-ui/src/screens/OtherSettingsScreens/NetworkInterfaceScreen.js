@@ -105,15 +105,15 @@ export default class NetworkInterfaceScreen extends Lightning.Component {
     _active() {
         this.onDefaultInterfaceChangedCB = NetworkManager.thunder.on(NetworkManager.callsign, 'onActiveInterfaceChange', (notification) => {
             this.LOG('onActiveInterfaceChange notification from networkInterfaceScreen: ' + JSON.stringify(notification))
-            if (notification.newInterfaceName === "eth0") {
+            if (notification.currentActiveInterface === "eth0") {
                 this.loadingAnimation.stop()
                 this.tag('Ethernet.Loader').visible = false
                 this.tag('Ethernet.Title').text.text = 'Ethernet: ' + Language.translate("Connected")
-            } else if (notification.newInterfaceName === "" && notification.oldInterfaceName === "wlan0") {
+            } else if (notification.currentActiveInterface === "" && notification.prevActiveInterface === "wlan0") {
                 this.loadingAnimation.stop()
                 this.tag('Ethernet.Loader').visible = false
                 this.tag('Ethernet.Title').text.text = 'Ethernet: '+Language.translate('Error')+', '+Language.translate('Retry')+'!'
-            } else if (notification.newInterfaceName === "wlan0") {
+            } else if (notification.currentActiveInterface === "wlan0") {
                 this.loadingAnimation.stop()
                 this.tag('Ethernet.Loader').visible = false
                 this.tag('Ethernet.Title').text.text = 'Ethernet'
@@ -200,22 +200,18 @@ export default class NetworkInterfaceScreen extends Lightning.Component {
                     await NetworkManager.GetInterfaceState("eth0").then(enabled => {
                         if (!enabled) {
                             NetworkManager.SetInterfaceState("eth0").then(() => {
-                                NetworkManager.SetPrimaryInterface("eth0").then(result => {
-                                    if (result) {
-                                        this.loadingAnimation.stop()
-                                        this.tag('Ethernet.Title').text.text = 'Ethernet'
-                                        this.tag('Ethernet.Loader').visible = false
-                                    }
-                                });
-                            });
-                        } else {
-                            NetworkManager.SetPrimaryInterface("eth0").then(result => {
                                 if (result) {
-                                    this.loadingAnimation.stop()
-                                    this.tag('Ethernet.Title').text.text = 'Ethernet'
-                                    this.tag('Ethernet.Loader').visible = false
+                                this.loadingAnimation.stop()
+                                this.tag('Ethernet.Title').text.text = 'Ethernet'
+                                this.tag('Ethernet.Loader').visible = false
                                 }
                             });
+                        } else {
+                                setTimeout(() => {
+                                this.loadingAnimation.stop()
+                                this.tag('Ethernet.Title').text.text = 'Ethernet'
+                                this.tag('Ethernet.Loader').visible = false
+                            }, 1000)
                         }
                     });
                 }

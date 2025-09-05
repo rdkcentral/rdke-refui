@@ -21,7 +21,6 @@ import { COLORS } from '../../colors/Colors'
 import { CONFIG, GLOBALS } from '../../Config/Config'
 import AppApi from '../../api/AppApi.js';
 import FireBoltApi from '../../api/firebolt/FireBoltApi';
-import NetworkManager from '../../api/NetworkManagerAPI.js';
 
 /**
  * Class for Video and Audio screen.

@@ -194,7 +194,7 @@ export default class WifiPairingScreen extends Lightning.Component {
       });
     }).catch(err => {
       this.ERR("Not able to connect to wifi: " + JSON.stringify(err))
-      this.tag("FailScreen").notify({ title: 'WiFi Status', msg: Language.translate(`Error Code : ${err.code} \t Error Msg : ${err.message}`) })
+      this.tag("FailScreen").notify({ title: 'WiFi Status', msg: Language.translate(`Wificonnect API response: ${err}`) })
       this._setState('FailScreen');
     });
   }
