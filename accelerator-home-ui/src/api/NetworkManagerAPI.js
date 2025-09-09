@@ -39,17 +39,12 @@ export const WiFiState = {
 
 class NetworkManager {
   constructor() {
-    this._events = new Map();
     this.thunder = ThunderJS(CONFIG.thunderConfig);
     this.callsign = 'org.rdk.NetworkManager';
     this.INFO = console.info;
     this.LOG = console.log;
     this.ERR = console.error;
     this.WARN = console.warn;
-  }
-
-  registerEvent = (eventId, callback) => {
-    this._events.set(eventId, callback)
   }
 
   thunderCall = (infoMessage, method, params = {}, property) => {

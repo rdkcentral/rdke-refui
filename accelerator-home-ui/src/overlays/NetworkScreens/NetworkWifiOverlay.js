@@ -509,7 +509,6 @@ export default class WiFiScreen extends Lightning.Component {
       }
       if (list.index < list.length - 1) list.setNext()
       else if (list.index == list.length - 1) {
-        //WiFi.get().startScan()
         if (listname === 'MyDevices' && this.tag('Networks.AvailableNetworks').tag('List').length > 0) {
           this._setState('AvailableDevices')
         }
@@ -552,7 +551,6 @@ export default class WiFiScreen extends Lightning.Component {
       this.wifiLoading.play()
       await NetworkManager.SetInterfaceState("wlan0", true).then(resp => {
         this.LOG("setInterfaceEnabled WIFI return: " + JSON.stringify(resp))
-        // WiFi.get().setEnabled().then(() => {
           this.wifiStatus = true
           this.tag('Networks').visible = true
           this.tag('JoinAnotherNetwork').visible = true
@@ -566,7 +564,6 @@ export default class WiFiScreen extends Lightning.Component {
               this.tag('Networks.AvailableNetworks').tag('List').items = []
             }
           })
-        // })
       })
     }
   }

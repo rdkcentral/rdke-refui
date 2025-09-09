@@ -33,24 +33,7 @@ import xml2json from "@hendt/xml2json";
 import PersistentStoreApi from "./PersistentStore.js";
 
 let partnerApps = [];
-
-/**
- * Get the ip address.
- */
-// let IpAddress1 = "";
-// let IpAddress2 = "";
-
-// Network.get().getStbIp().then((ip) => {
-//   IpAddress1 = ip;
-//   Storage.set("ipAddress", IpAddress1);
-// }).catch(() => {
-//   Storage.set("ipAddress", null);
-// });
-
 let appApi = new AppApi();
-// appApi.getIP().then((ip) => {
-//   IpAddress2 = ip;
-// });
 
 /**
  * Class that returns the data required for home screen.

@@ -404,9 +404,7 @@ export default class NetworkList extends Lightning.Component {
  * Function to activate Wi-Fi plugin.
  */
   _activateWiFi() {
-    // WiFi.get().activate().then(() => {
       this.switch()
-    // })
     NetworkManager.thunder.on(NetworkManager.callsign, 'onWiFiStateChange', notification => {
       this.LOG(JSON.stringify(notification))
       if (notification.state === WiFiState.WIFI_STATE_CONNECTED && ! GLOBALS.Setup) {

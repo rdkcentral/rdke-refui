@@ -99,7 +99,6 @@ export default class App extends Router.App {
         console.log("is online");
       }
       else {
-        // Storage.set("ipAddress", null);
         console.log(`is offline`)
       }
     }
