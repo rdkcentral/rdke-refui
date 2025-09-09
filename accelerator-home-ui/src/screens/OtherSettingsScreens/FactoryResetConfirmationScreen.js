@@ -21,6 +21,7 @@ import AppApi from '../../api/AppApi'
 import BluetoothApi from '../../api/BluetoothApi'
 import { CONFIG,GLOBALS } from '../../Config/Config'
 import WiFi from '../../api/WifiApi'
+import NetworkManager from '../../api/NetworkManagerAPI.js'
 import AlexaApi from '../../api/AlexaApi.js';
 import RCApi from '../../api/RemoteControl'
 import Warehouse from '../../api/WarehouseApis.js'
@@ -197,9 +198,15 @@ export default class RebootConfirmationScreen extends Lightning.Component {
         if (rsactivitytime.success != true) { this.LOG("rsactivitytime" + JSON.stringify(rsactivitytime)) }
         let clearLastDeepSleepReason = await appApi.clearLastDeepSleepReason().catch(err => { this.ERR("clearLastDeepSleepReason" + JSON.stringify(err)) });
         if (clearLastDeepSleepReason.success != true) { this.LOG("clearLastDeepSleepReason" + JSON.stringify(clearLastDeepSleepReason)) }
-        let clearSSID = await WiFi.get().clearSSID().catch(err =>  { this.ERR("clearSSID" + JSON.stringify(err)) });
-        if (clearSSID.success != true)  { this.LOG("clearSSID" + JSON.stringify(clearSSID)) }
-        let wifidisconnect = await WiFi.get().disconnect().catch(err =>{ this.ERR("wifidisconnect" + JSON.stringify(err)) });
+        let GetKnownSSIDs = await NetworkManager.GetKnownSSIDs().then((ssids)=>{ssids}).catch(err =>  { console.error("GetKnownssids",err) });
+        let clearSSID =false
+        for(let i=0;i<GetKnownSSIDs.length;i++)
+        {
+        if(GetKnownSSIDs.length>0)
+            {clearSSID= await NetworkManager.RemoveKnownSSID(ssids[i]).catch(err =>  { this.ERR("clearSSID" + JSON.stringify(err)) });}
+        }
+        if (clearSSID != true)  { this.LOG("clearSSID" + JSON.stringify(clearSSID)) }
+        let wifidisconnect = await NetworkManager.WiFiDisconnect().catch(err =>{ this.ERR("wifidisconnect" + JSON.stringify(err)) });
         if (wifidisconnect.success != true) { this.LOG("wifidisconnect" + JSON.stringify(wifidisconnect)) }
         await appApi.clearCache().catch(err => { this.ERR("clearCache error: " + JSON.stringify(err)) })
         await appApi.reboot("User Trigger").then(result => { this.LOG('device rebooting' + JSON.stringify(result))})

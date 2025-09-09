@@ -21,9 +21,9 @@ import { Lightning, Router, Storage, Language, Registry } from '@lightningjs/sdk
 import { COLORS } from '../../colors/Colors'
 import { CONFIG, GLOBALS } from '../../Config/Config'
 import SettingsMainItem from '../../items/SettingsMainItem'
-import Network from '../../api/NetworkApi'
 import AlexaApi from '../../api/AlexaApi'
 import AppApi from '../../api/AppApi'
+import NetworkManager from '../../api/NetworkManagerAPI'
 
 export default class NetworkScreen extends Lightning.Component {
     constructor(...args) {
@@ -122,9 +122,10 @@ export default class NetworkScreen extends Lightning.Component {
 
     async _init() {
         this.appApi = new AppApi();
-        await this.appApi.checkStatus(Network.get().callsign).then(nwPluginStatus => {
+        await this.appApi.checkStatus(NetworkManager.callsign).then(nwPluginStatus => {
             if (nwPluginStatus[0].state.toLowerCase() !== "activated") {
-                Network.get().activate();
+                console.log("Iniate the activate call")
+                NetworkManager.activate();
             }
         });
     }
@@ -151,13 +152,11 @@ export default class NetworkScreen extends Lightning.Component {
                 }
                 _handleEnter() {
                     // this._setState('WiFiScreen')
-                    Network.get().setInterfaceEnabled('WIFI').then(res => {
+                    NetworkManager.SetInterfaceState('wlan0').then(res => {
                         if (res) {
-                            Network.get().setDefaultInterface('WIFI').then(() => {
                                 Registry.setTimeout(() => {
                                     Router.navigate('splash/networkList')
                                 }, (Router.isNavigating() ? 20 : 0));
-                            })
                         }
                     })
                     this.LOG("Wifi")
@@ -171,23 +170,22 @@ export default class NetworkScreen extends Lightning.Component {
                     this.tag('Ethernet')._unfocus()
                 }
                 _handleEnter() {
-                    Network.get().setInterfaceEnabled('ETHERNET').then(res => {
+                    NetworkManager.SetInterfaceState('eth0').then(res => {
                         if (res) {
-                            Network.get().setDefaultInterface('ETHERNET').then(() => {
-                                Network.get().getInterfaces().then(res => {
-                                    let eth = res.filter((item) => item.interface == 'ETHERNET')
-                                    if (eth[0].interface == 'ETHERNET' && eth[0].enabled == true && eth[0].connected == true) {
+                                NetworkManager.GetAvailableInterfaces().then(res => {
+                                    console.log(JSON.stringify(res))
+                                    let eth = res.filter((item) => item.type == 'ETHERNET')
+                                    if (eth[0].type == 'ETHERNET' && eth[0].enabled == true && eth[0].connected == true) {
                                         Registry.setTimeout(() => {
                                             Router.navigate('menu')
                                         }, (Router.isNavigating() ? 20 : 0));
                                     }
-                                    else if (eth[0].interface == 'ETHERNET' && eth[0].connected == false) {
+                                    else if (eth[0].type == 'ETHERNET' && eth[0].connected == false) {
                                         Registry.setTimeout(() => {
                                             Router.navigate('splash/networkPrompt')
                                         }, (Router.isNavigating() ? 20 : 0));
                                     }
                                 })
-                            })
                         }
                     })
                 }
@@ -224,8 +222,8 @@ export default class NetworkScreen extends Lightning.Component {
                 }
                 _handleEnter() {
                     if (AlexaApi.get().checkAlexaAuthStatus() !== "AlexaUserDenied" && GLOBALS.AlexaAvsstatus) {
-                        Network.get().isConnectedToInternet().then(result => {
-                            if (result)
+                        NetworkManager.IsConnectedToInternet().then(result => {
+                            if (result.connected)
                                 Registry.setTimeout(() => { 
                                 Router.navigate('AlexaLoginScreen') 
                             }, (Router.isNavigating() ? 20 : 0));

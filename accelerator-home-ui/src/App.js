@@ -52,6 +52,7 @@ import { Localization, Metrics } from '@firebolt-js/sdk';
 import RDKShellApis from './api/RDKShellApis.js';
 import Miracast from './api/Miracast.js';
 import MiracastNotification from './screens/MiracastNotification.js';
+import NetworkManager from './api/NetworkManagerAPI.js';
 
 
 var powerState = 'ON';
@@ -98,8 +99,7 @@ export default class App extends Router.App {
         console.log("is online");
       }
       else {
-        Storage.set("ipAddress", null);
-        console.log("is offline")
+        console.log(`is offline`)
       }
     }
     window.addEventListener("offline", updateAddress)
@@ -647,6 +647,11 @@ export default class App extends Router.App {
           this.SubscribeToMiracastService()
         }
       }
+      if (noti.callsign === "org.rdk.NetworkManager") {
+        if(noti.data.state==="activated"){
+          this.SubscribeToNetworkManager()
+        }
+      }
     })
     this._subscribeToRDKShellNotifications()
     appApi.getPluginStatus("Cobalt").then(() => {
@@ -713,6 +718,17 @@ export default class App extends Router.App {
         }
       })
     }
+    appApi.getPluginStatus('org.rdk.NetworkManager').then(result => {
+      if (result[0].state === "activated")
+      {
+        this.SubscribeToNetworkManager()
+      }
+      else
+      {
+        NetworkManager.activate().then((res)=>{
+        }).catch((err) => console.error(err))
+      }
+    })
     appApi.getPluginStatus('org.rdk.MiracastPlayer').then(result => {
       if (result[0].state === "activated")
       {
@@ -812,7 +828,35 @@ export default class App extends Router.App {
     this._updateLanguageToDefault()
   }
 
-    SubscribeToMiracastService() {
+  SubscribeToNetworkManager(){
+    thunder.on('org.rdk.NetworkManager', 'onInterfaceStateChange', data => {
+      console.warn("onInterfaceStateChange:", data);
+    });
+    thunder.on('org.rdk.NetworkManager', 'onAddressChange', data => {
+      console.warn(" onAddressChange:", data);
+    });
+    thunder.on('org.rdk.NetworkManager', 'onActiveInterfaceChange', data => {
+      console.warn("onActiveInterfaceChange:", data);
+    });
+    thunder.on('org.rdk.NetworkManager', 'onInternetStatusChange', data => {
+      if(data.status === "FULLY_CONNECTED")
+      {
+        GLOBALS.IsConnectedToInternet = true
+      }
+      console.warn("onInternetStatusChange:", data);
+    });
+    thunder.on('org.rdk.NetworkManager', 'onAvailableSSIDs', data => {
+      console.warn(" onAvailableSSIDs:", data);
+    });
+    thunder.on('org.rdk.NetworkManager', 'onWiFiStateChange', data => {
+      console.warn("onWiFiStateChange:", data);
+    });
+    thunder.on('org.rdk.NetworkManager', 'onWiFiSignalStrengthChange', data => {
+      console.warn("onWiFiSignalStrengthChange:", data);
+    });
+
+  }
+  SubscribeToMiracastService() {
     thunder.on('org.rdk.MiracastService.1', 'onClientConnectionRequest', data => {
       this.LOG('onClientConnectionRequest ' + JSON.stringify(data));
       this.tag("MiracastNotification").notify(data)

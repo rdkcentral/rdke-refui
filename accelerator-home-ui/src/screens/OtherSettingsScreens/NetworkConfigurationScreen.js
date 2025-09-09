@@ -20,8 +20,8 @@ import { Lightning, Utils, Language, Router } from '@lightningjs/sdk'
 import SettingsMainItem from '../../items/SettingsMainItem'
 import { COLORS } from '../../colors/Colors'
 import { CONFIG } from '../../Config/Config'
-import Network from '../../api/NetworkApi'
 import { Metrics } from '@firebolt-js/sdk'
+import NetworkManager from '../../api/NetworkManagerAPI'
 
 export default class NetworkConfigurationScreen extends Lightning.Component {
     pageTransition() {
@@ -144,12 +144,14 @@ export default class NetworkConfigurationScreen extends Lightning.Component {
         let _currentIPSettings = {}
         let _newIPSettings = {}
 
-        Network.get().getDefaultInterface().then(interfaceName => {
-            this.$NetworkInterfaceText(interfaceName)
+        NetworkManager.GetPrimaryInterface().then(interfaceName => {
+            if(interfaceName === "eth0"){this.$NetworkInterfaceText("ETHERNET")}
+            if(interfaceName === "wlan0"){this.$NetworkInterfaceText("WIFI")}
         })
 
-        this.onDefaultIfaceChangedCB = Network.get()._thunder.on(Network.get().callsign, 'onDefaultInterfaceChanged', data => {
-            this.$NetworkInterfaceText(data.newInterfaceName)
+        this.onDefaultIfaceChangedCB = NetworkManager.thunder.on(NetworkManager.callsign, 'onActiveInterfaceChange', data => {
+            if(data.currentActiveInterface === "eth0"){this.$NetworkInterfaceText("ETHERNET")}
+            else{this.$NetworkInterfaceText("WIFI")}
             this.tag('TestInternetAccess.Title').text.text = Language.translate('Test Internet Access: ')
             Metrics.action("user", "User changed the network interface", null)
         });
@@ -239,9 +241,9 @@ export default class NetworkConfigurationScreen extends Lightning.Component {
                 async _handleEnter() {
                     this.loadingAnimation.start()
                     this.tag('TestInternetAccess.Loader').visible = true
-                    await Network.get().isConnectedToInternet().then(result => {
+                    await NetworkManager.IsConnectedToInternet().then(result => {
                         var connectionStatus = Language.translate("Internet Access: ")
-                        if (result) {
+                        if (result.connected) {
                             connectionStatus += Language.translate("Connected")
                         } else {
                             connectionStatus += Language.translate("Disconnected")

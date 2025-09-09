@@ -20,7 +20,6 @@ import { Lightning, Language, Settings, Storage } from '@lightningjs/sdk'
 import { COLORS } from '../../colors/Colors'
 import { CONFIG, GLOBALS } from '../../Config/Config'
 import AppApi from '../../api/AppApi.js';
-import NetworkApi from '../../api/NetworkApi'
 import FireBoltApi from '../../api/firebolt/FireBoltApi';
 /**
  * Class for Video and Audio screen.
@@ -190,7 +189,6 @@ export default class DeviceInformationScreen extends Lightning.Component {
     }
 
     _init() {
-        this._network = new NetworkApi();
         this.appApi = new AppApi();
     }
 

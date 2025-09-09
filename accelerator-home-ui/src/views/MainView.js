@@ -28,7 +28,7 @@ import HomeApi from '../api/HomeApi.js'
 import GracenoteItem from '../items/GracenoteItem.js'
 import { List } from '@lightningjs/ui'
 import HDMIApi from '../api/HDMIApi.js'
-import Network from '../api/NetworkApi.js'
+import NetworkManager from '../api/NetworkManagerAPI.js'
 import FireBoltApi from '../api/firebolt/FireBoltApi.js'
 
 /** Class for main view component in home UI */
@@ -324,7 +324,7 @@ export default class MainView extends Lightning.Component {
 
     await this.homeApi.checkAppCompatability(appItems).then(res => {
       appItems = res
-    })
+    }).catch((err)=>console.log("checkappcompatability"+err))
 
 
     let prop_apps = 'applications'
@@ -442,7 +442,7 @@ export default class MainView extends Lightning.Component {
 
       return listener;
     }
-    Network.get()._thunder.on('org.rdk.Network.1', 'onInternetStatusChange', notification => {
+    NetworkManager.thunder.on('org.rdk.NetworkManager', 'onInternetStatusChange', notification => {
       this.LOG('on InternetStatus Change' + JSON.stringify(notification))
       this.refreshSecondRow()
     })
@@ -898,9 +898,9 @@ export default class MainView extends Lightning.Component {
             launchLocation: "mainView",
             appIdentifier: appIdentifier
           }
-          await Network.get().isConnectedToInternet()
+          await NetworkManager.IsConnectedToInternet()
             .then(result => {
-              if (result) {
+              if (result.connected) {
                 this.appApi.launchApp(applicationType, params).catch(err => {
                   this.ERR("ApplaunchError: " + JSON.stringify(err))
                 });
@@ -957,7 +957,7 @@ export default class MainView extends Lightning.Component {
         async _handleEnter() {
           if (Router.isNavigating()) return;
           try {
-            this.internetConnectivity = await Network.get().isConnectedToInternet();
+            this.internetConnectivity = await NetworkManager.IsConnectedToInternet();
           } catch {
             this.internetConnectivity = false
           }
