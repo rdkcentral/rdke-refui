@@ -23,9 +23,18 @@ import ConfirmAndCancel from '../../items/ConfirmAndCancel'
 import PasswordSwitch from '../../screens/PasswordSwitch'
 import { Keyboard } from '../../ui-components/index'
 import { KEYBOARD_FORMATS } from '../../ui-components/components/Keyboard'
-import WiFi from '../../api/WifiApi'
+import NetworkManager from '../../api/NetworkManagerAPI'
+import FailComponent from './FailComponent'
 
 export default class WifiPairingScreen extends Lightning.Component {
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
+
   static _template() {
     return {
       PairingScreen: {
@@ -109,6 +118,10 @@ export default class WifiPairingScreen extends Lightning.Component {
           formats: KEYBOARD_FORMATS.qwerty
         }
       },
+      FailScreen: {
+        type: FailComponent,
+        visible: false
+      }
     }
   }
 
@@ -163,26 +176,34 @@ export default class WifiPairingScreen extends Lightning.Component {
       this.fireAncestors("$navigateBack")
     } else if (option === 'Connect') {
       if (this._item) {
-        console.log('trying to connect wifi')
+        this.LOG("trying to connect wifi")
         this.startConnect(this.passwd)
       }
     } else if (option === 'Disconnect') {
-      WiFi.get().disconnect().then(() => {
+      NetworkManager.WiFiDisconnect().then(() => {
         this.fireAncestors("$navigateBack")
       })
     }
   }
 
   startConnect(password = "") {
-    WiFi.get().connect(false, this._item, password).then(() => {
-      WiFi.get().saveSSID(this._item.ssid, password, this._item.security).then(() => {
-        console.log('Started connect and saved SSID; going back now.')
+    NetworkManager.WiFiConnect(false, this._item, password).then(() => {
+      NetworkManager.AddToKnownSSIDs(this._item.ssid, password, this._item.security).then(() => {
+        this.LOG("Started connect and saved SSID; going back now.")
         this.fireAncestors("$navigateBack")
       });
     }).catch(err => {
-      console.log('Not able to connect to wifi', JSON.stringify(err))
-      this.fireAncestors("$navigateBack")
+      this.ERR("Not able to connect to wifi: " + JSON.stringify(err))
+      this.tag("FailScreen").notify({ title: 'WiFi Status', msg: Language.translate(`Wificonnect API response: ${err}`) })
+      this._setState('FailScreen');
     });
+  }
+  hide() {
+    this.tag('PairingScreen').visible = false
+  }
+
+  show() {
+    this.tag('PairingScreen').visible = true
   }
 
   static _states() {
@@ -205,7 +226,7 @@ export default class WifiPairingScreen extends Lightning.Component {
             this.star = this.star.substring(0, this.star.length - 1);
             this._updateText(this.hidePasswd ? this.star : this.passwd)
           } else if (key === '#@!' || key === 'abc' || key === 'áöû' || key === 'shift') {
-            console.log('no saving')
+            this.LOG("no saving")
           } else if (key === 'Space') {
             this.star += '\u25CF'
             this.passwd += ' '
@@ -276,6 +297,25 @@ export default class WifiPairingScreen extends Lightning.Component {
         }
         $exit() {
           this.tag("PasswordBox").texture = Lightning.Tools.getRoundRect(1279, 88, 0, 3, 0xffffffff, false)
+        }
+      },
+      class FailScreen extends this {
+        $enter() {
+          this.hide()
+          this.tag('FailScreen').visible = true
+        }
+        $exit() {
+          this.show()
+          this.tag('FailScreen').visible = false
+        }
+        _getFocused() {
+          return this.tag('FailScreen')
+        }
+        _handleBack() {
+          this.fireAncestors("$navigateBack")
+        }
+        _handleEnter() {
+          this.fireAncestors("$navigateBack")
         }
       }
     ]

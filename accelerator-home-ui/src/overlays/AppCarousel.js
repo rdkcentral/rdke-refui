@@ -7,6 +7,13 @@ import RDKShellApis from "../api/RDKShellApis.js";
 import { GLOBALS } from "../Config/Config.js";
 
 export default class AppCarousel extends Lightning.Component {
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
 
   static _template() {
     return {
@@ -63,12 +70,12 @@ export default class AppCarousel extends Lightning.Component {
   }
   async _focus() {
     let self = this
-    console.log("self.homeApi.getAppListInfo()", self.homeApi.getAppListInfo());
+    this.LOG("self.homeApi.getAppListInfo() " + JSON.stringify(self.homeApi.getAppListInfo()));
     self.metroApps = self.homeApi.getOnlineMetroApps()
     self.premiumApps = self.homeApi.getAppListInfo()
     self.showcaseApps = self.homeApi.getShowCaseApps()
     let order = Storage.get("appCarouselOrder")
-    console.log("order", order)
+    this.LOG("order " + JSON.stringify(order))
     let apps = []
     if (order) {
       let storedApps = order.split(",")
@@ -90,7 +97,7 @@ export default class AppCarousel extends Lightning.Component {
           self.metroApps[index] = -1
         }
       })
-      console.log("APPS ARRAY: ", apps)
+      this.LOG("APPS ARRAY: " + JSON.stringify(apps))
       self.premiumApps.map(papp => {
         if (papp !== -1 && papp.uri != "USB") {
           apps.push(papp)
@@ -144,7 +151,7 @@ export default class AppCarousel extends Lightning.Component {
     })
   }
   _unfocus() {
-    console.log("unfocus")
+    this.LOG("unfocus")
     this.close();
   }
 
@@ -171,7 +178,7 @@ export default class AppCarousel extends Lightning.Component {
         }
 
         _handleLeft() {
-          console.log("H left")
+          this.LOG("H left")
         }
         async _handleEnter() {
           let applicationType = this.tag('AppList').items[this.tag('AppList').index].data.applicationType;
@@ -185,7 +192,7 @@ export default class AppCarousel extends Lightning.Component {
           this.appApi.launchApp(applicationType, params).then(() => {
             Router.focusPage();
           }).catch(err => {
-            console.log("ApplaunchError: ", err)
+            this.ERR("ApplaunchError: " + JSON.stringify(err))
           });
         }
       },

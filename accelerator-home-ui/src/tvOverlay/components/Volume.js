@@ -19,9 +19,17 @@
 
 import { Lightning, Registry, Utils, Storage } from "@lightningjs/sdk";
 import AppApi from "../../api/AppApi";
-import { CONFIG } from "../../Config/Config";
+import { CONFIG, GLOBALS } from "../../Config/Config";
 
 export default class Volume extends Lightning.Component {
+    constructor(...args) {
+        super(...args);
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
+
     static _template() {
         return {
             rect: true, w: 1920, h: 320, color: 0xFF000000, y: -320, alpha: 0.9,
@@ -66,13 +74,13 @@ export default class Volume extends Lightning.Component {
         this.volTimeout = null
         this.volume = 0
         this.getMuteStatus();
-        console.log("_firstEnable this.mute-", this.mute);
+        this.LOG("_firstEnable this.mute-" + JSON.stringify(this.mute));
     }
 
     async onVolumeKeyDown() {
         this.volume = await this.getVolume();
         this.focus();
-        console.log("onVolumeKeyDown this.mute-", this.mute);
+        this.LOG("onVolumeKeyDown this.mute-" + JSON.stringify(this.mute));
         this._updateIcon(this.mute)
         this._updateText(this.volume);
         this.volTimeout && Registry.clearTimeout(this.volTimeout)
@@ -82,6 +90,10 @@ export default class Volume extends Lightning.Component {
         if (this.volume > 0) {
             this.volume -= 5;
             if (this.setVolume(this.volume)) {
+                if(this.mute) {
+                    this._updateIcon((!this.mute))
+                    this.setMute(!this.mute)
+                }
                 this._updateText(this.volume)
             }
         }
@@ -90,6 +102,7 @@ export default class Volume extends Lightning.Component {
     async onVolumeKeyUp() {
         this.volume = await this.getVolume();
         this.focus();
+        this.LOG("onVolumeKeyUp this.mute-" + JSON.stringify(this.mute));
         this._updateIcon(this.mute)
         this._updateText(this.volume);
         this.volTimeout && Registry.clearTimeout(this.volTimeout)
@@ -105,6 +118,13 @@ export default class Volume extends Lightning.Component {
                 }
                 this._updateText(this.volume)
             }
+        }
+        else{
+            this.setVolume(this.volume)
+            if(this.mute) {
+                    this._updateIcon((!this.mute))
+                    this.setMute(!this.mute)
+                }
         }
     }
 
@@ -126,6 +146,7 @@ export default class Volume extends Lightning.Component {
         this.volume = await this.getVolume();
         this.getMuteStatus()
         this.focus();
+        this.LOG("onVolumeChanged v-" + JSON.stringify(v));
         if(v) {
             this._updateIcon(!v)
             this.setMute(!v)
@@ -141,8 +162,8 @@ export default class Volume extends Lightning.Component {
     setVolume = async (val) => {
         let audioport = await this.getAudioPorts()
         for (let i = 0; i < audioport.length; i++) {
-            if ((Storage.get("deviceType") == "tv" && audioport[i].startsWith("SPEAKER")) ||
-                (Storage.get("deviceType") != "tv" && audioport[i].startsWith("HDMI"))) {
+            if ((GLOBALS.deviceType == "IpTv" && audioport[i].startsWith("SPEAKER")) ||
+                (GLOBALS.deviceType != "IpTv" && audioport[i].startsWith("HDMI"))) {
                 await this.appApi.setVolumeLevel(audioport[i], val)
             }
         }
@@ -152,8 +173,8 @@ export default class Volume extends Lightning.Component {
     setMute = async (val) => {
         let audioport = await this.getAudioPorts()
         for (let i = 0; i < audioport.length; i++) {
-            if ((Storage.get("deviceType") == "tv" && audioport[i].startsWith("SPEAKER")) ||
-                (Storage.get("deviceType") != "tv" && audioport[i].startsWith("HDMI"))) {
+            if ((GLOBALS.deviceType == "IpTv" && audioport[i].startsWith("SPEAKER")) ||
+                (GLOBALS.deviceType != "IpTv" && audioport[i].startsWith("HDMI"))) {
                 this.appApi.audio_mute(audioport[i], val)
             }
         }
@@ -163,8 +184,8 @@ export default class Volume extends Lightning.Component {
     getMuteStatus = async () => {
         let audioport = await this.getAudioPorts()
         for (let i = 0; i < audioport.length; i++) {
-            if ((Storage.get("deviceType") == "tv" && audioport[i].startsWith("SPEAKER")) ||
-                (Storage.get("deviceType") != "tv" && audioport[i].startsWith("HDMI"))) {
+            if ((GLOBALS.deviceType == "IpTv" && audioport[i].startsWith("SPEAKER")) ||
+                (GLOBALS.deviceType != "IpTv" && audioport[i].startsWith("HDMI"))) {
                 this.appApi.getMuted(audioport[i]).then(result => {
                     if (result.success) {
                         this.mute = result.muted;
@@ -209,7 +230,7 @@ export default class Volume extends Lightning.Component {
             this.appApi.getConnectedAudioPorts().then(res => {
                 resolve(res.connectedAudioPorts)
             }).catch(err => {
-                console.error('Volume getConnectedAudioPorts error:', JSON.stringify(err, 3, null))
+                this.ERR('Volume getConnectedAudioPorts error:' + JSON.stringify(err, 3, null))
                 reject(false)
             })
         })
@@ -222,7 +243,7 @@ export default class Volume extends Lightning.Component {
                 this._updateIcon(this.mute);
                 resolve(true)
             }).catch(err => {
-                console.error('Volume updateIcon error:', JSON.stringify(err, 3, null))
+                this.ERR('Volume updateIcon error:' + JSON.stringify(err, 3, null))
                 reject(false)
             });
         })
@@ -233,15 +254,15 @@ export default class Volume extends Lightning.Component {
             let audioport = await this.getAudioPorts()
             /* Returns an array. */
             for (let i = 0; i < audioport.length; i++) {
-                if ((Storage.get("deviceType") == "tv" && audioport[i].startsWith("SPEAKER")) ||
-                    (Storage.get("deviceType") != "tv" && audioport[i].startsWith("HDMI"))) {
+                if ((GLOBALS.deviceType == "IpTv" && audioport[i].startsWith("SPEAKER")) ||
+                    (GLOBALS.deviceType != "IpTv" && audioport[i].startsWith("HDMI"))) {
                     this.appApi.getVolumeLevel(audioport[i]).then(async res1 => {
                         await this.updateIcon(audioport[i])
                         if (res1) {
                             resolve(parseInt(res1.volumeLevel));
                         }
                     }).catch(err => {
-                        console.error('Volume getVolumeLevel error:', JSON.stringify(err, 3, null))
+                        this.ERR('Volume getVolumeLevel error:' + JSON.stringify(err, 3, null))
                         reject(false)
                     })
                 }

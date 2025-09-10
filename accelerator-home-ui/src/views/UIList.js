@@ -25,6 +25,14 @@ import Item from "../items/item";
 const homeApi = new HomeApi()
 
 export default class UIList extends Lightning.Component {
+    constructor(...args) {
+        super(...args);
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
+
     static _template() {
         return {
             w: 1920,
@@ -69,7 +77,7 @@ export default class UIList extends Lightning.Component {
 
     _handleEnter() {
         if (this.tag('UI').currentItem._item.title != 'DEFAULT') {
-            console.log('Redirect to url')
+            this.LOG('Redirect to url')
             return
         }
         Router.navigate('menu')

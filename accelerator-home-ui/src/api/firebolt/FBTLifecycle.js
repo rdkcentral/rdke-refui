@@ -22,32 +22,36 @@ import { Lifecycle, Metrics } from '@firebolt-js/sdk'
 export default class FBTLifecycle {
     constructor() {
         this._events = new Map();
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
         Lifecycle.listen('background', value => {
-            console.log('Fireboltapi background ' + JSON.stringify(value));
+            this.LOG("Fireboltapi background " + JSON.stringify(value));
             if (this._events.has('background')) {
                 this._events.get('background')(value)
             }
         })
         Lifecycle.listen('foreground', value => {
-            console.log('Fireboltapi foreground ' + JSON.stringify(value));
+            this.LOG("Fireboltapi foreground " + JSON.stringify(value));
             if (this._events.has('foreground')) {
                 this._events.get('foreground')(value)
             }
         })
         Lifecycle.listen('inactive', value => {
-            console.log('Fireboltapi inactive ' + JSON.stringify(value));
+            this.LOG("Fireboltapi inactive " + JSON.stringify(value));
             if (this._events.has('inactive')) {
                 this._events.get('inactive')(value)
             }
         })
         Lifecycle.listen('suspended', value => {
-            console.log('Fireboltapi suspended ' + JSON.stringify(value));
+            this.LOG("Fireboltapi suspended " + JSON.stringify(value));
             if (this._events.has('suspended')) {
                 this._events.get('suspended')(value)
             }
         })
         Lifecycle.listen('unloading', value => {
-            console.log('Fireboltapi unloading ' + JSON.stringify(value));
+            this.LOG("Fireboltapi unloading " + JSON.stringify(value));
             if (this._events.has('unloading')) {
                 this._events.get('unloading')(value)
             }
@@ -62,11 +66,11 @@ export default class FBTLifecycle {
         return new Promise((resolve, reject) => {
             Lifecycle.close("remoteButton")
                 .then(success => {
-                    console.log(success)
+                    this.LOG("Fireboltapi close success: " + JSON.stringify(success))
                     resolve(success)
                 })
                 .catch(err => {
-                    console.error('firebolt Lifecycle.close error', err)
+                    this.ERR("firebolt Lifecycle.close error: " + JSON.stringify(err))
                     Metrics.error(Metrics.ErrorType.OTHER, "LifecycleError", err, false, null)
                     reject(err)
                 })
@@ -76,11 +80,11 @@ export default class FBTLifecycle {
         return new Promise((resolve, reject) => {
             Lifecycle.finished()
                 .then(results => {
-                    console.log(results)
+                    this.LOG("Fireboltapi finished results: " + JSON.stringify(results))
                     resolve(results)
                 })
                 .catch(err => {
-                    console.error('firebolt Lifecycle.finished error', err)
+                    this.ERR("firebolt Lifecycle.finished error: " + JSON.stringify(err))
                     Metrics.error(Metrics.ErrorType.OTHER, "LifecycleError", err, false, null)
                     reject(err)
                 })
@@ -90,13 +94,11 @@ export default class FBTLifecycle {
         return new Promise((resolve, reject) => {
             Lifecycle.ready()
                 .then(result => {
-                    console.log("getting result")
-                    console.log(result)
+                    this.LOG("Fireboltapi ready result: " + JSON.stringify(result))
                     resolve(result)
-
                 })
                 .catch(err => {
-                    console.error('firebolt Lifecycle.ready error', err)
+                    this.ERR("firebolt Lifecycle.ready error: " + JSON.stringify(err))
                     Metrics.error(Metrics.ErrorType.OTHER, "LifecycleError", err, false, null)
                     reject(err)
                 })
@@ -105,7 +107,7 @@ export default class FBTLifecycle {
     state() {
         return new Promise((resolve) => {
             const state = Lifecycle.state()
-            console.log(state)
+            this.LOG("Fireboltapi state: " + JSON.stringify(state))
             resolve(state)
         })
     }

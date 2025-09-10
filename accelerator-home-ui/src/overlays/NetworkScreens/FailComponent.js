@@ -22,9 +22,16 @@ import { CONFIG } from "../../Config/Config";
 const errorTitle = 'Error Title'
 const errorMsg = 'Error Message'
 export default class FailComponent extends Lightning.Component {
+    constructor(...args) {
+        super(...args);
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
 
     notify(args) {
-        console.log(args)
+        this.LOG("FailComponent notify args: " + JSON.stringify(args))
         if (args.title && args.msg) {
             this.tag('FailComponent.Title').text.text = args.title
             this.tag('FailComponent.Message').text.text = Language.translate(args.msg)
@@ -44,7 +51,10 @@ export default class FailComponent extends Lightning.Component {
 
     _active() {
         this.tag('Timer').text.text =""
-        this.initTimer()
+        if(this.timeout>0)
+        {
+            this.initTimer()
+        }
     }
     initTimer() {
         this.timeInterval = Registry.setInterval(() => {
@@ -53,7 +63,7 @@ export default class FailComponent extends Lightning.Component {
                 --this.timeout
             }
             else {
-                Router.focusPage();
+                this.fireAncestors("$navigateBack")
             }
         }, 1000)
     }

@@ -23,6 +23,14 @@ import TvOverlayInputItem from "../../items/TvOverlayInputItem";
 import HDMIApi from "../../api/HDMIApi";
 
 export default class TvOverlayInputScreen extends Lightning.Component {
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
+
   static _template() {
     return {
       Contents: {
@@ -86,7 +94,7 @@ export default class TvOverlayInputScreen extends Lightning.Component {
   }
 
   refreshItems(selected) {
-    console.log("refreshItems called: rendering the items");
+    this.LOG("refreshItems called: rendering the items");
     this.tag("List").items = this.inputItems.map((item, index) => {
       return {
         ref: "Inputs" + index,
@@ -125,7 +133,7 @@ export default class TvOverlayInputScreen extends Lightning.Component {
   }
 
   $getInputs() {
-    console.log("fetching hdmi input options"); //call get inputs and refresh items after an event
+    this.LOG("fetching hdmi input options"); //call get inputs and refresh items after an event
 
     this.hdmiApi
       .getHDMIDevices()
@@ -134,7 +142,7 @@ export default class TvOverlayInputScreen extends Lightning.Component {
         this.refreshItems(Storage.get("_currentInputMode"));
       })
       .catch((err) => {
-        console.log("inputScreen: getHDMIDevices Error: ", JSON.stringify(err));
+        this.ERR("inputScreen: getHDMIDevices Error: " + JSON.stringify(err));
       });
   }
 

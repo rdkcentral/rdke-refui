@@ -21,6 +21,13 @@ import { CONFIG } from '../Config/Config'
 import AlexaApi from '../api/AlexaApi'
 
 export default class AlexaLoginScreen extends Lightning.Component {
+    constructor(...args) {
+        super(...args);
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
     static _template() {
         return {
             Wrapper:{
@@ -133,7 +140,7 @@ export default class AlexaLoginScreen extends Lightning.Component {
                 }
                 async _handleEnter() {
                     if(AlexaApi.get().checkAlexaAuthStatus() != "AlexaUserDenied"){
-                        console.log("Code coming from AlexaLoginScreen")
+                        this.LOG("Code coming from AlexaLoginScreen")
                         Router.navigate("CodeScreen")
                     }
                  }

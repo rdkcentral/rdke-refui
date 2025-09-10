@@ -22,6 +22,14 @@ import { Keyboard } from '../../../ui-components/index'
 import { KEYBOARD_FORMATS } from '../../../ui-components/components/Keyboard'
 import PasswordSwitch from '../../../screens/PasswordSwitch';
 export default class KeyboardScreen extends Lightning.Component {
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
+
   set params(args) {
     if (args.message !== "") {
       this.tag('Description').text.text = Language.translate(args.message)
@@ -32,7 +40,7 @@ export default class KeyboardScreen extends Lightning.Component {
     if (args.type === 'password') {
       this.password = true
       this.hidePasswd = true;
-      console.log("Making the password switch visible")
+      this.LOG("Making the password switch visible")
       this.tag('PasswrdSwitch').patch({
         visible: true
       });
@@ -244,7 +252,7 @@ export default class KeyboardScreen extends Lightning.Component {
             this.tag("InputText").text.text = this.hidePasswd ? this.textCollection['encrypted'] : this.textCollection['TextBox'];
           }
           else if (key === '#@!' || key === 'abc' || key === 'áöû' || key === 'shift') {
-            console.log('no saving')
+            this.LOG('no saving')
           }
           else {
             this.textCollection['TextBox'] += key

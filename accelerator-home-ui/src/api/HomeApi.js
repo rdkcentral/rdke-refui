@@ -16,8 +16,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-import { Storage } from "@lightningjs/sdk";
-import Network from "../api/NetworkApi";
 import AppApi from "./AppApi";
 import { GLOBALS } from "../Config/Config.js";
 import { appListInfo } from "./../../static/data/AppListInfo.js";
@@ -35,29 +33,18 @@ import xml2json from "@hendt/xml2json";
 import PersistentStoreApi from "./PersistentStore.js";
 
 let partnerApps = [];
-
-/**
- * Get the ip address.
- */
-let IpAddress1 = "";
-let IpAddress2 = "";
-
-Network.get().getStbIp().then((ip) => {
-  IpAddress1 = ip;
-  Storage.set("ipAddress", IpAddress1);
-}).catch(() => {
-  Storage.set("ipAddress", null);
-});
-
 let appApi = new AppApi();
-appApi.getIP().then((ip) => {
-  IpAddress2 = ip;
-});
 
 /**
  * Class that returns the data required for home screen.
  */
 export default class HomeApi {
+  constructor() {
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
   /**
    * Function to get details for app listing.
    */
@@ -118,7 +105,7 @@ export default class HomeApi {
   getMetroInfo() {
     let metroAppsMetaData;
 
-    if (IpAddress1 || IpAddress2) {
+    if (GLOBALS.IsConnectedToInternet) {
       metroAppsMetaData = metroAppsInfo;
     } else {
       metroAppsMetaData = metroAppsInfoOffline;
@@ -170,12 +157,12 @@ export default class HomeApi {
                 resolve(xml2json(res));
               });
           } catch (err) {
-            console.log("API key not defined." + JSON.stringify(err));
+            this.ERR("API key not defined." + JSON.stringify(err));
             Metrics.error(Metrics.ErrorType.OTHER,"ApiError", JSON.stringify(err), false, null)
           }
         }
       }).catch((err) => {
-        console.log("Gracenote Info not found." + JSON.stringify(err));
+        this.ERR("Gracenote Info not found." + JSON.stringify(err));
       });
     });
   }
@@ -207,7 +194,7 @@ export default class HomeApi {
                 });
               })
               .catch((err) => {
-                console.log("Gracenote: Incorrect API key or no data available" + JSON.stringify(err));
+                this.ERR("Gracenote: Incorrect API key or no data available" + JSON.stringify(err));
                 Metrics.error(Metrics.ErrorType.OTHER,"ApiError", JSON.stringify(err), false, null)
                 resolve({
                   key: res.value,
@@ -215,7 +202,7 @@ export default class HomeApi {
                 });
               });
           } catch (err) {
-            console.error("Gracenote fetch failed." + JSON.stringify(err));
+            this.ERR("Gracenote fetch failed." + JSON.stringify(err));
             Metrics.error(Metrics.ErrorType.OTHER,"ApiError", JSON.stringify(err), false, null)
             resolve({
               key: res.value,
@@ -223,7 +210,7 @@ export default class HomeApi {
             });
           }
         } else {
-          console.error("Gracenote apiKey is invalid in PersistentStore.");
+          this.ERR("Gracenote apiKey is invalid in PersistentStore.");
           Metrics.error(Metrics.ErrorType.OTHER,"ApiError", JSON.stringify(err), false, null)
           resolve({
             key: "",
@@ -231,7 +218,7 @@ export default class HomeApi {
           });
         }
       }).catch((err) => {
-        console.error("Gracenote apiKey not found in PersistentStore." + JSON.stringify(err));
+        this.ERR("Gracenote apiKey not found in PersistentStore." + JSON.stringify(err));
         resolve({
           key: "",
           data: [],
@@ -248,7 +235,7 @@ export default class HomeApi {
           callsign = "Cobalt"
         }
         await appApi.getPluginStatus(callsign).catch(err => {
-          console.log("Error:", err)
+          this.ERR("Error: " + JSON.stringify(err))
           items.splice(i, 1)
           i--
         })
@@ -268,7 +255,7 @@ export default class HomeApi {
           callsign = "Cobalt"
         }
         await appApi.getPluginStatus(callsign).catch(err => {
-          console.log("Error:", err)
+          this.ERR("Error: " + JSON.stringify(err))
           items.splice(i, 1)
           i--
         })

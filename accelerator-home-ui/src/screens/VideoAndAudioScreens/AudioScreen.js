@@ -20,7 +20,7 @@
 import { Lightning, Utils, Language, Router, Storage } from '@lightningjs/sdk'
 import SettingsMainItem from '../../items/SettingsMainItem'
 import { COLORS } from '../../colors/Colors'
-import { CONFIG } from '../../Config/Config'
+import { CONFIG, GLOBALS } from '../../Config/Config'
 import AppApi from '../../api/AppApi.js';
 
 /**
@@ -28,6 +28,14 @@ import AppApi from '../../api/AppApi.js';
  */
 
 export default class AudioScreen extends Lightning.Component {
+
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
 
   pageTransition() {
     return 'left'
@@ -285,58 +293,58 @@ export default class AudioScreen extends Lightning.Component {
            * 1 - get DRC Mode which doesnot return a drc mode and the success value is mostly false
            * 2- set Volume - able to set the value to 100
            * 3- get Volume - able to get the volume successfully as well
-           * 4- 
-           * 
+           * 4-
+           *
            */
           //console.log(`Enter input was given to dynamic range ... `);
           // gets the drc mode
           this.appApi.getDRCMode().then(res => {
           }).catch(err => {
-            console.log(err)
+            this.ERR("Error: " + JSON.stringify(err))
           })
 
-          this.appApi.setVolumeLevel(((Storage.get("deviceType")=="tv")?"SPEAKER0":"HDMI0"), 100).then(res => {
+          this.appApi.setVolumeLevel(((GLOBALS.deviceType=="IpTv")?"SPEAKER0":"HDMI0"), 100).then(res => {
             this.appApi.getVolumeLevel().catch(err => {
-              console.log(err)
+              this.ERR("Error: " + JSON.stringify(err))
             })
           }).catch(err => {
-            console.log(err)
+            this.ERR("Error: " + JSON.stringify(err))
           });
 
           this.appApi.getConnectedAudioPorts().then(res => {
           }).catch(err => {
-            console.log(err)
+            this.ERR("Error: " + JSON.stringify(err))
           })
           // gets the enabled Audio Port
-          this.appApi.getEnableAudioPort(((Storage.get("deviceType")=="tv")?"SPEAKER0":"HDMI0")).then(res => {
+          this.appApi.getEnableAudioPort(((GLOBALS.deviceType=="IpTv")?"SPEAKER0":"HDMI0")).then(res => {
           }).catch(err => {
-            console.log(err)
+            this.ERR("Error: " + JSON.stringify(err))
           })
 
           this.appApi.getSupportedAudioPorts().catch(err => {
-            console.log(`Error while getting the supported Audio ports ie. ${err}`);
+            this.ERR("Error while getting the supported Audio ports ie. " + JSON.stringify(err));
           });
 
           // set enable Audio POrt
-          this.appApi.setEnableAudioPort(((Storage.get("deviceType")=="tv")?"SPEAKER0":"HDMI0")).then(res => {
+          this.appApi.setEnableAudioPort(((GLOBALS.deviceType=="IpTv")?"SPEAKER0":"HDMI0")).then(res => {
 
-            this.appApi.getEnableAudioPort(((Storage.get("deviceType")=="tv")?"SPEAKER0":"HDMI0")).then(res => {
+            this.appApi.getEnableAudioPort(((GLOBALS.deviceType=="IpTv")?"SPEAKER0":"HDMI0")).then(res => {
 
             }).catch(err => {
-              console.log(err)
+              this.ERR("Error: " + JSON.stringify(err))
             })
           }).catch(err => {
-            console.log(err)
+            this.ERR("Error: " + JSON.stringify(err))
           });
 
           // set zoom setting ,possible values : FULL, NONE, Letterbox 16x9, Letterbox 14x9, CCO, PanScan, Letterbox 2.21 on 4x3, Letterbox 2.21 on 16x9, Platform, Zoom 16x9, Pillarbox 4x3, Widescreen 4x3
           this.appApi.setZoomSetting("FULL").then(res => {
             this.appApi.getZoomSetting().then(res => {
             }).catch(err => {
-              console.log(err)
+              this.ERR("Error: " + JSON.stringify(err))
             })
           }).catch(err => {
-            console.log(err)
+            this.ERR("Error: " + JSON.stringify(err))
           })
         }
       },

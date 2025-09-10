@@ -24,9 +24,10 @@ export default class VoiceApi {
   constructor() {
     this._events = new Map();
     this.thunder = ThunderJS(CONFIG.thunderConfig);
-    this.INFO = function () { };
-    this.LOG = function () { };
+    this.INFO = console.info;
+    this.LOG = console.log;
     this.ERR = console.error;
+    this.WARN = console.warn;
   }
   registerEvent(eventId, callback) {
     this._events.set(eventId, callback)
@@ -73,7 +74,7 @@ export default class VoiceApi {
         });
         resolve(true);
       }).catch(err => {
-        this.ERR('VoiceApi: Error Activation ', err);
+        this.ERR('VoiceApi: Error Activation ' + JSON.stringify(err));
         Metrics.error(Metrics.ErrorType.OTHER,"VoiceApiError", "Error while Thunder Controller VoiceApi activate "+JSON.stringify(err), false, null)
       })
     })
@@ -84,19 +85,19 @@ export default class VoiceApi {
         this.INFO("VoiceApi: deactivated org.rdk.VoiceControl")
         resolve(true)
       }).catch(err => {
-        this.ERR('VoiceApi: Error deactivation ', err)
+        this.ERR('VoiceApi: Error deactivation ' + JSON.stringify(err))
         Metrics.error(Metrics.ErrorType.OTHER,"VoiceApiError", "Error while Thunder Controller VoiceApi deactivate "+JSON.stringify(err), false, null)
       })
     })
   }
   configureVoice(params) {
     return new Promise((resolve) => {
-      this.INFO("VoiceApi: configure params:", params);
+      this.INFO("VoiceApi: configure params: " + JSON.stringify(params));
       this.thunder.call('org.rdk.VoiceControl', 'configureVoice', params).then(result => {
-        this.INFO("VoiceApi: configureVoice: " + JSON.stringify(params) + " result: ", JSON.stringify(result))
+        this.INFO("VoiceApi: configureVoice: " + JSON.stringify(params) + " result: " + JSON.stringify(result))
         resolve(result);
       }).catch(err => {
-        this.ERR("VoiceApi: configureVoice error:", err);
+        this.ERR("VoiceApi: configureVoice error: " + JSON.stringify(err));
         Metrics.error(Metrics.ErrorType.OTHER,"VoiceApiError", "Error while Thunder VoiceApi configureVoice "+JSON.stringify(err), false, null)
         resolve(false);
       });
@@ -104,12 +105,12 @@ export default class VoiceApi {
   }
   sendVoiceMessage(params) {
     return new Promise((resolve) => {
-      this.INFO("VoiceApi: sendVoiceMessage params:", params);
+      this.INFO("VoiceApi: sendVoiceMessage params: " + JSON.stringify(params));
       this.thunder.call('org.rdk.VoiceControl', 'sendVoiceMessage', params).then(result => {
-        this.INFO("VoiceApi: sendVoiceMessage result:", JSON.stringify(result))
+        this.INFO("VoiceApi: sendVoiceMessage result: " + JSON.stringify(result))
         resolve(result);
       }).catch(err => {
-        this.ERR("VoiceApi: sendVoiceMessage error:", err);
+        this.ERR("VoiceApi: sendVoiceMessage error: " + JSON.stringify(err));
         Metrics.error(Metrics.ErrorType.OTHER,"VoiceApiError", "Error in Thunder VoiceApi sendVoiceMessage "+JSON.stringify(err), false, null)
         resolve(false);
       });
@@ -117,12 +118,12 @@ export default class VoiceApi {
   }
   setVoiceInit(params) {
     return new Promise((resolve) => {
-      this.INFO("VoiceApi: setVoiceInit params:", params);
+      this.INFO("VoiceApi: setVoiceInit params: " + JSON.stringify(params));
       this.thunder.call('org.rdk.VoiceControl', 'setVoiceInit', params).then(result => {
-        this.INFO("VoiceApi: setVoiceInit result: ", JSON.stringify(result))
+        this.INFO("VoiceApi: setVoiceInit result: " + JSON.stringify(result))
         resolve(result);
       }).catch(err => {
-        this.ERR("VoiceApi: setVoiceInit error:", err);
+        this.ERR("VoiceApi: setVoiceInit error: " + JSON.stringify(err));
         Metrics.error(Metrics.ErrorType.OTHER,"VoiceApiError", "Error in Thunder VoiceApi setVoiceInit "+JSON.stringify(err), false, null)
         resolve(false);
       });
@@ -130,12 +131,12 @@ export default class VoiceApi {
   }
   voiceSessionByText(params) {
     return new Promise((resolve) => {
-      this.INFO("VoiceApi: voiceSessionByText params:", params);
+      this.INFO("VoiceApi: voiceSessionByText params: " + JSON.stringify(params));
       this.thunder.call('org.rdk.VoiceControl', 'voiceSessionByText', params).then(result => {
-        this.INFO("VoiceApi: voiceSessionByText result: ", JSON.stringify(result))
+        this.INFO("VoiceApi: voiceSessionByText result: " + JSON.stringify(result))
         resolve(result);
       }).catch(err => {
-        this.ERR("VoiceApi: voiceSessionByText error:", err);
+        this.ERR("VoiceApi: voiceSessionByText error: " + JSON.stringify(err));
         Metrics.error(Metrics.ErrorType.OTHER,"VoiceApiError", "Error in Thunder VoiceApi voiceSessionByText "+JSON.stringify(err), false, null)
         resolve(false);
       });
@@ -144,10 +145,10 @@ export default class VoiceApi {
   voiceSessionTypes() {
     return new Promise((resolve) => {
       this.thunder.call('org.rdk.VoiceControl', 'voiceSessionTypes').then(result => {
-        this.INFO("VoiceApi: voiceSessionTypes result: ", JSON.stringify(result))
+        this.INFO("VoiceApi: voiceSessionTypes result: " + JSON.stringify(result))
         resolve(result);
       }).catch(err => {
-        this.ERR("VoiceApi: voiceSessionTypes error:", err);
+        this.ERR("VoiceApi: voiceSessionTypes error: " + JSON.stringify(err));
         Metrics.error(Metrics.ErrorType.OTHER,"VoiceApiError", "Error in Thunder VoiceApi voiceSessionTypes "+JSON.stringify(err), false, null)
         resolve(false);
       });
@@ -155,12 +156,12 @@ export default class VoiceApi {
   }
   voiceSessionRequest(params) {
     return new Promise((resolve) => {
-      this.INFO("VoiceApi: voiceSessionRequest params", params);
+      this.INFO("VoiceApi: voiceSessionRequest params: " + JSON.stringify(params));
       this.thunder.call('org.rdk.VoiceControl', 'voiceSessionRequest', params).then(result => {
-        this.INFO("VoiceApi: voiceSessionRequest result: ", JSON.stringify(result))
+        this.INFO("VoiceApi: voiceSessionRequest result: " + JSON.stringify(result))
         resolve(result);
       }).catch(err => {
-        this.ERR("VoiceApi: voiceSessionRequest error:", err);
+        this.ERR("VoiceApi: voiceSessionRequest error: " + JSON.stringify(err));
         Metrics.error(Metrics.ErrorType.OTHER,"VoiceApiError", "Error in Thunder VoiceApi voiceSessionRequest "+JSON.stringify(err), false, null)
         resolve(false);
       });
@@ -168,12 +169,12 @@ export default class VoiceApi {
   }
   voiceSessionTerminate(params) {
     return new Promise((resolve) => {
-      this.INFO("VoiceApi: voiceSessionTerminate params:", params);
+      this.INFO("VoiceApi: voiceSessionTerminate params: " + JSON.stringify(params));
       this.thunder.call('org.rdk.VoiceControl', 'voiceSessionTerminate', params).then(result => {
-        this.INFO("VoiceApi: voiceSessionTerminate result: ", JSON.stringify(result))
+        this.INFO("VoiceApi: voiceSessionTerminate result: " + JSON.stringify(result))
         resolve(result);
       }).catch(err => {
-        this.ERR("VoiceApi: voiceSessionTerminate error:", err);
+        this.ERR("VoiceApi: voiceSessionTerminate error: " + JSON.stringify(err));
         Metrics.error(Metrics.ErrorType.OTHER,"VoiceApiError", "Error in Thunder VoiceApi voiceSessionTerminate "+JSON.stringify(err), false, null)
         resolve(false);
       });
@@ -181,12 +182,12 @@ export default class VoiceApi {
   }
   voiceSessionAudioStreamStart(params) {
     return new Promise((resolve) => {
-      this.INFO("VoiceApi: voiceSessionAudioStreamStart params:", params);
+      this.INFO("VoiceApi: voiceSessionAudioStreamStart params: " + JSON.stringify(params));
       this.thunder.call('org.rdk.VoiceControl', 'voiceSessionAudioStreamStart', params).then(result => {
-        this.INFO("VoiceApi: voiceSessionAudioStreamStart : " + JSON.stringify(params) + " result: ", JSON.stringify(result))
+        this.INFO("VoiceApi: voiceSessionAudioStreamStart : " + JSON.stringify(params) + " result: " + JSON.stringify(result))
         resolve(result);
       }).catch(err => {
-        this.ERR("VoiceApi: voiceSessionAudioStreamStart error:", err);
+        this.ERR("VoiceApi: voiceSessionAudioStreamStart error: " + JSON.stringify(err));
         Metrics.error(Metrics.ErrorType.OTHER,"VoiceApiError", "Error in Thunder VoiceApi voiceSessionAudioStreamStart "+JSON.stringify(err), false, null)
         resolve(false);
       });
@@ -196,10 +197,10 @@ export default class VoiceApi {
     return new Promise((resolve) => {
       this.INFO("VoiceApi: voiceStatus");
       this.thunder.call('org.rdk.VoiceControl', 'voiceStatus').then(result => {
-        this.INFO("VoiceApi: voiceStatus result: ", JSON.stringify(result))
+        this.INFO("VoiceApi: voiceStatus result: " + JSON.stringify(result))
         resolve(result);
       }).catch(err => {
-        this.ERR("VoiceApi: voiceStatus error:", err);
+        this.ERR("VoiceApi: voiceStatus error: " + JSON.stringify(err));
         Metrics.error(Metrics.ErrorType.OTHER,"VoiceApiError", "Error in Thunder VoiceApi voiceStatus "+JSON.stringify(err), false, null)
         resolve(false);
       });

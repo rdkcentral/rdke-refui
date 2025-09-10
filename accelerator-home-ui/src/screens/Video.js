@@ -1,12 +1,20 @@
 import { Lightning, Utils, VideoPlayer } from "@lightningjs/sdk";
 
 export default class Splash extends Lightning.Component {
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
+
   static _template() {
     return {};
   }
 
   _active() {
-    console.log("Activevideo")
+    this.LOG("Activevideo")
     VideoPlayer.playPause()
     VideoPlayer.consumer(this);
     VideoPlayer.size(1920, 1080);

@@ -22,6 +22,14 @@ import PictureSettingsApi from "../api/PictureSettingsApi";
 import { CONFIG } from "../Config/Config";
 
 export default class TvOverlaySettingsItem extends Lightning.Component {
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
+
   _construct() {
     this.pictureApi = new PictureSettingsApi();
   }
@@ -93,7 +101,7 @@ export default class TvOverlaySettingsItem extends Lightning.Component {
   }
 
   fetchAndUpdateValues() {
-    console.log("fetchAndUpdateValues got called!!!")
+    this.LOG("fetchAndUpdateValues got called!!!")
     if (Array.isArray(this._item.value)) {
       this.valueIdx = 0;
       this.valueLength = this._item.value.length;
@@ -101,7 +109,7 @@ export default class TvOverlaySettingsItem extends Lightning.Component {
       this.pictureApi
         .getSettingsValue(this._item.id)
         .then((res) => {
-          console.log("getSettingsValue Result from fetchAndUpdateValues(array): ",JSON.stringify(res));
+          this.LOG("getSettingsValue Result from fetchAndUpdateValues(array): " + JSON.stringify(res));
           let tIdx = this._item.value.indexOf(res);
           if (tIdx >= 0) {
             this.valueIdx = tIdx;
@@ -111,25 +119,19 @@ export default class TvOverlaySettingsItem extends Lightning.Component {
           );
         })
         .catch((err) => {
-          console.log(
-            "error from getSettingsValue(value is array) in set(item) in settings Item: ",
-            JSON.stringify(err)
-          );
+          this.ERR("error from getSettingsValue(value is array) in set(item) in settings Item: " + JSON.stringify(err));
         });
     } else {
       this.pictureApi
         .getSettingsValue(this._item.id)
         .then((res) => {
-          console.log("getSettingsValue Result from fetchAndUpdateValues(number): ", JSON.stringify(res));
+          this.LOG("getSettingsValue Result from fetchAndUpdateValues(number): " + JSON.stringify(res));
           this._item.value = +res;
           this.currentVal = +res; //to change to int
           this.updateValue(this._item.value);
         })
         .catch((err) => {
-          console.log(
-            "error from getSettingsValue(value is number) in set(item) in settings Item: ",
-            JSON.stringify(err)
-          );
+          this.ERR("error from getSettingsValue(value is number) in set(item) in settings Item: " + JSON.stringify(err));
         });
     }
   }
@@ -146,7 +148,7 @@ export default class TvOverlaySettingsItem extends Lightning.Component {
     try {
       clearTimeout(this.changeValueTimer);
     } catch {
-      console.log("CLEANUP ERROR");
+      this.ERR("CLEANUP ERROR");
     }
     if (this.currentVal + val <= 100 && this.currentVal + val >= 0) {
       this.currentVal += val;
@@ -154,18 +156,18 @@ export default class TvOverlaySettingsItem extends Lightning.Component {
     }
 
     this.changeValueTimer = setTimeout(() => {
-      console.log(`SENDING VALUE:${this.currentVal} TO API: ${this._item.id}`);
+      this.LOG(`SENDING VALUE:${this.currentVal} TO API: ${this._item.id}`);
       ///////////////// call set method and update the value in _item
       this.pictureApi
         .setSettingsValue(this._item.id, this.currentVal)
         .then((res) => {
-          console.log(JSON.stringify(res));
+          this.LOG(JSON.stringify(res));
           this._item.value = this.currentVal;
           this.updateValue(this.currentVal);
         })
         .catch((err) => {
-          console.log(JSON.stringify(err));
-          console.log("this._item: ", JSON.stringify(this._item));
+          this.ERR(JSON.stringify(err));
+          this.ERR("this._item: " + JSON.stringify(this._item));
         });
     }, 600);
   }
@@ -175,7 +177,7 @@ export default class TvOverlaySettingsItem extends Lightning.Component {
     try {
       clearTimeout(this.changePresetTimer);
     } catch {
-      console.log("CLEANUP ERROR");
+      this.ERR("CLEANUP ERROR");
     }
 
     if (direction === "left") {
@@ -192,7 +194,7 @@ export default class TvOverlaySettingsItem extends Lightning.Component {
     this.updateValue(this.formatItemName(this._item.value[this.valueIdx]));
 
     this.changePresetTimer = setTimeout(() => {
-      console.log(
+      this.LOG(
         `SENDING VALUE:${this._item.value[this.valueIdx]} TO API: ${
           this._item.id
         }`
@@ -201,15 +203,15 @@ export default class TvOverlaySettingsItem extends Lightning.Component {
       this.pictureApi
         .setSettingsValue(this._item.id, this._item.value[this.valueIdx])
         .then((res) => {
-          console.log(JSON.stringify(res));
-          console.log(this._item.value[this.valueIdx]);
+          this.LOG("setsettingsvalue response"+JSON.stringify(res));
+          this.LOG("setsettingsseleceted value"+JSON.stringify(this._item.value[this.valueIdx]));
           this.updateValue(
             this.formatItemName(this._item.value[this.valueIdx])
           );
           this.fireAncestors("$moveDownLock",false); //api call success  user can move down
         })
         .catch((err) => {
-          console.log(JSON.stringify(err));
+          this.ERR("setsettingsselected value error "+JSON.stringify(err));
         });
     }, 600);
   }

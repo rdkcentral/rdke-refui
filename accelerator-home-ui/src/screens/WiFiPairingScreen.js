@@ -17,16 +17,25 @@
  * limitations under the License.
  **/
 import { Language, Lightning, Registry, Router } from '@lightningjs/sdk'
-import { CONFIG } from '../Config/Config'
+import { CONFIG, GLOBALS } from '../Config/Config'
 import ConfirmAndCancel from '../items/ConfirmAndCancel'
 import PasswordSwitch from './PasswordSwitch'
 import { Keyboard } from '../ui-components/index'
 import { KEYBOARD_FORMATS } from '../ui-components/components/Keyboard'
-import WiFi, { WiFiError, WiFiState } from '../api/WifiApi'
-import Network from '../api/NetworkApi'
 import PersistentStoreApi from '../api/PersistentStore'
+import NetworkManager,{WiFiState} from '../api/NetworkManagerAPI'
+
+let Ssid = null
 
 export default class WifiPairingScreen extends Lightning.Component {
+
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
 
   pageTransition() {
     return 'left'
@@ -147,6 +156,7 @@ export default class WifiPairingScreen extends Lightning.Component {
     this.passwd = "";
     this.tag("Pwd").text.text = ""
     this.tag('Title').text = item.ssid
+    Ssid=item.ssid
     let options = []
     this._item = item
     if (item.connected) {
@@ -173,7 +183,6 @@ export default class WifiPairingScreen extends Lightning.Component {
     this._setState('Pair')
   }
   _unfocus() {
-
   }
 
   _active() {
@@ -183,24 +192,30 @@ export default class WifiPairingScreen extends Lightning.Component {
   }
 
   _inactive() {
-    if (this.onErrorCB) this.onErrorCB.dispose();
     if (this.onWIFIStateChangedCB) this.onWIFIStateChangedCB.dispose();
     if (this.waitToConnectTO) Registry.clearTimeout(this.waitToConnectTO);
   }
 
-  pressEnter(option) {
+   async pressEnter(option) {
     if (option === 'Cancel') {
       Router.back()
     } else if (option === 'Connect') {
+      GLOBALS.Wificonnectinprogress = true
+      const wificurrentstate=await NetworkManager.GetWifiState()
+      if(wificurrentstate === WiFiState.CONNECTED){
+        setTimeout(() => {
+          GLOBALS.Wificonnectinprogress = false
+        }, 5000);
+      }
       if (this._item) {
-        WiFi.get().connect(false, this._item, '').then(() => { })
+        NetworkManager.WiFiConnect(false, this._item, '').then(() => { })
           .catch(err => {
-            console.error('Not able to connect to wifi', JSON.stringify(err))
+            this.ERR("Not able to connect to wifi" + JSON.stringify(err))
           })
       }
       Router.back()
     } else if (option === 'Disconnect') {
-      WiFi.get().disconnect().then(() => {
+      NetworkManager.WiFiDisconnect().then(() => {
         Registry.setTimeout(() => {
           Router.back()
         }, (Router.isNavigating() ? 20 : 0));
@@ -208,35 +223,31 @@ export default class WifiPairingScreen extends Lightning.Component {
     }
   }
 
-  startConnect(password = "") {
+   async startConnect(password = "") {
+    GLOBALS.Wificonnectinprogress = true
+      const wificurrentstate=await NetworkManager.GetWifiState()
+      if(wificurrentstate === WiFiState.WIFI_STATE_CONNECTED){
+        setTimeout(() => {
+          GLOBALS.Wificonnectinprogress = false
+        }, 5000);
+      }
     let flag = 0
-    this.onErrorCB = WiFi.get().thunder.on(WiFi.get().callsign, 'onError', notification => {
-      if (notification.code === WiFiError.INVALID_CREDENTIALS || notification.code === WiFiError.SSID_CHANGED) {
-        console.log("INVALID_CREDENTIALS; deleting WiFi Persistence data.")
-        WiFi.get().clearSSID().then(() => {
+    this.onWIFIStateChangedCB = NetworkManager.thunder.on(NetworkManager.callsign, 'onWiFiStateChange', notification => {
+      if (notification.state === WiFiState.WIFI_STATE_INVALID_CREDENTIALS|| notification.state === WiFiState.WIFI_STATE_SSID_CHANGED) {
+        this.LOG("INVALID_CREDENTIALS; deleting WiFi Persistence data.")
+        NetworkManager.RemoveKnownSSID(Ssid).then(() => {
           PersistentStoreApi.get().deleteNamespace('wifi')
         });
         flag = 1
-        this.onErrorCB.dispose()
       }
     })
-    this.onWIFIStateChangedCB = WiFi.get().thunder.on(WiFi.get().callsign, 'onWIFIStateChanged', notification => {
-      if (notification.state === WiFiState.CONNECTED) {
-        Network.get().setDefaultInterface("WIFI").then(() => {
-          console.log("Successfully set WIFI as default interface.")
-        }).catch(err => {
-          console.error("Could not set WIFI as default interface." + JSON.stringify(err))
-        });
-        this.onWIFIStateChangedCB.dispose()
-      }
-    })
-    WiFi.get().connect(false, this._item, password).then(() => {
-      WiFi.get().saveSSID(this._item.ssid, password, this._item.security).then((response) => {
-        if (response.result === 0 && response.success === true && flag === 0) {
+    NetworkManager.WiFiConnect(false, this._item, password).then(() => {
+      NetworkManager.AddToKnownSSIDs(this._item.ssid, password, this._item.security).then((response) => {
+        if (response === true && flag === 0) {
           PersistentStoreApi.get().setValue('wifi', 'SSID', this._item.ssid)
         }
-        else if (response.result !== 0) {
-          WiFi.get().clearSSID();
+        else {
+          NetworkManager.RemoveKnownSSID(Ssid)
         }
       }).then(() => {
         // Immediate return causes some clash at plugin implementation level resulting not saving/connecting.
@@ -247,6 +258,17 @@ export default class WifiPairingScreen extends Lightning.Component {
         }, 5000);
       });
     })
+      .catch(err => {
+        this.ERR("Not able to connect to wifi" + JSON.stringify(err));
+        if (GLOBALS.Setup !== true) {
+          Router.navigate('splash/networkList', { wifiError: `Wificonnect API response: ${err}` });
+        }
+        else {
+          Router.back();
+          this.widgets.fail.notify({ title: 'WiFi Status', msg: Language.translate(`Wificonnect API response: ${err}`) })
+          Router.focusWidget('Fail')
+        }
+      })
   }
 
   static _states() {

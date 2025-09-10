@@ -25,9 +25,16 @@ let thunder = ThunderJS(CONFIG.thunderConfig)
 
 export default class PinChallengeProvider {
 
+  constructor(...args) {
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
+
   challenge(challenge, session) {
     if (!challenge) return
-    console.log('Got challenge ' + JSON.stringify(challenge), "challenge")
+    this.LOG('Got challenge ' + JSON.stringify(challenge) + " challenge")
 
     return new Promise((resolve) => {
       this.showChallengeUi(challenge, resolve)
@@ -36,7 +43,7 @@ export default class PinChallengeProvider {
   }
 
   showChallengeUi(challenge, responder) {
-    console.log("Displaying showChallengeUi with: " + GLOBALS.selfClientName)
+    this.LOG("Displaying showChallengeUi with: " + JSON.stringify(GLOBALS.selfClientName))
     new Promise(async (resolve) => {
       let message = challenge.requestor.name + ' is requesting that you enter your ' + challenge.pinSpace + ' pin.'
       let params = { message: message, challenge: challenge, responder }

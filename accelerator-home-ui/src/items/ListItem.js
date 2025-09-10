@@ -26,6 +26,14 @@ export default class ListItem extends Lightning.Component {
   /**
    * Function to render various elements in the main view item.
    */
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
+
   static _template() {
     return {
       Item: {
@@ -66,7 +74,7 @@ export default class ListItem extends Lightning.Component {
       y: this.y - this.bar
     })
     if(!this.data.url) {
-      console.log("data from app carousal: ", this.data);
+      this.LOG("data from app carousal: " + JSON.stringify(this.data));
     }
     if (this.data.url.startsWith('/images')) {
       this.tag('Image').patch({

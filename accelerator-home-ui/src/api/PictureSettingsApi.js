@@ -64,6 +64,10 @@ export default class PictureSettingsApi {
       _sharpness: {get: this.getSharpness.bind(this), set: this.setSharpness.bind(this)},
       _saturation: {get: this.getSaturation.bind(this), set: this.setSaturation.bind(this)}
     };
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
   }
 
   activate() {
@@ -71,17 +75,11 @@ export default class PictureSettingsApi {
       this._thunder
         .call("Controller", "activate", { callsign: this.callsign })
         .then(result => {
-          console.log(
-            "Activated tv.ControlSettings plugin: ",
-            JSON.stringify(result)
-          );
+          this.LOG("Activated tv.ControlSettings plugin: " + JSON.stringify(result));
           resolve(result);
         })
         .catch(err => {
-          console.log(
-            "Failed to activate tv.ControlSettings plugin: ",
-            JSON.stringify(err)
-          );
+          this.ERR("Failed to activate tv.ControlSettings plugin: " + JSON.stringify(err));
           Metrics.error(Metrics.ErrorType.OTHER,"PictureSettingsApiError", "Error while Thunder Controller TvControlSettings activate "+JSON.stringify(err), false, null)
           reject(err);
         });
@@ -89,13 +87,13 @@ export default class PictureSettingsApi {
   }
 
   getSettingsValue(settingsName) {
-    console.log("getSettingsValue called for : ",settingsName)
+    this.LOG("getSettingsValue called for : " + JSON.stringify(settingsName))
     return new Promise((resolve, reject) => {
       this.methodNames[settingsName].get().then(result => {
-        console.log(`Result from getSettingsValue API for ${settingsName} : ${JSON.stringify(result)}`)
+        this.LOG("Result from getSettingsValue API for " + JSON.stringify(settingsName) + " : " + JSON.stringify(result))
         resolve(result)
       }).catch(err => {
-        console.log(`Error from getSettingsValue API for ${settingsName} : ${JSON.stringify(err)}`)
+        this.ERR("Error from getSettingsValue API for " + JSON.stringify(settingsName) + " : " + JSON.stringify(err))
         Metrics.error(Metrics.ErrorType.OTHER,"PictureSettingsApiError", "Error in Thunder TvControlSettings getSettings "+JSON.stringify(err), false, null)
         reject(err)
       })
@@ -103,13 +101,13 @@ export default class PictureSettingsApi {
   }
 
   setSettingsValue(settingsName, value){
-    console.log("setSettingsValue called for : ",settingsName, " and for value: ",value)
+    this.LOG("setSettingsValue called for : " + JSON.stringify(settingsName) + " and for value: " + JSON.stringify(value))
     return new Promise((resolve, reject) => {
       this.methodNames[settingsName].set(value).then(result => {
-        console.log(`Result from setSettingsValue API for ${settingsName} : ${JSON.stringify(result)}`)
+        this.LOG("Result from setSettingsValue API for " + JSON.stringify(settingsName) + " : " + JSON.stringify(result))
         resolve(result)
       }).catch(err => {
-        console.log(`Error from setSettingsValue API for ${settingsName} and value : ${value} | Error: ${JSON.stringify(err)}`)
+        this.ERR("Error from setSettingsValue API for " + JSON.stringify(settingsName) + " and value : " + JSON.stringify(value) + " | Error: " + JSON.stringify(err))
         Metrics.error(Metrics.ErrorType.OTHER,"PictureSettingsApiError", "Error in Thunder TvControlSettings setSettings "+JSON.stringify(err), false, null)
         reject(err)
       })
@@ -117,22 +115,21 @@ export default class PictureSettingsApi {
   }
 
   getOptions() {
-    console.log("getOptions called: ",JSON.stringify(this.settingsOptions))
+    this.LOG("getOptions called: " + JSON.stringify(this.settingsOptions))
     return this.settingsOptions;
   }
 
   getSupportedPictureModes() {
-    console.log("getSupportedPictureModes got called")
-
+    this.LOG("getSupportedPictureModes got called")
     return new Promise((resolve,reject) => {
       this._thunder.call(this.callsign, "getSupportedPictureModes").then(result => {
-        console.log("getSupportedPictureModes Result: ",JSON.stringify(result))
+        this.LOG("getSupportedPictureModes Result: " + JSON.stringify(result))
         if (result.success) {
           this.settingsOptions[0].value=result.SupportedPicmodes
           resolve(true)
         }
       }).catch(err => {
-        console.log("getSupportedPictureModes Error: ",JSON.stringify(err))
+        this.ERR("getSupportedPictureModes Error: " + JSON.stringify(err))
         Metrics.error(Metrics.ErrorType.OTHER,"PictureSettingsApiError", "Error in Thunder TvControlSettings getSupportedPictureModes "+JSON.stringify(err), false, null)
         reject(err)
       })
@@ -140,17 +137,16 @@ export default class PictureSettingsApi {
   }
 
   getSupportedColorTemps() {
-    console.log("getSupportedColorTemps got called")
-
+    this.LOG("getSupportedColorTemps got called")
     return new Promise((resolve,reject) => {
       this._thunder.call(this.callsign, "getColorTemperature").then(result => {
-        console.log("Log from getSupportedColorTemps API: ", JSON.stringify(result))
+        this.LOG("Log from getSupportedColorTemps API: " + JSON.stringify(result))
         if (result.success) {
           this.settingsOptions[1].value=result.ColorTemperature.Options
           resolve(true)
         }
       }).catch(err => {
-        console.log("Error from getSupportedColorTemps API: ", JSON.stringify(err))
+        this.ERR("Error from getSupportedColorTemps API: " + JSON.stringify(err))
         Metrics.error(Metrics.ErrorType.OTHER,"PictureSettingsApiError", "Error in Thunder TvControlSettings getColorTemperature "+JSON.stringify(err), false, null)
         reject(err)
       })

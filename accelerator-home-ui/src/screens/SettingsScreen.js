@@ -20,7 +20,7 @@ import { Lightning, Utils, Language, Router, Storage } from '@lightningjs/sdk'
 import ThunderJS from 'ThunderJS';
 import { COLORS } from '../colors/Colors'
 import SettingsMainItem from '../items/SettingsMainItem'
-import { CONFIG } from '../Config/Config'
+import { CONFIG, GLOBALS } from '../Config/Config'
 import DTVApi from '../api/DTVApi';
 import AppApi from '../api/AppApi';
 import { Metrics } from '@firebolt-js/sdk';
@@ -31,6 +31,14 @@ var thunder = ThunderJS(CONFIG.thunderConfig);
  * Class for settings screen.
  */
 export default class SettingsScreen extends Lightning.Component {
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
+
   _onChanged() {
     this.widgets.menu.updateTopPanelText(Language.translate('Settings'));
   }
@@ -258,17 +266,17 @@ export default class SettingsScreen extends Lightning.Component {
   _firstActive() {
 
     if (Storage.get("NFRStatus")) {
-      console.log(`Netflix : NFRStatus is found to be enabled`)
+      this.LOG("Netflix : NFRStatus is found to be enabled")
       this.tag("NFRStatus.Button").src = "static/images/settings/ToggleOnOrange.png"
     }
     else {
-      console.log(`Netflix : NFRStatus is found to be disabled`)
+      this.LOG("Netflix : NFRStatus is found to be disabled")
       this.tag("NFRStatus.Button").src = "static/images/settings/ToggleOffWhite.png"
     }
 
     this.dtvApi = new DTVApi();
     this.dtvPlugin = false; //plugin availability
-    if (Storage.get("deviceType") != "IpStb") {
+    if (GLOBALS.deviceType != "IpStb") {
       this.dtvApi.activate().then(() => {
         this.dtvPlugin = true;
         this.tag("DTVSettings").alpha = 1;
@@ -404,10 +412,9 @@ export default class SettingsScreen extends Lightning.Component {
             thunder.call("Netflix.1", "nfrstatus", { "params": "disable" }).then(nr => {
               self.tag("NFRStatus.Button").src = "static/images/settings/ToggleOffWhite.png"
               Storage.set("NFRStatus", false)
-              console.log(`Netflix : nfr disable updation results in ${nr}`)
+              self.LOG("Netflix : nfr disable updation results in " + JSON.stringify(nr))
             }).catch(nerr => {
-              console.error(`Netflix : error while updating nfrstatus`)
-              console.error(nerr)
+              self.ERR("Netflix : error while updating nfrstatus" + JSON.stringify(nerr))
               Metrics.error(Metrics.ErrorType.OTHER, 'PluginError', "Thunder Netflix.1 nfrstatus disabling error"+JSON.stringify(nerr), false, null)
             })
 
@@ -417,10 +424,10 @@ export default class SettingsScreen extends Lightning.Component {
             thunder.call("Netflix.1", "nfrstatus", { "params": "enable" }).then(nr => {
               self.tag("NFRStatus.Button").src = "static/images/settings/ToggleOnOrange.png"
               Storage.set("NFRStatus", true)
-              console.log(`Netflix : nfr enable results in ${nr}`)
+              self.LOG("Netflix : nfr enable results in " + JSON.stringify(nr))
             }).catch(nerr => {
-              console.error(`Netflix : error while updating nfrstatus `)
-              console.error(nerr)
+              self.ERR("Netflix : error while updating nfrstatus ")
+              self.ERR(nerr)
               Metrics.error(Metrics.ErrorType.OTHER, 'PluginError', "Thunder Netflix.1 nfrstatus enabling error"+JSON.stringify(nerr), false, null)
             })
 

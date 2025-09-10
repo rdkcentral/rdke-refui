@@ -23,6 +23,14 @@ import AppApi from '../api/AppApi'
 
 export default class EnergySavingsItem extends Lightning.Component {
 
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
+
   _construct() {
     this.Tick = Utils.asset('/images/settings/Tick.png')
   }
@@ -70,7 +78,7 @@ export default class EnergySavingsItem extends Lightning.Component {
       standbyMode = "LIGHT_SLEEP"
     }
     this.appApi.setPreferredStandbyMode(standbyMode).then(result => {
-      console.log("setPreferredStandbyMode " + JSON.stringify(result))
+      this.LOG("setPreferredStandbyMode " + JSON.stringify(result))
       self.fireAncestors("$resetPrevTickObject", self)
       this.fireAncestors("$updateStandbyMode", this._item)
       self.tag("Item.Tick").visible = true;

@@ -20,11 +20,19 @@ import { Lightning, Router, Utils } from '@lightningjs/sdk'
 import SettingsMainItem from '../../items/SettingsMainItem'
 import { COLORS } from '../../colors/Colors'
 import { CONFIG } from '../../Config/Config'
-import Network from '../../api/NetworkApi'
 import { Language } from '@lightningjs/sdk';
 import { Metrics } from '@firebolt-js/sdk'
+import NetworkManager from '../../api/NetworkManagerAPI'
 
 export default class NetworkInterfaceScreen extends Lightning.Component {
+    constructor(...args) {
+        super(...args);
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
+
     _construct() {
         this.LoadingIcon = Utils.asset('images/settings/Loading.png')
     }
@@ -90,32 +98,32 @@ export default class NetworkInterfaceScreen extends Lightning.Component {
     }
 
     _focus() {
-        console.warn(new Date().toISOString() +" from: NetworkInterfaceScreen.js")
+        this.WARN(new Date().toISOString() +" from: NetworkInterfaceScreen.js")
         this._setState('WiFi');
     }
 
     _active() {
-        this.onDefaultInterfaceChangedCB = Network.get()._thunder.on(Network.get().callsign, 'onDefaultInterfaceChanged', (notification) => {
-            console.log('onDefaultInterfaceChanged notification from networkInterfaceScreen: ', notification)
-            if (notification.newInterfaceName === "ETHERNET") {
+        this.onDefaultInterfaceChangedCB = NetworkManager.thunder.on(NetworkManager.callsign, 'onActiveInterfaceChange', (notification) => {
+            this.LOG('onActiveInterfaceChange notification from networkInterfaceScreen: ' + JSON.stringify(notification))
+            if (notification.currentActiveInterface === "eth0") {
                 this.loadingAnimation.stop()
                 this.tag('Ethernet.Loader').visible = false
                 this.tag('Ethernet.Title').text.text = 'Ethernet: ' + Language.translate("Connected")
-            } else if (notification.newInterfaceName === "" && notification.oldInterfaceName === "WIFI") {
+            } else if (notification.currentActiveInterface === "" && notification.prevActiveInterface === "wlan0") {
                 this.loadingAnimation.stop()
                 this.tag('Ethernet.Loader').visible = false
                 this.tag('Ethernet.Title').text.text = 'Ethernet: '+Language.translate('Error')+', '+Language.translate('Retry')+'!'
-            } else if (notification.newInterfaceName === "WIFI") {
+            } else if (notification.currentActiveInterface === "wlan0") {
                 this.loadingAnimation.stop()
                 this.tag('Ethernet.Loader').visible = false
                 this.tag('Ethernet.Title').text.text = 'Ethernet'
             }
             Metrics.action("user", "The user changed the network interface", null)
         });
-        this.onConnectionStatusChangedCB = Network.get()._thunder.on(Network.get().callsign, 'onConnectionStatusChanged', (notification) => {
-            console.log('onConnectionStatusChanged notification from networkInterfaceScreen: ', notification)
-            if (notification.interface === "ETHERNET") {
-                this.tag('Ethernet.Title').text.text = 'Ethernet: ' + Language.translate(notification.status.toLowerCase())
+        this.onConnectionStatusChangedCB = NetworkManager.thunder.on(NetworkManager.callsign, 'onInterfaceStateChange', (notification) => {
+            this.LOG('onInterfaceStateChange notification from networkInterfaceScreen: ' + JSON.stringify(notification))
+            if (notification.interface === "eth0") {
+                this.tag('Ethernet.Title').text.text = 'Ethernet: ' + Language.translate(notification.state.toLowerCase())
             }
             Metrics.action("App", "network connection of app changed", null)
         });
@@ -189,25 +197,21 @@ export default class NetworkInterfaceScreen extends Lightning.Component {
                     this.tag('Ethernet.Title').text.text = 'Ethernet :' + Language.translate('Configuring as default')
                     this.tag('Ethernet.Loader').visible = true
                     this.loadingAnimation.start()
-                    await Network.get().isInterfaceEnabled("ETHERNET").then(enabled => {
+                    await NetworkManager.GetInterfaceState("eth0").then(enabled => {
                         if (!enabled) {
-                            Network.get().setInterfaceEnabled("ETHERNET").then(() => {
-                                Network.get().setDefaultInterface("ETHERNET").then(result => {
-                                    if (result) {
-                                        this.loadingAnimation.stop()
-                                        this.tag('Ethernet.Title').text.text = 'Ethernet'
-                                        this.tag('Ethernet.Loader').visible = false
-                                    }
-                                });
-                            });
-                        } else {
-                            Network.get().setDefaultInterface("ETHERNET").then(result => {
+                            NetworkManager.SetInterfaceState("eth0").then(() => {
                                 if (result) {
-                                    this.loadingAnimation.stop()
-                                    this.tag('Ethernet.Title').text.text = 'Ethernet'
-                                    this.tag('Ethernet.Loader').visible = false
+                                this.loadingAnimation.stop()
+                                this.tag('Ethernet.Title').text.text = 'Ethernet'
+                                this.tag('Ethernet.Loader').visible = false
                                 }
                             });
+                        } else {
+                                setTimeout(() => {
+                                this.loadingAnimation.stop()
+                                this.tag('Ethernet.Title').text.text = 'Ethernet'
+                                this.tag('Ethernet.Loader').visible = false
+                            }, 1000)
                         }
                     });
                 }

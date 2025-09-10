@@ -20,11 +20,20 @@
  import SettingsMainItem from '../../items/SettingsMainItem'
  import { COLORS } from '../../colors/Colors'
  import { CONFIG } from '../../Config/Config'
- import Network from '../../api/NetworkApi'
  import { Language } from '@lightningjs/sdk';
  import WifiScreen from './NetworkWifiOverlay'
+ import NetworkManager from '../../api/NetworkManagerAPI';
+ import { Metrics } from '@firebolt-js/sdk'
 
  export default class NetworkInterfaceScreen extends Lightning.Component {
+
+    constructor(...args) {
+        super(...args);
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
 
     _construct() {
         this.LoadingIcon = Utils.asset('images/settings/Loading.png')
@@ -74,7 +83,7 @@
                     Loader: {
                         h: 45,
                         w: 45,
-                        x: 175,
+                        x: 500,
                         mountX: 1,
                         y: 45,
                         mountY: 0.5,
@@ -95,33 +104,36 @@
     }
 
     _active() {
-        this.onDefaultInterfaceChangedCB = Network.get()._thunder.on(Network.get().callsign, 'onDefaultInterfaceChanged', (notification) => {
-            console.log('onDefaultInterfaceChanged notification from networkInterfaceScreen: ', notification)
-            if (notification.newInterfaceName === "ETHERNET") {
+        this.onDefaultInterfaceChangedCB = NetworkManager.thunder.on(NetworkManager.callsign, 'onActiveInterfaceChange', (notification) => {
+            this.LOG('onActiveInterfaceChange notification from networkInterfaceScreen: ' + JSON.stringify(notification))
+            if (notification.currentActiveInterface === "eth0") {
                 this.loadingAnimation.stop()
                 this.tag('Ethernet.Loader').visible = false
                 this.tag('Ethernet.Title').text.text = 'Ethernet: ' + Language.translate("Connected")
-            } else if (notification.newInterfaceName === "" && notification.oldInterfaceName === "WIFI") {
+            } else if (notification.currentActiveInterface === "" && notification.prevActiveInterface === "wlan0") {
                 this.loadingAnimation.stop()
                 this.tag('Ethernet.Loader').visible = false
                 this.tag('Ethernet.Title').text.text = 'Ethernet: '+Language.translate('Error')+', '+Language.translate('Retry')+'!'
-            } else if (notification.newInterfaceName === "WIFI") {
+            } else if (notification.currentActiveInterface === "wlan0") {
                 this.loadingAnimation.stop()
                 this.tag('Ethernet.Loader').visible = false
                 this.tag('Ethernet.Title').text.text = 'Ethernet'
             }
+            Metrics.action("user", "The user changed the network interface", null)
         });
-        this.onConnectionStatusChangedCB = Network.get()._thunder.on(Network.get().callsign, 'onConnectionStatusChanged', (notification) => {
-            console.log('onConnectionStatusChanged notification from networkInterfaceScreen: ', notification)
-            if (notification.interface === "ETHERNET") {
-                this.tag('Ethernet.Title').text.text = 'Ethernet: ' + Language.translate(notification.status.toLowerCase())
+        this.onConnectionStatusChangedCB = NetworkManager.thunder.on(NetworkManager.callsign, 'onInterfaceStateChange', (notification) => {
+            this.LOG('onInterfaceStateChange notification from networkInterfaceScreen: ' + JSON.stringify(notification))
+            if (notification.interface === "eth0") {
+                this.tag('Ethernet.Title').text.text = 'Ethernet: ' + Language.translate(notification.state.toLowerCase())
             }
+            Metrics.action("App", "network connection of app changed", null)
         });
 
         this.loadingAnimation = this.tag('Ethernet.Loader').animation({
             duration: 3, repeat: -1, stopMethod: 'immediate', stopDelay: 0.2,
             actions: [{ p: 'rotation', v: { sm: 0, 0: 0, 1: 2 * Math.PI } }]
         });
+
         this.tag('Ethernet.Loader').src = this.LoadingIcon
     }
 
@@ -175,25 +187,21 @@
                     this.tag('Ethernet.Title').text.text = 'Ethernet :' + Language.translate('Configuring as default')
                     this.tag('Ethernet.Loader').visible = true
                     this.loadingAnimation.start()
-                    await Network.get().isInterfaceEnabled("ETHERNET").then(enabled => {
+                    await NetworkManager.GetInterfaceState("eth0").then(enabled => {
                         if (!enabled) {
-                            Network.get().setInterfaceEnabled("ETHERNET").then(() => {
-                                Network.get().setDefaultInterface("ETHERNET").then(result => {
-                                    if (result) {
-                                        this.loadingAnimation.stop()
-                                        this.tag('Ethernet.Title').text.text = 'Ethernet'
-                                        this.tag('Ethernet.Loader').visible = false
-                                    }
-                                });
-                            });
-                        } else {
-                            Network.get().setDefaultInterface("ETHERNET").then(result => {
+                            NetworkManager.SetInterfaceState("eth0").then(() => {
                                 if (result) {
                                     this.loadingAnimation.stop()
                                     this.tag('Ethernet.Title').text.text = 'Ethernet'
                                     this.tag('Ethernet.Loader').visible = false
                                 }
                             });
+                        } else {
+                            setTimeout(() => {
+                                this.loadingAnimation.stop()
+                                this.tag('Ethernet.Title').text.text = 'Ethernet'
+                                this.tag('Ethernet.Loader').visible = false
+                            }, 1000)
                         }
                     });
                 }
@@ -206,7 +214,7 @@
             },
             class WifiScreen extends this {
                 $enter() {
-                    console.log("wifiscreen")
+                    this.LOG("wifiscreen")
                     this.hide()
                     this.tag('WifiScreen').visible = true
                     this.fireAncestors('$updatePageTitle', 'Settings  Network Configuration  Network Interface  WiFi')

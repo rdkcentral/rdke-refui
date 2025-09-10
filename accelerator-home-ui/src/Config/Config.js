@@ -68,11 +68,14 @@ export var CONFIG = {
 }
 
 export const GLOBALS = {
+  _Wificonnectinprogress:false,
+  _deviceType:null,
   _LastvisitedRoute:null,
   _Setup:null,
   _TofocusVOD:false,
   _AlexaAvsstatus:false,
   _RCSkipStatus:false,
+  _IsinternetConnected:false,
   _Miracastclientdevicedetails:{mac: null,name: null,reason_code: null,state:null},
   _previousapp_onActiveSourceStatusUpdated:null,
   _previousapp_onDisplayConnectionChanged:null,
@@ -128,6 +131,14 @@ export const GLOBALS = {
   {
     return this._RCSkipStatus
   },
+  set IsConnectedToInternet(status)
+  {
+    this._IsinternetConnected =status
+  },
+  get IsConnectedToInternet()
+  {
+    return this._IsinternetConnected
+  },
   set TofocusVOD(status)
   {
     this._TofocusVOD = status
@@ -144,6 +155,14 @@ export const GLOBALS = {
   {
     return this._LastvisitedRoute
   },
+  set Wificonnectinprogress(state)
+  {
+    this._Wificonnectinprogress = state
+  },
+  get Wificonnectinprogress()
+  {
+    return this._Wificonnectinprogress
+  },
   set Setup(status)
   {
     this._Setup = status
@@ -152,4 +171,10 @@ export const GLOBALS = {
   {
     return this._Setup
   },
+  set deviceType(type) {
+	this._deviceType = type;
+  },
+  get deviceType() {
+	return this._deviceType;
+  }
 }

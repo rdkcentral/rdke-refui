@@ -24,6 +24,14 @@ import { CONFIG } from '../Config/Config'
  */
 let index = 0;
 export default class SubscriptionItem extends Lightning.Component {
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
+
   static _template() {
     return {
       SubscriptionItem: {
@@ -157,14 +165,14 @@ export default class SubscriptionItem extends Lightning.Component {
     // this.handleDone()
     if (this._item.host["_@attribute"].toLowerCase() === "youtube") {
       let appApi = new AppApi()
-      console.log(this._item.url);
+      this.LOG("this._item.url: " + JSON.stringify(this._item.url));
       let params = {
         url: this._item.url,
         launchLocation: "gracenote",
         appIdentifier: 'n:3'
       }
       appApi.launchApp("YouTube", params).catch((err) => {
-        console.log("Error in launching YouTube", JSON.stringify(err))
+        this.ERR("Error in launching YouTube: " + JSON.stringify(err))
       });
     }
   }

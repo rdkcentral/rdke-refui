@@ -6,6 +6,13 @@ import TimeZoneOverlayItem from "../../items/TimeZoneOverlayItem";
 import FireBoltApi from "../../api/firebolt/FireBoltApi";
 
 export default class TimeZone extends Lightning.Component {
+    constructor(...args) {
+        super(...args);
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
     /**
      * @param {object} args
      */
@@ -86,7 +93,7 @@ export default class TimeZone extends Lightning.Component {
         }
 
         try {
-            console.log(this.resp, this.zone)
+            this.LOG("TimeZoneOverlay: resp: " + JSON.stringify(this.resp) + " zone: " + JSON.stringify(this.zone))
             delete this.resp.Etc
             for (const i in this.resp) {
                 if (typeof this.resp[i] === 'object') {
@@ -94,10 +101,10 @@ export default class TimeZone extends Lightning.Component {
                 }
             }
         } catch (error) {
-            console.log('no api present', error)
+            this.ERR("no api present: " + JSON.stringify(error))
         }
 
-        console.log(data)
+        this.LOG("TimeZoneOverlay: data: " + JSON.stringify(data))
         if (data.length > 1) {
             this.tag('List').h = data.length * 90
             this.tag('List').items = data.map((item, idx) => {

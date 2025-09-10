@@ -33,6 +33,14 @@ const dtvApi = new DTVApi()
 
 export default class Epg extends Lightning.Component {
 
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
+
   static _template() {
     return {
       Background: {
@@ -286,14 +294,14 @@ export default class Epg extends Lightning.Component {
     } else {
       if (!Router.isNavigating()) {
         this.DTV.launchChannel(channel.dvburi).then(res => {
-          console.log("launchChannel method successful: ", JSON.stringify(res));
+          this.LOG("launchChannel method successful: " + JSON.stringify(res));
           this.widgets.channeloverlay.$focusChannel(this.D - 8 + this.currentlyFocusedRow);
           Router.navigate("dtvplayer");
         }).catch(err => {
-          console.log("launchChannel method failed: ", JSON.stringify(err));
+          this.ERR("launchChannel method failed: " + JSON.stringify(err));
         })
       } else {
-        console.error("Router is still navigating.")
+        this.ERR("Router is still navigating.")
       }
     }
   }
@@ -321,15 +329,15 @@ export default class Epg extends Lightning.Component {
 
         shows[i].endtime = shows[i].duration + shows[i].starttime
         if (i >= shows.length) {
-          console.warn("Reached the end of data , can't traverse shows any further!")
+          self.WARN("Reached the end of data , can't traverse shows any further!")
           break
         } else if (new Date(shows[i].starttime) <= ltp && new Date(shows[i].endtime) > ltp) {
           break
         } else if (new Date(shows[i].starttime) > ltp) {
-          console.warn("there's chance that an empty space appear in one of the rows")
+          self.WARN("there's chance that an empty space appear in one of the rows")
           break
         } else if (i === shows.length - 1) {
-          console.warn(
+          self.WARN(
             'traversed all of the shows and none of them are airing at this time for this channel'
           )
           return
@@ -488,14 +496,14 @@ export default class Epg extends Lightning.Component {
     } else {
       this.D++
     }
-    console.log(`setting vertical scroll from ${this.D - 8} to ${this.D} based the value ${n}`)
+    this.LOG("setting vertical scroll from " + JSON.stringify(this.D - 8) + " to " + JSON.stringify(this.D) + " based the value " + JSON.stringify(n))
     this.activeChannels = this.channels.slice(this.D - 8, this.D)
     this.setChannels(this.activeChannels)
     this.setShows4Channels(this.activeChannels)
   }
 
   onDataProvidedX() {
-    console.log(`on Data Provided`)
+    this.LOG("on Data Provided")
     this.initialize()
     this.scrollVertically()
     this.cellTimeTracker = this.gridInstance[this.currentCellIndex].starttime
@@ -555,7 +563,7 @@ export default class Epg extends Lightning.Component {
           diff = shows[i + 1].starttime - currentShowETime
           if (diff > 0) {
             if (memLeakAlert < 0) {
-              console.warn('Memory leak alert; aborting black cell insert')
+              self.WARN("Memory leak alert; aborting black cell insert")
             }
             shows.splice(i + 1, 0, {
               name: '',
@@ -603,7 +611,7 @@ export default class Epg extends Lightning.Component {
                 ]
 
                 if (channels.length - 1 === traversedChannels) {
-                  console.log(`premium apps exclusive resolve`);
+                  self.LOG("premium apps exclusive resolve")
                   page.channels = channels
                   resolve(true)
                 }
@@ -634,14 +642,13 @@ export default class Epg extends Lightning.Component {
                   }
                 })
                 .catch(err => {
-                  // console.error(err)
-                  // return "Home"
-                  console.error('error', err)
+                  self.ERR("error: " + JSON.stringify(err))
                   reject(err)
                 })
             })
           })
           .catch(err => {
+            self.ERR("error: " + JSON.stringify(err))
             reject(err)
           })
       })
@@ -653,7 +660,7 @@ export default class Epg extends Lightning.Component {
       loader.visible = false;
       wrapper.visible = true;
     }).catch(err => {
-      console.log(`error while fetching data from dtv`, err)
+      this.ERR("error while fetching data from dtv: " + JSON.stringify(err))
       Router.navigate('menu')
     })
 
@@ -742,7 +749,7 @@ export default class Epg extends Lightning.Component {
           } else if (this.gridInstance[this.currentCellIndex].showIndex > 0) {
             this.scrollHorizontally(-1)
           } else {
-            console.log("can't traverse any left")
+            this.LOG("can't traverse any left")
             Router.focusWidget('Menu')
           }
           this.paintCell()
@@ -761,7 +768,7 @@ export default class Epg extends Lightning.Component {
           ) {
             //current Cell index has to be updated at last
             this.scrollHorizontally(1)
-          } else console.log("can't go further right")
+          } else this.LOG("can't go further right")
           this.paintCell()
         }
 
@@ -803,7 +810,7 @@ export default class Epg extends Lightning.Component {
             //---------------------------------
             this.currentCellIndex = idx
             this.updateCursor()
-          } else console.log("can't go any further ,it's the last row")
+          } else this.LOG("can't go any further ,it's the last row")
           this.setBoldText()
           this.paintCell()
         }
@@ -829,7 +836,7 @@ export default class Epg extends Lightning.Component {
             //---------------------------------
             this.currentCellIndex = idx
             this.updateCursor()
-          } else console.log("can't go any further , it's the first row")
+          } else this.LOG("can't go any further , it's the first row")
           this.setBoldText()
           this.paintCell()
         }
@@ -919,7 +926,7 @@ export default class Epg extends Lightning.Component {
         }
 
         $exit() {
-          console.log('exiting from state - CellSelector')
+          this.LOG('exiting from state - CellSelector')
         }
       },
     ]

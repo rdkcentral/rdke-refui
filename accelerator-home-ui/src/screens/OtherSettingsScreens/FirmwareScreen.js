@@ -30,6 +30,14 @@ import { Metrics } from '@firebolt-js/sdk';
 const thunder = ThunderJS(CONFIG.thunderConfig)
 
 export default class FirmwareScreen extends Lightning.Component {
+    constructor(...args) {
+        super(...args);
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
+
     _onChanged() {
         this.widgets.menu.updateTopPanelText(Language.translate('Settings  Other Settings  Advanced Settings  Device  Firmware Update'));
     }
@@ -133,11 +141,11 @@ export default class FirmwareScreen extends Lightning.Component {
     _active() {
         this.onFirmwareUpdateStateChangeCB = thunder.on('org.rdk.System', 'onFirmwareUpdateStateChange', notification => {
             this.tag('State.Title').text.text = Language.translate("Firmware State: ") + FirmwareScreen.STATES[notification.firmwareUpdateStateChange]
-            console.log('onFirmwareUpdateStateChange:' + JSON.stringify(notification));
+            this.LOG('onFirmwareUpdateStateChange:' + JSON.stringify(notification));
             if (FirmwareScreen.STATES[notification.firmwareUpdateStateChange] === "Downloading") {
                 this.showUpdateButton(notification.firmwareUpdateStateChange)
                 this.downloadInterval = setInterval(() => {
-                    console.log(`Downloading...`);
+                    this.LOG("Downloading...");
                     this.getDownloadPercent();
                 }, 1000)
             } else if (notification.firmwareUpdateStateChange > 3) {
@@ -147,7 +155,7 @@ export default class FirmwareScreen extends Lightning.Component {
                 this.tag('DownloadedPercent.Title').visible = false;
                 this.showUpdateButton(notification.firmwareUpdateStateChange)
                 if (this.downloadInterval) {
-                    console.log("");
+                    this.LOG("");
                     clearInterval(this.downloadInterval);
                     this.downloadInterval = null
                 }
@@ -155,7 +163,7 @@ export default class FirmwareScreen extends Lightning.Component {
         });
         // TODO: This need to be in _init() as it should be system wide.
         this.onFirmwareUpdateInfoReceivedCB = thunder.on('org.rdk.System', 'onFirmwareUpdateInfoReceived', params => {
-            console.log("onFirmwareUpdateInfoReceived", JSON.stringify(params))
+            this.LOG("onFirmwareUpdateInfoReceived" + JSON.stringify(params))
             if (params.success) {
                 if (params.updateAvailable) {
                     switch(params.updateAvailableEnum) {
@@ -201,7 +209,7 @@ export default class FirmwareScreen extends Lightning.Component {
         this.downloadInterval = null;
         await this._appApi.getFirmwareUpdateState().then(res => {
             if (res.success) {
-                console.log("getFirmwareUpdateState from firmware screen " + JSON.stringify(res))
+                this.LOG("getFirmwareUpdateState from firmware screen " + JSON.stringify(res))
                 this.tag('State.Title').text.text = Language.translate("Firmware State: ") + FirmwareScreen.STATES[res.firmwareUpdateState]
                 this.showUpdateButton(res.firmwareUpdateState)
                 if (res.firmwareUpdateState === "Downloading") {
@@ -210,7 +218,7 @@ export default class FirmwareScreen extends Lightning.Component {
             }
         })
         this._appApi.getDownloadFirmwareInfo().then(res => {
-            console.log(`getDownloadFirmwareInfo : ${JSON.stringify(res)}`);
+            this.LOG("getDownloadFirmwareInfo : " + JSON.stringify(res));
             this.tag('Version.Title').text.text = Language.translate("Firmware Versions: ") + res.currentFWVersion
             this.tag('DownloadedVersion.Title').text.text = Language.translate('Downloaded Firmware Version: ') + `${res.downloadedFWVersion ? res.downloadedFWVersion : 'NA'}`
         })
@@ -230,21 +238,21 @@ export default class FirmwareScreen extends Lightning.Component {
                 }
             }
         }).catch(err => {
-            console.error(err);
+            this.ERR("Error: " + JSON.stringify(err));
         })
     }
 
     getDownloadFirmwareInfo() {
         this._appApi.updateFirmware().then(res => {
             this._appApi.getDownloadFirmwareInfo().then(result => {
-                console.log(`getDownloadFirmwareInfo : ${JSON.stringify(result.downloadedFWVersion)}`);
+                this.LOG("getDownloadFirmwareInfo : " + JSON.stringify(result.downloadedFWVersion));
                 this.tag('DownloadedVersion.Title').text.text = Language.translate('Downloaded Firmware Version: ') + `${result.downloadedFWVersion ? result.downloadedFWVersion :"" }`
                 this.tag('Version.Title').text.text = Language.translate("Firmware Versions: ") + result.currentFWVersion
             }).catch(err => {
-                console.error(err);
+                this.ERR("Error: " + JSON.stringify(err));
             })
         }).catch(err => {
-            console.error(err);
+            this.ERR("Error: " + JSON.stringify(err));
         })
     }
 

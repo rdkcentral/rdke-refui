@@ -3,6 +3,13 @@ import { CONFIG } from "../../Config/Config"
 import { COLORS } from "../../colors/Colors.js"
 
 export default class VideoInfoChange extends Lightning.Component {
+    constructor(...args) {
+        super(...args);
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
 
     static _template() {
         return {
@@ -53,7 +60,7 @@ export default class VideoInfoChange extends Lightning.Component {
             let txt = this.tag("Title").text.text
             txt += "\n" + data
             this.tag("Title").text.text = txt
-            console.log("write request recieved with data " , data)
+            this.LOG("write request recieved with data " + JSON.stringify(data))
             clearTimeout(this.timer)
             this.timer = setTimeout(() => {
                 Router.focusPage();
@@ -61,7 +68,7 @@ export default class VideoInfoChange extends Lightning.Component {
              }, 3000)
         }
         else{
-            console.log("update request recieved with the data " , data)
+            this.LOG("update request recieved with the data " + JSON.stringify(data))
             this.tag("Title").text.text = data
         }
     }
@@ -87,7 +94,7 @@ export default class VideoInfoChange extends Lightning.Component {
         clearTimeout(this.timer)
         this.timer = null;
         this.clear()
-        console.log("Widget handle kEy Trigger")
+        this.LOG("Widget handle kEy Trigger")
     }
 
 }

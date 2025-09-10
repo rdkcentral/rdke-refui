@@ -29,9 +29,17 @@ import { Metrics } from "@firebolt-js/sdk";
 var thunder = ThunderJS(CONFIG.thunderConfig);
 
 export default class TvOverlayScreen extends Lightning.Component {
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
+
   set params(args) {
     this._type = args.type;
-    console.log("setting to idlestate");
+    this.LOG("setting to idlestate");
     setTimeout(() => {
       if (this._type === "inputs") {
         this._setState("OverlayInputScreen");
@@ -101,13 +109,13 @@ export default class TvOverlayScreen extends Lightning.Component {
 
   _handleBack() {
     this._setState("IdleState");
-    console.log("currentApp: ", GLOBALS.topmostApp);
+    this.LOG("currentApp: " + JSON.stringify(GLOBALS.topmostApp));
     setTimeout(() => {
       if (GLOBALS.topmostApp !== GLOBALS.selfClientName) {
         RDKShellApis.setVisibility(GLOBALS.selfClientName, false);
         RDKShellApis.moveToFront(GLOBALS.topmostApp).then(() => {
           RDKShellApis.setFocus(GLOBALS.topmostApp).catch((err) => {
-            console.log("Error", err);
+            this.ERR("Error" + JSON.stringify(err));
             Metrics.error(Metrics.ErrorType.OTHER, 'pluginError', `Thunder RDKShell setfocus error ${JSON.stringify(err)}`, false, null)
           });
         });
@@ -115,7 +123,7 @@ export default class TvOverlayScreen extends Lightning.Component {
         if (Router.getActiveHash() === "dtvplayer") { //don't navigate to menu if route is dtvplayer
           Router.focusPage();
         } else {
-          console.log("else block navigating to menu");
+          this.LOG("else block navigating to menu");
           Router.navigate("menu"); //if user is currently on resident app, might not be needed as user should not be able to get on this screen while on resident app
         }
       }
@@ -126,17 +134,17 @@ export default class TvOverlayScreen extends Lightning.Component {
     return [
       class IdleState extends this {
         $enter() {
-          console.log("entering overlay IdleState");
+          this.LOG("entering overlay IdleState");
         }
         $exit() {
-          console.log("exiting overlay IdleState");
+          this.LOG("exiting overlay IdleState");
         }
       },
       class OverlaySettingsScreen extends this {
         $enter() {
           this._topPanelAnimation.finish();
           this._sidePanelAnimation.start();
-          console.log("$enter from OverlaySettingsScreen");
+          this.LOG("$enter from OverlaySettingsScreen");
         }
         $exit() {
           this._sidePanelAnimation.stop();
@@ -149,7 +157,7 @@ export default class TvOverlayScreen extends Lightning.Component {
         $enter() {
           this._sidePanelAnimation.finish();
           this._topPanelAnimation.start();
-          console.log("$enter from OverlayInputScreen");
+          this.LOG("$enter from OverlayInputScreen");
         }
         $exit() {
           this._topPanelAnimation.stop();

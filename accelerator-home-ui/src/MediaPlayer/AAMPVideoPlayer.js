@@ -28,6 +28,13 @@ let position = null
  * Class to render AAMP video player.
  */
 export default class AAMPVideoPlayer extends Lightning.Component {
+  constructor(...args) {
+    super(...args);
+    this.INFO = console.info;
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.WARN = console.warn;
+  }
   /**
    * Function to render player controls.
    */
@@ -57,7 +64,7 @@ export default class AAMPVideoPlayer extends Lightning.Component {
       })
       this.setVideoRect(0, 0, 1920, 1080)
     } catch (error) {
-      console.error('Playback Failed ' + error)
+      this.ERR('Playback Failed ' + JSON.stringify(error))
       Metrics.error(Metrics.ErrorType.MEDIA,"PlaybackError", "Playback Failed"+JSON.stringify(error), false, null)
     }
   }
@@ -280,7 +287,7 @@ export default class AAMPVideoPlayer extends Lightning.Component {
       player.addEventListener('durationChanged', this._mediaDurationChanged)
       this.playerState = this.playerStatesEnum.idle
     } catch (error) {
-      console.error('AAMPMediaPlayer is not defined')
+      this.ERR('AAMPMediaPlayer is not defined ' + JSON.stringify(error))
       Metrics.error(Metrics.ErrorType.MEDIA,"PlaybackError", "AAMPMediaPlayer is not defined" +JSON.stringify(error), false, null)
     }
   }
@@ -299,7 +306,7 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 
     this.tag('PlayerControls').title = videoInfo.title
     this.tag('PlayerControls').duration = player.getDurationSec()
-    console.log('Duration of video', player.getDurationSec())
+    this.LOG('Duration of video: ' + JSON.stringify(player.getDurationSec()))
     this.tag('PlayerControls').currentTime = 0
     this.play()
   }
@@ -340,7 +347,7 @@ export default class AAMPVideoPlayer extends Lightning.Component {
       this.tag('ChannelName').text.text = channelName
       this.setVideoRect(0, 0, 1920, 1080)
     } catch (error) {
-      console.error('Playback Failed ' + error)
+      this.ERR('Playback Failed ' + JSON.stringify(error))
       Metrics.error(Metrics.ErrorType.MEDIA,"PlaybackError", "Playback Failed "+JSON.stringify(error), false, null)
     }
   }
@@ -371,7 +378,7 @@ export default class AAMPVideoPlayer extends Lightning.Component {
         this.updateInfo()
         this.setVideoRect(0, 0, 1920, 1080)
       } catch (error) {
-        console.error('Playback Failed ' + error)
+        this.ERR('Playback Failed ' + JSON.stringify(error))
         Metrics.error(Metrics.ErrorType.MEDIA,"PlaybackError", 'Playback Failed ' + JSON.stringify(error), false, null)
       }
     }
@@ -391,7 +398,7 @@ export default class AAMPVideoPlayer extends Lightning.Component {
         this.updateInfo()
         this.setVideoRect(0, 0, 1920, 1080)
       } catch (error) {
-        console.error('Playback Failed ' + error)
+        this.ERR('Playback Failed ' + JSON.stringify(error))
         Metrics.error(Metrics.ErrorType.MEDIA,"PlaybackError", 'Playback Failed '+JSON.stringify(error), false, null)
       }
     }

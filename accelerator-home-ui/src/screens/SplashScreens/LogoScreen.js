@@ -25,6 +25,14 @@ var appApi = new AppApi();
 let path = '';
 
 export default class LogoScreen extends Lightning.Component {
+    constructor(...args) {
+        super(...args);
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
+        this.WARN = console.warn;
+    }
+
     static _template() {
         return {
             rect: true,
@@ -77,7 +85,7 @@ export default class LogoScreen extends Lightning.Component {
 
     _firstEnable() {
         console.timeEnd('PerformanceTest')
-        console.log('Splash Screen timer end - ', new Date().toUTCString())
+        this.LOG('Splash Screen timer end - ' + JSON.stringify(new Date().toUTCString()))
     }
 
     async _focus() {
@@ -108,15 +116,16 @@ export default class LogoScreen extends Lightning.Component {
             this._setState('Ok')
         } else {
             if(this._isBluetoothExist) {
-                await this.btApi.btactivate().then(res => { console.log("successfully btactivated", res) })
-                .catch(err => console.log(`error in btactivate`))
+                await this.btApi.btactivate().then(res => { this.LOG("successfully btactivated" + JSON.stringify(res)) })
+                .catch(err => this.ERR("error in btactivate" + JSON.stringify(err)))
                 this.btApi.getPairedDevices().then(devices => {
                     if (devices.length > 0 || Storage.get('setup')) {
                         path = this.checkPath(path)
                     }
                 })
-                .catch(() => {
+                .catch((err) => {
                     path = this.checkPath(path)
+                    this.ERR("getPairedDevices error: " + JSON.stringify(err))
                 })
             }
             this._setState('Next')
@@ -126,7 +135,7 @@ export default class LogoScreen extends Lightning.Component {
         Registry.removeEventListener(document, 'keydown', this.handler)
     }
     _handleBack() {
-        console.error("Initial page; cannot go back.");
+        this.ERR("Initial page; cannot go back.");
     }
 
     static _states() {
