@@ -31,6 +31,7 @@ export default class XcastApi {
     this.LOG = console.log;
     this.ERR = console.error;
     this.WARN = console.warn;
+    this.callsign = "org.rdk.Xcast";
     this.LOG("Xcast constructor");
     this._events = new Map();
   }
@@ -40,13 +41,12 @@ export default class XcastApi {
    */
   activate() {
     return new Promise((resolve, reject) => {
-      this.callsign = 'org.rdk.Xcast';
       this._thunder
         .call('Controller', 'activate', { callsign: this.callsign })
         .then(result => {
           this.LOG("Xcast activation success " + JSON.stringify(result));
           this._thunder
-            .call('org.rdk.Xcast', 'setEnabled', { enabled: true })
+            .call(this.callsign, 'setEnabled', { enabled: true })
             .then(result => {
               if (result.success) {
                 this.LOG("Xcast enabled");
@@ -99,9 +99,23 @@ export default class XcastApi {
     });
   }
 
+   setEnabled(enable) {
+    return new Promise((resolve, reject) => {
+      this._thunder.call(this.callsign, 'setEnabled', { enabled: enable })
+        .then(res => {
+          resolve(res)
+        })
+        .catch(err => {
+          this.ERR("Xdial setEnabled error: " + JSON.stringify(err))
+          Metrics.error(Metrics.ErrorType.OTHER,"XcastApiError", "Error while fetching Thunder Xcast enable status"+JSON.stringify(err), false, null)
+          reject(err)
+        })
+    })
+   }
+
   getEnabled() {
     return new Promise((resolve, reject) => {
-      this._thunder.call('org.rdk.Xcast', 'getEnabled')
+      this._thunder.call(this.callsign, 'getEnabled')
         .then(res => {
           resolve(res)
         })
@@ -114,7 +128,7 @@ export default class XcastApi {
   }
   getFriendlyName() {
     return new Promise((resolve, reject) => {
-      this._thunder.call('org.rdk.Xcast', 'getFriendlyName')
+      this._thunder.call(this.callsign, 'getFriendlyName')
         .then(res => {
           resolve(res)
         })
@@ -127,8 +141,9 @@ export default class XcastApi {
   }
   setStandbyBehavior(state) {
     return new Promise((resolve, reject) => {
-      this._thunder.call('org.rdk.Xcast', 'setStandbyBehavior',{"standbybehavior":state})
-        .then(res => {
+      this._thunder.call(this.callsign, 'setStandbyBehavior',{ standbybehavior : state})
+		  .then(res => {
+			console.warn("Xcast setStandbyBehavior success: " + JSON.stringify(res));
           resolve(res)
         })
         .catch(err => {
@@ -140,11 +155,11 @@ export default class XcastApi {
   }
   setFriendlyName(name) {
     return new Promise((resolve) => {
-      this._thunder.call('org.rdk.Xcast', 'setFriendlyName', { friendlyname: name }).then(result => {
+      this._thunder.call(this.callsign, 'setFriendlyName', { friendlyname: name }).then(result => {
         this.LOG("Xcast setFriendlyName: " + name + " result: " + JSON.stringify(result))
         resolve(result);
-      }).catch(err => { 
-        this.ERR(JSON.stringify(err)); resolve(false); 
+      }).catch(err => {
+        this.ERR(JSON.stringify(err)); resolve(false);
         Metrics.error(Metrics.ErrorType.OTHER,"XcastApiError", "Error while setting Thunder Xcast FriendlyName "+JSON.stringify(err), false, null)
       });
     }).then(val => {
@@ -169,34 +184,45 @@ export default class XcastApi {
    * Function to deactivate the Xcast plugin.
    */
   deactivate() {
-    return new Promise((resolve) => {
-      this._thunder.call('org.rdk.Xcast', 'setEnabled', { enabled: false })
-        .then(res => {
-          resolve(res.success)
-        })
-        .catch(err => {
-          Metrics.error(Metrics.ErrorType.OTHER,"XcastApiError", "Error while setting Thunder Xcast enable "+JSON.stringify(err), false, null)
-          this.ERR("Failed to close Xcast: " + JSON.stringify(err))
-        })
-    })
+	return new Promise((resolve) => {
+		this._thunder.call('Controller', 'deactivate', { callsign: this.callsign }).then(res => {
+			resolve(res);
+		}).catch(err => {
+			Metrics.error(Metrics.ErrorType.OTHER,"XcastApiError", "Error Failed to deactivate Xcast: "+JSON.stringify(err), false, null)
+			this.ERR("Failed to deactivate Xcast: " + JSON.stringify(err))
+		})
+	})
   }
+
+	setApplicationState(params) {
+		return new Promise((resolve) => {
+			this._thunder.call(this.callsign, 'setApplicationState', params).then(result => {
+				resolve(true);
+			}).catch(err => {
+				this.ERR("setApplicationState failed trying older API. error is: " + JSON.stringify(err));
+				Metrics.error(Metrics.ErrorType.OTHER,"XcastApiError", "Error in Thunder Xcast setApplicationState "+JSON.stringify(err), false, null)
+				resolve(false);
+			});
+		});
+	}
+
 
   /**
    * Function to notify the state of the app.
    */
   onApplicationStateChanged(params) {
     return new Promise((resolve) => {
-      this._thunder.call('org.rdk.Xcast.1', 'onApplicationStateChanged', params).then(result => {
-        //this.LOG("XCastAPI onApplicationStateChanged Updating: " + JSON.stringify(params) + " result: " + JSON.stringify(result))
+      this._thunder.call(this.callsign, 'onApplicationStateChanged', params).then(result => {
+        this.LOG("XCastAPI onApplicationStateChanged Updating: " + JSON.stringify(params) + " result: " + JSON.stringify(result))
         resolve(result);
-      }).catch(err => { 
+      }).catch(err => {
         this.ERR(JSON.stringify(err)); resolve(false);
         Metrics.error(Metrics.ErrorType.OTHER,"XcastApiError", "Error in Thunder Xcast.1 onApplicationStateChange "+JSON.stringify(err), false, null)
       });
     });
   }
   registerApplications(params){
-    this.LOG("Register Apllication Params" + JSON.stringify(params))
+    this.LOG("Register Application Params" + JSON.stringify(params))
     return new Promise((resolve,reject) => {
     this._thunder.call('org.rdk.Xcast', 'registerApplications',params )
         .then(res => {
