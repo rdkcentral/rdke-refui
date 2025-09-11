@@ -444,15 +444,17 @@ export default class App extends Router.App {
       "Amazon": "n:2",
       "Prime": "n:2"
     }
-    appApi.getPowerStateIsManagedByDevice().then(res => {
-      if (!res.powerStateManagedByDevice) {
-        this._getPowerStatebeforeReboot();
-      } else {
-        appApi.getPowerState().then(res => {
-          GLOBALS.powerState = res.success ? res.powerState : "ON";
-        });
-      }
-    }).catch(err => this._getPowerStatebeforeReboot());
+    // appApi.getPowerStateIsManagedByDevice().then(res => {
+    //   if (!res.powerStateManagedByDevice) {
+    //     this._getPowerStatebeforeReboot();
+    //   } else {
+    //     appApi.getPowerState().then(res => {
+    //       GLOBALS.powerState = res.success ? res.powerState : "ON";
+    //     });
+    //   }
+	  // }).catch(err => this._getPowerStatebeforeReboot());
+	  GLOBALS.powerState = "ON";
+
     keyIntercept(GLOBALS.selfClientName).catch(err => {
       this.ERR("App _init keyIntercept err:" + JSON.stringify(err));
     });
@@ -495,7 +497,8 @@ export default class App extends Router.App {
           }
           appApi.setWakeupSrcConfiguration(param);
         }
-      })
+	  })
+		appApi.setPowerState(GLOBALS.powerState).then(res => { });
     }).catch(err => {
       this.ERR("App System plugin activation error: " + JSON.stringify(err));
     })
@@ -528,77 +531,6 @@ export default class App extends Router.App {
       this.ERR("error while enabling displaysettings:" + JSON.stringify(err));
     })
     appApi.cobaltStateChangeEvent()
-
-    this.xcastApi = new XcastApi()
-    this.xcastApi.activate().then(result => {
-      let serialNumber;
-      try {
-        appApi.getSerialNumber().then(res => {
-          serialNumber = res;
-          this.LOG("App getSerialNumber result:" + JSON.stringify(serialNumber));
-          appApi.getModelName().then(modelName => {
-            let friendlyName = modelName + "_" + serialNumber;
-            this.xcastApi.setFriendlyName(friendlyName).then(  async (result) => {
-            try {
-              await xcastApi.setStandbyBehavior("active").then(async res =>{
-                  await appApi.getPluginStatus("Cobalt").then(async res=>{
-                    let params = {"applications": []}
-                    params.applications.push({
-                        "names": ["YouTube"],
-                        "prefixes": ["myYouTube"],
-                        "cors": [".youtube.com"],
-                        "properties": { "allowStop": true },
-                        "launchParameters": { "query": "source_type=12","payload": "..." }
-                    })
-                    await xcastApi.registerApplications(params).then(res=>{
-                    })
-                  })
-                  await appApi.getPluginStatus("Amazon").then(async res=>{
-                    let params = {"applications": []}
-                    params.applications.push({
-                        "names": ["AmazonInstantVideo"],
-                        "prefixes": ["myPrimeVideo"],
-                        "cors": [".amazon.com"],
-                        "properties": { "allowStop": true },
-                        "launchParameters": { "query": "source_type=12","payload": "..." }
-                    })
-                    await xcastApi.registerApplications(params).then(res=>{
-                    })
-                  })
-                  await appApi.getPluginStatus("Netflix").then(async res=>{
-                    let params = {"applications": []}
-                    params.applications.push({
-                        "names": ["Netflix"],
-                        "prefixes": ["myNetflix"],
-                        "cors": [".netflix.com"],
-                        "properties": { "allowStop": true },
-                        "launchParameters": { "query": "source_type=12","payload": "..." }
-                    })
-                    await xcastApi.registerApplications(params).then(res=>{
-                    })
-                  })
-                  this.LOG("Xcast register app param " + JSON.stringify(params))
-              })
-          } catch (error) {
-              this.ERR("plugin check and registerapllication error for register" + JSON.stringify(error))
-          }
-              this.LOG("App XCAST setFriendlyName result:" + JSON.stringify(result));
-            }).catch(error => {
-              this.ERR("App Error setting friendlyName:" + JSON.stringify(error));
-            });
-          }).catch(error => {
-            this.ERR("App Error retrieving modelName:" + JSON.stringify(error));
-          });
-        }).catch(error => {
-          this.ERR("App Error getSerialNumber:" + JSON.stringify(error));
-        });
-      } catch (error) {
-        this.ERR(JSON.stringify(error));
-      }
-      if (result) {
-        this.registerXcastListeners()
-      }
-    })
 
     thunder.on('Controller.1', 'all', noti => {
       this.LOG("App controller notification:" + JSON.stringify(noti))
@@ -825,7 +757,65 @@ export default class App extends Router.App {
     })
     this._subscribeToIOPortNotifications()
 
-    this._updateLanguageToDefault()
+	  this._updateLanguageToDefault()
+
+		this.xcastApi = new XcastApi()
+		this.xcastApi.activate().then(async result => {
+			console.warn("Arun: Xcast plugin activate");
+			if (result) {
+				this.registerXcastListeners();
+				await this.xcastApi.setStandbyBehavior("active").then(async res => {
+					this.LOG("Arun XcastApi setStandbyBehavior result:" + JSON.stringify(res));
+					let params = { "applications": [] };
+					try {
+						await appApi.getPluginStatus("Cobalt").then(async res => {
+							params.applications.push({
+								"name": ["YouTube"],
+								"prefixes": ["myYouTube"],
+								"cors": [".youtube.com"],
+								"properties": { "allowStop": true }
+							})
+						});
+					} catch (e) { this.ERR("Arun getPluginStatus error :" + JSON.stringify(e)) }
+					try {
+						await appApi.getPluginStatus("Amazon").then(async res => {
+							params.applications.push({
+								"name": ["AmazonInstantVideo"],
+								"prefixes": ["myPrimeVideo"],
+								"cors": [".amazon.com"],
+								"properties": { "allowStop": true }
+							})
+						});
+					} catch (e) { this.ERR("Arun getPluginStatus error :" + JSON.stringify(e)) }
+					try {
+						await appApi.getPluginStatus("Netflix").then(async res => {
+							let params = { "applications": [] }
+							params.applications.push({
+								"name": ["Netflix"],
+								"prefixes": ["myNetflix"],
+								"cors": [".netflix.com"],
+								"properties": { "allowStop": true }
+							})
+						});
+					} catch (e) { this.ERR("Arun getPluginStatus error :" + JSON.stringify(e)) }
+					console.warn("Arun Xcast register app param " + JSON.stringify(params));
+					await this.xcastApi.registerApplications(params).then(async res => {
+						console.warn("Arun Xcast registerApplications success" + JSON.stringify(res));
+						await this.xcastApi.setEnabled(true).then(res => {
+							console.warn("Arun Xcast setEnabled success" + JSON.stringify(res));
+						}).catch(err => {
+							this.ERR("Arun Xcast setEnabled error:" + JSON.stringify(err))
+						})
+					}).catch(err => {
+						this.ERR("Arun Xcast registerApplications error:" + JSON.stringify(err))
+					});
+				}).catch(error => {
+					this.ERR("Arun XcastApi setStandbyBehavior error:" + JSON.stringify(error));
+				});
+			} else {
+				this.ERR("Arun XcastApi activate failed");
+			}
+		})
   }
 
   SubscribeToNetworkManager(){
@@ -1699,16 +1689,14 @@ export default class App extends Router.App {
   /**
    * Function to register event listeners for Xcast plugin.
    */
-  registerXcastListeners() {
+	registerXcastListeners() {
+	  console.warn("Arun: Registering Xcast Listeners");
     let self = this;
     this.xcastApi.registerEvent('onApplicationLaunchRequest', notification => {
-      //power check
       this.LOG('App onApplicationLaunchRequest: ' + JSON.stringify(notification));
       appApi.getPowerState().then(res => {
-        if (res.powerState === 'STANDBY') {
-          appApi.getPreferredStandbyMode().then(result => {
-            if (result.preferredStandbyMode === "LIGHT_SLEEP") appApi.setPowerState('ON')
-          })
+        if (res.powerState != 'ON') {
+          appApi.setPowerState('ON')
         }
       })
       if (this.xcastApps(notification.applicationName)) {
@@ -1756,10 +1744,8 @@ export default class App extends Router.App {
     this.xcastApi.registerEvent('onApplicationResumeRequest', notification => {
       this.LOG('App onApplicationResumeRequest: ' + JSON.stringify(notification));
       appApi.getPowerState().then(res => {
-        if (res.powerState === 'STANDBY') {
-          appApi.getPreferredStandbyMode().then(result => {
-            if (result.preferredStandbyMode === "LIGHT_SLEEP") appApi.setPowerState('ON')
-          })
+        if (res.powerState != 'ON') {
+          appApi.setPowerState('ON')
         }
       })
       if (this.xcastApps(notification.applicationName)) {
@@ -1792,7 +1778,7 @@ export default class App extends Router.App {
     });
 
     this.xcastApi.registerEvent('onApplicationStateRequest', notification => {
-      //console.log("App onApplicationStateRequest: " + JSON.stringify(notification));
+      console.log("App onApplicationStateRequest: " + JSON.stringify(notification));
       if (this.xcastApps(notification.applicationName)) {
         let applicationName = this.xcastApps(notification.applicationName);
         let appState = { "applicationName": notification.applicationName, "state": "stopped" };
@@ -1814,7 +1800,7 @@ export default class App extends Router.App {
               appState.state = "suspended";
               break;
           }
-          this.xcastApi.onApplicationStateChanged(appState);
+          this.xcastApi.setApplicationState(appState);
         }).catch(error => {
           this.ERR("App onApplicationStateRequest: checkStatus error " + JSON.stringify(error));
         })
@@ -2294,7 +2280,7 @@ export default class App extends Router.App {
               }
             }
           }
-        } 
+        }
         else if (header.namespace === "ExternalMediaPlayer") {
           appApi.deeplinkToApp(GLOBALS.topmostApp, payload, "alexa", header.namespace);
         }
