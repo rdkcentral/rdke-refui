@@ -561,7 +561,7 @@ export default class App extends Router.App {
           params.applicationName = "AmazonInstantVideo";
         }
         this.LOG("App Controller state change to xcast: " + JSON.stringify(params));
-        this.xcastApi.onApplicationStateChanged(params);
+        this.xcastApi.setApplicationState(params);
         params = null;
       }
       if (noti.callsign === "org.rdk.HdmiCecSource") {
@@ -764,17 +764,30 @@ export default class App extends Router.App {
 			console.warn("Arun: Xcast plugin activate");
 			if (result) {
 				this.registerXcastListeners();
+				await this.xcastApi.setEnabled(true).then(res => {
+					console.warn("Arun Xcast setEnabled success" + JSON.stringify(res));
+				}).catch(err => {
+					this.ERR("Arun Xcast setEnabled error:" + JSON.stringify(err))
+				});
 				await this.xcastApi.setStandbyBehavior("active").then(async res => {
 					this.LOG("Arun XcastApi setStandbyBehavior result:" + JSON.stringify(res));
 					let params = { "applications": [] };
 					try {
 						await appApi.getPluginStatus("Cobalt").then(async res => {
-							params.applications.push({
-								"name": ["YouTube"],
-								"prefixes": ["myYouTube"],
-								"cors": [".youtube.com"],
-								"properties": { "allowStop": true }
-							})
+							params.applications.push(
+								{
+									"cors": [".youtube.com"],
+									"name": "YouTube",
+									"prefix": "myYoutube",
+									"properties": { "allowStop": false }
+								},
+								{
+									"cors": [".youtube.com"],
+									"name": "YouTubeTV",
+									"prefix": "myYouTubeTV",
+									"properties": { "allowStop": false }
+								}
+							);
 						});
 					} catch (e) { this.ERR("Arun getPluginStatus error :" + JSON.stringify(e)) }
 					try {
@@ -789,7 +802,6 @@ export default class App extends Router.App {
 					} catch (e) { this.ERR("Arun getPluginStatus error :" + JSON.stringify(e)) }
 					try {
 						await appApi.getPluginStatus("Netflix").then(async res => {
-							let params = { "applications": [] }
 							params.applications.push({
 								"name": ["Netflix"],
 								"prefixes": ["myNetflix"],
@@ -801,11 +813,6 @@ export default class App extends Router.App {
 					console.warn("Arun Xcast register app param " + JSON.stringify(params));
 					await this.xcastApi.registerApplications(params).then(async res => {
 						console.warn("Arun Xcast registerApplications success" + JSON.stringify(res));
-						await this.xcastApi.setEnabled(true).then(res => {
-							console.warn("Arun Xcast setEnabled success" + JSON.stringify(res));
-						}).catch(err => {
-							this.ERR("Arun Xcast setEnabled error:" + JSON.stringify(err))
-						})
 					}).catch(err => {
 						this.ERR("Arun Xcast registerApplications error:" + JSON.stringify(err))
 					});
@@ -1538,7 +1545,7 @@ export default class App extends Router.App {
         appApi.suspendPremiumApp('Amazon').then(res => {
           if (res) {
             let params = { applicationName: "AmazonInstantVideo", state: 'suspended' };
-            this.xcastApi.onApplicationStateChanged(params);
+            this.xcastApi.setApplicationState(params);
           }
         });
         break;
@@ -1548,7 +1555,7 @@ export default class App extends Router.App {
           this._moveApptoFront(GLOBALS.selfClientName, true)
           if (res) {
             let params = { applicationName: "Netflix", state: "suspended" };
-            this.xcastApi.onApplicationStateChanged(params);
+            this.xcastApi.setApplicationState(params);
           }
         });
         break;
@@ -1565,7 +1572,6 @@ export default class App extends Router.App {
     return new Promise((resolve, reject) => {
       appApi.getPluginStatus('Netflix')
         .then(result => {
-          this.LOG("netflix plugin status is : " + JSON.stringify(result));
           this.LOG("netflix plugin status is : " + JSON.stringify(result));
           if (result[0].state === 'deactivated' || result[0].state === 'deactivation') {
             Router.navigate('image', { src: Utils.asset('images/apps/App_Netflix_Splash.png') })
@@ -1718,7 +1724,7 @@ export default class App extends Router.App {
           GLOBALS.topmostApp = applicationName;
           // TODO: move to Controller.statuschange event
           let params = { applicationName: notification.applicationName, state: 'running' };
-          this.xcastApi.onApplicationStateChanged(params);
+          this.xcastApi.setApplicationState(params);
         }).catch(err => {
           this.ERR("App onApplicationLaunchRequest: error " + JSON.stringify(err))
         })
