@@ -561,7 +561,12 @@ export default class App extends Router.App {
           params.applicationName = "AmazonInstantVideo";
         }
         this.LOG("App Controller state change to xcast: " + JSON.stringify(params));
-        this.xcastApi.setApplicationState(params);
+		this.xcastApi.setApplicationState(params).catch(err => {
+			this.ERR("App xcast setApplicationState failed, trying fallback. error: " + JSON.stringify(err));
+			this.xcastApi.onApplicationStateChanged(params).catch(err => {
+				this.ERR("App xcast onApplicationStateChanged failed: " + JSON.stringify(err));
+			});
+		});
         params = null;
       }
       if (noti.callsign === "org.rdk.HdmiCecSource") {
@@ -1545,7 +1550,12 @@ export default class App extends Router.App {
         appApi.suspendPremiumApp('Amazon').then(res => {
           if (res) {
             let params = { applicationName: "AmazonInstantVideo", state: 'suspended' };
-            this.xcastApi.setApplicationState(params);
+            this.xcastApi.setApplicationState(params).catch(err => {
+				this.ERR("App xcast setApplicationState failed, trying fallback. error: " + JSON.stringify(err));
+				this.xcastApi.onApplicationStateChanged(params).catch(err => {
+					this.ERR("App xcast onApplicationStateChanged failed: " + JSON.stringify(err));
+				});
+		    });
           }
         });
         break;
@@ -1555,7 +1565,12 @@ export default class App extends Router.App {
           this._moveApptoFront(GLOBALS.selfClientName, true)
           if (res) {
             let params = { applicationName: "Netflix", state: "suspended" };
-            this.xcastApi.setApplicationState(params);
+            this.xcastApi.setApplicationState(params).catch(err => {
+			this.ERR("App xcast setApplicationState failed, trying fallback. error: " + JSON.stringify(err));
+			this.xcastApi.onApplicationStateChanged(params).catch(err => {
+				this.ERR("App xcast onApplicationStateChanged failed: " + JSON.stringify(err));
+			});
+		});
           }
         });
         break;
@@ -1724,7 +1739,12 @@ export default class App extends Router.App {
           GLOBALS.topmostApp = applicationName;
           // TODO: move to Controller.statuschange event
           let params = { applicationName: notification.applicationName, state: 'running' };
-          this.xcastApi.setApplicationState(params);
+          this.xcastApi.setApplicationState(params).catch(err => {
+			this.ERR("App xcast setApplicationState failed, trying fallback. error: " + JSON.stringify(err));
+			this.xcastApi.onApplicationStateChanged(params).catch(err => {
+				this.ERR("App xcast onApplicationStateChanged failed: " + JSON.stringify(err));
+			});
+		});
         }).catch(err => {
           this.ERR("App onApplicationLaunchRequest: error " + JSON.stringify(err))
         })
@@ -1806,7 +1826,12 @@ export default class App extends Router.App {
               appState.state = "suspended";
               break;
           }
-          this.xcastApi.setApplicationState(appState);
+          this.xcastApi.setApplicationState(params).catch(err => {
+			this.ERR("App xcast setApplicationState failed, trying fallback. error: " + JSON.stringify(err));
+			this.xcastApi.onApplicationStateChanged(params).catch(err => {
+				this.ERR("App xcast onApplicationStateChanged failed: " + JSON.stringify(err));
+			});
+		});
         }).catch(error => {
           this.ERR("App onApplicationStateRequest: checkStatus error " + JSON.stringify(error));
         })
