@@ -195,13 +195,13 @@ export default class XcastApi {
   }
 
 	setApplicationState(params) {
-		return new Promise((resolve, reject) => {
+		return new Promise((resolve) => {
 			this._thunder.call(this.callsign, 'setApplicationState', params).then(result => {
-				resolve(result);
+				resolve(true);
 			}).catch(err => {
 				this.ERR("setApplicationState failed trying older API. error is: " + JSON.stringify(err));
 				Metrics.error(Metrics.ErrorType.OTHER,"XcastApiError", "Error in Thunder Xcast setApplicationState "+JSON.stringify(err), false, null)
-				reject(err);
+				resolve(false);
 			});
 		});
 	}

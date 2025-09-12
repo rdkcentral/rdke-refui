@@ -561,11 +561,13 @@ export default class App extends Router.App {
           params.applicationName = "AmazonInstantVideo";
         }
         this.LOG("App Controller state change to xcast: " + JSON.stringify(params));
-		this.xcastApi.setApplicationState(params).catch(err => {
-			this.ERR("App xcast setApplicationState failed, trying fallback. error: " + JSON.stringify(err));
-			this.xcastApi.onApplicationStateChanged(params).catch(err => {
-				this.ERR("App xcast onApplicationStateChanged failed: " + JSON.stringify(err));
-			});
+		this.xcastApi.setApplicationState(params).then(status => {
+			if (status == false) {
+				this.ERR("App xcast setApplicationState failed, trying fallback. error: " + JSON.stringify(err));
+				this.xcastApi.onApplicationStateChanged(params).catch(err => {
+					this.ERR("App xcast onApplicationStateChanged failed: " + JSON.stringify(err));
+				});
+			}
 		});
         params = null;
       }
@@ -1550,12 +1552,14 @@ export default class App extends Router.App {
         appApi.suspendPremiumApp('Amazon').then(res => {
           if (res) {
             let params = { applicationName: "AmazonInstantVideo", state: 'suspended' };
-            this.xcastApi.setApplicationState(params).catch(err => {
-				this.ERR("App xcast setApplicationState failed, trying fallback. error: " + JSON.stringify(err));
-				this.xcastApi.onApplicationStateChanged(params).catch(err => {
-					this.ERR("App xcast onApplicationStateChanged failed: " + JSON.stringify(err));
-				});
-		    });
+            this.xcastApi.setApplicationState(params).then(status => {
+				if (status == false) {
+					this.ERR("App xcast setApplicationState failed, trying fallback. error: " + JSON.stringify(err));
+					this.xcastApi.onApplicationStateChanged(params).catch(err => {
+						this.ERR("App xcast onApplicationStateChanged failed: " + JSON.stringify(err));
+					});
+				}
+			});
           }
         });
         break;
@@ -1564,13 +1568,15 @@ export default class App extends Router.App {
           Router.navigate(GLOBALS.LastvisitedRoute);
           this._moveApptoFront(GLOBALS.selfClientName, true)
           if (res) {
-            let params = { applicationName: "Netflix", state: "suspended" };
-            this.xcastApi.setApplicationState(params).catch(err => {
-			this.ERR("App xcast setApplicationState failed, trying fallback. error: " + JSON.stringify(err));
-			this.xcastApi.onApplicationStateChanged(params).catch(err => {
-				this.ERR("App xcast onApplicationStateChanged failed: " + JSON.stringify(err));
+			  let params = { applicationName: "Netflix", state: "suspended" };
+			  this.xcastApi.setApplicationState(params).then(status => {
+				if (status == false) {
+					this.ERR("App xcast setApplicationState failed, trying fallback. error: " + JSON.stringify(err));
+					this.xcastApi.onApplicationStateChanged(params).catch(err => {
+						this.ERR("App xcast onApplicationStateChanged failed: " + JSON.stringify(err));
+					});
+				}
 			});
-		});
           }
         });
         break;
@@ -1712,7 +1718,7 @@ export default class App extends Router.App {
    */
 	registerXcastListeners() {
 	  console.warn("Arun: Registering Xcast Listeners");
-    let self = this;
+      let self = this;
     this.xcastApi.registerEvent('onApplicationLaunchRequest', notification => {
       this.LOG('App onApplicationLaunchRequest: ' + JSON.stringify(notification));
       appApi.getPowerState().then(res => {
@@ -1723,8 +1729,8 @@ export default class App extends Router.App {
       if (this.xcastApps(notification.applicationName)) {
         let applicationName = this.xcastApps(notification.applicationName);
         let baseUrl = Storage.get(notification.applicationName + "DefaultURL");
-        let pairingCode = notification.parameters.payload;
-        let additionalDataUrl = notification.parameters.additionalDataUrl;
+        let pairingCode = notification.strPayLoad;
+        let additionalDataUrl = notification.strAddDataUrl;
         let url = `${baseUrl}${pairingCode}&additionalDataUrl=${additionalDataUrl}`;
         if (applicationName.startsWith("Netflix")) {
           url = `${baseUrl}&dial=${pairingCode}&additionalDataUrl=${additionalDataUrl}`
@@ -1739,12 +1745,14 @@ export default class App extends Router.App {
           GLOBALS.topmostApp = applicationName;
           // TODO: move to Controller.statuschange event
           let params = { applicationName: notification.applicationName, state: 'running' };
-          this.xcastApi.setApplicationState(params).catch(err => {
-			this.ERR("App xcast setApplicationState failed, trying fallback. error: " + JSON.stringify(err));
-			this.xcastApi.onApplicationStateChanged(params).catch(err => {
-				this.ERR("App xcast onApplicationStateChanged failed: " + JSON.stringify(err));
+            this.xcastApi.setApplicationState(params).then(status => {
+				if (status == false) {
+					this.ERR("App xcast setApplicationState failed, trying fallback. error: " + JSON.stringify(err));
+					this.xcastApi.onApplicationStateChanged(params).catch(err => {
+						this.ERR("App xcast onApplicationStateChanged failed: " + JSON.stringify(err));
+					});
+				}
 			});
-		});
         }).catch(err => {
           this.ERR("App onApplicationLaunchRequest: error " + JSON.stringify(err))
         })
@@ -1826,12 +1834,14 @@ export default class App extends Router.App {
               appState.state = "suspended";
               break;
           }
-          this.xcastApi.setApplicationState(params).catch(err => {
-			this.ERR("App xcast setApplicationState failed, trying fallback. error: " + JSON.stringify(err));
-			this.xcastApi.onApplicationStateChanged(params).catch(err => {
-				this.ERR("App xcast onApplicationStateChanged failed: " + JSON.stringify(err));
+			this.xcastApi.setApplicationState(params).then(status => {
+				if (status == false) {
+					this.ERR("App xcast setApplicationState failed, trying fallback. error: " + JSON.stringify(err));
+					this.xcastApi.onApplicationStateChanged(params).catch(err => {
+						this.ERR("App xcast onApplicationStateChanged failed: " + JSON.stringify(err));
+					});
+				}
 			});
-		});
         }).catch(error => {
           this.ERR("App onApplicationStateRequest: checkStatus error " + JSON.stringify(error));
         })
