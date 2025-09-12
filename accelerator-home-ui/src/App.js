@@ -771,6 +771,18 @@ export default class App extends Router.App {
 			console.warn("Xcast plugin activate");
 			if (result) {
 				this.registerXcastListeners();
+				// Update Xcast friendly name
+				let serialnumber = "DefaultSLNO";
+				let modelName = "RDK" + GLOBALS.deviceType;
+				await appApi.getSerialNumber().then(async res => {
+					// Reduce display length; trim to last 6 characters
+					serialnumber = (res.length < 6) ? res : res.slice(-6);
+				});
+				await appApi.getModelName().then(modelName => {
+					modelName = modelName + serialnumber;
+				});
+				this.LOG("Xcast friendly name to be set: " + JSON.stringify(modelName));
+				await this.xcastApi.setFriendlyName(modelName);
 				await this.xcastApi.setEnabled(true).then(res => {
 					console.warn("Xcast setEnabled success" + JSON.stringify(res));
 				}).catch(err => {
