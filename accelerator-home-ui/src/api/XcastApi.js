@@ -143,7 +143,7 @@ export default class XcastApi {
     return new Promise((resolve, reject) => {
       this._thunder.call(this.callsign, 'setStandbyBehavior',{ standbybehavior : state})
 		  .then(res => {
-			console.warn("Arun: Xcast setStandbyBehavior success: " + JSON.stringify(res));
+			console.warn("Xcast setStandbyBehavior success: " + JSON.stringify(res));
           resolve(res)
         })
         .catch(err => {

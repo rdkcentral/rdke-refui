@@ -768,16 +768,16 @@ export default class App extends Router.App {
 
 		this.xcastApi = new XcastApi()
 		this.xcastApi.activate().then(async result => {
-			console.warn("Arun: Xcast plugin activate");
+			console.warn("Xcast plugin activate");
 			if (result) {
 				this.registerXcastListeners();
 				await this.xcastApi.setEnabled(true).then(res => {
-					console.warn("Arun Xcast setEnabled success" + JSON.stringify(res));
+					console.warn("Xcast setEnabled success" + JSON.stringify(res));
 				}).catch(err => {
-					this.ERR("Arun Xcast setEnabled error:" + JSON.stringify(err))
+					this.ERR("Xcast setEnabled error:" + JSON.stringify(err))
 				});
 				await this.xcastApi.setStandbyBehavior("active").then(async res => {
-					this.LOG("Arun XcastApi setStandbyBehavior result:" + JSON.stringify(res));
+					this.LOG("XcastApi setStandbyBehavior result:" + JSON.stringify(res));
 					let params = { "applications": [] };
 					try {
 						await appApi.getPluginStatus("Cobalt").then(async res => {
@@ -796,7 +796,7 @@ export default class App extends Router.App {
 								}
 							);
 						});
-					} catch (e) { this.ERR("Arun getPluginStatus error :" + JSON.stringify(e)) }
+					} catch (e) { this.ERR("getPluginStatus error :" + JSON.stringify(e)) }
 					try {
 						await appApi.getPluginStatus("Amazon").then(async res => {
 							params.applications.push({
@@ -806,7 +806,7 @@ export default class App extends Router.App {
 								"properties": { "allowStop": true }
 							})
 						});
-					} catch (e) { this.ERR("Arun getPluginStatus error :" + JSON.stringify(e)) }
+					} catch (e) { this.ERR("Amazon getPluginStatus error :" + JSON.stringify(e)) }
 					try {
 						await appApi.getPluginStatus("Netflix").then(async res => {
 							params.applications.push({
@@ -816,18 +816,18 @@ export default class App extends Router.App {
 								"properties": { "allowStop": true }
 							})
 						});
-					} catch (e) { this.ERR("Arun getPluginStatus error :" + JSON.stringify(e)) }
-					console.warn("Arun Xcast register app param " + JSON.stringify(params));
+					} catch (e) { this.ERR("Amazon getPluginStatus error :" + JSON.stringify(e)) }
+					console.warn("Xcast register app param " + JSON.stringify(params));
 					await this.xcastApi.registerApplications(params).then(async res => {
-						console.warn("Arun Xcast registerApplications success" + JSON.stringify(res));
+						console.warn("Xcast registerApplications success" + JSON.stringify(res));
 					}).catch(err => {
-						this.ERR("Arun Xcast registerApplications error:" + JSON.stringify(err))
+						this.ERR("Xcast registerApplications error:" + JSON.stringify(err))
 					});
 				}).catch(error => {
-					this.ERR("Arun XcastApi setStandbyBehavior error:" + JSON.stringify(error));
+					this.ERR("XcastApi setStandbyBehavior error:" + JSON.stringify(error));
 				});
 			} else {
-				this.ERR("Arun XcastApi activate failed");
+				this.ERR("XcastApi activate failed");
 			}
 		})
   }
@@ -1717,7 +1717,7 @@ export default class App extends Router.App {
    * Function to register event listeners for Xcast plugin.
    */
 	registerXcastListeners() {
-	  console.warn("Arun: Registering Xcast Listeners");
+	  console.warn("Registering Xcast Listeners");
       let self = this;
     this.xcastApi.registerEvent('onApplicationLaunchRequest', notification => {
       this.LOG('App onApplicationLaunchRequest: ' + JSON.stringify(notification));
