@@ -139,6 +139,20 @@ export default class XcastApi {
         })
     })
   }
+  getModelName() {
+    return new Promise((resolve, reject) => {
+      this._thunder.call(this.callsign, 'getModelName')
+        .then(res => {
+          this.LOG("Xcast getModelName success: " + JSON.stringify(res));
+          resolve(res.model)
+        })
+        .catch(err => {
+          this.ERR("Xdial getModelName error: " + JSON.stringify(err));
+          Metrics.error(Metrics.ErrorType.OTHER,"XcastApiError", "Error while getting Thunder Xcast getModelName "+JSON.stringify(err), false, null)
+          reject(err)
+        })
+    })
+  }
   setStandbyBehavior(state) {
     return new Promise((resolve, reject) => {
       this._thunder.call(this.callsign, 'setStandbyBehavior',{ standbybehavior : state})

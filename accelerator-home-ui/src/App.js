@@ -444,16 +444,15 @@ export default class App extends Router.App {
       "Amazon": "n:2",
       "Prime": "n:2"
     }
-    // appApi.getPowerStateIsManagedByDevice().then(res => {
-    //   if (!res.powerStateManagedByDevice) {
-    //     this._getPowerStatebeforeReboot();
-    //   } else {
-    //     appApi.getPowerState().then(res => {
-    //       GLOBALS.powerState = res.success ? res.powerState : "ON";
-    //     });
-    //   }
-	  // }).catch(err => this._getPowerStatebeforeReboot());
-	  GLOBALS.powerState = "ON";
+    appApi.getPowerStateIsManagedByDevice().then(res => {
+      if (!res.powerStateManagedByDevice) {
+        this._getPowerStatebeforeReboot();
+      } else {
+        appApi.getPowerState().then(res => {
+          GLOBALS.powerState = res.success ? res.powerState : "ON";
+        });
+      }
+	  }).catch(err => this._getPowerStatebeforeReboot());
 
     keyIntercept(GLOBALS.selfClientName).catch(err => {
       this.ERR("App _init keyIntercept err:" + JSON.stringify(err));
@@ -778,8 +777,8 @@ export default class App extends Router.App {
 					// Reduce display length; trim to last 6 characters
 					serialnumber = (res.length < 6) ? res : res.slice(-6);
 				});
-				await appApi.getModelName().then(modelName => {
-					modelName = modelName + serialnumber;
+				await this.xcastApi.getModelName().then(model => {
+					modelName = model + serialnumber;
 				});
 				this.LOG("Xcast friendly name to be set: " + JSON.stringify(modelName));
 				await this.xcastApi.setFriendlyName(modelName);
