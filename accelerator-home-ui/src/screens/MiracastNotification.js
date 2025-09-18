@@ -17,8 +17,9 @@
  * limitations under the License.
  **/
 import { Language, Lightning, Router, Registry} from "@lightningjs/sdk";
-import { CONFIG } from '../Config/Config'
+import { CONFIG, GLOBALS } from '../Config/Config'
 import Miracast from "../api/Miracast";
+import keyMap from "../Config/Keymap";
 
 var devicename = ''
 var devicemac = ''
@@ -49,6 +50,10 @@ export default class MiracastNotification extends Lightning.Component {
     }
     pageTransition() {
         return 'left'
+    }
+    _captureKey({keyCode}) {
+      const allowed = [keyMap.ArrowLeft, keyMap.ArrowRight, keyMap.Enter,keyMap.Backspace];
+      return !allowed.includes(keyCode);
     }
 
     static _template() {
@@ -165,13 +170,17 @@ export default class MiracastNotification extends Lightning.Component {
     _focus() {
       this.alpha=1
       this.LOG('MiracastNotification focused');
+      GLOBALS.MiracastNotificationstatus = true
     }
     _unfocus() {
         this.alpha = 0
         this.tag('MiracastNotification.Message').text.text = `${Language.translate("NAME: Default Name") }\n${Language.translate( "MAC:Default MAC")}`
+        GLOBALS.MiracastNotificationstatus = false
     }
     _handleBack() {
-        Router.focusPage()
+      miracast.acceptClientConnection("Reject").then(res=>{
+          if(res.success){Router.focusPage()} 
+        })
     }
     
     static _states() {

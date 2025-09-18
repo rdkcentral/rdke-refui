@@ -217,14 +217,21 @@ export default class App extends Router.App {
 	}
 	_performKeyPressOPerations(key) {
 		let self = this;
-		if ((key.keyCode == Keymap.Home || key.keyCode == Keymap.Escape) && !Router.isNavigating()) {
+			if(GLOBALS.MiracastNotificationstatus && key.keyCode !== Keymap.Power && key.keyCode !== Keymap.Home ){
+				return false
+			} else if ((key.keyCode == Keymap.Home || key.keyCode == Keymap.Escape) && !Router.isNavigating()) {
 			if (GLOBALS.topmostApp.includes("dac.native")) {
 				this.jumpToRoute("apps");
 			} else if (GLOBALS.Miracastclientdevicedetails.state === "INITIATED" || GLOBALS.Miracastclientdevicedetails.state === "INPROGRESS ") {
 				miracast.stopClientConnection(GLOBALS.Miracastclientdevicedetails.mac, GLOBALS.Miracastclientdevicedetails.name)
 			} else if (GLOBALS.Miracastclientdevicedetails.state === "PLAYING") {
 				miracast.stopRequest(GLOBALS.Miracastclientdevicedetails.mac, GLOBALS.Miracastclientdevicedetails.name, 300)
-			} else {
+			} else if(GLOBALS.MiracastNotificationstatus){
+				this.jumpToRoute("menu");
+				miracast.acceptClientConnection("Reject").then(res=>{
+					if(res.success){Router.focusPage()} 
+				})
+		    } else {
 				this.jumpToRoute("menu"); //method to exit the current app(if any) and route to home screen
 			}
 			return true
@@ -577,7 +584,7 @@ export default class App extends Router.App {
 				this.LOG("App Controller state change to xcast: " + JSON.stringify(params));
 				this.xcastApi.setApplicationState(params).then(status => {
 					if (status == false) {
-						this.ERR("App xcast setApplicationState failed, trying fallback. error: " + JSON.stringify(err));
+						this.ERR("App xcast setApplicationState failed, trying fallback. error: ");
 						this.xcastApi.onApplicationStateChanged(params).catch(err => {
 							this.ERR("App xcast onApplicationStateChanged failed: " + JSON.stringify(err));
 						});
@@ -1709,7 +1716,7 @@ export default class App extends Router.App {
 						};
 						this.xcastApi.setApplicationState(params).then(status => {
 							if (status == false) {
-								this.ERR("App xcast setApplicationState failed, trying fallback. error: " + JSON.stringify(err));
+								this.ERR("App xcast setApplicationState failed, trying fallback. error: ");
 								this.xcastApi.onApplicationStateChanged(params).catch(err => {
 									this.ERR("App xcast onApplicationStateChanged failed: " + JSON.stringify(err));
 								});
@@ -1729,7 +1736,7 @@ export default class App extends Router.App {
 						};
 						this.xcastApi.setApplicationState(params).then(status => {
 							if (status == false) {
-								this.ERR("App xcast setApplicationState failed, trying fallback. error: " + JSON.stringify(err));
+								this.ERR("App xcast setApplicationState failed, trying fallback. error: ");
 								this.xcastApi.onApplicationStateChanged(params).catch(err => {
 									this.ERR("App xcast onApplicationStateChanged failed: " + JSON.stringify(err));
 								});
@@ -1914,7 +1921,7 @@ export default class App extends Router.App {
 					};
 					this.xcastApi.setApplicationState(params).then(status => {
 						if (status == false) {
-							this.ERR("App xcast setApplicationState failed, trying fallback. error: " + JSON.stringify(err));
+							this.ERR("App xcast setApplicationState failed, trying fallback. error: ");
 							this.xcastApi.onApplicationStateChanged(params).catch(err => {
 								this.ERR("App xcast onApplicationStateChanged failed: " + JSON.stringify(err));
 							});
@@ -2006,7 +2013,7 @@ export default class App extends Router.App {
 					}
 					this.xcastApi.setApplicationState(params).then(status => {
 						if (status == false) {
-							this.ERR("App xcast setApplicationState failed, trying fallback. error: " + JSON.stringify(err));
+							this.ERR("App xcast setApplicationState failed, trying fallback. error: ");
 							this.xcastApi.onApplicationStateChanged(params).catch(err => {
 								this.ERR("App xcast onApplicationStateChanged failed: " + JSON.stringify(err));
 							});
