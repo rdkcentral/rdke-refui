@@ -68,6 +68,7 @@ export var CONFIG = {
 }
 
 export const GLOBALS = {
+  _MiracastNotificationstatus:false,
   _Wificonnectinprogress:false,
   _deviceType:null,
   _LastvisitedRoute:null,
@@ -176,5 +177,13 @@ export const GLOBALS = {
   },
   get deviceType() {
 	return this._deviceType;
+  },
+  set MiracastNotificationstatus(status)
+  {
+    this._MiracastNotificationstatus = status
+  },
+  get MiracastNotificationstatus()
+  {
+    return this._MiracastNotificationstatus
   }
 }
