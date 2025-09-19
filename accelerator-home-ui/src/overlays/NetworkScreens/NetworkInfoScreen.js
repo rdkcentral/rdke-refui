@@ -300,13 +300,13 @@ export default class NetworkInfo extends Lightning.Component {
                         this.tag("SSID").alpha = 1
                         this.tag("SignalStrength").alpha = 1
                         NetworkManager.GetConnectedSSID().then((result) => {
-                            if (parseInt(result.signalStrength) >= -50) {
+                            if (parseInt(result.strength) >= -50) {
                                 this.tag("SignalStrength.Value").text.text = `Excellent`
                             }
-                            else if (parseInt(result.signalStrength) >= -60) {
+                            else if (parseInt(result.strength) >= -60) {
                                 this.tag("SignalStrength.Value").text.text = `Good`
                             }
-                            else if (parseInt(result.signalStrength) >= -67) {
+                            else if (parseInt(result.strength) >= -67) {
                                 this.tag("SignalStrength.Value").text.text = `Fair`
                             }
                             else {
@@ -343,13 +343,13 @@ export default class NetworkInfo extends Lightning.Component {
                     this.tag("SSID").alpha = 1
                     this.tag("SignalStrength").alpha = 1
                     NetworkManager.GetConnectedSSID().then((result) => {
-                        if (parseInt(result.signalStrength) >= -50) {
+                        if (parseInt(result.strength) >= -50) {
                             this.tag("SignalStrength.Value").text.text = `Excellent`
                         }
-                        else if (parseInt(result.signalStrength) >= -60) {
+                        else if (parseInt(result.strength) >= -60) {
                             this.tag("SignalStrength.Value").text.text = `Good`
                         }
-                        else if (parseInt(result.signalStrength) >= -67) {
+                        else if (parseInt(result.strength) >= -67) {
                             this.tag("SignalStrength.Value").text.text = `Fair`
                         }
                         else {

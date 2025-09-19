@@ -341,7 +341,7 @@ export default class WiFiScreen extends Lightning.Component {
                   NetworkManager.WiFiConnect(true).then(() => {
                     NetworkManager.thunder.on('onWiFiStateChange', notification => {
                       if (notification.state === WiFiState.WIFI_STATE_SSID_CHANGED || notification.state === WiFiState.WIFI_STATE_INVALID_CREDENTIALS) {
-                        NetworkManager.RemoveKnownSSID(selectedssid).then(() => {
+                        NetworkManager.RemoveKnownSSID(selectedssid.ssid).then(() => {
                           Router.navigate('settings/network/interface/wifi/connect', { wifiItem: this.tag('Networks.AvailableNetworks').tag('List').element._item })
                         })
                       }
@@ -500,13 +500,13 @@ export default class WiFiScreen extends Lightning.Component {
         notification.state === WiFiState.WIFI_STATE_AUTHENTICATION_FAILED ||
           notification.state === WiFiState.WIFI_STATE_ERROR || notification.state === WiFiState.WIFI_STATE_DISCONNECTED)
         {
-          if ((notification.code === WiFiState.WIFI_STATE_INVALID_CREDENTIALS) || (notification.code === WiFiState.WIFI_STATE_SSID_CHANGED)) {
-            await NetworkManager.RemoveKnownSSID(selectedssid)
+          if ((notification.state === WiFiState.WIFI_STATE_INVALID_CREDENTIALS) || (notification.state === WiFiState.WIFI_STATE_SSID_CHANGED)) {
+            await NetworkManager.RemoveKnownSSID(selectedssid.ssid)
           }
           if (this.renderSSIDS.length) {
             this.renderDeviceList(this.renderSSIDS)
           }
-          if (this.widgets && !((notification.code === WiFiState.WIFI_STATE_CONNECTION_LOST) && GLOBALS.Wificonnectinprogress)) {
+          if (this.widgets && !((notification.state === WiFiState.WIFI_STATE_CONNECTION_LOST) && GLOBALS.Wificonnectinprogress)) {
             this.widgets.fail.notify({ title: Language.translate('WiFi Status'), msg: `${Language.translate("Error Code :")} ${notification.state} \t ${Language.translate("Error Msg :")} ${Language.translate(Object.keys(WiFiState).find(key=>WiFiState[key]===notification.state))}` })
             Router.focusWidget('Fail')
           }

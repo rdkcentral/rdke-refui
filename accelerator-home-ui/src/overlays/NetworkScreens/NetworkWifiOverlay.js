@@ -30,6 +30,7 @@ import NetworkManager,{WiFiState} from '../../api/NetworkManagerAPI'
 /**
 * Class for WiFi screen.
 */
+let selectedssid;
 export default class WiFiScreen extends Lightning.Component {
   constructor(...args) {
     super(...args);
@@ -190,8 +191,8 @@ export default class WiFiScreen extends Lightning.Component {
         notification.state === WiFiState.WIFI_STATE_AUTHENTICATION_FAILED ||
         notification.state === WiFiState.WIFI_STATE_ERROR )
         {
-          if ((notification.code === WiFiState.WIFI_STATE_INVALID_CREDENTIALS) || (notification.code === WiFiState.WIFI_STATE_SSID_CHANGED)) {
-            NetworkManager.RemoveKnownSSID().then(() => {
+          if ((notification.state === WiFiState.WIFI_STATE_INVALID_CREDENTIALS) || (notification.state === WiFiState.WIFI_STATE_SSID_CHANGED)) {
+            NetworkManager.RemoveKnownSSID(selectedssid.ssid).then(() => {
               this.LOG("INVALID_CREDENTIALS; deleting WiFi Persistence data.")
               PersistentStoreApi.get().deleteNamespace('wifi')
             });
@@ -312,7 +313,7 @@ export default class WiFiScreen extends Lightning.Component {
   }
 
   $PairingnetworkParams() {
-    return (this.ListItem)
+    return (selectedssid)
   }
 
   $navigateBack() {
@@ -355,7 +356,7 @@ export default class WiFiScreen extends Lightning.Component {
           this._navigate('MyDevices', 'up')
         }
         _handleEnter() {
-          this.ListItem = this.tag('Networks.PairedNetworks').tag('List').element._item
+          selectedssid = this.tag('Networks.PairedNetworks').tag('List').element._item
           this._setState("WifiPairingScreen")
         }
       },
@@ -373,16 +374,16 @@ export default class WiFiScreen extends Lightning.Component {
         }
         async _handleEnter() {
           this.LOG("SSID check" + JSON.stringify(this.tag('Networks.AvailableNetworks').tag('List').element._item))
-          this.ListItem = this.tag('Networks.AvailableNetworks').tag('List').element._item
+          selectedssid = this.tag('Networks.AvailableNetworks').tag('List').element._item
           await NetworkManager.GetKnownSSIDs().then(ssids => {
             if (ssids.length) { // ispaired.result == 0 means saved SSID.
-                if (ssids.includes(this.ListItem.ssid)) {
+                if (ssids.includes(selectedssid.ssid)) {
                   this.LOG("WiFiScreen getPairedSSID matched with current selection; try auto connect.");
                   NetworkManager.WiFiConnect(true).then(() => {
                     NetworkManager.thunder.on('onWiFiStateChange', notification => {
                       if (notification.code === WiFiState.WIFI_STATE_SSID_CHANGED || notification.code === WiFiState.WIFI_STATE_INVALID_CREDENTIALS) {
 
-                        NetworkManager.RemoveKnownSSID(this.ListItem).then(() => {
+                        NetworkManager.RemoveKnownSSID(selectedssid).then(() => {
                           this._setState("WifiPairingScreen")
                         })
                       }
