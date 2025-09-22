@@ -842,7 +842,7 @@ export default class App extends Router.App {
 					try {
 						await appApi.getPluginStatus("Netflix").then(async res => {
 							params.applications.push({
-								"name": ["Netflix"],
+								"name": "Netflix",
 								"prefixes": ["myNetflix"],
 								"cors": [".netflix.com"],
 								"properties": {
@@ -2011,10 +2011,10 @@ export default class App extends Router.App {
 							appState.state = "suspended";
 							break;
 					}
-					this.xcastApi.setApplicationState(params).then(status => {
+					this.xcastApi.setApplicationState(appState).then(status => {
 						if (status == false) {
 							this.ERR("App xcast setApplicationState failed, trying fallback. error: ");
-							this.xcastApi.onApplicationStateChanged(params).catch(err => {
+							this.xcastApi.onApplicationStateChanged(appState).catch(err => {
 								this.ERR("App xcast onApplicationStateChanged failed: " + JSON.stringify(err));
 							});
 						}
