@@ -21,9 +21,9 @@
  */
 export var tvShowsInfo = [
   {
-    displayName: 'Fantasy-Island',
+    displayName: 'BiPBop',
     url: '/images/tvShows/fantasy-island.jpg',
-    uri: 'https://bitdash-a.akamaihd.net/content/MI201109210084_1/m3u8s/f08e80da-bf1d-4e3d-8899-f0f6155f6efa.m3u8'
+    uri: 'https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8'
   },
   {
     displayName: 'BigBuckBunny', 
@@ -33,7 +33,7 @@ export var tvShowsInfo = [
   {
     displayName: 'Sintel',
     url: '/images/tvShows/let-it-snow.jpg',
-    uri: "https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8"
+    uri: "https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8"
   },
   {
     displayName: 'DAI Test',
