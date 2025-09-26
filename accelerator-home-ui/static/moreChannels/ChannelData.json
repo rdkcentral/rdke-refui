@@ -12,13 +12,13 @@
       "channelName": "Custom Channel 1",
       "shortname": "C1",
       "dvburi": "C_1.2.3",
-      "iptvuri": "https://bitdash-a.akamaihd.net/content/MI201109210084_1/m3u8s/f08e80da-bf1d-4e3d-8899-f0f6155f6efa.m3u8"
+      "iptvuri": "https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8"
     },
     {
       "channelName": "Custom Channel 2",
       "shortname": "C2",
       "dvburi": "C_1.2.4",
-      "iptvuri": "https://bitdash-a.akamaihd.net/content/MI201109210084_1/m3u8s/f08e80da-bf1d-4e3d-8899-f0f6155f6efa.m3u8"
+      "iptvuri": "https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8"
     }
   ],
   "eventList": {
@@ -28,14 +28,14 @@
         "description": "Description for C1 Sample Show 1",
         "duration": 1800,
         "starttime": 1676307600,
-        "iptvuri": "https://bitdash-a.akamaihd.net/content/MI201109210084_1/m3u8s/f08e80da-bf1d-4e3d-8899-f0f6155f6efa.m3u8"
+        "iptvuri": ""
       },
       {
         "name": "C1 Sample Show 2",
         "description": "Description for C1 Sample Show 2",
         "duration": 1800,
         "starttime": 1676311200,
-        "iptvuri": "https://bitdash-a.akamaihd.net/content/MI201109210084_1/m3u8s/f08e80da-bf1d-4e3d-8899-f0f6155f6efa.m3u8"
+        "iptvuri": "https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8"
       }
     ],
     "C_1.2.4": [
@@ -44,14 +44,14 @@
         "description": "Description for C2 Sample Show 1",
         "duration": 1800,
         "starttime": 1676307600,
-        "iptvuri": "https://bitdash-a.akamaihd.net/content/MI201109210084_1/m3u8s/f08e80da-bf1d-4e3d-8899-f0f6155f6efa.m3u8"
+        "iptvuri": "https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8"
       },
       {
         "name": "C2 Sample Show 2",
         "description": "Description for C2 Sample Show 2",
         "duration": 1800,
         "starttime": 1676311200,
-        "iptvuri": "https://bitdash-a.akamaihd.net/content/MI201109210084_1/m3u8s/f08e80da-bf1d-4e3d-8899-f0f6155f6efa.m3u8"
+        "iptvuri": "https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8"
       }
     ]
   }
