@@ -180,21 +180,6 @@ export default class NetworkList extends Lightning.Component {
           //   NetworkManager.SetInterfaceState('eth0').then(result => {
           //   })
           // } else if (
-          if(
-            notification.currentActiveInterface == 'eth0' ||
-            notification.prevActiveInterface == 'wlan0'
-          ) {
-            //WiFi.get().disconnect()
-            this.wifiStatus = false
-            this.tag('Networks').visible = false
-            this.tag('JoinAnotherNetwork').visible = false
-            this.tag('Switch.Loader').visible = false
-            this.wifiLoading.stop()
-            this.tag('Switch.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
-            this._setState('Switch')
-            // NetworkManager.SetInterfaceState('eth0').then(result => {
-            // })
-          }
         })
         NetworkManager.thunder.on(NetworkManager.callsign, 'onInterfaceStateChange', notification => {
           if (notification.interface === 'eth0' && notification.status === 'INTERFACE_ADDED') {
