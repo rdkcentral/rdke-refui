@@ -169,10 +169,10 @@ export default class NetworkScreen extends Lightning.Component {
                 $exit() {
                     this.tag('Ethernet')._unfocus()
                 }
-                _handleEnter() {
-                    NetworkManager.SetInterfaceState('eth0').then(res => {
-                        if (res) {
-                                NetworkManager.GetAvailableInterfaces().then(res => {
+                async _handleEnter() {
+                    await NetworkManager.GetInterfaceState("eth0").then(async enabled => {
+                        if (enabled) {
+                            await NetworkManager.GetAvailableInterfaces().then(res => {
                                     console.log(JSON.stringify(res))
                                     let eth = res.filter((item) => item.type == 'ETHERNET')
                                     if (eth[0].type == 'ETHERNET' && eth[0].enabled == true && eth[0].connected == true) {
@@ -186,8 +186,27 @@ export default class NetworkScreen extends Lightning.Component {
                                         }, (Router.isNavigating() ? 20 : 0));
                                     }
                                 })
+                        } else {
+                            await NetworkManager.SetInterfaceState('eth0').then(async res => {
+                                if (res) {
+                                        await NetworkManager.GetAvailableInterfaces().then(res => {
+                                            console.log(JSON.stringify(res))
+                                            let eth = res.filter((item) => item.type == 'ETHERNET')
+                                            if (eth[0].type == 'ETHERNET' && eth[0].enabled == true && eth[0].connected == true) {
+                                                Registry.setTimeout(() => {
+                                                    Router.navigate('menu')
+                                                }, (Router.isNavigating() ? 20 : 0));
+                                            }
+                                            else if (eth[0].type == 'ETHERNET' && eth[0].connected == false) {
+                                                Registry.setTimeout(() => {
+                                                    Router.navigate('splash/networkPrompt')
+                                                }, (Router.isNavigating() ? 20 : 0));
+                                            }
+                                        })
+                                }
+                            })
                         }
-                    })
+                    });                      
                 }
                 _handleDown() {
                     this._setState('Skip')
