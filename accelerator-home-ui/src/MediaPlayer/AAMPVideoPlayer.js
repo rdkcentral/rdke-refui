@@ -52,7 +52,7 @@ export default class AAMPVideoPlayer extends Lightning.Component {
       this.showDescription = args.description
       this.channelIndex = args.channelIndex
     }
-    let url = args.url ? args.url : 'https://bitdash-a.akamaihd.net/content/MI201109210084_1/m3u8s/f08e80da-bf1d-4e3d-8899-f0f6155f6efa.m3u8'
+    let url = args.url ? args.url : 'https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8'
     if (args.isAudio) {
       this.tag('Image').alpha = 1
     }
