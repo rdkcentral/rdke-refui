@@ -78,7 +78,6 @@ import RDKShellApis from './api/RDKShellApis.js';
 import Miracast from './api/Miracast.js';
 import MiracastNotification from './screens/MiracastNotification.js';
 import NetworkManager from './api/NetworkManagerAPI.js';
-import keyMap from './Config/Keymap';
 
 
 var powerState = 'ON';
@@ -296,12 +295,12 @@ export default class App extends Router.App {
 		} else if (key.keyCode == Keymap.Guide_Shortcut && !Router.isNavigating()) {
 			this.jumpToRoute("epg"); //method to exit the current app(if any) and route to home screen
 			return true
-		} else if ((key.code == Keymap.Amazon || key.keyCode== Keymap.Amazon_RCU_Key) && !Router.isNavigating()) {
+		} else if ((key.code == Keymap.Amazon || key.keyCode== Keymap.Amazon_RCU_Key || key.keyCode == Keymap.Amazon_Lima) && !Router.isNavigating()) {
 			return this.launchFeaturedApp("Amazon")
-		} else if ((key.code == Keymap.Youtube || key.keyCode == Keymap.YouTube_RCU_Key) && !Router.isNavigating()) {
+		} else if ((key.code == Keymap.Youtube|| key.keyCode == Keymap.Youtube_Lima) && !Router.isNavigating()) {
 			this.launchFeaturedApp("YouTube")
 			return true
-		} else if ((key.code == Keymap.Netflix || key.keyCode == Keymap.Netflix_RCU_Key) && !Router.isNavigating()) { //launchLocation mapping is in launchApp method in AppApi.js
+		} else if ((key.code == Keymap.Netflix || key.keyCode == Keymap.Netflix_RCU_Key || key.keyCode == Keymap.Netflix_Lima) && !Router.isNavigating()) { //launchLocation mapping is in launchApp method in AppApi.js
 			this.launchFeaturedApp("Netflix")
 			return true
 		} else if (key.keyCode == Keymap.AppCarousel && !Router.isNavigating()) {
@@ -1047,6 +1046,13 @@ export default class App extends Router.App {
 				}).then(res => {
 					this.WARN(JSON.stringify(res))
 				})
+				RDKShellApis.removeKeyIntercept({
+					"keyCode": 80,
+					"modifiers": [],
+					"client": data.callsign
+				}).then(res => {
+					this.WARN(JSON.stringify(res))
+				})		
 			}
 			if (data.success) {
 				if ((GLOBALS.topmostApp === data.client) &&
@@ -1070,6 +1076,9 @@ export default class App extends Router.App {
 							"modifiers": []
 						}, {
 							"keyCode": 175,
+							"modifiers": []
+						}, {
+							"keyCode": 80,
 							"modifiers": []
 						}],
 						"client": data.callsign
@@ -1104,6 +1113,13 @@ export default class App extends Router.App {
 				}).then(res => {
 					this.WARN(JSON.stringify(res))
 				})
+				RDKShellApis.removeKeyIntercept({
+					"keyCode": 80,
+					"modifiers": [],
+					"client": data.client
+				}).then(res => {
+					this.WARN(JSON.stringify(res))
+				})
 			}
 			if ((GLOBALS.topmostApp === data.client) &&
 				(GLOBALS.selfClientName === "ResidentApp" || GLOBALS.selfClientName === "FireboltMainApp-refui") && GLOBALS.Miracastclientdevicedetails.state != "PLAYING") {
@@ -1130,6 +1146,9 @@ export default class App extends Router.App {
 								"modifiers": []
 							}, {
 								"keyCode": 175,
+								"modifiers": []
+							}, {
+								"keyCode": 80,
 								"modifiers": []
 							}],
 							"client": data.client
@@ -1176,6 +1195,13 @@ export default class App extends Router.App {
 					}).then(res => {
 						this.WARN(JSON.stringify(res))
 					})
+					RDKShellApis.removeKeyIntercept({
+						"keyCode": 80,
+						"modifiers": [],
+						"client": data.client
+					}).then(res => {
+						this.WARN(JSON.stringify(res))
+					})
 				}
 				if ((GLOBALS.topmostApp === data.client) &&
 					(GLOBALS.selfClientName === "ResidentApp") && GLOBALS.Miracastclientdevicedetails.state != "PLAYING") {
@@ -1209,6 +1235,13 @@ export default class App extends Router.App {
 					"client": data.client
 				}).then(res => {
 					this.WARN(JSON.stringify(res))
+				})
+				RDKShellApis.removeKeyIntercept({	
+					"keyCode": 80,
+					"modifiers": [],
+					"client": data.client	
+				}).then(res => {	
+					this.WARN(JSON.stringify(res))	
 				})
 			}
 			if ((GLOBALS.topmostApp === data.client) &&
@@ -1244,6 +1277,13 @@ export default class App extends Router.App {
 					"client": data.client
 				}).then(res => {
 					this.WARN(JSON.stringify(res))
+				})
+				RDKShellApis.removeKeyIntercept({	
+					"keyCode": 80,
+					"modifiers": [],
+					"client": data.client	
+				}).then(res => {	
+					this.WARN(JSON.stringify(res))	
 				})
 			}
 			if ((GLOBALS.topmostApp === data.client) &&

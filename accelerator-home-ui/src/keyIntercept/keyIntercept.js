@@ -43,7 +43,12 @@ export function keyIntercept(clientName = GLOBALS.selfClientName) {
                         { "keyCode": Keymap.Settings_Shortcut, "modifiers": [] },
                         { "keyCode": Keymap.Guide_Shortcut, "modifiers": [] },
                         { "keyCode": Keymap.AppCarousel, "modifiers": [] },
-                        { "keyCode": Keymap.Escape, "modifiers": [] }
+                        { "keyCode": Keymap.Escape, "modifiers": [] },
+                        { "keyCode": Keymap.Netflix_RCU_Key, "modifiers": [] },
+                        { "keyCode": Keymap.Netflix_Lima,"modifiers": [] },
+                        { "keyCode": Keymap.Amazon_RCU_Key,"modifiers": [] },
+                        { "keyCode": Keymap.Amazon_Lima,"modifiers": [] },
+                        { "keyCode": Keymap.Youtube_Lima,"modifiers": [] }
                     ]
                 }]
             }
