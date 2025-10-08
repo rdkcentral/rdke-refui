@@ -78,6 +78,7 @@ import RDKShellApis from './api/RDKShellApis.js';
 import Miracast from './api/Miracast.js';
 import MiracastNotification from './screens/MiracastNotification.js';
 import NetworkManager from './api/NetworkManagerAPI.js';
+import keyMap from './Config/Keymap';
 
 
 var powerState = 'ON';
@@ -295,12 +296,12 @@ export default class App extends Router.App {
 		} else if (key.keyCode == Keymap.Guide_Shortcut && !Router.isNavigating()) {
 			this.jumpToRoute("epg"); //method to exit the current app(if any) and route to home screen
 			return true
-		} else if (key.keyCode == Keymap.Amazon && !Router.isNavigating()) {
+		} else if ((key.code == Keymap.Amazon || key.keyCode== Keymap.Amazon_RCU_Key) && !Router.isNavigating()) {
 			return this.launchFeaturedApp("Amazon")
-		} else if (key.keyCode == Keymap.Youtube && !Router.isNavigating()) {
+		} else if ((key.code == Keymap.Youtube || key.keyCode == Keymap.YouTube_RCU_Key) && !Router.isNavigating()) {
 			this.launchFeaturedApp("YouTube")
 			return true
-		} else if (key.keyCode == Keymap.Netflix && !Router.isNavigating()) { //launchLocation mapping is in launchApp method in AppApi.js
+		} else if ((key.code == Keymap.Netflix || key.keyCode == Keymap.Netflix_RCU_Key) && !Router.isNavigating()) { //launchLocation mapping is in launchApp method in AppApi.js
 			this.launchFeaturedApp("Netflix")
 			return true
 		} else if (key.keyCode == Keymap.AppCarousel && !Router.isNavigating()) {

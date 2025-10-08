@@ -104,10 +104,13 @@ const keyMap = {
     "F1": 112,
     "Inputs_Shortcut": 113, //F2
     "Picture_Setting_Shortcut": 114, //F3
-    "Youtube": 115, //F4
+    "Youtube": "Numpad2", 
+    "YouTube_RCU_Key": 114, //F3 Voice RCU Key
     "Power": 116, // F5
-    "Amazon": 117, //F6
-    "Netflix": 118, //F7, F8 Voice RCU Key
+    "Amazon": "Numpad3",
+    "Amazon_RCU_Key": 117, //F6 Voice RCU Key
+    "Netflix": "Numpad1",
+    "Netflix_RCU_Key": 118, //F7 Voice RCU Key
     "Settings_Shortcut": 121, // F10
     "Guide_Shortcut": 120, // F9
     "AppCarousel":122, // F11
