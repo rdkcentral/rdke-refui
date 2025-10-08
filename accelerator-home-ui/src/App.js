@@ -1046,6 +1046,13 @@ export default class App extends Router.App {
 				}).then(res => {
 					this.WARN(JSON.stringify(res))
 				})
+				RDKShellApis.removeKeyIntercept({
+					"keyCode": 115,
+					"modifiers": [],
+					"client": data.callsign
+				}).then(res => {
+					this.WARN(JSON.stringify(res))
+				})
 			}
 			if (data.success) {
 				if ((GLOBALS.topmostApp === data.client) &&
@@ -1069,6 +1076,9 @@ export default class App extends Router.App {
 							"modifiers": []
 						}, {
 							"keyCode": 175,
+							"modifiers": []
+						}, {
+							"keyCode": 115,
 							"modifiers": []
 						}],
 						"client": data.callsign
@@ -1103,6 +1113,13 @@ export default class App extends Router.App {
 				}).then(res => {
 					this.WARN(JSON.stringify(res))
 				})
+				RDKShellApis.removeKeyIntercept({
+					"keyCode": 115,
+					"modifiers": [],
+					"client": data.callsign
+				}).then(res => {
+					this.WARN(JSON.stringify(res))
+				})
 			}
 			if ((GLOBALS.topmostApp === data.client) &&
 				(GLOBALS.selfClientName === "ResidentApp" || GLOBALS.selfClientName === "FireboltMainApp-refui") && GLOBALS.Miracastclientdevicedetails.state != "PLAYING") {
@@ -1129,6 +1146,9 @@ export default class App extends Router.App {
 								"modifiers": []
 							}, {
 								"keyCode": 175,
+								"modifiers": []
+							}, {
+								"keyCode": 115,
 								"modifiers": []
 							}],
 							"client": data.client
@@ -1175,6 +1195,13 @@ export default class App extends Router.App {
 					}).then(res => {
 						this.WARN(JSON.stringify(res))
 					})
+					RDKShellApis.removeKeyIntercept({
+					"keyCode": 115,
+					"modifiers": [],
+					"client": data.callsign
+					}).then(res => {
+						this.WARN(JSON.stringify(res))
+					})
 				}
 				if ((GLOBALS.topmostApp === data.client) &&
 					(GLOBALS.selfClientName === "ResidentApp") && GLOBALS.Miracastclientdevicedetails.state != "PLAYING") {
@@ -1206,6 +1233,13 @@ export default class App extends Router.App {
 					"keyCode": 175,
 					"modifiers": [],
 					"client": data.client
+				}).then(res => {
+					this.WARN(JSON.stringify(res))
+				})
+				RDKShellApis.removeKeyIntercept({
+					"keyCode": 115,
+					"modifiers": [],
+					"client": data.callsign
 				}).then(res => {
 					this.WARN(JSON.stringify(res))
 				})
@@ -1241,6 +1275,13 @@ export default class App extends Router.App {
 					"keyCode": 175,
 					"modifiers": [],
 					"client": data.client
+				}).then(res => {
+					this.WARN(JSON.stringify(res))
+				})
+				RDKShellApis.removeKeyIntercept({
+					"keyCode": 115,
+					"modifiers": [],
+					"client": data.callsign
 				}).then(res => {
 					this.WARN(JSON.stringify(res))
 				})
