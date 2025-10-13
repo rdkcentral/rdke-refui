@@ -807,19 +807,13 @@ export default class App extends Router.App {
 					try {
 						await appApi.getPluginStatus("Cobalt").then(async res => {
 							params.applications.push({
-								"cors": [".youtube.com"],
+								"cors": ".youtube.com",
 								"name": "YouTube",
-								"prefix": "myYoutube",
-								"properties": {
-									"allowStop": false
-								}
+								"prefix": "myYoutube"
 							}, {
-								"cors": [".youtube.com"],
+								"cors": ".youtube.com",
 								"name": "YouTubeTV",
-								"prefix": "myYouTubeTV",
-								"properties": {
-									"allowStop": false
-								}
+								"prefix": "myYouTubeTV"
 							});
 						});
 					} catch (e) {
