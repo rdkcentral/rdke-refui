@@ -83,7 +83,9 @@ export default class ManageAppItem extends Lightning.Component {
                 src: data.icon,
             });
         }
-        this.tag('Text').text.text = data.installed[0].appName
+        if (data.installed && data.installed.length > 0 && data.installed[0].appName) {
+            this.tag('Text').text.text = data.installed[0].appName;
+        }
     }
 
     static get width() {

@@ -98,7 +98,10 @@ export default class AppStore extends Lightning.Component {
         this.options = {
             0: async () => {
                 const installedApplications = await getInstalledDACApps()
-                this.tag('Apps').add(installedApplications.map((element) => {
+                const appsWithInstalled = installedApplications.filter(app => 
+                    app.installed && app.installed.length > 0
+                )
+                this.tag('Apps').add(appsWithInstalled.map((element) => {
                     return { h: AppStoreItem.height + 90, w: AppStoreItem.width, info: element }
                 }));
             },
@@ -109,13 +112,19 @@ export default class AppStore extends Lightning.Component {
             },
             2: async () => {
                 const installedApplications = await getInstalledDACApps()
-                this.tag('ManagedApps').add(installedApplications.map((element) => {
+                const appsWithInstalled = installedApplications.filter(app => 
+                    app.installed && app.installed.length > 0
+                )
+                this.tag('ManagedApps').add(appsWithInstalled.map((element) => {
                     return { h: ManageAppItem.height + 90, w: ManageAppItem.width, info: element }
                 }));
             },
         }
         const installedApps = await getInstalledDACApps()
-        if (Object.keys(installedApps).length === 0) {
+        const appsWithInstalled = installedApps.filter(app => 
+            app.installed && app.installed.length > 0
+        )
+        if (appsWithInstalled.length === 0) {
             this.tag('Options').setIndex(1)
             this.options[1]()
             this._setState('Catalog')
