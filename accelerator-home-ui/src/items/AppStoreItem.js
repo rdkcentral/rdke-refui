@@ -71,7 +71,9 @@ export default class AppStoreItem extends Lightning.Component {
                 src: data.icon,
             });
         }
-        this.tag('Text').text.text = data.installed[0].appName
+        if (data.installed && data.installed.length > 0 && data.installed[0].appName) {
+            this.tag('Text').text.text = data.installed[0].appName;
+        }
     }
 
     static get width() {
@@ -90,10 +92,12 @@ export default class AppStoreItem extends Lightning.Component {
         this._app.isUnInstalling = false
         this._buttonIndex = 0;
         if (Storage.get("CloudAppStore")) {
-            let icon = await fetchAppIcon(this.data.id, this.data.installed[0].version)
-            this.tag('Image').patch({
-                src: icon,
-            });
+            if (this.data.installed && this.data.installed.length > 0 && this.data.installed[0].version) {
+                let icon = await fetchAppIcon(this.data.id, this.data.installed[0].version)
+                this.tag('Image').patch({
+                    src: icon,
+                });
+            }
         }
         else {
             let icon = await fetchLocalAppIcon(this.data.id)
@@ -118,11 +122,13 @@ export default class AppStoreItem extends Lightning.Component {
         this.tag("Text").alpha = 0
     }
     async _handleEnter() {
-        this._app.url = this.data.installed[0].url
-        this._app.id = this.data.id
-        this._app.name = this.data.installed[0].appName
-        this._app.version = this.data.installed[0].version
-        this._app.type = this.data.type
-        this._app.isRunning = await startDACApp(this._app);
+        if (this.data.installed && this.data.installed.length > 0) {
+            this._app.url = this.data.installed[0].url
+            this._app.id = this.data.id
+            this._app.name = this.data.installed[0].appName
+            this._app.version = this.data.installed[0].version
+            this._app.type = this.data.type
+            this._app.isRunning = await startDACApp(this._app);
+        }
     }
 }

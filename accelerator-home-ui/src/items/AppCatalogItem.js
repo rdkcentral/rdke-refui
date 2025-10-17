@@ -211,7 +211,7 @@ export default class AppCatalogItem extends Lightning.Component {
         }
         let installedApps = await getInstalledDACApps()
         this._app.isInstalled = installedApps.find((a) => {
-            return a.id === this._app.id
+            return a.id === this._app.id && a.installed && a.installed.length > 0
         })
         if (this._app.isInstalled === undefined)
             this._app.isInstalled = false

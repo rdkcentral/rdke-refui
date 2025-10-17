@@ -807,19 +807,13 @@ export default class App extends Router.App {
 					try {
 						await appApi.getPluginStatus("Cobalt").then(async res => {
 							params.applications.push({
-								"cors": [".youtube.com"],
+								"cors": ".youtube.com",
 								"name": "YouTube",
-								"prefix": "myYoutube",
-								"properties": {
-									"allowStop": false
-								}
+								"prefix": "myYoutube"
 							}, {
-								"cors": [".youtube.com"],
+								"cors": ".youtube.com",
 								"name": "YouTubeTV",
-								"prefix": "myYouTubeTV",
-								"properties": {
-									"allowStop": false
-								}
+								"prefix": "myYouTubeTV"
 							});
 						});
 					} catch (e) {
@@ -828,12 +822,9 @@ export default class App extends Router.App {
 					try {
 						await appApi.getPluginStatus("Amazon").then(async res => {
 							params.applications.push({
-								"name": ["AmazonInstantVideo"],
-								"prefixes": ["myPrimeVideo"],
-								"cors": [".amazon.com"],
-								"properties": {
-									"allowStop": true
-								}
+								"name": "AmazonInstantVideo",
+								"prefix": "myPrimeVideo",
+								"cors": ".amazon.com"
 							})
 						});
 					} catch (e) {
@@ -843,11 +834,8 @@ export default class App extends Router.App {
 						await appApi.getPluginStatus("Netflix").then(async res => {
 							params.applications.push({
 								"name": "Netflix",
-								"prefixes": ["myNetflix"],
-								"cors": [".netflix.com"],
-								"properties": {
-									"allowStop": true
-								}
+								"prefix": "myNetflix",
+								"cors": ".netflix.com"
 							})
 						});
 					} catch (e) {
