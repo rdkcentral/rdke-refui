@@ -80,7 +80,6 @@ import MiracastNotification from './screens/MiracastNotification.js';
 import NetworkManager from './api/NetworkManagerAPI.js';
 
 
-var powerState = 'ON';
 var AlexaAudioplayerActive = false;
 var thunder = ThunderJS(CONFIG.thunderConfig);
 var appApi = new AppApi();
@@ -2089,12 +2088,12 @@ export default class App extends Router.App {
 		if (value == 'Back') {
 			// TODO: Identify what to do here.
 		} else {
-			if (powerState == 'ON') {
+			if (GLOBALS.powerState == 'ON') {
 				this.LOG("Power state was on trying to set it to standby");
 				appApi.setPowerState(value).then(res => {
 					if (res.success) {
 						this.LOG("successfully set to standby");
-						powerState = 'STANDBY'
+						GLOBALS.powerState = 'STANDBY'
 						if (GLOBALS.topmostApp !== GLOBALS.selfClientName) {
 							appApi.exitApp(GLOBALS.topmostApp);
 						} else {
@@ -2114,7 +2113,7 @@ export default class App extends Router.App {
 			this.LOG("registered inactivity listener");
 			appApi.setPowerState('ON').then(res => {
 				if (res.success) {
-					powerState = 'ON'
+					GLOBALS.powerState = 'ON'
 				}
 			})
 
@@ -2125,7 +2124,7 @@ export default class App extends Router.App {
 					this.LOG("activated the rdk shell plugin trying to set the inactivity listener; res = " + JSON.stringify(res));
 					thunder.on("org.rdk.RDKShell.1", "onUserInactivity", notification => {
 						this.LOG('onUserInactivity: ' + JSON.stringify(notification));
-						if (powerState === "ON" && (GLOBALS.topmostApp === GLOBALS.selfClientName)) {
+						if (GLOBALS.powerState === "ON" && (GLOBALS.topmostApp === GLOBALS.selfClientName)) {
 							this.standby("STANDBY");
 						}
 					}, err => {
@@ -2144,7 +2143,7 @@ export default class App extends Router.App {
 		this.LOG("reset sleep timer call " + JSON.stringify(t));
 		var arr = t.split(" ");
 
-		function setTimer() {
+		const setTimer = () => {
 			this.LOG('Timer ' + JSON.stringify(arr))
 			var temp = arr[1].substring(0, 1);
 			if (temp === 'H') {
