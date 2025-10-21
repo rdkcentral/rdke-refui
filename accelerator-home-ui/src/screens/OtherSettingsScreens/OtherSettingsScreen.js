@@ -119,33 +119,9 @@ export default class OtherSettingsScreen extends Lightning.Component {
                         src: Utils.asset('images/settings/Arrow.png'),
                     },
                 },
-                EnergySaver: {
-                    y: 270,
-                    type: SettingsMainItem,
-                    Title: {
-                        x: 10,
-                        y: 45,
-                        mountY: 0.5,
-                        text: {
-                            text: Language.translate('Energy Saver: '),
-                            textColor: COLORS.titleColor,
-                            fontFace: CONFIG.language.font,
-                            fontSize: 25,
-                        }
-                    },
-                    Button: {
-                        h: 45,
-                        w: 45,
-                        x: 1600,
-                        mountX: 1,
-                        y: 45,
-                        mountY: 0.5,
-                        src: Utils.asset('images/settings/Arrow.png'),
-                    },
-                },
                 Language: {
                     //alpha: 0.3, // disabled
-                    y: 450 - 90,
+                    y: 270,
                     type: SettingsMainItem,
                     Title: {
                         x: 10,
@@ -170,7 +146,7 @@ export default class OtherSettingsScreen extends Lightning.Component {
                 },
                 Privacy: {
                     //alpha: 0.3, // disabled
-                    y: 540 - 90,
+                    y: 360,
                     type: SettingsMainItem,
                     Title: {
                         x: 10,
@@ -194,7 +170,7 @@ export default class OtherSettingsScreen extends Lightning.Component {
                     },
                 },
                 AdvancedSettings: {
-                    y: 630 - 90,
+                    y: 450,
                     type: SettingsMainItem,
                     Title: {
                         x: 10,
@@ -224,10 +200,6 @@ export default class OtherSettingsScreen extends Lightning.Component {
         this._appApi = new AppApi();
         this._setState('SleepTimer')
     }
-    $updateStandbyMode(standbyMode) {
-        this.tag("EnergySaver.Title").text.text = Language.translate("Energy Saver: ") + Language.translate(standbyMode)
-    }
-
     $sleepTimerText(text) {
         this.tag('SleepTimer.Title').text.text = Language.translate('Sleep Timer: ') + text
     }
@@ -244,17 +216,6 @@ export default class OtherSettingsScreen extends Lightning.Component {
         else {
             this.tag('SleepTimer.Title').text.text = Language.translate('Sleep Timer: ') + 'Off'
         }
-
-        this._appApi.getPreferredStandbyMode().then(result => {
-            let currentStandbyMode = ""
-            if (result.preferredStandbyMode == "LIGHT_SLEEP") {
-                currentStandbyMode = "Light Sleep"
-            } else if (result.preferredStandbyMode == "DEEP_SLEEP") {
-                currentStandbyMode = "Deep Sleep"
-            }
-            this.tag("EnergySaver.Title").text.text = Language.translate("Energy Saver: ") + Language.translate(currentStandbyMode)
-        })
-
         if (Storage.get('ScreenSaverTimeoutInterval')) {
             this.tag('ScreenSaver.Title').text.text = Language.translate('Screen-Saver: ') + Storage.get('ScreenSaverTimeoutInterval') + ' min'
         } else {
@@ -320,7 +281,7 @@ export default class OtherSettingsScreen extends Lightning.Component {
                     this._setState('SleepTimer')
                 }
                 _handleDown() {
-                    this._setState('EnergySaver')
+                    this._setState('Language')
                 }
                 _handleEnter() {
                     if(!Router.isNavigating()){
@@ -328,27 +289,6 @@ export default class OtherSettingsScreen extends Lightning.Component {
                     }
                 }
             },
-            class EnergySaver extends this {
-                $enter() {
-                    this.tag('EnergySaver')._focus()
-                }
-                $exit() {
-                    this.tag('EnergySaver')._unfocus()
-                }
-                _handleUp() {
-                    this._setState('ScreenSaver')
-                }
-                _handleDown() {
-                    // this._setState('Theme')
-                    this._setState('Language')
-                }
-                _handleEnter() {
-                    if(!Router.isNavigating()){
-                    Router.navigate('settings/other/energy')
-                    }
-                }
-            },
-
             class Language extends this {
                 $enter() {
                     this.tag('Language')._focus()
@@ -357,7 +297,7 @@ export default class OtherSettingsScreen extends Lightning.Component {
                     this.tag('Language')._unfocus()
                 }
                 _handleUp() {
-                    this._setState('EnergySaver')
+                    this._setState('ScreenSaver')
                 }
                 _handleDown() {
                     this._setState('Privacy')

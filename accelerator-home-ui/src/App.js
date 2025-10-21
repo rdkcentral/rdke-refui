@@ -78,6 +78,7 @@ import RDKShellApis from './api/RDKShellApis.js';
 import Miracast from './api/Miracast.js';
 import MiracastNotification from './screens/MiracastNotification.js';
 import NetworkManager from './api/NetworkManagerAPI.js';
+import PowerManagerApi from './api/PowerManagerApi.js';
 
 
 var AlexaAudioplayerActive = false;
@@ -88,6 +89,7 @@ var cecApi = new CECApi();
 var xcastApi = new XcastApi();
 var voiceApi = new VoiceApi();
 var miracast = new Miracast();
+var powermanagerapi = new PowerManagerApi();
 
 export default class App extends Router.App {
 
@@ -497,21 +499,10 @@ export default class App extends Router.App {
 			callsign: 'org.rdk.System'
 		}).then(result => {
 			this.LOG("App System plugin activation result: " + JSON.stringify(result))
-			appApi.setNetworkStandbyMode().then(result => {
-				if (!result.success) {
-					this.WARN("App RFC setNetworkStandbyMode returned false; trying updated API.")
-					let param = {
-						wakeupSources: [{
-							"WAKEUPSRC_WIFI": true,
-							"WAKEUPSRC_IR": true,
-							"WAKEUPSRC_POWER_KEY": true,
-							"WAKEUPSRC_CEC": true,
-							"WAKEUPSRC_LAN": true
-						}]
-					}
-					appApi.setWakeupSrcConfiguration(param);
-				}
-			})
+			let param = {
+				"wakeupSources": 262143
+			}
+			powermanagerapi.setWakeupSrcConfig(param);
 			appApi.setPowerState(GLOBALS.powerState).then(res => {});
 		}).catch(err => {
 			this.ERR("App System plugin activation error: " + JSON.stringify(err));
@@ -682,6 +673,15 @@ export default class App extends Router.App {
 				}
 			})
 		}
+		appApi.getPluginStatus('org.rdk.PowerManager').then(result => {
+			if (result[0].state === "activated") {
+				console.log("org.rdk.PowerManager is already activated");
+			} else {
+				powermanagerapi.activate().then((res) => {
+					this.LOG("activating the powermanager from app.js " + JSON.stringify(res))
+				}).catch((err) => this.ERR(JSON.stringify(err)))
+			}
+		})
 		appApi.getPluginStatus('org.rdk.NetworkManager').then(result => {
 			if (result[0].state === "activated") {
 				this.SubscribeToNetworkManager()
