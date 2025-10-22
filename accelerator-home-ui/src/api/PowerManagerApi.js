@@ -34,18 +34,18 @@ export default class PowerManagerApi {
     this.callsign = "org.rdk.PowerManager";
   }
   activate() {
-          return new Promise((resolve, reject) => {
-              this.thunder.Controller.activate({ callsign: this.callsign })
-                  .then(() => {
-                      resolve(true)
-                  })
-                  .catch(err => {
-                      this.ERR("Error Activation " + JSON.stringify(err))
-                      Metrics.error(Metrics.ErrorType.OTHER, errorName, `Error while Thunder Controller ${callsign} activate ${JSON.stringify(err)}`, false, null)
-                      reject(err)
-                  })
-          })
-      }
+      return new Promise((resolve, reject) => {
+          this.thunder.Controller.activate({ callsign: this.callsign })
+              .then(() => {
+                  resolve(true)
+              })
+              .catch(err => {
+                  this.ERR("Error Activation " + JSON.stringify(err))
+                  Metrics.error(Metrics.ErrorType.OTHER, errorName, `Error while Thunder Controller ${callsign} activate ${JSON.stringify(err)}`, false, null)
+                  reject(err)
+              })
+      })
+  }
   deactivate() {
       return new Promise((resolve, reject) => {
           this.thunder.Controller.deactivate({ callsign: this.callsign })
@@ -59,17 +59,17 @@ export default class PowerManagerApi {
               })
       })
   }
-    setWakeupSrcConfig(params) {
-        this.LOG("setWakeupSrcConfiguration params:", JSON.stringify(params));
-        return new Promise((resolve, reject) => {
-          this.thunder.call(this.callsign, 'setWakeupSrcConfig', params).then(result => {
-            this.LOG(" setWakeupSrcConfiguration result:", JSON.stringify(result))
-            resolve(result.success)
-          }).catch(err => {
-            this.ERR(" setWakeupSrcConfiguration error:", JSON.stringify(err, 3, null))
-            Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder system setWakeupSrcConfiguration " + JSON.stringify(err), false, null)
-            reject(err)
-          })
+  setWakeupSrcConfig(params) {
+      this.LOG("setWakeupSrcConfiguration params:", JSON.stringify(params));
+      return new Promise((resolve, reject) => {
+        this.thunder.call(this.callsign, 'setWakeupSrcConfig', params).then(result => {
+          this.LOG(" setWakeupSrcConfiguration result:", JSON.stringify(result))
+          resolve(result.success)
+        }).catch(err => {
+          this.ERR(" setWakeupSrcConfiguration error:", JSON.stringify(err))
+          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder system setWakeupSrcConfiguration " + JSON.stringify(err), false, null)
+          reject(err)
         })
-    }
+      })
+  }
 }

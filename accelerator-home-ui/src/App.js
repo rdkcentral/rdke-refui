@@ -500,7 +500,10 @@ export default class App extends Router.App {
 		}).then(result => {
 			this.LOG("App System plugin activation result: " + JSON.stringify(result))
 			let param = {
-				"wakeupSources": 262143
+				//https://github.com/rdkcentral/entservices-apis/blob/1.15.11/docs/apis/PowerManagerPlugin.md#setWakeupSrcConfig
+				//By the above documentation we passed the Enum value sum to enable all wakeup sources expect WAKEUP_REASON_UNKNOWN
+				//Enum indicating bit position (bit counting starts at 1)
+				"wakeupSources": 262143 
 			}
 			powermanagerapi.setWakeupSrcConfig(param);
 			appApi.setPowerState(GLOBALS.powerState).then(res => {});
@@ -674,7 +677,7 @@ export default class App extends Router.App {
 			})
 		}
 		appApi.getPluginStatus('org.rdk.PowerManager').then(result => {
-			if (result[0].state === "activated") {
+			if (res && res.length > 0 && result[0].state === "activated") {
 				console.log("org.rdk.PowerManager is already activated");
 			} else {
 				powermanagerapi.activate().then((res) => {
