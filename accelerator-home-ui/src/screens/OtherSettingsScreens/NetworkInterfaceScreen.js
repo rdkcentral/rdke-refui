@@ -116,14 +116,20 @@ export default class NetworkInterfaceScreen extends Lightning.Component {
             } else if (notification.currentActiveInterface === "wlan0") {
                 this.loadingAnimation.stop()
                 this.tag('Ethernet.Loader').visible = false
-                this.tag('Ethernet.Title').text.text = 'Ethernet'
+                this.tag('Ethernet.Title').text.text = 'Ethernet: ' + Language.translate('Not Connected')
             }
             Metrics.action("user", "The user changed the network interface", null)
         });
         this.onConnectionStatusChangedCB = NetworkManager.thunder.on(NetworkManager.callsign, 'onInterfaceStateChange', (notification) => {
             this.LOG('onInterfaceStateChange notification from networkInterfaceScreen: ' + JSON.stringify(notification))
             if (notification.interface === "eth0") {
-                this.tag('Ethernet.Title').text.text = 'Ethernet: ' + Language.translate(notification.state.toLowerCase())
+                if (notification.status == 'INTERFACE_LINK_DOWN') {
+                    this.tag('Ethernet.Title').text.text = 'Ethernet: ' + Language.translate('Not Connected')
+                } else if (notification.status == 'INTERFACE_ACQUIRING_IP'){
+                    this.tag('Ethernet.Title').text.text = 'Ethernet: ' + Language.translate('Connected')
+                } else {
+                    this.tag('Ethernet.Title').text.text = 'Ethernet: ' + Language.translate(notification.status.toLowerCase())
+                }
             }
             Metrics.action("App", "network connection of app changed", null)
         });
@@ -194,22 +200,18 @@ export default class NetworkInterfaceScreen extends Lightning.Component {
                     this.tag('Ethernet')._unfocus()
                 }
                 async _handleEnter() {
-                    this.tag('Ethernet.Title').text.text = 'Ethernet :' + Language.translate('Configuring as default')
+                    this.tag('Ethernet.Title').text.text = 'Ethernet: ' + Language.translate('Configuring as default')
                     this.tag('Ethernet.Loader').visible = true
                     this.loadingAnimation.start()
                     await NetworkManager.GetInterfaceState("eth0").then(enabled => {
                         if (!enabled) {
-                            NetworkManager.SetInterfaceState("eth0").then(() => {
-                                if (result) {
-                                this.loadingAnimation.stop()
-                                this.tag('Ethernet.Title').text.text = 'Ethernet'
-                                this.tag('Ethernet.Loader').visible = false
-                                }
-                            });
+                            this.loadingAnimation.stop()
+                            this.tag('Ethernet.Title').text.text = 'Ethernet: ' + Language.translate('Not Connected')
+                            this.tag('Ethernet.Loader').visible = false
                         } else {
                                 setTimeout(() => {
                                 this.loadingAnimation.stop()
-                                this.tag('Ethernet.Title').text.text = 'Ethernet'
+                                this.tag('Ethernet.Title').text.text = 'Ethernet: ' + Language.translate("Connected")
                                 this.tag('Ethernet.Loader').visible = false
                             }, 1000)
                         }
