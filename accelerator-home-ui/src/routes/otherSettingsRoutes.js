@@ -18,7 +18,6 @@
  **/
 import OtherSettingsScreen from '../screens/OtherSettingsScreens/OtherSettingsScreen'
 import SleepTimerScreen from '../screens/SleepTimerScreen'
-import EnergySaverScreen from '../screens/OtherSettingsScreens/EnergySavingsScreen'
 import LanguageScreen from '../screens/OtherSettingsScreens/LanguageScreen'
 import PrivacyScreen from '../screens/OtherSettingsScreens/PrivacyScreen'
 import PrivacyPolicyScreen from '../screens/OtherSettingsScreens/PrivacyPolicyScreen'
@@ -48,11 +47,6 @@ export default {
     {
       path: 'settings/other/timer',
       component: SleepTimerScreen,
-      widgets: ['Menu', 'Volume', "AppCarousel"],
-    },
-    {
-      path: 'settings/other/energy',
-      component: EnergySaverScreen,
       widgets: ['Menu', 'Volume', "AppCarousel"],
     },
     {

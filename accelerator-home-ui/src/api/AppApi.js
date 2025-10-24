@@ -71,27 +71,6 @@ export default class AppApi {
    * Function to launch Html app.
    * @param {String} url url of app.
    */
-  getIP() {
-    return new Promise((resolve) => {
-      thunder.Controller.activate({ callsign: 'org.rdk.System' })
-        .then(() => {
-          thunder
-            .call('org.rdk.System', 'getDeviceInfo', { params: 'estb_ip' })
-            .then(result => {
-              resolve(result.success)
-            })
-            .catch(err => {
-              this.ERR("AppAPI System getDeviceInfo estb_ip failed." + JSON.stringify(err));
-              Metrics.error(Metrics.ErrorType.NETWORK, "Network Error", "Error in Thunder system getDeviceInfo" + JSON.stringify(err), false, null)
-              resolve(false)
-            })
-        })
-        .catch(err => {
-          this.ERR("AppAPI activate System failed." + JSON.stringify(err));
-          Metrics.error(Metrics.ErrorType.NETWORK, "Network Error", "Error in Thunder system activation " + JSON.stringify(err), false, null)
-        })
-    })
-  }
   /**
   *  Function to get timeZone
   */
@@ -1569,23 +1548,6 @@ export default class AppApi {
     })
   }
 
-  setPreferredStandbyMode(standbyMode) {
-    this.LOG("setPreferredStandbyMode called : " + standbyMode)
-    return new Promise((resolve) => {
-      thunder
-        .call('org.rdk.System', 'setPreferredStandbyMode', {
-          "standbyMode": standbyMode
-        }).then(result => {
-          resolve(result)
-        })
-        .catch(err => {
-          this.ERR("AppAPI setPreferredStandbyMode error:", JSON.stringify(err, 3, null))
-          Metrics.error(Metrics.ErrorType.NETWORK, "PluginError", "Error in Thunder system setPreferredStandbyMode " + JSON.stringify(err), false, null)
-          resolve(false)
-        })
-    })
-  }
-
   getNetworkStandbyMode() {
     return new Promise((resolve, reject) => {
       thunder.call('org.rdk.System', 'getNetworkStandbyMode').then(result => {
@@ -1611,17 +1573,6 @@ export default class AppApi {
     })
   }
 
-  setNetworkStandbyMode(nwStandby = true) {
-    return new Promise((resolve, reject) => {
-      thunder.call('org.rdk.System', 'setNetworkStandbyMode', { nwStandby: nwStandby }).then(result => {
-        resolve(result.success)
-      }).catch(err => {
-        this.ERR("AppAPI setNetworkStandbyMode error:", JSON.stringify(err, 3, null))
-        Metrics.error(Metrics.ErrorType.NETWORK, "NetworkError", "Error in Thunder system setNetworkStandbyMode " + JSON.stringify(err), false, null)
-        reject(err)
-      })
-    })
-  }
 
   setWakeupSrcConfiguration(params) {
     this.LOG("AppAPI: setWakeupSrcConfiguration params:", JSON.stringify(params));
@@ -1854,22 +1805,6 @@ export default class AppApi {
         .catch(err => {
           this.ERR("AppAPI resetInactivityTime error:", err)
           Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in fetching Thunder resetInactivityTime of RDKShell " + JSON.stringify(err), false, null)
-          resolve(false)
-        })
-    })
-  }
-
-  //clearLastDeepSleepReason
-  clearLastDeepSleepReason() {
-    return new Promise((resolve) => {
-      thunder
-        .call('org.rdk.System', 'clearLastDeepSleepReason')
-        .then(result => {
-          resolve(result)
-        })
-        .catch(err => {
-          this.ERR("AppAPI clearLastDeepSleepReason error:", err)
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder clearLastDeepSleepReason of system " + JSON.stringify(err), false, null)
           resolve(false)
         })
     })
