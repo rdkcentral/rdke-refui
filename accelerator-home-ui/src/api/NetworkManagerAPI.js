@@ -37,6 +37,11 @@ export const WiFiState = {
   WIFI_STATE_ERROR:13
 }
 
+export const ETHERNET_STATUS = {
+  DISCONNECTED: 'INTERFACE_LINK_DOWN',
+  CONNECTED: 'INTERFACE_ACQUIRING_IP'
+}
+
 class NetworkManager {
   constructor() {
     this.thunder = ThunderJS(CONFIG.thunderConfig);

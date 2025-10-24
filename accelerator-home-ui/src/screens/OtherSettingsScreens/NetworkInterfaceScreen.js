@@ -22,7 +22,7 @@ import { COLORS } from '../../colors/Colors'
 import { CONFIG } from '../../Config/Config'
 import { Language } from '@lightningjs/sdk';
 import { Metrics } from '@firebolt-js/sdk'
-import NetworkManager from '../../api/NetworkManagerAPI'
+import NetworkManager, { ETHERNET_STATUS } from '../../api/NetworkManagerAPI'
 
 export default class NetworkInterfaceScreen extends Lightning.Component {
     constructor(...args) {
@@ -108,25 +108,25 @@ export default class NetworkInterfaceScreen extends Lightning.Component {
             if (notification.currentActiveInterface === "eth0") {
                 this.loadingAnimation.stop()
                 this.tag('Ethernet.Loader').visible = false
-                this.tag('Ethernet.Title').text.text = 'Ethernet: ' + Language.translate("Connected")
+                this.tag('Ethernet.Title').text.text = 'Ethernet : ' + Language.translate("Connected")
             } else if (notification.currentActiveInterface === "" && notification.prevActiveInterface === "wlan0") {
                 this.loadingAnimation.stop()
                 this.tag('Ethernet.Loader').visible = false
-                this.tag('Ethernet.Title').text.text = 'Ethernet: '+Language.translate('Error')+', '+Language.translate('Retry')+'!'
+                this.tag('Ethernet.Title').text.text = 'Ethernet : '+Language.translate('Error')+', '+Language.translate('Retry')+'!'
             } else if (notification.currentActiveInterface === "wlan0") {
                 this.loadingAnimation.stop()
                 this.tag('Ethernet.Loader').visible = false
-                this.tag('Ethernet.Title').text.text = 'Ethernet: ' + Language.translate('Not Connected')
+                this.tag('Ethernet.Title').text.text = 'Ethernet : ' + Language.translate('Not Connected')
             }
             Metrics.action("user", "The user changed the network interface", null)
         });
         this.onConnectionStatusChangedCB = NetworkManager.thunder.on(NetworkManager.callsign, 'onInterfaceStateChange', (notification) => {
             this.LOG('onInterfaceStateChange notification from networkInterfaceScreen: ' + JSON.stringify(notification))
             if (notification.interface === "eth0") {
-                if (notification.status == 'INTERFACE_LINK_DOWN') {
-                    this.tag('Ethernet.Title').text.text = 'Ethernet: ' + Language.translate('Not Connected')
-                } else if (notification.status == 'INTERFACE_ACQUIRING_IP'){
-                    this.tag('Ethernet.Title').text.text = 'Ethernet: ' + Language.translate('Connected')
+                if (notification.status == ETHERNET_STATUS.DISCONNECTED) {
+                    this.tag('Ethernet.Title').text.text = 'Ethernet : ' + Language.translate('Not Connected')
+                } else if (notification.status == ETHERNET_STATUS.CONNECTED){
+                    this.tag('Ethernet.Title').text.text = 'Ethernet : ' + Language.translate('Connected')
                 } else {
                     this.tag('Ethernet.Title').text.text = 'Ethernet: ' + Language.translate(notification.status.toLowerCase())
                 }
@@ -200,20 +200,20 @@ export default class NetworkInterfaceScreen extends Lightning.Component {
                     this.tag('Ethernet')._unfocus()
                 }
                 async _handleEnter() {
-                    this.tag('Ethernet.Title').text.text = 'Ethernet: ' + Language.translate('Configuring as default')
+                    this.tag('Ethernet.Title').text.text = 'Ethernet : ' + Language.translate('Configuring as default')
                     this.tag('Ethernet.Loader').visible = true
                     this.loadingAnimation.start()
                     await NetworkManager.GetInterfaceState("eth0").then(enabled => {
-                        if (!enabled) {
-                            this.loadingAnimation.stop()
-                            this.tag('Ethernet.Title').text.text = 'Ethernet: ' + Language.translate('Not Connected')
-                            this.tag('Ethernet.Loader').visible = false
-                        } else {
-                                setTimeout(() => {
+                        if (enabled) {
+                            setTimeout(() => {
                                 this.loadingAnimation.stop()
-                                this.tag('Ethernet.Title').text.text = 'Ethernet: ' + Language.translate("Connected")
+                                this.tag('Ethernet.Title').text.text = 'Ethernet : ' + Language.translate("Connected")
                                 this.tag('Ethernet.Loader').visible = false
                             }, 1000)
+                        } else {
+                            this.loadingAnimation.stop()
+                            this.tag('Ethernet.Title').text.text = 'Ethernet : ' + Language.translate('Not Connected')
+                            this.tag('Ethernet.Loader').visible = false
                         }
                     });
                 }
