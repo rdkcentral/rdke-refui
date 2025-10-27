@@ -26,6 +26,7 @@ import thunderJS from 'ThunderJS';
 import { GLOBALS } from '../../Config/Config'
 import FireBoltApi from '../../api/firebolt/FireBoltApi';
 import { Metrics } from '@firebolt-js/manage-sdk';
+import UserSettingsApi from '../../api/UserSettingsApi';
 
 const appApi = new AppApi()
 const thunder = thunderJS(CONFIG.thunderConfig)
@@ -131,7 +132,7 @@ export default class LanguageScreen extends Lightning.Component {
         _handleUp() {
           this._navigate('up')
         }
-        _handleEnter() {
+        async _handleEnter() {
           if (Language.get() !== availableLanguages[this._Languages.tag('List').index]) {
             let updatedLanguage = availableLanguageCodes[availableLanguages[this._Languages.tag('List').index]]
             if (AlexaApi.get().checkAlexaAuthStatus() === "AlexaHandleError") {
@@ -147,7 +148,11 @@ export default class LanguageScreen extends Lightning.Component {
               })
             }
             if ("ResidentApp" === GLOBALS.selfClientName) {
-              appApi.setPresentationLanguage(updatedLanguage)
+              if (UserSettingsApi?.setPresentationLanguage) {
+                await UserSettingsApi.setPresentationLanguage(updatedLanguage);
+              } else {
+                this.LOG("setPresentationLanguage is not available on UserSettingsApi:", UserSettingsApi);
+              }
             } else {
               FireBoltApi.get().localization.setlanguage(availableLanguages[this._Languages.tag('List').index]).then(res => this.LOG("sucess language set ::::" + JSON.stringify(res)))
             }

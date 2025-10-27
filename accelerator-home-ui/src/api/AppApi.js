@@ -1900,29 +1900,6 @@ export default class AppApi {
     })
   }
 
-  setPresentationLanguage(updatedLanguage) {
-    return new Promise((resolve) => {
-      thunder.call('org.rdk.UserSettings', 'setPresentationLanguage', { "presentationLanguage": updatedLanguage }).then(result => {
-        resolve(result)
-      }).catch(err => {
-        this.ERR('AppAPI setPresentationLanguage failed:' + JSON.stringify(err))
-        Metrics.error(Metrics.ErrorType.OTHER, "PluginError", 'Error in Thunder setPresentationLanguage of UserSettings' + JSON.stringify(err), false, null)
-        resolve(false)
-      })
-    })
-  }
-  getPresentationLanguage() {
-    return new Promise((resolve) => {
-      thunder.call('org.rdk.UserSettings', 'getPresentationLanguage').then(result => {
-        resolve(result)
-      }).catch(err => {
-        this.ERR('AppAPI getPresentationLanguage failed:' + JSON.stringify(err))
-        Metrics.error(Metrics.ErrorType.OTHER, "PluginError", 'Error in Thunder getPresentationLanguage of UserSettings' +JSON.stringify(err), false, null)
-        resolve(false)
-      })
-    })
-  }
-
   deeplinkToApp(app = undefined, payload = undefined, launchLocation = "voice", namespace = undefined) {
     return new Promise((resolve, reject) => {
       if (app === undefined || app === "" || payload == undefined) {

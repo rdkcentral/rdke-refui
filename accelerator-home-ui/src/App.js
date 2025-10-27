@@ -79,7 +79,7 @@ import Miracast from './api/Miracast.js';
 import MiracastNotification from './screens/MiracastNotification.js';
 import NetworkManager from './api/NetworkManagerAPI.js';
 import PowerManagerApi from './api/PowerManagerApi.js';
-
+import UserSettingsApi from './api/UserSettingsApi';
 
 var AlexaAudioplayerActive = false;
 var thunder = ThunderJS(CONFIG.thunderConfig);
@@ -451,6 +451,7 @@ export default class App extends Router.App {
 	_init() {
 
 		let self = this;
+		this.userSettingsApi = new UserSettingsApi(); 
 		self.appIdentifiers = {
 			"YouTubeTV": "n:4",
 			"YouTube": "n:3",
@@ -487,14 +488,16 @@ export default class App extends Router.App {
 			GLOBALS.deviceType = ((result.devicetype != null) ? result.devicetype : "IpTv");
 			Storage.set("deviceType", ((result.devicetype != null) ? result.devicetype : "IpTv"));
 		});
-		thunder.Controller.activate({
-			callsign: 'org.rdk.UserSettings'
-		}).then(result => {
-			this.LOG("App UserSettings plugin activation result: " + JSON.stringify(result))
-		}).catch(err => {
-			this.ERR("App UserSettings plugin activation error: " + JSON.stringify(err));
-			Metrics.error(Metrics.ErrorType.OTHER, 'PluginError', "Thunder Controller Activate error " + JSON.stringify(err), false, null)
-		})
+		// comment out the old activate func for temporarily and remove later
+		// thunder.Controller.activate({
+		// 	callsign: 'org.rdk.UserSettings'
+		// }).then(result => {
+		// 	this.LOG("App UserSettings plugin activation result: " + JSON.stringify(result))
+		// }).catch(err => {
+		// 	this.ERR("App UserSettings plugin activation error: " + JSON.stringify(err));
+		// 	Metrics.error(Metrics.ErrorType.OTHER, 'PluginError', "Thunder Controller Activate error " + JSON.stringify(err), false, null)
+		// })
+		this.userSettingsApi.activate()
 		thunder.Controller.activate({
 			callsign: 'org.rdk.System'
 		}).then(result => {
@@ -1880,7 +1883,7 @@ export default class App extends Router.App {
 	_updateLanguageToDefault() {
 		if ("ResidentApp" === GLOBALS.selfClientName) {
 			if (availableLanguageCodes[Language.get()].length) {
-				appApi.setPresentationLanguage(availableLanguageCodes[Language.get()])
+				this.userSettingsApi.setPresentationLanguage(availableLanguageCodes[Language.get()])
 				localStorage.setItem('Language', Language.get())
 			}
 		} else {

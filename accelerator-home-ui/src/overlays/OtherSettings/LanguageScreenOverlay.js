@@ -25,6 +25,7 @@ import thunderJS from 'ThunderJS';
 import { CONFIG, GLOBALS } from '../../Config/Config'
 import { Metrics } from '@firebolt-js/sdk';
 import FireBoltApi from '../../api/firebolt/FireBoltApi';
+import UserSettingsApi from '../../api/UserSettingsApi';
 
 const appApi = new AppApi()
 const thunder = thunderJS(CONFIG.thunderConfig)
@@ -105,14 +106,14 @@ export default class LanguageScreen extends Lightning.Component {
         _handleUp() {
           this._navigate('up')
         }
-        _handleEnter() {
+        async _handleEnter() {
           //need to verify
           if (Language.get() !== availableLanguages[this._Languages.tag('List').index]) {
             let updatedLanguage = availableLanguageCodes[availableLanguages[this._Languages.tag('List').index]]
             if ("ResidentApp" !== GLOBALS.selfClientName) {
               FireBoltApi.get().localization.setlanguage(availableLanguages[this._Languages.tag('List').index]).then(res => this.LOG("language set successfully"))
             } else {
-              appApi.setPresentationLanguage(updatedLanguage)
+              await UserSettingsApi.setPresentationLanguage(updatedLanguage)
             }
             localStorage.setItem('Language',availableLanguages[this._Languages.tag('List').index])
             let path = location.pathname.split('index.html')[0]
