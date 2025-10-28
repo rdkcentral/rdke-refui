@@ -32,6 +32,13 @@ export default class UserSettingsApi {
         this.WARN = console.warn;
     }
 
+    static get() {
+      if (instance === null) {
+        instance = new UserSettingsApi()
+      }
+      return instance;
+    }
+
     activate() {
         return new Promise((resolve, reject) => {
             thunder.Controller.activate({ callsign: callsign })
@@ -90,4 +97,29 @@ export default class UserSettingsApi {
             })
         })
     }
+
+    setPresentationLanguage(updatedLanguage) {
+      return new Promise((resolve) => {
+        thunder.call(callsign, 'setPresentationLanguage', { "presentationLanguage": updatedLanguage }).then(result => {
+          resolve(result)
+        }).catch(err => {
+          this.ERR('UserSettingsApi setPresentationLanguage failed:' + JSON.stringify(err))
+          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", 'Error in Thunder setPresentationLanguage of UserSettings' + JSON.stringify(err), false, null)
+          resolve(false)
+        })
+      })
+    }
+
+  getPresentationLanguage() {
+    return new Promise((resolve) => {
+      thunder.call(callsign, 'getPresentationLanguage').then(result => {
+        resolve(result)
+      }).catch(err => {
+        this.ERR('UserSettingsApi getPresentationLanguage failed:' + JSON.stringify(err))
+        Metrics.error(Metrics.ErrorType.OTHER, "PluginError", 'Error in Thunder getPresentationLanguage of UserSettings' +JSON.stringify(err), false, null)
+        resolve(false)
+      })
+    })
+  }
+
 }

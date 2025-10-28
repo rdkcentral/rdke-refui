@@ -78,7 +78,7 @@ import RDKShellApis from './api/RDKShellApis.js';
 import Miracast from './api/Miracast.js';
 import MiracastNotification from './screens/MiracastNotification.js';
 import NetworkManager from './api/NetworkManagerAPI.js';
-
+import UserSettingsApi from './api/UserSettingsApi';
 
 var powerState = 'ON';
 var AlexaAudioplayerActive = false;
@@ -486,14 +486,7 @@ export default class App extends Router.App {
 			GLOBALS.deviceType = ((result.devicetype != null) ? result.devicetype : "IpTv");
 			Storage.set("deviceType", ((result.devicetype != null) ? result.devicetype : "IpTv"));
 		});
-		thunder.Controller.activate({
-			callsign: 'org.rdk.UserPreferences'
-		}).then(result => {
-			this.LOG("App UserPreferences plugin activation result: " + JSON.stringify(result))
-		}).catch(err => {
-			this.ERR("App UserPreferences plugin activation error: " + JSON.stringify(err));
-			Metrics.error(Metrics.ErrorType.OTHER, 'PluginError', "Thunder Controller Activate error " + JSON.stringify(err), false, null)
-		})
+		UserSettingsApi.get().activate();
 		thunder.Controller.activate({
 			callsign: 'org.rdk.System'
 		}).then(result => {
