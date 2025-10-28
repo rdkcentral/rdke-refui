@@ -24,6 +24,8 @@ const thunder = ThunderJS(CONFIG.thunderConfig)
 const callsign = 'org.rdk.UserSettings'
 const errorName = 'UserSettingsError'
 
+let instance = null
+
 export default class UserSettingsApi {
     constructor() {
         this.INFO = console.info;
@@ -31,6 +33,13 @@ export default class UserSettingsApi {
         this.ERR = console.error;
         this.WARN = console.warn;
     }
+
+  static get() {
+    if (instance === null) {
+      instance = new UserSettingsApi()
+    }
+    return instance;
+  }
 
     activate() {
         return new Promise((resolve, reject) => {
