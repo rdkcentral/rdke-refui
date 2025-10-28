@@ -1899,6 +1899,31 @@ export default class AppApi {
         });
     })
   }
+  //deprecated 
+  setPresentationLanguage(updatedLanguage) {
+    return new Promise((resolve) => {
+      thunder.call(callsign, 'setPresentationLanguage', { "presentationLanguage": updatedLanguage }).then(result => {
+        resolve(result)
+      }).catch(err => {
+        this.ERR('UserSettingsApi setPresentationLanguage failed:' + JSON.stringify(err))
+        Metrics.error(Metrics.ErrorType.OTHER, "PluginError", 'Error in Thunder setPresentationLanguage of UserSettings' + JSON.stringify(err), false, null)
+        resolve(false)
+      })
+    })
+  }
+  
+  //deprecated
+  getPresentationLanguage() {
+    return new Promise((resolve) => {
+      thunder.call(callsign, 'getPresentationLanguage').then(result => {
+        resolve(result)
+      }).catch(err => {
+        this.ERR('UserSettingsApi getPresentationLanguage failed:' + JSON.stringify(err))
+        Metrics.error(Metrics.ErrorType.OTHER, "PluginError", 'Error in Thunder getPresentationLanguage of UserSettings' +JSON.stringify(err), false, null)
+        resolve(false)
+      })
+    })
+  }
 
   deeplinkToApp(app = undefined, payload = undefined, launchLocation = "voice", namespace = undefined) {
     return new Promise((resolve, reject) => {

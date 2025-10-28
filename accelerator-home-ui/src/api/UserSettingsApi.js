@@ -36,6 +36,7 @@ export default class UserSettingsApi {
         return new Promise((resolve, reject) => {
             thunder.Controller.activate({ callsign: callsign })
                 .then(() => {
+                    this.LOG("App UserSettings plugin activation result: " + JSON.stringify(result))
                     resolve(true)
                 })
                 .catch(err => {
@@ -90,15 +91,13 @@ export default class UserSettingsApi {
             })
         })
     }
-    /*https://github.com/rdkcentral/entservices-apis/blob/1.15.11/docs/apis/UserSettingsPlugin.md
-    UserPreferences plugin has changed and deprecated and changed to UserSettings, so keeping
-    all changes in a UserSettingsApi*/
+
     setPresentationLanguage(updatedLanguage) {
       return new Promise((resolve) => {
         thunder.call(callsign, 'setPresentationLanguage', { "presentationLanguage": updatedLanguage }).then(result => {
           resolve(result)
         }).catch(err => {
-          this.ERR('AppAPI setPresentationLanguage failed:' + JSON.stringify(err))
+          this.ERR('UserSettingsApi setPresentationLanguage failed:' + JSON.stringify(err))
           Metrics.error(Metrics.ErrorType.OTHER, "PluginError", 'Error in Thunder setPresentationLanguage of UserSettings' + JSON.stringify(err), false, null)
           resolve(false)
         })
@@ -110,7 +109,7 @@ export default class UserSettingsApi {
         thunder.call(callsign, 'getPresentationLanguage').then(result => {
           resolve(result)
         }).catch(err => {
-          this.ERR('AppAPI getPresentationLanguage failed:' + JSON.stringify(err))
+          this.ERR('UserSettingsApi getPresentationLanguage failed:' + JSON.stringify(err))
           Metrics.error(Metrics.ErrorType.OTHER, "PluginError", 'Error in Thunder getPresentationLanguage of UserSettings' +JSON.stringify(err), false, null)
           resolve(false)
         })
