@@ -36,7 +36,6 @@ export default class UserSettingsApi {
         return new Promise((resolve, reject) => {
             thunder.Controller.activate({ callsign: callsign })
                 .then(() => {
-                    this.LOG("App UserSettings plugin activation result: " + JSON.stringify(result))
                     resolve(true)
                 })
                 .catch(err => {
