@@ -1900,13 +1900,12 @@ export default class AppApi {
         });
     })
   }
-  //setUILanguage 
-  setPresentationLanguage(updatedLanguage) {
+  
+  setUILanguage(updatedLanguage) {
     return UserSettingsApi.get().setPresentationLanguage(updatedLanguage)
   }
   
-  //getUILanguage
-  getPresentationLanguage() {
+  getUILanguage() {
     return UserSettingsApi.get().getPresentationLanguage(updatedLanguage)
   }
 
