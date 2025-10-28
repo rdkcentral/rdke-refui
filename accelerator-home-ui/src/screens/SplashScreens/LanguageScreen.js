@@ -24,7 +24,6 @@ import { availableLanguages, availableLanguageCodes } from '../../Config/Config'
 import AppApi from '../../api/AppApi'
 import RDKShellApis from '../../api/RDKShellApis'
 import FireBoltApi from '../../api/firebolt/FireBoltApi'
-import UserSettingsApi from '../../api/UserSettingsApi'
 
 const appApi = new AppApi()
 const loader = 'Loader'
@@ -150,7 +149,7 @@ export default class LanguageScreen extends Lightning.Component {
 
    updateUILanguage(index) {
     if ("ResidentApp" === GLOBALS.selfClientName) {
-        UserSettingsApi.get().setPresentationLanguage(availableLanguageCodes[availableLanguages[index]])
+        appApi.setPresentationLanguage(availableLanguageCodes[availableLanguages[index]]) //appApi.setUILanguage
     } else {
         FireBoltApi.get().localization.setlanguage(availableLanguages[index]).then(res => this.LOG("sucess language set ::::" + JSON.stringify(res)))
     }

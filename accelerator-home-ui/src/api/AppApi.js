@@ -1900,12 +1900,12 @@ export default class AppApi {
         });
     })
   }
-  //deprecated 
+  //setUILanguage 
   setPresentationLanguage(updatedLanguage) {
     return UserSettingsApi.get().setPresentationLanguage(updatedLanguage)
   }
   
-  //deprecated
+  //getUILanguage
   getPresentationLanguage() {
     return UserSettingsApi.get().getPresentationLanguage(updatedLanguage)
   }
