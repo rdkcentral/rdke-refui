@@ -409,7 +409,10 @@ export default class NetworkList extends Lightning.Component {
         notification.state === WiFiState.WIFI_STATE_AUTHENTICATION_FAILED ||
         notification.state === WiFiState.WIFI_STATE_ERROR )
         {
-          await NetworkManager.RemoveKnownSSID(selectedssid.ssid)
+          if (notification.state === WiFiState.WIFI_STATE_INVALID_CREDENTIALS|| notification.state === WiFiState.WIFI_STATE_SSID_CHANGED || notification.state === WiFiState.WIFI_STATE_AUTHENTICATION_FAILED)
+          {
+            await NetworkManager.RemoveKnownSSID(selectedssid.ssid)
+          }
           NetworkManager.StartWiFiScan()
           NetworkManager.GetPrimaryInterface().then(defIface => {
             if (defIface != "eth0") {
