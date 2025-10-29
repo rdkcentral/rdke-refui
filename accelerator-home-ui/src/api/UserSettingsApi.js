@@ -24,6 +24,8 @@ const thunder = ThunderJS(CONFIG.thunderConfig)
 const callsign = 'org.rdk.UserSettings'
 const errorName = 'UserSettingsError'
 
+let instance = null
+
 export default class UserSettingsApi {
     constructor() {
         this.INFO = console.info;
@@ -31,6 +33,13 @@ export default class UserSettingsApi {
         this.ERR = console.error;
         this.WARN = console.warn;
     }
+
+  static get() {
+    if (instance === null) {
+      instance = new UserSettingsApi()
+    }
+    return instance;
+  }
 
     activate() {
         return new Promise((resolve, reject) => {
@@ -89,5 +98,29 @@ export default class UserSettingsApi {
               resolve(false)
             })
         })
+    }
+
+    setPresentationLanguage(updatedLanguage) {
+      return new Promise((resolve) => {
+        thunder.call(callsign, 'setPresentationLanguage', { "presentationLanguage": updatedLanguage }).then(result => {
+          resolve(result)
+        }).catch(err => {
+          this.ERR('UserSettingsApi setPresentationLanguage failed:' + JSON.stringify(err))
+          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", 'Error in Thunder setPresentationLanguage of UserSettings' + JSON.stringify(err), false, null)
+          resolve(false)
+        })
+      })
+    }
+
+    getPresentationLanguage() {
+      return new Promise((resolve) => {
+        thunder.call(callsign, 'getPresentationLanguage').then(result => {
+          resolve(result)
+        }).catch(err => {
+          this.ERR('UserSettingsApi getPresentationLanguage failed:' + JSON.stringify(err))
+          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", 'Error in Thunder getPresentationLanguage of UserSettings' +JSON.stringify(err), false, null)
+          resolve(false)
+        })
+      })
     }
 }

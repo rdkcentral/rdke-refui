@@ -26,6 +26,7 @@ import AlexaApi from './AlexaApi.js';
 import RDKShellApis from './RDKShellApis.js';
 import { Metrics } from '@firebolt-js/sdk';
 import Network from './NetworkApi.js';
+import UserSettingsApi from './UserSettingsApi.js';
 
 const thunder = ThunderJS(CONFIG.thunderConfig)
 
@@ -1899,28 +1900,13 @@ export default class AppApi {
         });
     })
   }
-
+  
   setUILanguage(updatedLanguage) {
-    return new Promise((resolve) => {
-      thunder.call('org.rdk.UserPreferences', 'setUILanguage', { "ui_language": updatedLanguage }).then(result => {
-        resolve(result)
-      }).catch(err => {
-        this.ERR('AppAPI setUILanguage failed:' + JSON.stringify(err))
-        Metrics.error(Metrics.ErrorType.OTHER, "PluginError", 'Error in Thunder setUILanguage of UserPreferences' + JSON.stringify(err), false, null)
-        resolve(false)
-      })
-    })
+    return UserSettingsApi.get().setPresentationLanguage(updatedLanguage)
   }
+  
   getUILanguage() {
-    return new Promise((resolve) => {
-      thunder.call('org.rdk.UserPreferences', 'getUILanguage').then(result => {
-        resolve(result.ui_language)
-      }).catch(err => {
-        this.ERR('AppAPI getUILanguage failed:' + JSON.stringify(err))
-        Metrics.error(Metrics.ErrorType.OTHER, "PluginError", 'Error in Thunder getUILanguage of UserPreferences' +JSON.stringify(err), false, null)
-        resolve(false)
-      })
-    })
+    return UserSettingsApi.get().getPresentationLanguage(updatedLanguage)
   }
 
   deeplinkToApp(app = undefined, payload = undefined, launchLocation = "voice", namespace = undefined) {
