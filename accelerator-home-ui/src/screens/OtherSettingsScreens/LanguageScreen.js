@@ -147,9 +147,9 @@ export default class LanguageScreen extends Lightning.Component {
               })
             }
             if ("ResidentApp" === GLOBALS.selfClientName) {
-                appApi.setUILanguage(updatedLanguage); 
+              appApi.setUILanguage(updatedLanguage)
             } else {
-                FireBoltApi.get().localization.setlanguage(availableLanguages[this._Languages.tag('List').index]).then(res => this.LOG("sucess language set ::::" + JSON.stringify(res)))
+              FireBoltApi.get().localization.setlanguage(availableLanguages[this._Languages.tag('List').index]).then(res => this.LOG("sucess language set ::::" + JSON.stringify(res)))
             }
             localStorage.setItem('Language',availableLanguages[this._Languages.tag('List').index])
             let path = location.pathname.split('index.html')[0]

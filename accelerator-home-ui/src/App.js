@@ -487,14 +487,6 @@ export default class App extends Router.App {
 			GLOBALS.deviceType = ((result.devicetype != null) ? result.devicetype : "IpTv");
 			Storage.set("deviceType", ((result.devicetype != null) ? result.devicetype : "IpTv"));
 		});
-		// thunder.Controller.activate({
-		// 	callsign: 'org.rdk.UserSettings'
-		// }).then(result => {
-		// 	this.LOG("App UserSettings plugin activation result: " + JSON.stringify(result))
-		// }).catch(err => {
-		// 	this.ERR("App UserSettings plugin activation error: " + JSON.stringify(err));
-		// 	Metrics.error(Metrics.ErrorType.OTHER, 'PluginError', "Thunder Controller Activate error " + JSON.stringify(err), false, null)
-		// })
 		UserSettingsApi.get().activate();
 		thunder.Controller.activate({
 			callsign: 'org.rdk.System'
@@ -1881,7 +1873,7 @@ export default class App extends Router.App {
 	_updateLanguageToDefault() {
 		if ("ResidentApp" === GLOBALS.selfClientName) {
 			if (availableLanguageCodes[Language.get()].length) {
-				UserSettingsApi.get().setPresentationLanguage(availableLanguageCodes[Language.get()])
+				appApi.setUILanguage(availableLanguageCodes[Language.get()])
 				localStorage.setItem('Language', Language.get())
 			}
 		} else {
