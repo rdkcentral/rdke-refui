@@ -25,9 +25,11 @@ import NetworkManager from '../../api/NetworkManagerAPI.js'
 import AlexaApi from '../../api/AlexaApi.js';
 import RCApi from '../../api/RemoteControl'
 import Warehouse from '../../api/WarehouseApis.js'
+import PowerManagerApi from '../../api/PowerManagerApi.js'
 
 const appApi = new AppApi()
 const _btApi = new BluetoothApi()
+const powermanagerapi = new PowerManagerApi()
 
 /**
  * Class for Reboot Confirmation Screen.
@@ -209,7 +211,7 @@ export default class RebootConfirmationScreen extends Lightning.Component {
         let wifidisconnect = await NetworkManager.WiFiDisconnect().catch(err =>{ this.ERR("wifidisconnect" + JSON.stringify(err)) });
         if (wifidisconnect.success != true) { this.LOG("wifidisconnect" + JSON.stringify(wifidisconnect)) }
         await appApi.clearCache().catch(err => { this.ERR("clearCache error: " + JSON.stringify(err)) })
-        await appApi.reboot("User Trigger").then(result => { this.LOG('device rebooting' + JSON.stringify(result))})
+        await powermanagerapi.reboot("User Trigger").then(result => { this.LOG('device rebooting' + JSON.stringify(result))})
     }
 
     static _states() {

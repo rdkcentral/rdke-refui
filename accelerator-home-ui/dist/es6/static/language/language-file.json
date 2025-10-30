@@ -1,0 +1,17 @@
+{
+  "meta": {
+    "default": "en",
+    "names": {
+      "en": "English",
+      "es": "Spanish"
+    },
+    "map": {
+      "en-US": "en",
+      "en-IN": "en",
+      "en-GB": "en",
+      "es-ES": "es"
+    }
+  },
+  "en": "language/translations/en.json",
+  "es": "language/translations/es.json"
+}

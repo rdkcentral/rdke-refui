@@ -208,8 +208,8 @@ export default class App extends Router.App {
 		this.LOG("Got keycode : " + JSON.stringify(key.keyCode))
 		this.LOG("powerState ===>" + JSON.stringify(GLOBALS.powerState))
 		if (GLOBALS.powerState !== "ON") {
-			appApi.setPowerState("ON").then(res => {
-				res.success ? this.LOG("successfully set the power state to ON from " + JSON.stringify(GLOBALS.powerState)) : this.LOG("Failure while turning ON the device")
+			powermanagerapi.setPowerState("ON").then(res => {
+				res ? this.LOG("successfully set the power state to ON from " + JSON.stringify(GLOBALS.powerState)) : this.LOG("Failure while turning ON the device")
 			})
 			return true
 		}
@@ -459,15 +459,7 @@ export default class App extends Router.App {
 			"Amazon": "n:2",
 			"Prime": "n:2"
 		}
-		appApi.getPowerStateIsManagedByDevice().then(res => {
-			if (!res.powerStateManagedByDevice) {
-				this._getPowerStatebeforeReboot();
-			} else {
-				appApi.getPowerState().then(res => {
-					GLOBALS.powerState = res.success ? res.powerState : "ON";
-				});
-			}
-		}).catch(err => this._getPowerStatebeforeReboot());
+		this._getPowerStatebeforeReboot();
 
 		keyIntercept(GLOBALS.selfClientName).catch(err => {
 			this.ERR("App _init keyIntercept err:" + JSON.stringify(err));
@@ -499,7 +491,7 @@ export default class App extends Router.App {
 				"wakeupSources": 262143 
 			}
 			powermanagerapi.setWakeupSrcConfig(param);
-			appApi.setPowerState(GLOBALS.powerState).then(res => {});
+			powermanagerapi.setPowerState(GLOBALS.powerState).then(res => {});
 		}).catch(err => {
 			this.ERR("App System plugin activation error: " + JSON.stringify(err));
 		})
@@ -663,14 +655,14 @@ export default class App extends Router.App {
 					cachedPowerState = 'ON'
 				}
 			})
-			appApi.setPowerState(cachedPowerState).then(result => {
-				if (result.success) {
+			powermanagerapi.setPowerState(cachedPowerState).then(result => {
+				if (result) {
 					this.LOG("successfully set powerstate to: " + JSON.stringify(cachedPowerState))
 				}
 			})
 		}
 		appApi.getPluginStatus('org.rdk.PowerManager').then(result => {
-			if (res && res.length > 0 && result[0].state === "activated") {
+			if (result && result.length > 0 && result[0].state === "activated") {
 				console.log("org.rdk.PowerManager is already activated");
 			} else {
 				powermanagerapi.activate().then((res) => {
@@ -1523,9 +1515,9 @@ export default class App extends Router.App {
 	}
 
 	_getPowerStateWhileReboot() {
-		appApi.getPowerState().then(res => {
-			this.LOG("_getPowerStateWhileReboot: Current power state while reboot " + JSON.stringify(res.powerState));
-			this._powerStateWhileReboot = res.powerState;
+		powermanagerapi.getPowerState().then(res => {
+			this.LOG("_getPowerStateWhileReboot: Current power state while reboot " + JSON.stringify(res));
+			this._powerStateWhileReboot = res.currentState;
 			this._PowerStateHandlingWhileReboot();
 		}).catch(err => {
 			this.LOG("_getPowerStateWhileReboot: Error in getting current power state while reboot " + JSON.stringify(err));
@@ -1538,17 +1530,17 @@ export default class App extends Router.App {
 		this.LOG("_PowerStateHandlingWhileReboot: this._oldPowerStateWhileReboot , " + JSON.stringify(this._oldPowerStateWhileReboot) + " this._powerStateWhileReboot, " + JSON.stringify(this._powerStateWhileReboot) + " ");
 		if (this._oldPowerStateWhileReboot != this._powerStateWhileReboot) {
 			this.LOG("_PowerStateHandlingWhileReboot: old power state is not equal to powerstate while reboot " + JSON.stringify(this._oldPowerStateWhileReboot) + " " + JSON.stringify(this._powerStateWhileReboot));
-			appApi.setPowerState(this._oldPowerStateWhileReboot).then(res => {
+			powermanagerapi.setPowerState(this._oldPowerStateWhileReboot).then(res => {
 				this.LOG("_PowerStateHandlingWhileReboot: successfully set powerstate to old powerstate " + JSON.stringify(this._oldPowerStateWhileReboot));
-				if (res.success) {
-					appApi.getPowerState().then(res => {
-						GLOBALS.powerState = res.powerState;
+				if (res) {
+					powermanagerapi.getPowerState().then(res => {
+						GLOBALS.powerState = res.currentState;
 					});
 					this.LOG("_PowerStateHandlingWhileReboot: powerstate after setting to new powerstate " + JSON.stringify(GLOBALS.powerState) + " and ");
 				}
 			}).catch(err => {
 				this.LOG("_PowerStateHandlingWhileReboot: Rebooting the device as set PowerState failed due to " + JSON.stringify(err));
-				appApi.reboot("setPowerState Api Failure");
+				powermanagerapi.reboot("setPowerState Api Failure");
 			});
 		} else {
 			this.LOG("_PowerStateHandlingWhileReboot: power state before reboot and curren tpowerstate is same " + JSON.stringify(this._oldPowerStateWhileReboot) + " " + JSON.stringify(this._powerStateWhileReboot));
@@ -1557,9 +1549,9 @@ export default class App extends Router.App {
 	}
 
 	_getPowerStatebeforeReboot() {
-		appApi.getPowerStateBeforeReboot().then(res => {
-			this.LOG("_getPowerStatebeforeReboot: getpowerstate before reboot " + JSON.stringify(res.state));
-			this._oldPowerStateWhileReboot = res.state;
+		powermanagerapi.getPowerStateBeforeReboot().then(res => {
+			this.LOG("_getPowerStatebeforeReboot: getpowerstate before reboot " + JSON.stringify(res));
+			this._oldPowerStateWhileReboot = res;
 			this._getPowerStateWhileReboot();
 		}).catch(err => {
 			this.LOG("_getPowerStatebeforeReboot: getPowerStateBeforeReboot error " + JSON.stringify(err) + " setting powerstate to ON");
@@ -1595,22 +1587,22 @@ export default class App extends Router.App {
 	}
 
 	_firstEnable() {
-		thunder.on("org.rdk.System", "onSystemPowerStateChanged", notification => {
-			this.LOG(new Date().toISOString() + " onSystemPowerStateChanged Notification: " + JSON.stringify(notification));
-			appApi.getPowerState().then(res => {
-				GLOBALS.powerState = res.success ? res.powerState : notification.powerState
-			}).catch(e => GLOBALS.powerState = notification.powerState)
-			if (notification.powerState !== "ON" && notification.currentPowerState === "ON") {
-				this.LOG("onSystemPowerStateChanged Notification: power state was changed from ON to " + JSON.stringify(notification.powerState))
+		thunder.on("org.rdk.PowerManager", "onPowerModeChanged", notification => {
+			this.LOG(new Date().toISOString() + " onPowerModeChanged Notification: " + JSON.stringify(notification));
+			powermanagerapi.getPowerState().then(res => {
+				GLOBALS.powerState = res ? res.currentState : notification.newState
+			}).catch(e => GLOBALS.powerState = notification.newState)
+			if (notification.newState !== "ON" && notification.currentState === "ON") {
+				this.LOG("onPowerModeChanged Notification: power state was changed from ON to " + JSON.stringify(notification.newState))
 
 				//TURNING OFF THE DEVICE
-				Storage.set('SLEEPING', notification.powerState)
+				Storage.set('SLEEPING', notification.newState)
 				let currentApp = GLOBALS.topmostApp
 				if (currentApp !== "") {
 					appApi.exitApp(currentApp); //will suspend/destroy the app depending on the setting.
 				}
 				Router.navigate('menu');
-			} else if (notification.powerState === "ON" && notification.currentPowerState !== "ON") {
+			} else if (notification.newState === "ON" && notification.currentState !== "ON") {
 				//TURNING ON THE DEVICE
 				Storage.remove('SLEEPING')
 			}
@@ -1843,29 +1835,24 @@ export default class App extends Router.App {
 	}
 
 	_powerKeyPressed() {
-		appApi.getPowerState().then(res => {
+		powermanagerapi.getPowerState().then(res => {
 			this.LOG("getPowerState: " + JSON.stringify(res));
-			if (res.success) {
-				if (res.powerState === "ON") {
-					this.LOG("current powerState is ON so setting power state to LIGHT_SLEEP/DEEP_SLEEP depending of preferred option");
-					appApi.getPreferredStandbyMode().then(res => {
-						this.LOG("getPreferredStandbyMode: " + JSON.stringify(res.preferredStandbyMode));
-						appApi.setPowerState(res.preferredStandbyMode).then(result => {
-							if (result.success) {
-								this.LOG("successfully set powerstate to: " + JSON.stringify(res.preferredStandbyMode))
-								return result.success
-							}
-						})
-					})
-				} else {
-					this.LOG("current powerState is " + JSON.stringify(res.powerState) + " so setting power state to ON");
-					appApi.setPowerState("ON").then(res => {
-						if (res.success) {
-							this.LOG("successfully set powerstate to: ON")
-							return res.success
-						}
-					})
-				}
+			if (res.currentState === "ON") {
+				this.LOG("current powerState is ON so setting power state to LIGHT_SLEEP/DEEP_SLEEP depending of preferred option");
+				powermanagerapi.setPowerState(res.previousState).then(result => {
+					if (result) {
+						this.LOG("successfully set powerstate to: " + JSON.stringify(res.previousState))
+						return result
+					}
+				})
+			} else {
+				this.LOG("current powerState is " + JSON.stringify(res.currentState) + " so setting power state to ON");
+				powermanagerapi.setPowerState("ON").then(res => {
+					if (res) {
+						this.LOG("successfully set powerstate to: ON")
+						return res
+					}
+				})
 			}
 		})
 	}
@@ -1916,9 +1903,9 @@ export default class App extends Router.App {
 		let self = this;
 		this.xcastApi.registerEvent('onApplicationLaunchRequest', notification => {
 			this.LOG('App onApplicationLaunchRequest: ' + JSON.stringify(notification));
-			appApi.getPowerState().then(res => {
-				if (res.powerState != 'ON') {
-					appApi.setPowerState('ON')
+			powermanagerapi.getPowerState().then(res => {
+				if (res.currentState != 'ON') {
+					powermanagerapi.setPowerState('ON')
 				}
 			})
 			if (this.xcastApps(notification.applicationName)) {
@@ -1975,9 +1962,9 @@ export default class App extends Router.App {
 
 		this.xcastApi.registerEvent('onApplicationResumeRequest', notification => {
 			this.LOG('App onApplicationResumeRequest: ' + JSON.stringify(notification));
-			appApi.getPowerState().then(res => {
-				if (res.powerState != 'ON') {
-					appApi.setPowerState('ON')
+			powermanagerapi.getPowerState().then(res => {
+				if (res.currentState != 'ON') {
+					powermanagerapi.setPowerState('ON')
 				}
 			})
 			if (this.xcastApps(notification.applicationName)) {
@@ -2086,8 +2073,8 @@ export default class App extends Router.App {
 		} else {
 			if (GLOBALS.powerState == 'ON') {
 				this.LOG("Power state was on trying to set it to standby");
-				appApi.setPowerState(value).then(res => {
-					if (res.success) {
+				powermanagerapi.setPowerState(value).then(res => {
+					if (res) {
 						this.LOG("successfully set to standby");
 						GLOBALS.powerState = 'STANDBY'
 						if (GLOBALS.topmostApp !== GLOBALS.selfClientName) {
@@ -2107,8 +2094,8 @@ export default class App extends Router.App {
 	$registerInactivityMonitoringEvents() {
 		return new Promise((resolve, reject) => {
 			this.LOG("registered inactivity listener");
-			appApi.setPowerState('ON').then(res => {
-				if (res.success) {
+			powermanagerapi.setPowerState('ON').then(res => {
+				if (res) {
 					GLOBALS.powerState = 'ON'
 				}
 			})

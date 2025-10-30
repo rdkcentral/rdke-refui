@@ -19,6 +19,7 @@
 
 import ThunderJS from 'ThunderJS';
 import { CONFIG } from '../Config/Config'
+import { Metrics } from '@firebolt-js/sdk';
 
 
 /**
@@ -64,12 +65,72 @@ export default class PowerManagerApi {
       return new Promise((resolve, reject) => {
         this.thunder.call(this.callsign, 'setWakeupSrcConfig', params).then(result => {
           this.LOG(" setWakeupSrcConfiguration result:", JSON.stringify(result))
-          resolve(result.success)
+          resolve(result)
         }).catch(err => {
           this.ERR(" setWakeupSrcConfiguration error:", JSON.stringify(err))
           Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder system setWakeupSrcConfiguration " + JSON.stringify(err), false, null)
           reject(err)
         })
       })
+  }
+  setPowerState(value) {
+    return new Promise((resolve) => {
+      this.thunder.call(this.callsign, 'setPowerState', { "powerState": value, "standbyReason": "ResidentApp User Requested" })
+        .then(result => {
+          this.LOG("PowerManager setPowerState result:", JSON.stringify(result))
+          if(result === null){
+            resolve(true)
+          } else {
+            resolve(false)
+          }
+        })
+        .catch(err => {
+          this.ERR("PowerManager setPowerState failed: ", JSON.stringify(err));
+          Metrics.error(Metrics.ErrorType.OTHER, "PowerStateFailure", "Error in Thunder PowerManager setPowerState " + JSON.stringify(err), false, null)
+          resolve(false)
+        })
+    })
+  }
+  getPowerStateBeforeReboot() {
+    return new Promise((resolve, reject) => {
+      this.thunder.call(this.callsign, 'getPowerStateBeforeReboot').then(result => {
+        this.LOG("PowerManager getPowerStateBeforeReboot result:", JSON.stringify(result))
+        resolve(result);
+      }).catch(err => {
+        this.ERR("PowerManager getPowerStateBeforeReboot failed: ", JSON.stringify(err));
+        Metrics.error(Metrics.ErrorType.OTHER, "PowerStateFailure", "Error in Thunder PowerManager getPowerStateBeforeReboot " + JSON.stringify(err), false, null);
+        reject(err);
+      });
+    });
+  }
+  getPowerState() {
+    return new Promise((resolve, reject) => {
+      this.thunder.call(this.callsign, 'getPowerState')
+        .then(result => {
+          this.LOG("PowerManager getPowerState result:", JSON.stringify(result))
+          resolve(result)
+        })
+        .catch(err => {
+          this.ERR("PowerManager getPowerState failed: ", JSON.stringify(err));
+          Metrics.error(Metrics.ErrorType.OTHER, "PowerStateFailure", "Error in Thunder PowerManager getPowerState " + JSON.stringify(err), false, null)
+          reject(err)
+        })
+    })
+  }
+  reboot(reason = "FIRMWARE_FAILURE") {
+    return new Promise((resolve) => {
+      this.thunder.call(this.callsign, 'reboot', {
+          "rebootReasonCustom": reason
+        })
+        .then(result => {
+          this.LOG("PowerManager reboot result:", JSON.stringify(result))
+          resolve(result)
+        })
+        .catch(err => {
+          this.ERR("PowerManager reboot error:", JSON.stringify(err, 3, null))
+          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder PowerManager reboot " + JSON.stringify(err), false, null)
+          resolve(false)
+        })
+    })
   }
 }

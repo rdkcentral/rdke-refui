@@ -19,8 +19,10 @@
 import { Lightning, Utils, Language } from "@lightningjs/sdk";
 import AppApi from "../../api/AppApi";
 import { CONFIG } from "../../Config/Config";
+import PowerManagerApi from "../../api/PowerManagerApi";
 
 const appApi = new AppApi();
+const powermanagerapi = new PowerManagerApi();
 /**
  * Class for Reboot Confirmation Component.
  */
@@ -152,7 +154,7 @@ export default class RebootConfirmation extends Lightning.Component {
           this._focus();
         }
         _handleEnter() {
-          appApi.reboot("User Trigger").then((result) => {
+          powermanagerapi.reboot("User Trigger").then((result) => {
             this.LOG("device rebooting" + JSON.stringify(result));
             this._setState("Rebooting");
           });
