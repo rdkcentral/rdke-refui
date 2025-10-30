@@ -233,7 +233,7 @@ export default class WifiPairingScreen extends Lightning.Component {
       }
     let flag = 0
     this.onWIFIStateChangedCB = NetworkManager.thunder.on(NetworkManager.callsign, 'onWiFiStateChange', notification => {
-      if (notification.state === WiFiState.WIFI_STATE_INVALID_CREDENTIALS|| notification.state === WiFiState.WIFI_STATE_SSID_CHANGED) {
+      if (notification.state === WiFiState.WIFI_STATE_INVALID_CREDENTIALS|| notification.state === WiFiState.WIFI_STATE_SSID_CHANGED || notification.state === WiFiState.WIFI_STATE_AUTHENTICATION_FAILED) {
         this.LOG("INVALID_CREDENTIALS; deleting WiFi Persistence data.")
         NetworkManager.RemoveKnownSSID(Ssid).then(() => {
           PersistentStoreApi.get().deleteNamespace('wifi')
