@@ -229,25 +229,26 @@ export default class PrivacyScreen extends Lightning.Component {
     }
 
     toggleLocalDeviceDiscovery() {
-        xcastApi.getEnabled().then(res => {
-            if (!res.enabled) {
-                xcastApi.activate().then(res => {
-                    if (res) {
-                        this.tag('LocalDeviceDiscovery.Button').src = Utils.asset('images/settings/ToggleOnOrange.png')
-                    }
-                })
-            }
-            else {
-                xcastApi.deactivate().then(res => {
-                    if (res) {
+        if (window.localDeviceDiscoveryEnabled) {
+             xcastApi.getEnabled().then(res => {
+                if (res.enabled) {
+                     xcastApi.deactivate().then(res => {
                         this.tag('LocalDeviceDiscovery.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
-                    }
-                })
-            }
-        }).catch(err => {
-            this.LOG('Service not active')
-            this.tag('LocalDeviceDiscovery.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
-        })
+                        window.localDeviceDiscoveryEnabled = false;
+                    })
+                }
+            }).catch(err => {
+                this.LOG('Service not active')
+                this.tag('LocalDeviceDiscovery.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
+            })
+        } else {
+            xcastApi.activate().then(res => {
+                if (res) {
+                    window.localDeviceDiscoveryEnabled = true;
+                    this.tag('LocalDeviceDiscovery.Button').src = Utils.asset('images/settings/ToggleOnOrange.png')
+                }
+            })
+        }
     }
 
     static _states() {
