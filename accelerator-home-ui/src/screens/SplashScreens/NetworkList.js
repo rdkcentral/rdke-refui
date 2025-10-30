@@ -24,7 +24,7 @@ import SettingsMainItem from '../../items/SettingsMainItem'
 import WiFiItem from '../../items/WiFiItem'
 import NetworkManager,{WiFiState}from '../../api/NetworkManagerAPI'
 
-let selectedssid;
+
 export default class NetworkList extends Lightning.Component {
   constructor(...args) {
     super(...args);
@@ -32,6 +32,7 @@ export default class NetworkList extends Lightning.Component {
     this.LOG = console.log;
     this.ERR = console.error;
     this.WARN = console.warn;
+    this.selectedssid = null;
   }
 
   static _template() {
@@ -299,7 +300,7 @@ export default class NetworkList extends Lightning.Component {
           this._navigate('AvailableDevices', 'up')
         }
         _handleEnter() {
-          selectedssid = this.tag('Networks.AvailableNetworks').tag('List').element._item
+          this.selectedssid = this.tag('Networks.AvailableNetworks').tag('List').element._item
           console.log(this.tag('Networks.AvailableNetworks').tag('List').element._item)
           GLOBALS.NetworkListStatus = true
           Router.navigate('settings/network/interface/wifi/connect', { wifiItem: this.tag('Networks.AvailableNetworks').tag('List').element._item })
@@ -411,7 +412,7 @@ export default class NetworkList extends Lightning.Component {
         {
           if (notification.state === WiFiState.WIFI_STATE_INVALID_CREDENTIALS|| notification.state === WiFiState.WIFI_STATE_SSID_CHANGED || notification.state === WiFiState.WIFI_STATE_AUTHENTICATION_FAILED)
           {
-            await NetworkManager.RemoveKnownSSID(selectedssid.ssid)
+            await NetworkManager.RemoveKnownSSID(this.selectedssid.ssid)
           }
           NetworkManager.StartWiFiScan()
           NetworkManager.GetPrimaryInterface().then(defIface => {
