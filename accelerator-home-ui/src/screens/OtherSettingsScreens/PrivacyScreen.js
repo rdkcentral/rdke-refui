@@ -229,12 +229,12 @@ export default class PrivacyScreen extends Lightning.Component {
     }
 
     toggleLocalDeviceDiscovery() {
-        if (window.localDeviceDiscoveryEnabled) {
+        if (GLOBALS.LocalDeviceDiscoveryStatus) {
              xcastApi.getEnabled().then(res => {
                 if (res.enabled) {
                      xcastApi.deactivate().then(res => {
                         this.tag('LocalDeviceDiscovery.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
-                        window.localDeviceDiscoveryEnabled = false;
+                        GLOBALS.LocalDeviceDiscoveryStatus = false;
                     })
                 }
             }).catch(err => {
@@ -244,7 +244,7 @@ export default class PrivacyScreen extends Lightning.Component {
         } else {
             xcastApi.activate().then(res => {
                 if (res) {
-                    window.localDeviceDiscoveryEnabled = true;
+                    GLOBALS.LocalDeviceDiscoveryStatus = true;
                     this.tag('LocalDeviceDiscovery.Button').src = Utils.asset('images/settings/ToggleOnOrange.png')
                 }
             }).catch(err => {

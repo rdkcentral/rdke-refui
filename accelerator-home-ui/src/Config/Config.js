@@ -81,6 +81,7 @@ export const GLOBALS = {
   _previousapp_onActiveSourceStatusUpdated:null,
   _previousapp_onDisplayConnectionChanged:null,
   _constantselfClientName: window.__firebolt && window.__firebolt.endpoint !== undefined ? "FireboltMainApp-refui" : "ResidentApp",
+  _LocalDeviceDiscoveryStatus:false,
   get selfClientName() {
     return this._constantselfClientName;
   },
@@ -185,5 +186,13 @@ export const GLOBALS = {
   get MiracastNotificationstatus()
   {
     return this._MiracastNotificationstatus
+  },
+  set LocalDeviceDiscoveryStatus(status)
+  {
+    this._LocalDeviceDiscoveryStatus = status
+  },
+  get LocalDeviceDiscoveryStatus()
+  {
+    return this._LocalDeviceDiscoveryStatus
   }
 }

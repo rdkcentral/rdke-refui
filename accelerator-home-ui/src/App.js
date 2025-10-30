@@ -790,10 +790,10 @@ export default class App extends Router.App {
 				this.LOG("Xcast friendly name to be set: " + JSON.stringify(modelName));
 				await this.xcastApi.setFriendlyName(modelName);
 				await this.xcastApi.setEnabled(true).then(res => {
-					window.localDeviceDiscoveryEnabled = true;
+					GLOBALS.LocalDeviceDiscoveryStatus = true;
 					console.warn("Xcast setEnabled success" + JSON.stringify(res));
 				}).catch(err => {
-					window.localDeviceDiscoveryEnabled = false;
+					GLOBALS.LocalDeviceDiscoveryStatus = false;
 					this.ERR("Xcast setEnabled error:" + JSON.stringify(err))
 				});
 				await this.xcastApi.setStandbyBehavior("active").then(async res => {
