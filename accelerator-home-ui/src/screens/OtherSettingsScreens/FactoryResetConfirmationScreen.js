@@ -200,10 +200,12 @@ export default class RebootConfirmationScreen extends Lightning.Component {
         if (clearLastDeepSleepReason.success != true) { this.LOG("clearLastDeepSleepReason" + JSON.stringify(clearLastDeepSleepReason)) }
         let GetKnownSSIDs = await NetworkManager.GetKnownSSIDs().then((ssids)=>{ssids}).catch(err =>  { console.error("GetKnownssids",err) });
         let clearSSID =false
-        for(let i=0;i<GetKnownSSIDs.length;i++)
+        if(GetKnownSSIDs && GetKnownSSIDs.length>0)
         {
-        if(GetKnownSSIDs.length>0)
-            {clearSSID= await NetworkManager.RemoveKnownSSID(ssids[i]).catch(err =>  { this.ERR("clearSSID" + JSON.stringify(err)) });}
+            for(let i=0;i<GetKnownSSIDs.length;i++)
+            {
+                {clearSSID= await NetworkManager.RemoveKnownSSID(ssids[i]).catch(err =>  { this.ERR("clearSSID" + JSON.stringify(err)) });}
+            }
         }
         if (clearSSID != true)  { this.LOG("clearSSID" + JSON.stringify(clearSSID)) }
         let wifidisconnect = await NetworkManager.WiFiDisconnect().catch(err =>{ this.ERR("wifidisconnect" + JSON.stringify(err)) });
