@@ -191,7 +191,7 @@ export default class WiFiScreen extends Lightning.Component {
         notification.state === WiFiState.WIFI_STATE_AUTHENTICATION_FAILED ||
         notification.state === WiFiState.WIFI_STATE_ERROR )
         {
-          if ((notification.state === WiFiState.WIFI_STATE_INVALID_CREDENTIALS) || (notification.state === WiFiState.WIFI_STATE_SSID_CHANGED)) {
+          if ((notification.state === WiFiState.WIFI_STATE_INVALID_CREDENTIALS) || (notification.state === WiFiState.WIFI_STATE_SSID_CHANGED)|| (notification.state === WiFiState.WIFI_STATE_AUTHENTICATION_FAILED)) {
             NetworkManager.RemoveKnownSSID(selectedssid.ssid).then(() => {
               this.LOG("INVALID_CREDENTIALS; deleting WiFi Persistence data.")
               PersistentStoreApi.get().deleteNamespace('wifi')
@@ -381,9 +381,9 @@ export default class WiFiScreen extends Lightning.Component {
                   this.LOG("WiFiScreen getPairedSSID matched with current selection; try auto connect.");
                   NetworkManager.WiFiConnect(true).then(() => {
                     NetworkManager.thunder.on('onWiFiStateChange', notification => {
-                      if (notification.code === WiFiState.WIFI_STATE_SSID_CHANGED || notification.code === WiFiState.WIFI_STATE_INVALID_CREDENTIALS) {
+                      if (notification.code === WiFiState.WIFI_STATE_SSID_CHANGED || notification.code === WiFiState.WIFI_STATE_INVALID_CREDENTIALS|| notification.state === WiFiState.WIFI_STATE_AUTHENTICATION_FAILED) {
 
-                        NetworkManager.RemoveKnownSSID(selectedssid).then(() => {
+                        NetworkManager.RemoveKnownSSID(selectedssid.ssid).then(() => {
                           this._setState("WifiPairingScreen")
                         })
                       }
