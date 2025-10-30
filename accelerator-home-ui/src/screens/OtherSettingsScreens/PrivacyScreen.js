@@ -238,7 +238,7 @@ export default class PrivacyScreen extends Lightning.Component {
                     })
                 }
             }).catch(err => {
-                this.LOG('Service not active')
+                this.LOG('Error while fetching Xcast Enable status')
                 this.tag('LocalDeviceDiscovery.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
             })
         } else {
@@ -247,6 +247,9 @@ export default class PrivacyScreen extends Lightning.Component {
                     window.localDeviceDiscoveryEnabled = true;
                     this.tag('LocalDeviceDiscovery.Button').src = Utils.asset('images/settings/ToggleOnOrange.png')
                 }
+            }).catch(err => {
+                this.LOG('Service not active')
+                this.tag('LocalDeviceDiscovery.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
             })
         }
     }
