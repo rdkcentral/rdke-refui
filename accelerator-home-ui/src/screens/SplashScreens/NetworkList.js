@@ -24,6 +24,7 @@ import SettingsMainItem from '../../items/SettingsMainItem'
 import WiFiItem from '../../items/WiFiItem'
 import NetworkManager,{WiFiState}from '../../api/NetworkManagerAPI'
 
+
 export default class NetworkList extends Lightning.Component {
   constructor(...args) {
     super(...args);
@@ -31,6 +32,7 @@ export default class NetworkList extends Lightning.Component {
     this.LOG = console.log;
     this.ERR = console.error;
     this.WARN = console.warn;
+    this.selectedssid = null;
   }
 
   static _template() {
@@ -298,6 +300,7 @@ export default class NetworkList extends Lightning.Component {
           this._navigate('AvailableDevices', 'up')
         }
         _handleEnter() {
+          this.selectedssid = this.tag('Networks.AvailableNetworks').tag('List').element._item
           console.log(this.tag('Networks.AvailableNetworks').tag('List').element._item)
           GLOBALS.NetworkListStatus = true
           Router.navigate('settings/network/interface/wifi/connect', { wifiItem: this.tag('Networks.AvailableNetworks').tag('List').element._item })
@@ -390,7 +393,7 @@ export default class NetworkList extends Lightning.Component {
  */
   _activateWiFi() {
       this.switch()
-    NetworkManager.thunder.on(NetworkManager.callsign, 'onWiFiStateChange', notification => {
+    NetworkManager.thunder.on(NetworkManager.callsign, 'onWiFiStateChange', async notification => {
       this.LOG(JSON.stringify(notification))
       if (notification.state === WiFiState.WIFI_STATE_CONNECTED && ! GLOBALS.Setup) {
         this.tag('Info').text.text = Language.translate("Connection successful");
@@ -407,6 +410,10 @@ export default class NetworkList extends Lightning.Component {
         notification.state === WiFiState.WIFI_STATE_AUTHENTICATION_FAILED ||
         notification.state === WiFiState.WIFI_STATE_ERROR )
         {
+          if (notification.state === WiFiState.WIFI_STATE_INVALID_CREDENTIALS|| notification.state === WiFiState.WIFI_STATE_SSID_CHANGED || notification.state === WiFiState.WIFI_STATE_AUTHENTICATION_FAILED)
+          {
+            await NetworkManager.RemoveKnownSSID(this.selectedssid.ssid)
+          }
           NetworkManager.StartWiFiScan()
           NetworkManager.GetPrimaryInterface().then(defIface => {
             if (defIface != "eth0") {
