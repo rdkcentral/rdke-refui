@@ -27,6 +27,7 @@ import RDKShellApis from './RDKShellApis.js';
 import { Metrics } from '@firebolt-js/sdk';
 import Network from './NetworkApi.js';
 import UserSettingsApi from './UserSettingsApi.js';
+import PowerManagerApi from './PowerManagerApi.js';
 
 const thunder = ThunderJS(CONFIG.thunderConfig)
 
@@ -1098,30 +1099,11 @@ export default class AppApi {
   }
 
   setPowerState(value) {
-    return new Promise((resolve) => {
-      thunder
-        .call('org.rdk.System', 'setPowerState', { "powerState": value, "standbyReason": "ResidentApp User Requested" })
-        .then(result => {
-          resolve(result)
-        })
-        .catch(err => {
-          this.ERR("AppAPI System setPowerState failed: ", JSON.stringify(err));
-          Metrics.error(Metrics.ErrorType.OTHER, "PowerStateFailure", "Error in Thunder System setPowerState " + JSON.stringify(err), false, null)
-          resolve(false)
-        })
-    })
+    return PowerManagerApi.get().setPowerState(value)
   }
 
   getPowerStateBeforeReboot() {
-    return new Promise((resolve, reject) => {
-      thunder.call('org.rdk.System', 'getPowerStateBeforeReboot').then(result => {
-        resolve(result);
-      }).catch(err => {
-        this.ERR("AppAPI System getPowerStateBeforeReboot failed: ", JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER, "PowerStateFailure", "Error in Thunder System getPowerStateBeforeReboot " + JSON.stringify(err), false, null);
-        reject(err);
-      });
-    });
+    return PowerManagerApi.get().getPowerStateBeforeReboot();
   }
 
   getPowerStateIsManagedByDevice() {
@@ -1137,18 +1119,7 @@ export default class AppApi {
   }
 
   getPowerState() {
-    return new Promise((resolve, reject) => {
-      thunder
-        .call('org.rdk.System', 'getPowerState')
-        .then(result => {
-          resolve(result)
-        })
-        .catch(err => {
-          this.ERR("AppAPI System getPowerState failed: ", JSON.stringify(err));
-          Metrics.error(Metrics.ErrorType.OTHER, "PowerStateFailure", "Error in Thunder System getPowerState " + JSON.stringify(err), false, null)
-          reject(err)
-        })
-    })
+    return PowerManagerApi.get().getPowerState()
   }
 
   getWakeupReason() {
@@ -1509,20 +1480,7 @@ export default class AppApi {
 
   // 6. Reboot and add default reason as FIRMWARE_FAILURE
   reboot(reason = "FIRMWARE_FAILURE") {
-    return new Promise((resolve) => {
-      thunder
-        .call('org.rdk.System', 'reboot', {
-          "rebootReason": reason
-        })
-        .then(result => {
-          resolve(result)
-        })
-        .catch(err => {
-          this.ERR("AppAPI reboot error:", JSON.stringify(err, 3, null))
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder system reboot " + JSON.stringify(err), false, null)
-          resolve(false)
-        })
-    })
+    return PowerManagerApi.get().reboot(reason)
   }
 
   getNetflixESN() {
@@ -1574,20 +1532,9 @@ export default class AppApi {
     })
   }
 
-
   setWakeupSrcConfiguration(params) {
-    this.LOG("AppAPI: setWakeupSrcConfiguration params:", JSON.stringify(params));
-    return new Promise((resolve, reject) => {
-      thunder.call('org.rdk.System', 'setWakeupSrcConfiguration', params).then(result => {
-        resolve(result.success)
-      }).catch(err => {
-        this.ERR("AppAPI setWakeupSrcConfiguration error:", JSON.stringify(err, 3, null))
-        Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder system setWakeupSrcConfiguration " + JSON.stringify(err), false, null)
-        reject(err)
-      })
-    })
+    return PowerManagerApi.get().setWakeupSrcConfig(params)
   }
-
 
   async sendAppState(value) {
     const state = await thunder

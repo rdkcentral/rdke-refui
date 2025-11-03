@@ -21,7 +21,7 @@ import ThunderJS from 'ThunderJS';
 import { CONFIG } from '../Config/Config'
 import { Metrics } from '@firebolt-js/sdk';
 
-
+let instance = null
 /**
  * Class for Xcast thunder plugin apis.
  */
@@ -34,6 +34,15 @@ export default class PowerManagerApi {
     this.WARN = console.warn;
     this.callsign = "org.rdk.PowerManager";
   }
+  
+
+  static get() {
+    if (instance === null) {
+      instance = new PowerManagerApi()
+    }
+    return instance;
+  }
+
   activate() {
       return new Promise((resolve, reject) => {
           this.thunder.Controller.activate({ callsign: this.callsign })
@@ -47,6 +56,7 @@ export default class PowerManagerApi {
               })
       })
   }
+
   deactivate() {
       return new Promise((resolve, reject) => {
           this.thunder.Controller.deactivate({ callsign: this.callsign })
@@ -60,6 +70,7 @@ export default class PowerManagerApi {
               })
       })
   }
+
   setWakeupSrcConfig(params) {
       this.LOG("setWakeupSrcConfiguration params:", JSON.stringify(params));
       return new Promise((resolve, reject) => {
@@ -73,6 +84,7 @@ export default class PowerManagerApi {
         })
       })
   }
+
   setPowerState(value) {
     return new Promise((resolve) => {
       this.thunder.call(this.callsign, 'setPowerState', { "powerState": value, "standbyReason": "ResidentApp User Requested" })
@@ -91,6 +103,7 @@ export default class PowerManagerApi {
         })
     })
   }
+
   getPowerStateBeforeReboot() {
     return new Promise((resolve, reject) => {
       this.thunder.call(this.callsign, 'getPowerStateBeforeReboot').then(result => {
@@ -103,6 +116,7 @@ export default class PowerManagerApi {
       });
     });
   }
+
   getPowerState() {
     return new Promise((resolve, reject) => {
       this.thunder.call(this.callsign, 'getPowerState')
@@ -117,6 +131,7 @@ export default class PowerManagerApi {
         })
     })
   }
+
   reboot(reason = "FIRMWARE_FAILURE") {
     return new Promise((resolve) => {
       this.thunder.call(this.callsign, 'reboot', {
