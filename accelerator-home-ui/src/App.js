@@ -80,6 +80,9 @@ import MiracastNotification from './screens/MiracastNotification.js';
 import NetworkManager from './api/NetworkManagerAPI.js';
 import PowerManagerApi, {PowerState} from './api/PowerManagerApi.js';
 import UserSettingsApi from './api/UserSettingsApi';
+import AppManager from './api/AppManagerApi.js';
+import PackageManagerRDKEMSApi from './api/PackageManagerRDKEMSApi.js';
+import RDKWindowManager from './api/RDKWindowManagerApi.js';
 
 var AlexaAudioplayerActive = false;
 var thunder = ThunderJS(CONFIG.thunderConfig);
@@ -89,6 +92,8 @@ var cecApi = new CECApi();
 var xcastApi = new XcastApi();
 var voiceApi = new VoiceApi();
 var miracast = new Miracast();
+var powermanagerapi = new PowerManagerApi();
+var packagemangerRdkems = new PackageManagerRDKEMSApi();
 
 export default class App extends Router.App {
 
@@ -298,6 +303,7 @@ export default class App extends Router.App {
 		} else if (key.keyCode == Keymap.Amazon && !Router.isNavigating()) {
 			return this.launchFeaturedApp("Amazon")
 		} else if (key.keyCode == Keymap.Youtube && !Router.isNavigating()) {
+			console.log("YouTube key pressed, calling launchFeaturedApp");
 			this.launchFeaturedApp("YouTube")
 			return true
 		} else if (key.keyCode == Keymap.Netflix && !Router.isNavigating()) { //launchLocation mapping is in launchApp method in AppApi.js
@@ -589,6 +595,11 @@ export default class App extends Router.App {
 					this.SubscribeToNetworkManager()
 				}
 			}
+			if( noti.callsign === "org.rdk.AppManager")	{
+				if(noti.data.state === "activated")	{
+					this._SubscribeToAppManagerNotifications();
+				}
+			}
 		})
 		this._subscribeToRDKShellNotifications()
 		appApi.getPluginStatus("Cobalt").then(() => {
@@ -763,6 +774,53 @@ export default class App extends Router.App {
 
 		this._updateLanguageToDefault()
 
+	appApi.getPluginStatus("org.rdk.PackageManagerRDKEMS").then(result => {
+      if (result[0].state === "activated") {
+        this.LOG("PackageManagerRDKEMS plugin is already activated");
+      } else {
+        packagemanager.activate().then(() => {
+          this.LOG("PackageManagerRDKEMS plugin activated successfully");
+        }).catch(err => {
+          this.ERR("Error activating PackageManagerRDKEMS plugin: " + JSON.stringify(err));
+        });
+      }
+    })
+    appApi.getPluginStatus("org.rdk.AppManager").then(result => {
+      if (result[0].state === "activated") {
+        this.LOG("AppManager plugin is already activated");
+		this._SubscribeToAppManagerNotifications();
+      } else {
+        AppManager.get().activate().then(() => {
+		  this._SubscribeToAppManagerNotifications();
+          this.LOG("AppManager plugin activated successfully");
+        }).catch(err => {
+          this.ERR("Error activating AppManager plugin: " + JSON.stringify(err));
+        });
+      }
+    })
+	appApi.getPluginStatus("org.rdk.RDKWindowManager").then(result => {
+	  if (result[0].state === "activated") {	
+		this.LOG("RDKWindowManager plugin is already activated");
+	  } else {
+		RDKWindowManager.get().activate().then(() => {
+		  this.LOG("RDKWindowManager plugin activated successfully");	
+		}).catch(err => {
+		  this.ERR("Error activating RDKWindowManager plugin: " + JSON.stringify(err));
+		});
+	  }
+	})
+	appApi.getPluginStatus("org.rdk.RuntimeManager").then(result => {	
+	if (result[0].state === "activated") {	
+	  this.LOG("RuntimeManager plugin is already activated");
+	  this._SubscribeToRuntimeManagerNotifications();
+	} else {
+	  RuntimeManager.get().activate().then(() => {
+		this.LOG("RuntimeManager plugin activated successfully");
+	  }).catch(err => {
+		this.ERR("Error activating RuntimeManager plugin: " + JSON.stringify(err));
+	  });
+	}
+	})
 		this.xcastApi = new XcastApi()
 		this.xcastApi.activate().then(async result => {
 			console.warn("Xcast plugin activate");
@@ -958,6 +1016,87 @@ export default class App extends Router.App {
 				}
 				GLOBALS.topmostApp = GLOBALS.selfClientName
 			}
+		});
+	}
+	
+	_SubscribeToRuntimeManagerNotifications() {
+		thunder.on('org.rdk.RuntimeManager', 'onStarted', data => {
+			this.LOG('onStarted ' + JSON.stringify(data));
+		});
+		thunder.on('org.rdk.RuntimeManager', 'onTerminated', data => {
+			this.LOG('onTerminated ' + JSON.stringify(data));
+		});
+		thunder.on('org.rdk.RuntimeManager', 'onFailure', data => {
+			this.LOG('onFailure ' + JSON.stringify(data));
+		});
+		thunder.on('org.rdk.RuntimeManager', 'onStateChanged', data => {
+			this.LOG('onStateChanged ' + JSON.stringify(data));
+		});
+	}
+	_SubscribeToAppManagerNotifications() {
+		thunder.on('org.rdk.AppManager', 'onAppInstalled', data => {
+			this.LOG('onAppInstallStatus ' + JSON.stringify(data));
+		});
+		thunder.on('org.rdk.AppManager', 'onAppUninstalled', data => {
+			this.LOG('onAppUninstallStatus ' + JSON.stringify(data));
+		});
+		thunder.on('org.rdk.AppManager', 'onAppLifecycleStateChanged', data => {
+			if(data.newState === "APP_STATE_ACTIVE") {
+				RDKWindowManager.get().setFocus(data.appInstanceId).then(() => {
+					this.LOG("setFocus success for " + data.appInstanceId);
+				}
+				).catch(err => {
+					this.ERR("setFocus error for " + data.appInstanceId + " :" + JSON.stringify(err));
+				});
+			}
+			this.LOG('onAppLifecycleStateChanged ' + JSON.stringify(data));
+		});	
+		thunder.on('org.rdk.AppManager', 'onAppLaunchRequest', data => {
+			this.LOG('onAppLaunchRequested ' + JSON.stringify(data));
+		});
+		thunder.on('org.rdk.AppManager', 'onAppUnloaded', data => {
+			AppManager.get().getLoadedApps().then((res) => {
+				this.LOG('Currently loaded apps: ' + JSON.stringify(res));
+				const targetAppId = "com.rdk.app.wpebrowser_2.38";
+				const targetApp = res.find(app => app.appId === targetAppId);
+				if (targetApp) {
+					const appInstanceId = targetApp.appInstanceId;
+					this.LOG('Found appInstanceId for ' + targetAppId + ': ' + appInstanceId);
+					RDKWindowManager.get().setFocus(appInstanceId).then(() => {
+						this.LOG('setFocus successful for ' + targetAppId);
+					}	).catch((err) => {
+						this.ERR('setFocus error for ' + targetAppId + ': ' + JSON.stringify(err));
+					});
+					
+				} else {
+					this.WARN('App not found: ' + targetAppId);
+				}
+			}).catch((err) => {
+				this.ERR('Error getting loaded apps after onAppUnloaded: ' + JSON.stringify(err));
+			});
+			this.LOG('onAppUnloaded ' + JSON.stringify(data));
+		});
+		thunder.on('org.rdk.OCIContainer', 'onContainerStopped', data => {
+			AppManager.get().getLoadedApps().then((res) => {
+				this.LOG('Currently loaded apps: ' + JSON.stringify(res));
+				const targetAppId = "com.rdk.app.wpebrowser_2.38";
+				const targetApp = res.find(app => app.appId === targetAppId);
+				if (targetApp) {
+					const appInstanceId = targetApp.appInstanceId;
+					this.LOG('Found appInstanceId for ' + targetAppId + ': ' + appInstanceId);
+					RDKWindowManager.get().setFocus(appInstanceId).then(() => {
+						this.LOG('setFocus successful for ' + targetAppId);
+					}	).catch((err) => {
+						this.ERR('setFocus error for ' + targetAppId + ': ' + JSON.stringify(err));
+					});
+					
+				} else {
+					this.WARN('App not found: ' + targetAppId);
+				}
+			}).catch((err) => {
+				this.ERR('Error getting loaded apps after onAppUnloaded: ' + JSON.stringify(err));
+			});
+		this.LOG('onContainerStopped ' + JSON.stringify(data));
 		});
 	}
 	_subscribeToRDKShellNotifications() {
@@ -1887,13 +2026,15 @@ export default class App extends Router.App {
 	}
 
 	launchFeaturedApp = (appName) => {
-		let params = {
-			launchLocation: "dedicatedButton",
-			appIdentifier: this.appIdentifiers[appName]
-		}
-		appApi.launchApp(appName, params).catch(err => {
-			this.ERR("Error in launching " + JSON.stringify(appName) + " via dedicated key: " + JSON.stringify(err))
-		});
+		console.log("Launching Featured App from AI 2.0: " + appName);
+		// let params = {
+		// 	launchLocation: "dedicatedButton",
+		// 	appIdentifier: this.appIdentifiers[appName]
+		// }
+		// appApi.launchApp(appName, params).catch(err => {
+		// 	this.ERR("Error in launching " + JSON.stringify(appName) + " via dedicated key: " + JSON.stringify(err))
+		// });
+		AppManager.get().launchApp("com.rdk.app.cobalt2025")
 	}
 
 	/**
