@@ -1848,10 +1848,10 @@ export default class App extends Router.App {
 				})
 			} else {
 				this.LOG("current powerState is " + JSON.stringify(res.currentState) + " so setting power state to ON");
-				appApi.setPowerState("ON").then(res => {
-					if (res) {
+				appApi.setPowerState("ON").then(result => {
+					if (result) {
 						this.LOG("successfully set powerstate to: ON")
-						return res
+						return result
 					}
 				})
 			}

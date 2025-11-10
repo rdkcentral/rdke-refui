@@ -132,7 +132,7 @@ export default class PowerManagerApi {
     })
   }
 
-  reboot(reason = "FIRMWARE_FAILURE") {
+  reboot(reason) {
     return new Promise((resolve) => {
       this.thunder.call(this.callsign, 'reboot', {
           "rebootReasonCustom": reason

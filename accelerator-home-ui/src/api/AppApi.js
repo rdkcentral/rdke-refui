@@ -1119,7 +1119,15 @@ export default class AppApi {
   }
 
   getPowerState() {
-    return PowerManagerApi.get().getPowerState()
+    return PowerManagerApi.get().getPowerState().then(result => {
+      this.LOG("AppApi getPowerState result:", JSON.stringify(result))
+      if (result) {
+          const { currentState, newState } = response.result;
+          return { currentState, newState };
+      } else {
+          return { currentState: null, newState: null };
+      }
+    })
   }
 
   getWakeupReason() {
