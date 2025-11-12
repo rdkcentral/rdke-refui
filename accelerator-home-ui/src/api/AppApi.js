@@ -1024,6 +1024,10 @@ export default class AppApi {
     })
   }
 
+  registerPowerEvent(callback) {
+    return PowerManagerApi.get().registerEvent("onPowerModeChanged", callback);
+  }
+
   /**
    * Function to deactivate html app.
    */
@@ -1121,13 +1125,17 @@ export default class AppApi {
   getPowerState() {
     return PowerManagerApi.get().getPowerState().then(result => {
       this.LOG("AppApi getPowerState result:", JSON.stringify(result))
-      if (result) {
-          const { currentState, newState } = response.result;
-          return { currentState, newState };
-      } else {
-          return { currentState: null, newState: null };
-      }
+      return {
+        currentState: result?.currentState ?? null,
+        previousState: result?.previousState ?? null
+      };
     })
+    .catch(err => {
+      return {
+        currentState: null,
+        previousState: null
+      };
+    });
   }
 
   getWakeupReason() {

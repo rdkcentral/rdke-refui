@@ -1588,7 +1588,7 @@ export default class App extends Router.App {
 	}
 
 	_firstEnable() {
-		thunder.on("org.rdk.PowerManager", "onPowerModeChanged", notification => {
+		appApi.registerPowerEvent('onPowerModeChanged', notification => {
 			this.LOG(new Date().toISOString() + " onPowerModeChanged Notification: " + JSON.stringify(notification));
 			appApi.getPowerState().then(res => {
 				GLOBALS.powerState = res ? res.currentState : notification.newState

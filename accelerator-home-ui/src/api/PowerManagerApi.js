@@ -33,6 +33,7 @@ export default class PowerManagerApi {
     this.ERR = console.error;
     this.WARN = console.warn;
     this.callsign = "org.rdk.PowerManager";
+    this._events = new Map();
   }
   
 
@@ -47,6 +48,12 @@ export default class PowerManagerApi {
       return new Promise((resolve, reject) => {
           this.thunder.Controller.activate({ callsign: this.callsign })
               .then(() => {
+                  this.thunder.on(this.callsign, 'onPowerModeChanged', notification => {
+                    this.LOG("onPowerModeChanged " + JSON.stringify(notification));
+                    if (this._events.has('onPowerModeChanged')) {
+                      this._events.get('onPowerModeChanged')(notification);
+                    }
+                  });
                   resolve(true)
               })
               .catch(err => {
@@ -147,5 +154,9 @@ export default class PowerManagerApi {
           resolve(false)
         })
     })
+  }
+
+  registerEvent(eventId, callback) {
+    this._events.set(eventId, callback);
   }
 }
