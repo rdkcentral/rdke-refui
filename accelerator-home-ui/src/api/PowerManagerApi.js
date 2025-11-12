@@ -21,6 +21,12 @@ import ThunderJS from 'ThunderJS';
 import { CONFIG } from '../Config/Config'
 import { Metrics } from '@firebolt-js/sdk';
 
+export const PowerState = {
+  POWER_STATE_ON:'ON',
+  POWER_STATE_STANDBY:'STANDBY',
+  POWER_STATE_SLEEP:'SLEEPING'
+}
+
 let instance = null
 /**
  * Class for Xcast thunder plugin apis.

@@ -1130,12 +1130,6 @@ export default class AppApi {
         previousState: result?.previousState ?? null
       };
     })
-    .catch(err => {
-      return {
-        currentState: null,
-        previousState: null
-      };
-    });
   }
 
   getWakeupReason() {
