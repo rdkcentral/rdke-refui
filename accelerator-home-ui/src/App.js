@@ -82,6 +82,8 @@ import PowerManagerApi, {PowerState} from './api/PowerManagerApi.js';
 import UserSettingsApi from './api/UserSettingsApi';
 
 var AlexaAudioplayerActive = false;
+var wakingUp = false;
+var keepAwakeTimer = null;
 var thunder = ThunderJS(CONFIG.thunderConfig);
 var appApi = new AppApi();
 var dtvApi = new DTVApi();
@@ -206,10 +208,31 @@ export default class App extends Router.App {
 	_captureKey(key) {
 		this.LOG("Got keycode : " + JSON.stringify(key.keyCode))
 		this.LOG("powerState ===>" + JSON.stringify(GLOBALS.powerState))
+		if (wakingUp) {
+			this.LOG("Device is waking → swallowing key");
+			return true;
+		}
 		if (GLOBALS.powerState !== "ON") {
+			wakingUp = true;
+			keepAwakeTimer = setInterval(() => {
+				RDKShellApis.enableInactivityReporting(false);
+			}, 500);
 			appApi.setPowerState("ON").then(res => {
 				res ? this.LOG("successfully set the power state to ON from " + JSON.stringify(GLOBALS.powerState)) : this.LOG("Failure while turning ON the device")
-			})
+				GLOBALS.powerState = PowerState.POWER_STATE_ON;
+				this.LOG("powerState after ===>" + JSON.stringify(GLOBALS.powerState))
+			}) 
+			.catch(err => {
+                this.ERR("Error waking device: " + JSON.stringify(err));
+            })
+            .finally(() => {			
+                setTimeout(() => {
+                    clearInterval(keepAwakeTimer);
+                    keepAwakeTimer = null;
+                    wakingUp = false;
+                    this.LOG("Device wake complete, key processing resumed");
+                }, 3000);
+            });
 			return true
 		}
 		this.$hideImage(0);
@@ -448,7 +471,6 @@ export default class App extends Router.App {
 		// this.tag("ScreenSaver").alpha = alpha;
 	}
 	_init() {
-
 		let self = this;
 		self.appIdentifiers = {
 			"YouTubeTV": "n:4",
@@ -459,6 +481,7 @@ export default class App extends Router.App {
 			"Prime": "n:2"
 		}
 		this._getPowerStatebeforeReboot();
+		this._onInactivityListenerAdded = false;
 
 		keyIntercept(GLOBALS.selfClientName).catch(err => {
 			this.ERR("App _init keyIntercept err:" + JSON.stringify(err));
@@ -2155,6 +2178,7 @@ export default class App extends Router.App {
 				if (res === true) {
 					Storage.set('TimeoutInterval', false)
 					this.LOG("Disabled inactivity reporting");
+					GLOBALS.EnergySaverMode = false;
 					// this.timerIsOff = true;
 				}
 			}).catch(err => {
@@ -2171,6 +2195,120 @@ export default class App extends Router.App {
 				this.ERR("error while enabling inactivity reporting " + JSON.stringify(err))
 			});
 		}
+	}
+
+	async $setEnergySaverMode(time) {
+		this.LOG("Energy Saver input = " + JSON.stringify(time));
+		let arr = time.split(" ");
+		let value = parseFloat(arr[0]);
+        let unit = arr[1].substring(0, 1); // "M" or "H"
+
+		let storedTimeout = Storage.get("TimeoutInterval");
+        if (storedTimeout && storedTimeout !== "off") {
+            this.LOG("Using stored timeout instead: " + storedTimeout);
+            value = parseFloat(storedTimeout);
+            unit = "M"; // already in minutes
+        }
+        // Convert to minutes
+        let timeoutInMinutes = (unit === "H") ? value * 60 : value;
+        this.LOG("Final timeout (minutes): " + timeoutInMinutes);
+		try {
+			await this._enableInactiveReporting();
+			await this._setInactivityInterval(timeoutInMinutes);
+			await this._registerInactivityListener();
+
+			// Storage.set('TimeoutInterval', timeoutInMinutes);
+			this.LOG("Successfully set inactivity timer to " + timeoutInMinutes + " minutes");
+		} catch (err) {
+			this.ERR("Error setting energy saver mode: " + JSON.stringify(err));
+		}
+	}
+
+	_enableInactiveReporting() {
+		RDKShellApis.enableInactivityReporting(true).then(res => {
+			if (res === true) {
+				this.LOG("Enabled inactivity reporting activity");
+			}
+		}).catch(err => {
+			this.ERR("error while enabling inactivity reporting " + JSON.stringify(err))
+		});
+	}
+
+	/**
+     * Set Thunder inactivity interval
+     */
+	_setInactivityInterval(minutes) {
+        this.LOG("Setting inactivity interval = " + minutes + " minutes");
+
+        return RDKShellApis.setInactivityInterval(minutes)
+            .then(() => {
+                this.LOG("Inactivity timer set successfully");
+            })
+            .catch(err => {
+                this.ERR("Error setting inactivity interval: " + JSON.stringify(err));
+            });
+    }
+
+	/**
+     * Register onUserInactivity
+     */
+    _registerInactivityListener() {
+        if (this._onInactivityListenerAdded) {
+            this.LOG("Inactivity listener already registered — skipping");
+            return;
+        }
+
+        this._onInactivityListenerAdded = true;
+
+        thunder.Controller.activate({ callsign: 'org.rdk.RDKShell.1' }).then(res => {
+			this.LOG("RDKShell activated, trying to set the inactivity listener; res = " + JSON.stringify(res));
+
+			thunder.on("org.rdk.RDKShell.1", "onUserInactivity", notification => {
+				this.LOG("Inactivity event received: " + JSON.stringify(notification));
+				if (GLOBALS.powerState === "ON" && GLOBALS.topmostApp === GLOBALS.selfClientName) {
+					this.LOG("Going to sleep due to inactivity");
+					this._enterSleepMode();
+				}
+			},
+			err => {
+				this.ERR("Error attaching inactivity listener: " + JSON.stringify(err));
+			});
+        })
+		.catch(err => {
+			this.ERR("Error activating RDKShell: " + JSON.stringify(err));
+		});
+    }
+
+	_enterSleepMode() {
+		this.LOG("Attempting Deep Sleep");
+		appApi.setPowerState(PowerState.POWER_STATE_DEEP_SLEEP).then(res => {
+            if (res) {
+				this.LOG("Successfully entered DEEP_SLEEP");
+                GLOBALS.powerState = PowerState.POWER_STATE_DEEP_SLEEP;
+            } else {
+				this.LOG("DEEP_SLEEP failed, falling back to LIGHT_SLEEP");
+				this._enterLightSleep();
+            }
+        })
+        .catch(err => {
+            this.ERR("Error entering DEEP_SLEEP: " + JSON.stringify(err));
+			this._enterLightSleep();
+        });
+
+	}
+
+	_enterLightSleep() {
+		appApi.setPowerState(PowerState.POWER_STATE_LIGHT_SLEEP).then(res => {
+            if (res) {
+                this.LOG("Successfully entered LIGHT_SLEEP");
+                GLOBALS.powerState = PowerState.POWER_STATE_LIGHT_SLEEP;
+            } else {
+                this.ERR("Failed to enter LIGHT_SLEEP");
+            }
+        })
+        .catch(err => {
+            this.ERR("Error entering LIGHT_SLEEP: " + JSON.stringify(err));
+        });
 	}
 
 	_subscribeToAlexaNotifications() {

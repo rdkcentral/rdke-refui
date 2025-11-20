@@ -24,7 +24,9 @@ import { Metrics } from '@firebolt-js/sdk';
 export const PowerState = {
   POWER_STATE_ON:'ON',
   POWER_STATE_STANDBY:'STANDBY',
-  POWER_STATE_SLEEP:'SLEEPING'
+  POWER_STATE_SLEEP:'SLEEPING',
+  POWER_STATE_LIGHT_SLEEP:'LIGHT_SLEEP',
+  POWER_STATE_DEEP_SLEEP:'DEEP_SLEEP'
 }
 
 let instance = null

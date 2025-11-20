@@ -82,6 +82,7 @@ export const GLOBALS = {
   _previousapp_onDisplayConnectionChanged:null,
   _constantselfClientName: window.__firebolt && window.__firebolt.endpoint !== undefined ? "FireboltMainApp-refui" : "ResidentApp",
   _LocalDeviceDiscoveryStatus:false,
+  _EnergySaverMode:false,
   get selfClientName() {
     return this._constantselfClientName;
   },
@@ -194,5 +195,13 @@ export const GLOBALS = {
   get LocalDeviceDiscoveryStatus()
   {
     return this._LocalDeviceDiscoveryStatus
+  },
+  set EnergySaverMode(status)
+  {
+    this._EnergySaverMode = status
+  },
+  get EnergySaverMode()
+  {
+    return this._EnergySaverMode
   }
 }
