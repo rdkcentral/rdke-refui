@@ -224,6 +224,7 @@ export default class OtherSettingsScreen extends Lightning.Component {
         this._appApi = new AppApi();
         this._setState('SleepTimer')
     }
+
     $updateStandbyMode(standbyMode) {
         this.tag("EnergySaver.Title").text.text = Language.translate("Energy Saver: ") + Language.translate(standbyMode)
     }
@@ -247,6 +248,11 @@ export default class OtherSettingsScreen extends Lightning.Component {
             this.tag('ScreenSaver.Title').text.text = Language.translate('Screen-Saver: ') + Storage.get('ScreenSaverTimeoutInterval') + ' min'
         } else {
             this.tag('ScreenSaver.Title').text.text = Language.translate('Screen-Saver: ') + 'Off'
+        }
+        if (Storage.get('EnergySaverInterval')) {
+            this.tag('EnergySaver.Button').src = Utils.asset('images/settings/ToggleOnOrange.png')
+        } else {
+            this.tag('EnergySaver.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
         }
     }
 
@@ -316,7 +322,7 @@ export default class OtherSettingsScreen extends Lightning.Component {
                         this.fireAncestors('$setEnergySaverMode', '2 Minutes')
                         this.tag('EnergySaver.Button').src = Utils.asset('images/settings/ToggleOnOrange.png')
                     } else {
-                        this.fireAncestors('$resetSleepTimer', 'Off');
+                        Storage.set('EnergySaverInterval', false)
                         this.tag('EnergySaver.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
                     }
                 }

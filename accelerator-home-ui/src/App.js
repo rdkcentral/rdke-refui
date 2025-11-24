@@ -207,7 +207,6 @@ export default class App extends Router.App {
 		this.LOG("Got keycode : " + JSON.stringify(key.keyCode))
 		this.LOG("powerState ===>" + JSON.stringify(GLOBALS.powerState))
 		if (GLOBALS.powerState !== "ON") {
-			// RDKShellApis.enableInactivityReporting(false);
 			appApi.setPowerState("ON").then(res => {
 				res ? this.LOG("successfully set the power state to ON from " + JSON.stringify(GLOBALS.powerState)) : this.LOG("Failure while turning ON the device")
 				GLOBALS.powerState = PowerState.POWER_STATE_ON;
@@ -221,6 +220,7 @@ export default class App extends Router.App {
 		this.$hideImage(0);
 		return this._performKeyPressOPerations(key)
 	}
+
 	_performKeyPressOPerations(key) {
 		let self = this;
 			if(GLOBALS.MiracastNotificationstatus && key.keyCode !== Keymap.Power && key.keyCode !== Keymap.Home ){
@@ -408,7 +408,7 @@ export default class App extends Router.App {
 	userInactivity() {
 		PersistentStoreApi.get().activate().then(() => {
 			PersistentStoreApi.get().getValue('ScreenSaverTime', 'timerValue').then(result => {
-				// check if result has value property and if it is not undefined^M
+				// check if result has value property and if it is not undefined
 				if (result && result.value && result.value !== undefined && result.value !== "Off") {
 					this.LOG("App PersistentStoreApi screensaver timer value is: " + JSON.stringify(result.value));
 					RDKShellApis.enableInactivityReporting(true).then(() => {
@@ -471,7 +471,6 @@ export default class App extends Router.App {
 		});
 		this.userInactivity();
 		this._registerFireboltListeners()
-		
 
 		Keyboard.provide('xrn:firebolt:capability:input:keyboard', new KeyboardUIProvider(this))
 		this.LOG("Keyboard provider registered")
@@ -1628,6 +1627,21 @@ export default class App extends Router.App {
 		this._subscribeToAlexaNotifications()
 	}
 
+	_enable() {
+		this._checkEnergySaverStatus()
+	}
+
+	_checkEnergySaverStatus(){
+		this.LOG("Into Check energy saver")
+		var timeout = Storage.get('EnergySaverInterval');
+		this.LOG("Energy timeout init notification:" + JSON.stringify(timeout))
+		if (timeout) {
+			GLOBALS.EnergySaverMode = true;
+			let t = timeout + ' Minutes';
+			this.$setEnergySaverMode(t);
+		}
+	}
+
 	async listenToVoiceControl() {
 		this.LOG("App listenToVoiceControl method got called, configuring VoiceControl Plugin")
 		await voiceApi.activate().then(() => {
@@ -2167,7 +2181,7 @@ export default class App extends Router.App {
 				if (res === true) {
 					Storage.set('TimeoutInterval', false)
 					this.LOG("Disabled inactivity reporting");
-					GLOBALS.EnergySaverMode = false;
+					// GLOBALS.EnergySaverMode = false;
 					// this.timerIsOff = true;
 				}
 			}).catch(err => {
@@ -2206,7 +2220,7 @@ export default class App extends Router.App {
 			await this._setInactivityInterval(timeoutInMinutes);
 			await this._registerInactivityListener();
 
-			// Storage.set('TimeoutInterval', timeoutInMinutes);
+			Storage.set('EnergySaverInterval', timeoutInMinutes);
 			this.LOG("Successfully set inactivity timer to " + timeoutInMinutes + " minutes");
 		} catch (err) {
 			this.ERR("Error setting energy saver mode: " + JSON.stringify(err));
@@ -2256,7 +2270,7 @@ export default class App extends Router.App {
 				this.LOG("Inactivity event received: " + JSON.stringify(notification));
 				if (GLOBALS.powerState === "ON" && GLOBALS.topmostApp === GLOBALS.selfClientName) {
 					this.LOG("Going to sleep due to inactivity");
-					this._enterSleepMode();
+					this._enterLightSleep();
 				}
 			},
 			err => {
