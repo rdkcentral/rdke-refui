@@ -125,4 +125,15 @@ export default class PackageManagerRDKEMSApi {
           })
     })
     }
+    packageState(packageId,version) {
+        return new Promise((resolve, reject) => {
+            this.thunder.call(this.callsign, 'packageState', { "packageId":packageId, "version":version }).then(result => {
+            this.LOG(" packageState result:", JSON.stringify(result))
+            resolve(result)
+          } ).catch(err => {  
+            this.ERR(" packageState error:", JSON.stringify(err))
+            reject(err)
+          })
+    })
+    }
 }

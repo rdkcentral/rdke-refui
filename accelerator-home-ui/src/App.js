@@ -411,9 +411,9 @@ export default class App extends Router.App {
 				// check if result has value property and if it is not undefined^M
 				if (result && result.value && result.value !== undefined && result.value !== "Off") {
 					this.LOG("App PersistentStoreApi screensaver timer value is: " + JSON.stringify(result.value));
-					RDKShellApis.enableInactivityReporting(true).then(() => {
-						RDKShellApis.setInactivityInterval(result.value).then(() => {
-							this.userInactivity = thunder.on('org.rdk.RDKShell', 'onUserInactivity', notification => {
+					RDKWindowManager.get().enableInactivityReporting(true).then(() => {
+						RDKWindowManager.get().setInactivityInterval(result.value).then(() => {
+							this.userInactivity = thunder.on('org.rdk.RDKWindowManager', 'onUserInactivity', notification => {
 								this.LOG("UserInactivityStatusNotification: " + JSON.stringify(notification))
 								appApi.getAvCodeStatus().then(result => {
 									this.LOG("Avdecoder" + JSON.stringify(result.avDecoderStatus));
@@ -426,13 +426,13 @@ export default class App extends Router.App {
 					});
 				} else {
 					this.WARN("App PersistentStoreApi screensaver timer value is not set or is Off.")
-					RDKShellApis.enableInactivityReporting(false).then(() => {
+					RDKWindowManager.get().enableInactivityReporting(false).then(() => {
 						this.userInactivity.dispose();
 					})
 				}
 			}).catch(err => {
 				this.ERR("App PersistentStoreApi getValue error: " + JSON.stringify(err));
-				RDKShellApis.enableInactivityReporting(false).then(() => {
+				RDKWindowManager.get().enableInactivityReporting(false).then(() => {
 					this.userInactivity.dispose();
 				})
 			});
@@ -801,9 +801,11 @@ export default class App extends Router.App {
 	appApi.getPluginStatus("org.rdk.RDKWindowManager").then(result => {
 	  if (result[0].state === "activated") {	
 		this.LOG("RDKWindowManager plugin is already activated");
+		this._SubscribeToRDKWindowManagerNotifications();
 	  } else {
 		RDKWindowManager.get().activate().then(() => {
-		  this.LOG("RDKWindowManager plugin activated successfully");	
+		  this.LOG("RDKWindowManager plugin activated successfully");
+		  this._SubscribeToRDKWindowManagerNotifications();
 		}).catch(err => {
 		  this.ERR("Error activating RDKWindowManager plugin: " + JSON.stringify(err));
 		});
@@ -1018,7 +1020,29 @@ export default class App extends Router.App {
 			}
 		});
 	}
-	
+	_SubscribeToRDKWindowManagerNotifications() {
+		thunder.on('org.rdk.RDKWindowManager', 'onConnected	', data => {
+			this.LOG('RDKWindowManager onConnected	 ' + JSON.stringify(data));
+		});
+		thunder.on('org.rdk.RDKWindowManager', 'onDisconnected', data => {
+			this.LOG('RDKWindowManager onDisconnected ' + JSON.stringify(data));
+		});
+		thunder.on('org.rdk.RDKWindowManager', 'onReady', data => {
+			this.LOG('RDKWindowManager onReady ' + JSON.stringify(data));
+		});
+		thunder.on('org.rdk.RDKWindowManager', 'onUserInactivity', data => {
+			this.LOG('RDKWindowManager onUserInactivity ' + JSON.stringify(data));
+		});
+		thunder.on('org.rdk.RDKWindowManager', 'onBlur', data => {
+			this.LOG('RDKWindowManager onBlur ' + JSON.stringify(data));
+		});
+		thunder.on('org.rdk.RDKWindowManager', 'onVisible', data => {
+			this.LOG('RDKWindowManager onVisible ' + JSON.stringify(data));
+		});
+		thunder.on('org.rdk.RDKWindowManager', 'onHidden', data => {
+			this.LOG('RDKWindowManager onHidden ' + JSON.stringify(data));
+		});
+	}
 	_SubscribeToRuntimeManagerNotifications() {
 		thunder.on('org.rdk.RuntimeManager', 'onStarted', data => {
 			this.LOG('onStarted ' + JSON.stringify(data));
@@ -1040,13 +1064,22 @@ export default class App extends Router.App {
 		thunder.on('org.rdk.AppManager', 'onAppUninstalled', data => {
 			this.LOG('onAppUninstallStatus ' + JSON.stringify(data));
 		});
-		thunder.on('org.rdk.AppManager', 'onAppLifecycleStateChanged', data => {
+		thunder.on('org.rdk.AppManager', 'onAppLifecycleStateChanged', async data => {
 			if(data.newState === "APP_STATE_ACTIVE") {
+				if(data.appId != "com.rdk.app.wpebrowser_2.38")
+				{
+					await appApi.setVisibletoResidentapp(false);
+				}
 				RDKWindowManager.get().setFocus(data.appInstanceId).then(() => {
-					this.LOG("setFocus success for " + data.appInstanceId);
+					this.LOG("setFocus success for " + data.appId  + data.appInstanceId);
 				}
 				).catch(err => {
-					this.ERR("setFocus error for " + data.appInstanceId + " :" + JSON.stringify(err));
+					this.ERR("setFocus error for " +data.appId + data.appInstanceId + " :" + JSON.stringify(err));
+				});
+				RDKWindowManager.get().setVisible(data.appInstanceId, true).then(() => {
+					this.LOG("setVisible success for " + data.appId  + data.appInstanceId);
+				}).catch(err => {
+					this.ERR("setVisible error for " +data.appId  + data.appInstanceId + " :" + JSON.stringify(err));
 				});
 			}
 			this.LOG('onAppLifecycleStateChanged ' + JSON.stringify(data));
@@ -1054,49 +1087,10 @@ export default class App extends Router.App {
 		thunder.on('org.rdk.AppManager', 'onAppLaunchRequest', data => {
 			this.LOG('onAppLaunchRequested ' + JSON.stringify(data));
 		});
-		thunder.on('org.rdk.AppManager', 'onAppUnloaded', data => {
-			AppManager.get().getLoadedApps().then((res) => {
-				this.LOG('Currently loaded apps: ' + JSON.stringify(res));
-				const targetAppId = "com.rdk.app.wpebrowser_2.38";
-				const targetApp = res.find(app => app.appId === targetAppId);
-				if (targetApp) {
-					const appInstanceId = targetApp.appInstanceId;
-					this.LOG('Found appInstanceId for ' + targetAppId + ': ' + appInstanceId);
-					RDKWindowManager.get().setFocus(appInstanceId).then(() => {
-						this.LOG('setFocus successful for ' + targetAppId);
-					}	).catch((err) => {
-						this.ERR('setFocus error for ' + targetAppId + ': ' + JSON.stringify(err));
-					});
-					
-				} else {
-					this.WARN('App not found: ' + targetAppId);
-				}
-			}).catch((err) => {
-				this.ERR('Error getting loaded apps after onAppUnloaded: ' + JSON.stringify(err));
-			});
+		thunder.on('org.rdk.AppManager', 'onAppUnloaded',  async data => {
 			this.LOG('onAppUnloaded ' + JSON.stringify(data));
-		});
-		thunder.on('org.rdk.OCIContainer', 'onContainerStopped', data => {
-			AppManager.get().getLoadedApps().then((res) => {
-				this.LOG('Currently loaded apps: ' + JSON.stringify(res));
-				const targetAppId = "com.rdk.app.wpebrowser_2.38";
-				const targetApp = res.find(app => app.appId === targetAppId);
-				if (targetApp) {
-					const appInstanceId = targetApp.appInstanceId;
-					this.LOG('Found appInstanceId for ' + targetAppId + ': ' + appInstanceId);
-					RDKWindowManager.get().setFocus(appInstanceId).then(() => {
-						this.LOG('setFocus successful for ' + targetAppId);
-					}	).catch((err) => {
-						this.ERR('setFocus error for ' + targetAppId + ': ' + JSON.stringify(err));
-					});
-					
-				} else {
-					this.WARN('App not found: ' + targetAppId);
-				}
-			}).catch((err) => {
-				this.ERR('Error getting loaded apps after onAppUnloaded: ' + JSON.stringify(err));
-			});
-		this.LOG('onContainerStopped ' + JSON.stringify(data));
+			await appApi.setfocustoResidentapp();
+			await appApi.setVisibletoResidentapp(true);
 		});
 	}
 	_subscribeToRDKShellNotifications() {
@@ -2242,25 +2236,14 @@ export default class App extends Router.App {
 				}
 			})
 
-			thunder.Controller.activate({
-					callsign: 'org.rdk.RDKShell.1'
-				})
-				.then(res => {
-					this.LOG("activated the rdk shell plugin trying to set the inactivity listener; res = " + JSON.stringify(res));
-					thunder.on("org.rdk.RDKShell.1", "onUserInactivity", notification => {
-						this.LOG('onUserInactivity: ' + JSON.stringify(notification));
-						if (GLOBALS.powerState === "ON" && (GLOBALS.topmostApp === GLOBALS.selfClientName)) {
-							this.standby("STANDBY");
-						}
-					}, err => {
-						this.ERR("error while inactivity monitoring , " + JSON.stringify(err))
-					})
-					resolve(res)
-				}).catch((err) => {
-					Metrics.error(Metrics.ErrorType.OTHER, 'AppError', "Controller.activate error with " + JSON.stringify(err), false, null)
-					reject(err)
-					this.ERR("error while activating the displaysettings plugin; err = " + JSON.stringify(err))
-				})
+			thunder.on("org.rdk.RDKWindowManager", "onUserInactivity", notification => {
+				this.LOG('onUserInactivity: ' + JSON.stringify(notification));
+				if (GLOBALS.powerState === "ON" && (GLOBALS.topmostApp === GLOBALS.selfClientName)) {
+					this.standby("STANDBY");
+				}
+			}, err => {
+				this.ERR("error while inactivity monitoring , " + JSON.stringify(err))
+			})
 		})
 	}
 
@@ -2273,7 +2256,7 @@ export default class App extends Router.App {
 			var temp = arr[1].substring(0, 1);
 			if (temp === 'H') {
 				let temp1 = parseFloat(arr[0]) * 60;
-				RDKShellApis.setInactivityInterval(temp1).then(() => {
+				RDKWindowManager.get().setInactivityInterval(temp1).then(() => {
 					Storage.set('TimeoutInterval', t)
 					this.LOG("successfully set the timer to " + JSON.stringify(t) + " hours")
 				}).catch(err => {
@@ -2282,7 +2265,7 @@ export default class App extends Router.App {
 			} else if (temp === 'M') {
 				this.LOG("minutes");
 				let temp1 = parseFloat(arr[0]);
-				RDKShellApis.setInactivityInterval(temp1).then(() => {
+				RDKWindowManager.get().setInactivityInterval(temp1).then(() => {
 					Storage.set('TimeoutInterval', t)
 					this.LOG("successfully set the timer to " + JSON.stringify(t) + " minutes");
 				}).catch(err => {
@@ -2292,7 +2275,7 @@ export default class App extends Router.App {
 		}
 
 		if (arr.length < 2) {
-			RDKShellApis.enableInactivityReporting(false).then((res) => {
+			RDKWindowManager.get().enableInactivityReporting(false).then((res) => {
 				if (res === true) {
 					Storage.set('TimeoutInterval', false)
 					this.LOG("Disabled inactivity reporting");
@@ -2302,7 +2285,7 @@ export default class App extends Router.App {
 				this.ERR("error : unable to set the reset; error = " + JSON.stringify(err))
 			});
 		} else {
-			RDKShellApis.enableInactivityReporting(true).then(res => {
+			RDKWindowManager.get().enableInactivityReporting(true).then(res => {
 				if (res === true) {
 					this.LOG("Enabled inactivity reporting; trying to set the timer to " + JSON.stringify(t));
 					// this.timerIsOff = false;

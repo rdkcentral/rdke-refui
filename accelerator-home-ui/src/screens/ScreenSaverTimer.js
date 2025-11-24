@@ -23,6 +23,7 @@ import RDKShellApis from '../api/RDKShellApis';
 import ThunderJS from 'ThunderJS';
 import { CONFIG, GLOBALS } from '../Config/Config'
 import PersistentStoreApi from '../api/PersistentStore'
+import RDKWindowManager from '../api/RDKWindowManagerApi';
 
 var appApi = new AppApi();
 var thunder = ThunderJS(CONFIG.thunderConfig);
@@ -146,13 +147,13 @@ export default class SreenSaverScreen extends Lightning.Component {
 
     setTimerValue(time) {
         if (time === "Off" || time === undefined || time === null) {
-            RDKShellApis.enableInactivityReporting(false).then(resp => this.LOG("setTimerValue response: " + JSON.stringify(resp)))
+            RDKWindowManager.get().enableInactivityReporting(false).then(resp => this.LOG("setTimerValue response: " + JSON.stringify(resp)))
             Storage.remove('ScreenSaverTimeoutInterval')
         }
         else {
             // 10
-            RDKShellApis.enableInactivityReporting(true).then(() => {
-                RDKShellApis.setInactivityInterval(parseInt(time)).then(res => {
+            RDKWindowManager.get().enableInactivityReporting(true).then(() => {
+                RDKWindowManager.get().setInactivityInterval(parseInt(time)).then(res => {
                     this.LOG("setinactivityres" + JSON.stringify(res))
                     Storage.set('ScreenSaverTimeoutInterval', time)
                     this.LOG("successfully set the timer to " + JSON.stringify(time) + " minutes")

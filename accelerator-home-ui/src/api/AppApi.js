@@ -28,6 +28,8 @@ import { Metrics } from '@firebolt-js/sdk';
 import Network from './NetworkApi.js';
 import UserSettingsApi from './UserSettingsApi.js';
 import PowerManagerApi from './PowerManagerApi.js';
+import RDKWindowManager from './RDKWindowManagerApi.js';
+import AppManager from './AppManagerApi.js';
 
 const thunder = ThunderJS(CONFIG.thunderConfig)
 
@@ -1070,11 +1072,53 @@ export default class AppApi {
   }
 
   enabledisableinactivityReporting(bool) {
-    RDKShellApis.enableInactivityReporting(bool)
+    RDKWindowManager.get().enableInactivityReporting(bool)
   }
 
   setInactivityInterval(duration) {
-    RDKShellApis.setInactivityInterval(duration)
+    RDKWindowManager.get().setInactivityInterval(duration)
+  }
+
+  async setfocustoResidentapp() {
+    return AppManager.get().getLoadedApps().then(async (res) => {
+            this.LOG('Currently loaded apps: ' + JSON.stringify(res));
+            const targetAppId = "com.rdk.app.wpebrowser_2.38";
+            const targetApp = res.find(app => app.appId === targetAppId);
+            if (targetApp) {
+              const appInstanceId = targetApp.appInstanceId;
+              this.LOG('Found appInstanceId for ' + targetAppId + ': ' + appInstanceId);
+              await RDKWindowManager.get().setFocus(appInstanceId).then(() => {
+                this.LOG('setFocus successful for ' + targetAppId);
+              }	).catch((err) => {
+                this.ERR('setFocus error for ' + targetAppId + ': ' + JSON.stringify(err));
+              });
+            } else {
+              this.WARN('App not found: ' + targetAppId);
+            }
+          }).catch((err) => {
+            this.ERR('Error getting loaded apps from setfocustoresidentapp ' + JSON.stringify(err));
+          });
+  }
+  async setVisibletoResidentapp(visible) {
+    return AppManager.get().getLoadedApps().then(async (res) => {
+            this.LOG('Currently loaded apps: ' + JSON.stringify(res));
+            const targetAppId = "com.rdk.app.wpebrowser_2.38";
+            const targetApp = res.find(app => app.appId === targetAppId); 
+            if (targetApp) {
+              const appInstanceId = targetApp.appInstanceId;
+              this.LOG('Found appInstanceId for ' + targetAppId + ': ' + appInstanceId);
+              await RDKWindowManager.get().setVisible(appInstanceId, visible).then(() => {
+                this.LOG('setVisibility successful for ' + targetAppId);
+              }  ).catch((err) => {
+                this.ERR('setVisibility error for ' + targetAppId + ': ' + JSON.stringify(err));
+              });
+              
+            } else {
+              this.WARN('App not found: ' + targetAppId);
+            } 
+          }).catch((err) => {
+            this.ERR('Error getting loaded apps from setvisibletoresidentapp : ' + JSON.stringify(err));
+          });
   }
 
   /**

@@ -848,7 +848,8 @@ export default class MainView extends Lightning.Component {
             // this.appApi.launchApp(applicationType, params).catch(err => {
             //   this.ERR("ApplaunchError: "+ JSON.stringify(err))
             // });
-            AppManager.get().launchApp("com.rdk.app.cobalt2025")
+            if(applicationType === "YouTube"){
+            AppManager.get().launchApp("com.rdk.app.cobalt2025")}
           }
         }
       },

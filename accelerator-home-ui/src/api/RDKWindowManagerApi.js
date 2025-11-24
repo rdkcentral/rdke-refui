@@ -78,4 +78,187 @@ export default class RDKWindowManager {
                 })
         })
     }
+    setVisible(client, visible)    {
+        return new Promise((resolve, reject) => {
+            this.thunder.call(this.callsign, 'setVisible', { "client":client, "visible":visible })  
+                .then(response => {
+                    resolve(response)
+                    this.INFO("setVisible response: " + JSON.stringify(response));
+                })
+                .catch(err => {
+                    this.ERR("Error in setVisible: " + JSON.stringify(err))
+                    Metrics.error(Metrics.ErrorType.OTHER, errorName, `Error while calling setVisible on ${callsign} ${JSON.stringify(err)}`, false, null)
+                    reject(err)
+                })
+        })
+    }
+    getApps()
+    {
+        return new Promise((resolve, reject) => {
+            this.thunder.call(this.callsign, 'getApps', {})     
+                .then(response => {
+                    resolve(response)
+                    this.INFO("getApps response: " + JSON.stringify(response));
+                })
+                .catch(err => {
+                    this.ERR("Error in getApps: " + JSON.stringify(err))
+                    Metrics.error(Metrics.ErrorType.OTHER, errorName, `Error while calling getApps on ${callsign} ${JSON.stringify(err)}`, false, null)
+                    reject(err)
+                })
+        })
+    }
+    setZOrder  (client, zOrder)    {
+        return new Promise((resolve, reject) => {
+            this.thunder.call(this.callsign, 'setZOrder', { "client":client, "zOrder":zOrder })
+                .then(response => {
+                    resolve(response)
+                    this.INFO("setZOrder response: " + JSON.stringify(response));
+                })
+                .catch(err => {
+                    this.ERR("Error in setZOrder: " + JSON.stringify(err))
+                    Metrics.error(Metrics.ErrorType.OTHER, errorName, `Error while calling setZOrder on ${callsign} ${JSON.stringify(err)}`, false, null)
+                    reject(err)
+                })
+        })
+    }
+    getZOrder(client)    {
+        return new Promise((resolve, reject) => {
+            this.thunder.call(this.callsign, 'getZOrder', { "client":client })
+                .then(response => {
+                    resolve(response)
+                    this.INFO("getZOrder response: " + JSON.stringify(response));
+                })
+                .catch(err => {
+                    this.ERR("Error in getZOrder: " + JSON.stringify(err))
+                    Metrics.error(Metrics.ErrorType.OTHER, errorName, `Error while calling getZOrder on ${callsign} ${JSON.stringify(err)}`, false, null)
+                    reject(err)
+                })
+        })
+    }
+    enableInactivityReporting(enable)    {
+        return new Promise((resolve, reject) => {
+            this.thunder.call(this.callsign, 'enableInactivityReporting', { "enable":enable })  
+                .then(response => {
+                    resolve(response)
+                    this.INFO("enableInactivityReporting response: " + JSON.stringify(response));
+                })
+                .catch(err => {
+                    this.ERR("Error in enableInactivityReporting: " + JSON.stringify(err))
+                    Metrics.error(Metrics.ErrorType.OTHER, errorName, `Error while calling enableInactivityReporting on ${callsign} ${JSON.stringify(err)}`, false, null)
+                    reject(err)
+                })  
+        })
+    }
+    setInactivityInterval(interval)    {
+        return new Promise((resolve, reject) => {
+            this.thunder.call(this.callsign, 'setInactivityInterval', { "interval":interval })
+                .then(response => {
+                    resolve(response)
+                    this.INFO("setInactivityInterval response: " + JSON.stringify(response));
+                })
+                .catch(err => {
+                    this.ERR("Error in setInactivityInterval: " + JSON.stringify(err))
+                    Metrics.error(Metrics.ErrorType.OTHER, errorName, `Error while calling setInactivityInterval on ${callsign} ${JSON.stringify(err)}`, false, null)
+                    reject(err)
+                })
+        })
+    }
+    resetInactivityTimeout()    {  
+        return new Promise((resolve, reject) => {
+            this.thunder.call(this.callsign, 'resetInactivityTimeout', {})
+                .then(response => {
+                    resolve(response)
+                    this.INFO("resetInactivityTimeout response: " + JSON.stringify(response));
+                })
+                .catch(err => {
+                    this.ERR("Error in resetInactivityTimeout: " + JSON.stringify(err))
+                    Metrics.error(Metrics.ErrorType.OTHER, errorName, `Error while calling resetInactivityTimeout on ${callsign} ${JSON.stringify(err)}`, false, null)
+                    reject(err)
+                })
+        })
+    }
+    renderReady(client)    {
+        return new Promise((resolve, reject) => {
+            this.thunder.call(this.callsign, 'renderReady', { "client":client })
+                .then(response => {
+                    resolve(response)
+                    this.INFO("renderReady response: " + JSON.stringify(response));
+                })
+                .catch(err => {
+                    this.ERR("Error in renderReady: " + JSON.stringify(err))
+                    Metrics.error(Metrics.ErrorType.OTHER, errorName, `Error while calling renderReady on ${callsign} ${JSON.stringify(err)}`, false, null)
+                    reject(err)
+                })
+        })
+    }
+    enableDisplayRender(client, enable)    {
+        return new Promise((resolve, reject) => {
+            this.thunder.call(this.callsign, 'enableDisplayRender', { "client":client, "enable":enable })
+                .then(response => {
+                    resolve(response)
+                    this.INFO("enableDisplayRender response: " + JSON.stringify(response));
+                })
+                .catch(err => {
+                    this.ERR("Error in enableDisplayRender: " + JSON.stringify(err))
+                    Metrics.error(Metrics.ErrorType.OTHER, errorName, `Error while calling enableDisplayRender on ${callsign} ${JSON.stringify(err)}`, false, null)
+                    reject(err)
+                })
+        })
+    }
+    generateKey(client,keyCode,modifiers,duration)    {
+        return new Promise((resolve, reject) => {
+            this.thunder.call(this.callsign, 'generateKey', { "client":client, "keyCode":keyCode, "modifiers":modifiers, "duration":duration })
+                .then(response => {
+                    resolve(response)
+                    this.INFO("generateKey response: " + JSON.stringify(response));
+                })
+                .catch(err => {
+                    this.ERR("Error in generateKey: " + JSON.stringify(err))
+                    Metrics.error(Metrics.ErrorType.OTHER, errorName, `Error while calling generateKey on ${callsign} ${JSON.stringify(err)}`, false, null)
+                    reject(err)
+                })
+        })
+    }
+    removeKeyIntercept(client,keyCode,modifiers)    {
+        return new Promise((resolve, reject) => {
+            this.thunder.call(this.callsign, 'removeKeyIntercept', { "client":client, "keyCode":keyCode, "modifiers":modifiers })
+                .then(response => {
+                    resolve(response)
+                    this.INFO("removeKeyIntercept response: " + JSON.stringify(response));
+                })
+                .catch(err => {
+                    this.ERR("Error in removeKeyIntercept: " + JSON.stringify(err))
+                    Metrics.error(Metrics.ErrorType.OTHER, errorName, `Error while calling removeKeyIntercept on ${callsign} ${JSON.stringify(err)}`, false, null)
+                    reject(err)
+                })
+        })
+    }
+    addKeyIntercepts (client,keyCodes,modifiers,focusOnly,propagate)    {   
+        return new Promise((resolve, reject) => {
+            this.thunder.call(this.callsign, 'addKeyIntercepts', { "client":client, "keyCodes":keyCodes, "modifiers":modifiers, "focusOnly":focusOnly, "propagate":propagate })
+                .then(response => {
+                    resolve(response)
+                    this.INFO("addKeyIntercepts response: " + JSON.stringify(response));
+                })
+                .catch(err => {
+                    this.ERR("Error in addKeyIntercepts: " + JSON.stringify(err))
+                    Metrics.error(Metrics.ErrorType.OTHER, errorName, `Error while calling addKeyIntercepts on ${callsign} ${JSON.stringify(err)}`, false, null)
+                    reject(err)
+                })
+        })
+    } 
+    createDisplay(client,displayName,displayWidth,virtualWidth,virtualHeight,ownerId)    {
+        return new Promise((resolve, reject) => {
+            this.thunder.call(this.callsign, 'createDisplay', { "client":client, "displayName":displayName, "displayWidth":displayWidth, "virtualWidth":virtualWidth, "virtualHeight":virtualHeight, "ownerId":ownerId })
+                .then(response => {
+                    resolve(response)
+                    this.INFO("createDisplay response: " + JSON.stringify(response));
+                })
+                .catch(err => {
+                    this.ERR("Error in createDisplay: " + JSON.stringify(err))
+                    Metrics.error(Metrics.ErrorType.OTHER, errorName, `Error while calling createDisplay on ${callsign} ${JSON.stringify(err)}`, false, null)
+                    reject(err)
+                })
+        })
+    }
 }
