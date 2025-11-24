@@ -313,7 +313,7 @@ export default class OtherSettingsScreen extends Lightning.Component {
                 _handleEnter() {
                     GLOBALS.EnergySaverMode = !GLOBALS.EnergySaverMode;
                     if (GLOBALS.EnergySaverMode) {
-                        this.fireAncestors('$setEnergySaverMode', '1 Minutes')
+                        this.fireAncestors('$setEnergySaverMode', '2 Minutes')
                         this.tag('EnergySaver.Button').src = Utils.asset('images/settings/ToggleOnOrange.png')
                     } else {
                         this.fireAncestors('$resetSleepTimer', 'Off');

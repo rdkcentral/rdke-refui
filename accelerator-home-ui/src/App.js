@@ -82,8 +82,6 @@ import PowerManagerApi, {PowerState} from './api/PowerManagerApi.js';
 import UserSettingsApi from './api/UserSettingsApi';
 
 var AlexaAudioplayerActive = false;
-var wakingUp = false;
-var keepAwakeTimer = null;
 var thunder = ThunderJS(CONFIG.thunderConfig);
 var appApi = new AppApi();
 var dtvApi = new DTVApi();
@@ -208,15 +206,8 @@ export default class App extends Router.App {
 	_captureKey(key) {
 		this.LOG("Got keycode : " + JSON.stringify(key.keyCode))
 		this.LOG("powerState ===>" + JSON.stringify(GLOBALS.powerState))
-		if (wakingUp) {
-			this.LOG("Device is waking → swallowing key");
-			return true;
-		}
 		if (GLOBALS.powerState !== "ON") {
-			wakingUp = true;
-			keepAwakeTimer = setInterval(() => {
-				RDKShellApis.enableInactivityReporting(false);
-			}, 500);
+			// RDKShellApis.enableInactivityReporting(false);
 			appApi.setPowerState("ON").then(res => {
 				res ? this.LOG("successfully set the power state to ON from " + JSON.stringify(GLOBALS.powerState)) : this.LOG("Failure while turning ON the device")
 				GLOBALS.powerState = PowerState.POWER_STATE_ON;
@@ -225,14 +216,6 @@ export default class App extends Router.App {
 			.catch(err => {
                 this.ERR("Error waking device: " + JSON.stringify(err));
             })
-            .finally(() => {			
-                setTimeout(() => {
-                    clearInterval(keepAwakeTimer);
-                    keepAwakeTimer = null;
-                    wakingUp = false;
-                    this.LOG("Device wake complete, key processing resumed");
-                }, 3000);
-            });
 			return true
 		}
 		this.$hideImage(0);
@@ -488,6 +471,7 @@ export default class App extends Router.App {
 		});
 		this.userInactivity();
 		this._registerFireboltListeners()
+		
 
 		Keyboard.provide('xrn:firebolt:capability:input:keyboard', new KeyboardUIProvider(this))
 		this.LOG("Keyboard provider registered")
@@ -1611,8 +1595,13 @@ export default class App extends Router.App {
 	}
 
 	_firstEnable() {
-		appApi.registerPowerEvent('onPowerModeChanged', notification => {
+		thunder.on("org.rdk.PowerManager", "onPowerModeChanged", notification => {
 			this.LOG(new Date().toISOString() + " onPowerModeChanged Notification: " + JSON.stringify(notification));
+			if ((notification.currentState === "LIGHT_SLEEP" || notification.currentState === "DEEP_SLEEP") 
+				&& notification.newState === "ON") {
+				this.LOG("Ignoring transitional ON event (pre-change)");
+				return;
+			}
 			appApi.getPowerState().then(res => {
 				GLOBALS.powerState = res ? res.currentState : notification.newState
 			}).catch(e => GLOBALS.powerState = notification.newState)
