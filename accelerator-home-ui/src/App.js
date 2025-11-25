@@ -2214,7 +2214,6 @@ export default class App extends Router.App {
 				if (res === true) {
 					Storage.set('TimeoutInterval', false)
 					this.LOG("Disabled inactivity reporting");
-					// GLOBALS.EnergySaverMode = false;
 					// this.timerIsOff = true;
 				}
 			}).catch(err => {
