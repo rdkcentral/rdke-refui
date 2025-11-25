@@ -1641,7 +1641,7 @@ export default class App extends Router.App {
 				GLOBALS.EnergySaverMode = true;
 				this.$setEnergySaverMode(timeoutMinutes + " Minutes");
 			} else {
-				this.$resetSleepTimer(timeoutMinutes + " Minutes");
+				this.$resetSleepTimer(timeoutMinutes);
 			}
 			this._bootPhase = false;
 		}, ms);
