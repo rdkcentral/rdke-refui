@@ -215,6 +215,11 @@ export default class App extends Router.App {
 			.catch(err => {
                 this.ERR("Error waking device: " + JSON.stringify(err));
             })
+			 if (this._bootPhase) {
+				this.LOG("First user activity → stopping boot inactivity timer");
+				this._bootPhase = false;
+				clearTimeout(this._inactivityTimer);
+			}
 			return true
 		}
 		this.$hideImage(0);
@@ -455,6 +460,8 @@ export default class App extends Router.App {
 	}
 	_init() {
 		let self = this;
+		this._inactivityTimer = null;
+		this._bootPhase = true;  
 		self.appIdentifiers = {
 			"YouTubeTV": "n:4",
 			"YouTube": "n:3",
@@ -593,6 +600,11 @@ export default class App extends Router.App {
 			if (noti.callsign === "org.rdk.NetworkManager") {
 				if (noti.data.state === "activated") {
 					this.SubscribeToNetworkManager()
+				}
+			}
+			if (noti.callsign === "org.rdk.PowerManager") {
+				if (noti.data.state === "activated") {
+					this.subscribeToPowerChangeNotifications()
 				}
 			}
 		})
@@ -1594,32 +1606,6 @@ export default class App extends Router.App {
 	}
 
 	_firstEnable() {
-		thunder.on("org.rdk.PowerManager", "onPowerModeChanged", notification => {
-			this.LOG(new Date().toISOString() + " onPowerModeChanged Notification: " + JSON.stringify(notification));
-			if ((notification.currentState === "LIGHT_SLEEP" || notification.currentState === "DEEP_SLEEP") 
-				&& notification.newState === "ON") {
-				this.LOG("Ignoring transitional ON event (pre-change)");
-				return;
-			}
-			appApi.getPowerState().then(res => {
-				GLOBALS.powerState = res ? res.currentState : notification.newState
-			}).catch(e => GLOBALS.powerState = notification.newState)
-			if (notification.newState !== "ON" && notification.currentState === "ON") {
-				this.LOG("onPowerModeChanged Notification: power state was changed from ON to " + JSON.stringify(notification.newState))
-
-				//TURNING OFF THE DEVICE
-				Storage.set(PowerState.POWER_STATE_SLEEP, notification.newState)
-				let currentApp = GLOBALS.topmostApp
-				if (currentApp !== "") {
-					appApi.exitApp(currentApp); //will suspend/destroy the app depending on the setting.
-				}
-				Router.navigate('menu');
-			} else if (notification.newState === "ON" && notification.currentState !== "ON") {
-				//TURNING ON THE DEVICE
-				Storage.remove(PowerState.POWER_STATE_SLEEP)
-			}
-		})
-
 		this.LOG("App Calling listenToVoiceControl method to activate VoiceControl Plugin")
 		this.listenToVoiceControl();
 		this._updateLanguageToDefault()
@@ -1628,18 +1614,37 @@ export default class App extends Router.App {
 	}
 
 	_enable() {
-		this._checkEnergySaverStatus()
+		var energySaver = false;
+		const timeout = Storage.get('EnergySaverInterval');
+		const sleepTimer = Storage.get('TimeoutInterval');
+
+		if (timeout) {
+			energySaver = true
+			this.startInactivityTimer(timeout, energySaver);
+		} else if (sleepTimer) {
+			this.startInactivityTimer(sleepTimer, energySaver);
+		}
 	}
 
-	_checkEnergySaverStatus(){
-		this.LOG("Into Check energy saver")
-		var timeout = Storage.get('EnergySaverInterval');
-		this.LOG("Energy timeout init notification:" + JSON.stringify(timeout))
-		if (timeout) {
-			GLOBALS.EnergySaverMode = true;
-			let t = timeout + ' Minutes';
-			this.$setEnergySaverMode(t);
+	startInactivityTimer(timeoutMinutes, energySaver) {
+		const ms = timeoutMinutes * 60 * 1000;
+
+		if (this._inactivityTimer) {
+			clearTimeout(this._inactivityTimer);
 		}
+
+		this.LOG(`Starting inactivity timer for ${timeoutMinutes} minutes`);
+
+		this._inactivityTimer = setTimeout(() => {
+			this.LOG("No activity since boot → switching to sleep mode");
+			if (energySaver) {
+				GLOBALS.EnergySaverMode = true;
+				this.$setEnergySaverMode(timeoutMinutes + " Minutes");
+			} else {
+				this.$resetSleepTimer(timeoutMinutes + " Minutes");
+			}
+			this._bootPhase = false;
+		}, ms);
 	}
 
 	async listenToVoiceControl() {
@@ -1900,6 +1905,34 @@ export default class App extends Router.App {
 				}
 			})
 		}
+	}
+
+	subscribeToPowerChangeNotifications() {
+		thunder.on("org.rdk.PowerManager", "onPowerModeChanged", notification => {
+			this.LOG(new Date().toISOString() + " onPowerModeChanged Notification: " + JSON.stringify(notification));
+			if ((notification.currentState === "LIGHT_SLEEP" || notification.currentState === "DEEP_SLEEP") 
+				&& notification.newState === "ON") {
+				this.LOG("Ignoring transitional ON event (pre-change)");
+				return;
+			}
+			appApi.getPowerState().then(res => {
+				GLOBALS.powerState = res ? res.currentState : notification.newState
+			}).catch(e => GLOBALS.powerState = notification.newState)
+			if (notification.newState !== "ON" && notification.currentState === "ON") {
+				this.LOG("onPowerModeChanged Notification: power state was changed from ON to " + JSON.stringify(notification.newState))
+
+				//TURNING OFF THE DEVICE
+				Storage.set(PowerState.POWER_STATE_SLEEP, notification.newState)
+				let currentApp = GLOBALS.topmostApp
+				if (currentApp !== "") {
+					appApi.exitApp(currentApp); //will suspend/destroy the app depending on the setting.
+				}
+				Router.navigate('menu');
+			} else if (notification.newState === "ON" && notification.currentState !== "ON") {
+				//TURNING ON THE DEVICE
+				Storage.remove(PowerState.POWER_STATE_SLEEP)
+			}
+		})
 	}
 
 	_moveApptoFront(appName, visibility) {

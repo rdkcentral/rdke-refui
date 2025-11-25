@@ -22,6 +22,7 @@ import { COLORS } from '../../colors/Colors'
 import { CONFIG, GLOBALS } from '../../Config/Config'
 import AppApi from '../../api/AppApi'
 
+const energySaverTimeout = '15 Minutes';
 /**
  * Class for Other Settings Screen.
  */
@@ -237,7 +238,6 @@ export default class OtherSettingsScreen extends Lightning.Component {
 
     _focus() {
         this._setState(this.state)
-
         if (Storage.get('TimeoutInterval')) {
             this.tag('SleepTimer.Title').text.text = Language.translate('Sleep Timer: ') + Storage.get('TimeoutInterval')
         }
@@ -319,7 +319,7 @@ export default class OtherSettingsScreen extends Lightning.Component {
                 _handleEnter() {
                     GLOBALS.EnergySaverMode = !GLOBALS.EnergySaverMode;
                     if (GLOBALS.EnergySaverMode) {
-                        this.fireAncestors('$setEnergySaverMode', '2 Minutes')
+                        this.fireAncestors('$setEnergySaverMode', energySaverTimeout)
                         this.tag('EnergySaver.Button').src = Utils.asset('images/settings/ToggleOnOrange.png')
                     } else {
                         Storage.set('EnergySaverInterval', false)
