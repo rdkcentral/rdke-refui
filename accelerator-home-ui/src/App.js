@@ -2318,8 +2318,7 @@ export default class App extends Router.App {
 		this.LOG("Attempting Deep Sleep");
 		appApi.setPowerState(PowerState.POWER_STATE_DEEP_SLEEP).then(res => {
             if (res) {
-				this.LOG("Successfully entered DEEP_SLEEP");
-                GLOBALS.powerState = PowerState.POWER_STATE_DEEP_SLEEP;
+				this.LOG("Sleep request success");
             } else {
 				this.LOG("DEEP_SLEEP failed, falling back to LIGHT_SLEEP");
 				this._enterLightSleep();
