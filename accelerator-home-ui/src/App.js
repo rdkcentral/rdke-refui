@@ -703,6 +703,15 @@ export default class App extends Router.App {
 				}).catch((err) => this.ERR(JSON.stringify(err)))
 			}
 		})
+		appApi.getPluginStatus('org.rdk.PowerManager').then(result => {
+			if (result[0].state === "activated") {
+				this.subscribeToPowerChangeNotifications()
+			} else {
+				PowerManagerApi.get().activate().then((res) => {
+					this.LOG("activating the power manager from app.js " + JSON.stringify(res))
+				}).catch((err) => this.ERR(JSON.stringify(err)))
+			}
+		})
 		appApi.getPluginStatus('org.rdk.MiracastService').then(result => {
 			if (result[0].state === "activated") {
 				miracast.getEnable().then((res) => {
@@ -1639,7 +1648,11 @@ export default class App extends Router.App {
 			this.LOG("No activity since boot → switching to sleep mode");
 			if (energySaver) {
 				GLOBALS.EnergySaverMode = true;
-				this.$setEnergySaverMode(timeoutMinutes + " Minutes");
+				this._enterLightSleep();
+				setTimeout(() => {
+					this.LOG("Registering system inactivity listener after first sleep");
+					this.$setEnergySaverMode(timeoutMinutes + " Minutes");
+				}, 1000);
 			} else {
 				this.$resetSleepTimer(timeoutMinutes);
 			}
