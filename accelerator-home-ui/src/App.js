@@ -2315,7 +2315,7 @@ export default class App extends Router.App {
 				this.LOG("Inactivity event received: " + JSON.stringify(notification));
 				if (GLOBALS.powerState === "ON" && GLOBALS.topmostApp === GLOBALS.selfClientName) {
 					this.LOG("Going to sleep due to inactivity");
-					this._enterLightSleep();
+					this._enterSleepMode();
 				}
 			},
 			err => {
