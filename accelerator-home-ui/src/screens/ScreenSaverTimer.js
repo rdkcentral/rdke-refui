@@ -148,27 +148,17 @@ export default class SreenSaverScreen extends Lightning.Component {
         if (time === "Off" || time === undefined || time === null) {
             RDKShellApis.enableInactivityReporting(false).then(resp => this.LOG("setTimerValue response: " + JSON.stringify(resp)))
             Storage.remove('ScreenSaverTimeoutInterval')
+            this.fireAncestors("$resetInactivityStage", "ScreenSaver");
+            return;
         }
         else {
-            // 10
-            RDKShellApis.enableInactivityReporting(true).then(() => {
-                RDKShellApis.setInactivityInterval(parseInt(time)).then(res => {
-                    this.LOG("setinactivityres" + JSON.stringify(res))
-                    Storage.set('ScreenSaverTimeoutInterval', time)
-                    this.LOG("successfully set the timer to " + JSON.stringify(time) + " minutes")
-                    thunder.on('org.rdk.RDKShell', 'onUserInactivity', notification => {
-                        this.LOG("UserInactivityStatusNotification: " + JSON.stringify(notification))
-                        appApi.getAvCodeStatus().then(result => {
-                            this.LOG("Avdecoder" + JSON.stringify(result.avDecoderStatus));
-                            if ((result.avDecoderStatus === "IDLE" || result.avDecoderStatus === "PAUSE") && GLOBALS.topmostApp === GLOBALS.selfClientName) {
-                                this.fireAncestors("$hideImage", 1);
-                            }
-                        })
-                    })
-                }).catch(err => {
-                    this.ERR("error while setting the timer" + JSON.stringify(err))
-                });
-            })
+            const timeout = parseInt(time, 10);
+            if (isNaN(timeout) || timeout <= 0) {
+                this.ERR("Invalid screensaver timeout value: " + time);
+                return;
+            }
+            Storage.set('ScreenSaverTimeoutInterval', timeout)
+            this.fireAncestors('$setInactivityIntervalSafely', 'ScreenSaver', timeout);
         }
     }
 

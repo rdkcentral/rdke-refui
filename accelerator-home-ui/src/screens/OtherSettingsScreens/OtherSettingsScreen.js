@@ -317,13 +317,14 @@ export default class OtherSettingsScreen extends Lightning.Component {
                     this._setState('Language')
                 }
                 _handleEnter() {
+                    // Toggle Energy Saver mode
                     GLOBALS.EnergySaverMode = !GLOBALS.EnergySaverMode;
                     if (GLOBALS.EnergySaverMode) {
                         this.fireAncestors('$setEnergySaverMode', energySaverTimeout)
                         this.tag('EnergySaver.Button').src = Utils.asset('images/settings/ToggleOnOrange.png')
                     } else {
-                        Storage.set('EnergySaverInterval', false)
                         this.tag('EnergySaver.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
+                        this.fireAncestors("$resetInactivityStage", "EnergySaver");
                     }
                 }
             },
