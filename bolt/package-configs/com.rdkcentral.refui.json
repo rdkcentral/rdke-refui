@@ -1,0 +1,23 @@
+{
+  "id": "com.rdkcentral.refui",
+  "version": "0.0.1",
+  "versionName": "develop",
+  "name": "RDK Ref UI Home Screen",
+  "packageType": "application",
+  "entryPoint": "file:///home/root/lxresui/index.html",
+  "dependencies": {
+    "com.rdkcentral.wpe-develop": "0.0.1"
+  },
+  "permissions": [
+    "urn:rdk:permission:home-app",
+    "urn:rdk:permission.internet",
+    "urn:rdk:permission:firebolt",
+    "urn:rdk:permission:thunder",
+    "urn:rdk:permission:rialto",
+    "urn:rdk:permission:game-controller",
+    "urn:rdk:permission:display-overlay",
+    "urn:rdk:permission:compositor"
+  ],
+  "configuration": {
+  }
+}
