@@ -157,7 +157,7 @@ export default class SreenSaverScreen extends Lightning.Component {
                     this.LOG("setinactivityres" + JSON.stringify(res))
                     Storage.set('ScreenSaverTimeoutInterval', time)
                     this.LOG("successfully set the timer to " + JSON.stringify(time) + " minutes")
-                    thunder.on('org.rdk.RDKShell', 'onUserInactivity', notification => {
+                    thunder.on('org.rdk.RDKWindowManager', 'onUserInactivity', notification => {
                         this.LOG("UserInactivityStatusNotification: " + JSON.stringify(notification))
                         appApi.getAvCodeStatus().then(result => {
                             this.LOG("Avdecoder" + JSON.stringify(result.avDecoderStatus));

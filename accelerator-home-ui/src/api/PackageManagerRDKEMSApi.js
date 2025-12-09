@@ -45,7 +45,7 @@ export default class PackageManagerRDKEMSApi {
                   })
                   .catch(err => {
                       this.ERR("Error Activation PackageManagerRDKEMS" + JSON.stringify(err))
-                      Metrics.error(Metrics.ErrorType.OTHER, errorName, `Error while Thunder Controller ${callsign} activate ${JSON.stringify(err)}`, false, null)
+                      Metrics.error(Metrics.ErrorType.OTHER, "PackageManagerRDKEMS", `Error while Thunder Controller ${callsign} activate ${JSON.stringify(err)}`, false, null)
                       reject(err)
                   })
           })
@@ -60,7 +60,7 @@ export default class PackageManagerRDKEMSApi {
                 })
                 .catch(err => {
                     this.ERR("Error Deactivation PackageManagerRDKEMS" + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, errorName, `Error while Thunder Controller ${callsign} deactivate ${JSON.stringify(err)}`, false, null)
+                    Metrics.error(Metrics.ErrorType.OTHER, "PackageManagerRDKEMS", `Error while Thunder Controller ${callsign} deactivate ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
         })

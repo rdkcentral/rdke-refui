@@ -1798,18 +1798,7 @@ export default class AppApi {
   }
   //resetInactivityTime
   resetInactivityTime() {
-    return new Promise((resolve) => {
-      thunder
-        .call('org.rdk.RDKShell', 'resetInactivityTime')
-        .then(result => {
-          resolve(result)
-        })
-        .catch(err => {
-          this.ERR("AppAPI resetInactivityTime error:", err)
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in fetching Thunder resetInactivityTime of RDKShell " + JSON.stringify(err), false, null)
-          resolve(false)
-        })
-    })
+    return RDKWindowManager.get().resetInactivityTime();
   }
 
   monitorStatus(callsign) {

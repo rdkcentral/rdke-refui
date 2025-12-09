@@ -68,12 +68,20 @@ export default class LogoScreen extends Lightning.Component {
 
     async _init() {
         this.btApi = new BluetoothApi()
-        await appApi.getPluginStatus("org.rdk.Bluetooth")
-            .then(()=> this._isBluetoothExist = true)
-            .catch(()=>this._isBluetoothExist = false)
-        await appApi.getPluginStatus("org.rdk.RemoteControl")
-            .then(() =>this._isRCcontrolExist = true)
-            .catch(()=>this._isRCcontrolExist = false)
+        await this._performInitialization()
+    }
+    async _performInitialization() {
+        try {
+            await appApi.getPluginStatus("org.rdk.Bluetooth").then(this._isBluetoothExist = true);
+        } catch (err) {
+            this._isBluetoothExist = false;
+        }        
+        try {
+            await appApi.getPluginStatus("org.rdk.RemoteControl").then(this._isRCcontrolExist = true);
+        } catch (err) {
+            this._isRCcontrolExist = false;
+        }
+        this.LOG("Init completed - Bluetooth exists:", this._isBluetoothExist, "RC exists:", this._isRCcontrolExist);
     }
 
     checkPath(path) {

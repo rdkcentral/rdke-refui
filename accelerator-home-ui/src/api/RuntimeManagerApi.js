@@ -45,7 +45,7 @@ export default class RuntimeManager {
                   })
                   .catch(err => {
                       this.ERR("Error Activation RuntimeManager" + JSON.stringify(err))
-                      Metrics.error(Metrics.ErrorType.OTHER, errorName, `Error while Thunder Controller ${callsign} activate ${JSON.stringify(err)}`, false, null)
+                      Metrics.error(Metrics.ErrorType.OTHER, "Runtime", `Error while Thunder Controller ${callsign} activate ${JSON.stringify(err)}`, false, null)
                       reject(err)
                   })
           })
@@ -59,7 +59,7 @@ export default class RuntimeManager {
                 })
                 .catch(err => {
                     this.ERR("Error Deactivation RuntimeManager" + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, errorName, `Error while Thunder Controller ${callsign} deactivate ${JSON.stringify(err)}`, false, null)
+                    Metrics.error(Metrics.ErrorType.OTHER, "Runtime", `Error while Thunder Controller ${callsign} deactivate ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
         })

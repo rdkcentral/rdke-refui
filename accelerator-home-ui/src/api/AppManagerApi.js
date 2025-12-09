@@ -45,7 +45,7 @@ export default class AppManager {
                   })
                   .catch(err => {
                       this.ERR("Error Activation AppManager" + JSON.stringify(err))
-                      Metrics.error(Metrics.ErrorType.OTHER, errorName, `Error while Thunder Controller ${callsign} activate ${JSON.stringify(err)}`, false, null)
+                      Metrics.error(Metrics.ErrorType.OTHER, "AppManager", `Error while Thunder Controller ${callsign} activate ${JSON.stringify(err)}`, false, null)
                       reject(err)
                   })
           })
@@ -59,7 +59,7 @@ export default class AppManager {
                 })
                 .catch(err => {
                     this.ERR("Error Deactivation AppManager" + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, errorName, `Error while Thunder Controller ${callsign} deactivate ${JSON.stringify(err)}`, false, null)
+                    Metrics.error(Metrics.ErrorType.OTHER, "AppManager", `Error while Thunder Controller ${callsign} deactivate ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
         })
@@ -116,7 +116,7 @@ export default class AppManager {
                 })  
                 .catch(err => {
                     this.ERR("Error in isInstalled: " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, errorName, `Error while calling isInstalled on ${callsign} ${JSON.stringify(err)}`, false, null)
+                    Metrics.error(Metrics.ErrorType.OTHER, "AppManager", `Error while calling isInstalled on ${callsign} ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
         })  
