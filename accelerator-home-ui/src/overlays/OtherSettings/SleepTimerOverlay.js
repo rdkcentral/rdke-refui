@@ -16,8 +16,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-import { Lightning, Storage } from '@lightningjs/sdk'
-import SettingsItem from '../../items/SettingsItem'
+import { Language, Lightning, Router, Storage } from '@lightningjs/sdk'
+import SettingsItem from '../items/SettingsItem'
 
 export default class SleepTimerScreen extends Lightning.Component {
     constructor(...args) {
@@ -27,8 +27,21 @@ export default class SleepTimerScreen extends Lightning.Component {
         this.ERR = console.error;
         this.WARN = console.warn;
     }
+
+    _onChanged() {
+        this.widgets.menu.updateTopPanelText(Language.translate('Settings  Other Settings  Sleep Timer'));
+    }
+
+    pageTransition() {
+        return 'left'
+    }
+
     static _template() {
         return {
+            rect: true,
+            color: 0xCC000000,
+            w: 1920,
+            h: 1080,
             SleepTimer: {
                 y: 275,
                 x: 200,
@@ -73,13 +86,30 @@ export default class SleepTimerScreen extends Lightning.Component {
             }
         })
         this.tag('List').getElement(index).tag('Tick').visible = true
-        this.fireAncestors('$registerInactivityMonitoringEvents').then(() => {
-            this.fireAncestors('$resetSleepTimer', timeoutInterval);
-        }).catch(err => {
-            this.ERR("error while registering the inactivity monitoring event" + JSON.stringify(err));
-        })
-
+        // Convert value → minutes
+        const timeOutInMinutes = this._convertToMinutes(timeoutInterval);
+        if (timeOutInMinutes) {
+            this.fireAncestors("$setInactivityIntervalSafely", "SleepTimer", timeOutInMinutes);
+        } else {
+            this.fireAncestors("$resetInactivityStage", "SleepTimer");
+        }
         this._setState('Options')
+    }
+
+    _convertToMinutes(value) {
+        if (typeof value !== "string") {
+            return value;
+        }
+        if (value === "Off") return null;
+        if (value.includes("Minutes")) return parseInt(value);
+        if (value.includes("Hour")) return parseFloat(value) * 60;
+        return null;
+    }
+
+    _handleBack() {
+        if (!Router.isNavigating()) {
+            Router.navigate('settings/other')
+        }
     }
 
     static _states() {
@@ -103,8 +133,10 @@ export default class SleepTimerScreen extends Lightning.Component {
                     });
                     this.tag('List').element.tag('Tick').visible = true
                     //this.options[this.tag('List').index].tick = true
-                    this.fireAncestors('$sleepTimerText', this.options[this.tag('List').index].value)
-                    this.fireAncestors('$resetSleepTimer', this.options[this.tag('List').index].value);
+                    let timeout = this.options[this.tag('List').index].value;
+                    Storage.set("TimeoutInterval", timeout);
+                    this.fireAncestors('$sleepTimerText', timeout)
+                    this.fireAncestors("$setInactivityIntervalSafely", "SleepTimer", this._convertToMinutes(timeout));
                 }
             }
         ]
