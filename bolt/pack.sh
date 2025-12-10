@@ -35,11 +35,11 @@ if [ ! -d "dist" ]; then
 fi
 
 TMPDIR=$(mktemp -d)
-mkdir -p "$TMPDIR/home/root/lxresui"
+mkdir -p "$TMPDIR/usr/share/refui"
 
-cp -r dist/es6/* "$TMPDIR/home/root/lxresui/"
-cp ../LICENSE "$TMPDIR/home/root/lxresui/"
-cp ../NOTICE "$TMPDIR/home/root/lxresui/"
+cp -r dist/es6/* "$TMPDIR/usr/share/refui/"
+cp ../LICENSE "$TMPDIR/usr/share/refui/"
+cp ../NOTICE "$TMPDIR/usr/share/refui/"
 
 popd
 
@@ -51,7 +51,7 @@ mkdir -p "$TAR_DIR"
 
 TAR_OUTPUT="$TAR_DIR/refui.tgz"
 
-tar czf "$TAR_OUTPUT" home
+tar czf "$TAR_OUTPUT" usr
 
 popd
 

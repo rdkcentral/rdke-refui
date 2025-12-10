@@ -4,7 +4,7 @@
   "versionName": "develop",
   "name": "RDK Ref UI Home Screen",
   "packageType": "application",
-  "entryPoint": "file:///home/root/lxresui/index.html",
+  "entryPoint": "file:///usr/share/refui/index.html",
   "dependencies": {
     "com.rdkcentral.wpe-develop": "0.0.1"
   },
