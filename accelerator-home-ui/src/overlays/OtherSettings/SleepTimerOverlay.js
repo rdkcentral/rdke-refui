@@ -17,7 +17,7 @@
  * limitations under the License.
  **/
 import { Language, Lightning, Router, Storage } from '@lightningjs/sdk'
-import SettingsItem from '../items/SettingsItem'
+import SettingsItem from '../../items/SettingsItem'
 
 export default class SleepTimerScreen extends Lightning.Component {
     constructor(...args) {
