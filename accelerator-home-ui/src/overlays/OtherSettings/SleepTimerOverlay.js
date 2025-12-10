@@ -28,14 +28,6 @@ export default class SleepTimerScreen extends Lightning.Component {
         this.WARN = console.warn;
     }
 
-    _onChanged() {
-        this.widgets.menu.updateTopPanelText(Language.translate('Settings  Other Settings  Sleep Timer'));
-    }
-
-    pageTransition() {
-        return 'left'
-    }
-
     static _template() {
         return {
             rect: true,
@@ -104,12 +96,6 @@ export default class SleepTimerScreen extends Lightning.Component {
         if (value.includes("Minutes")) return parseInt(value);
         if (value.includes("Hour")) return parseFloat(value) * 60;
         return null;
-    }
-
-    _handleBack() {
-        if (!Router.isNavigating()) {
-            Router.navigate('settings/other')
-        }
     }
 
     static _states() {
