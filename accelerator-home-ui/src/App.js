@@ -80,6 +80,10 @@ import MiracastNotification from './screens/MiracastNotification.js';
 import NetworkManager from './api/NetworkManagerAPI.js';
 import PowerManagerApi, {PowerState} from './api/PowerManagerApi.js';
 import UserSettingsApi from './api/UserSettingsApi';
+import AppManager from './api/AppManagerApi.js';
+import PackageManager from './api/PackageManagerApi.js';
+import RDKWindowManager from './api/RDKWindowManagerApi.js';
+import RuntimeManager from './api/RuntimeManagerApi.js';
 
 var AlexaAudioplayerActive = false;
 var thunder = ThunderJS(CONFIG.thunderConfig);
@@ -89,6 +93,8 @@ var cecApi = new CECApi();
 var xcastApi = new XcastApi();
 var voiceApi = new VoiceApi();
 var miracast = new Miracast();
+var powermanagerapi = new PowerManagerApi();
+var packagemangerRdkems = new PackageManager();
 
 export default class App extends Router.App {
 
@@ -103,13 +109,43 @@ export default class App extends Router.App {
 	_handleAppClose() {
 		this.application.closeApp();
 	}
+
+	/**
+	 * Abstraction for individual plugin activation with consistent logging and error handling
+	 * @param {string} pluginName - Plugin callsign name
+	 * @param {string} displayName - Human readable name for logging
+	 * @param {Function} activator - Function that returns promise to activate the plugin
+	 * @param {Function} [onActivated] - Optional callback to run after successful activation
+	 */
+	_activatePlugin(pluginName, displayName, activator, onActivated) {
+		appApi.getPluginStatus(pluginName).then(result => {
+			if (result[0].state === "activated") {
+				this.LOG(`${displayName} plugin is already activated`);
+				if (onActivated) {
+					onActivated();
+				}
+			} else {
+				this.LOG(`Activating ${displayName} plugin...`);
+				activator().then(() => {
+					this.LOG(`${displayName} plugin activated successfully`);
+					if (onActivated) {
+						onActivated();
+					}
+				}).catch(err => {
+					this.ERR(`Error activating ${displayName} plugin: ${JSON.stringify(err)}`);
+				});
+			}
+		}).catch(err => {
+			this.ERR(`Error checking ${displayName} plugin status: ${JSON.stringify(err)}`);
+		});
+	}
+
 	static getFonts() {
 		return [{
 			family: 'Play',
 			url: Utils.asset('fonts/Play/Play-Regular.ttf')
 		}];
 	}
-
 
 	_setup() {
 		this.LOG("accelerator-home-ui version: " + JSON.stringify(Settings.get("platform", "version")));
@@ -130,6 +166,22 @@ export default class App extends Router.App {
 			}
 		}
 		window.addEventListener("offline", updateAddress)
+
+		// Use promise chain instead of async/await in Lightning.js lifecycle method
+		AppManager.get().getLoadedApps().then(res => {
+			const targetAppId = "com.rdk.app.wpebrowser_2.38";
+			const targetApp = res.find(app => app.appId === targetAppId);
+			if (targetApp) {
+				GLOBALS.selfClientName = targetAppId;
+				GLOBALS.selfClientId = targetApp.appInstanceId;
+				this.LOG('Setting selfClientId to: ' + targetApp.appInstanceId);
+				this.LOG('Current selfClientName: ' + GLOBALS.selfClientName);
+			} else {
+				this.WARN('App not found: ' + targetAppId);
+			}
+		}).catch(err => {
+			this.ERR('Error getting loaded apps from setup ' + JSON.stringify(err));
+		});
 	}
 
 	static _template() {
@@ -298,6 +350,7 @@ export default class App extends Router.App {
 		} else if (key.keyCode == Keymap.Amazon && !Router.isNavigating()) {
 			return this.launchFeaturedApp("Amazon")
 		} else if (key.keyCode == Keymap.Youtube && !Router.isNavigating()) {
+			console.log("YouTube key pressed, calling launchFeaturedApp");
 			this.launchFeaturedApp("YouTube")
 			return true
 		} else if (key.keyCode == Keymap.Netflix && !Router.isNavigating()) { //launchLocation mapping is in launchApp method in AppApi.js
@@ -405,9 +458,9 @@ export default class App extends Router.App {
 				// check if result has value property and if it is not undefined^M
 				if (result && result.value && result.value !== undefined && result.value !== "Off") {
 					this.LOG("App PersistentStoreApi screensaver timer value is: " + JSON.stringify(result.value));
-					RDKShellApis.enableInactivityReporting(true).then(() => {
-						RDKShellApis.setInactivityInterval(result.value).then(() => {
-							this.userInactivity = thunder.on('org.rdk.RDKShell', 'onUserInactivity', notification => {
+					appApi.enableInactivityReporting(true).then(() => {
+						appApi.setInactivityInterval(result.value).then(() => {
+							this.userInactivity = thunder.on('org.rdk.RDKWindowManager', 'onUserInactivity', notification => {
 								this.LOG("UserInactivityStatusNotification: " + JSON.stringify(notification))
 								appApi.getAvCodeStatus().then(result => {
 									this.LOG("Avdecoder" + JSON.stringify(result.avDecoderStatus));
@@ -420,13 +473,13 @@ export default class App extends Router.App {
 					});
 				} else {
 					this.WARN("App PersistentStoreApi screensaver timer value is not set or is Off.")
-					RDKShellApis.enableInactivityReporting(false).then(() => {
+					appApi.enableInactivityReporting(false).then(() => {
 						this.userInactivity.dispose();
 					})
 				}
 			}).catch(err => {
 				this.ERR("App PersistentStoreApi getValue error: " + JSON.stringify(err));
-				RDKShellApis.enableInactivityReporting(false).then(() => {
+				appApi.enableInactivityReporting(false).then(() => {
 					this.userInactivity.dispose();
 				})
 			});
@@ -587,6 +640,11 @@ export default class App extends Router.App {
 			if (noti.callsign === "org.rdk.NetworkManager") {
 				if (noti.data.state === "activated") {
 					this.SubscribeToNetworkManager()
+				}
+			}
+			if( noti.callsign === "org.rdk.AppManager")	{
+				if(noti.data.state === "activated")	{
+					this._SubscribeToAppManagerNotifications();
 				}
 			}
 		})
@@ -755,14 +813,40 @@ export default class App extends Router.App {
 					cecApi.getActiveSourceStatus().then((res) => {
 						Storage.set("UICacheCECActiveSourceStatus", res);
 						this.LOG("App getActiveSourceStatus: " + JSON.stringify(res) + " UICacheCECActiveSourceStatus:" + JSON.stringify(Storage.get("UICacheCECActiveSourceStatus")));
-					});
+			});
 				}).catch((err) => this.ERR(JSON.stringify(err)))
 			}
 		})
 		this._subscribeToIOPortNotifications()
 
 		this._updateLanguageToDefault()
-
+		// Initialize plugins using the abstraction
+		this._activatePlugin(
+			"org.rdk.PackageManagerRDKEMS", 
+			"PackageManagerRDKEMS", 
+			() => packagemangerRdkems.activate()
+		);
+		
+		this._activatePlugin(
+			"org.rdk.AppManager", 
+			"AppManager", 
+			() => AppManager.get().activate(),
+			() => this._SubscribeToAppManagerNotifications()
+		);
+		
+		this._activatePlugin(
+			"org.rdk.RDKWindowManager", 
+			"RDKWindowManager", 
+			() => RDKWindowManager.get().activate(),
+			() => this._SubscribeToRDKWindowManagerNotifications()
+		);
+		
+		this._activatePlugin(
+			"org.rdk.RuntimeManager", 
+			"RuntimeManager", 
+			() => RuntimeManager.get().activate(),
+			() => this._SubscribeToRuntimeManagerNotifications()
+		);
 		this.xcastApi = new XcastApi()
 		this.xcastApi.activate().then(async result => {
 			console.warn("Xcast plugin activate");
@@ -958,6 +1042,79 @@ export default class App extends Router.App {
 				}
 				GLOBALS.topmostApp = GLOBALS.selfClientName
 			}
+		});
+	}
+	_SubscribeToRDKWindowManagerNotifications() {
+		thunder.on('org.rdk.RDKWindowManager', 'onConnected	', data => {
+			this.LOG('RDKWindowManager onConnected	 ' + JSON.stringify(data));
+		});
+		thunder.on('org.rdk.RDKWindowManager', 'onDisconnected', data => {
+			this.LOG('RDKWindowManager onDisconnected ' + JSON.stringify(data));
+		});
+		thunder.on('org.rdk.RDKWindowManager', 'onReady', data => {
+			this.LOG('RDKWindowManager onReady ' + JSON.stringify(data));
+		});
+		thunder.on('org.rdk.RDKWindowManager', 'onUserInactivity', data => {
+			this.LOG('RDKWindowManager onUserInactivity ' + JSON.stringify(data));
+		});
+		thunder.on('org.rdk.RDKWindowManager', 'onBlur', data => {
+			this.LOG('RDKWindowManager onBlur ' + JSON.stringify(data));
+		});
+		thunder.on('org.rdk.RDKWindowManager', 'onVisible', data => {
+			this.LOG('RDKWindowManager onVisible ' + JSON.stringify(data));
+		});
+		thunder.on('org.rdk.RDKWindowManager', 'onHidden', data => {
+			this.LOG('RDKWindowManager onHidden ' + JSON.stringify(data));
+		});
+	}
+	_SubscribeToRuntimeManagerNotifications() {
+		thunder.on('org.rdk.RuntimeManager', 'onStarted', data => {
+			this.LOG('onStarted ' + JSON.stringify(data));
+		});
+		thunder.on('org.rdk.RuntimeManager', 'onTerminated', data => {
+			this.LOG('onTerminated ' + JSON.stringify(data));
+		});
+		thunder.on('org.rdk.RuntimeManager', 'onFailure', data => {
+			this.LOG('onFailure ' + JSON.stringify(data));
+		});
+		thunder.on('org.rdk.RuntimeManager', 'onStateChanged', data => {
+			this.LOG('onStateChanged ' + JSON.stringify(data));
+		});
+	}
+	_SubscribeToAppManagerNotifications() {
+		thunder.on('org.rdk.AppManager', 'onAppInstalled', data => {
+			this.LOG('onAppInstallStatus ' + JSON.stringify(data));
+		});
+		thunder.on('org.rdk.AppManager', 'onAppUninstalled', data => {
+			this.LOG('onAppUninstallStatus ' + JSON.stringify(data));
+		});
+		thunder.on('org.rdk.AppManager', 'onAppLifecycleStateChanged', async data => {
+			if(data.newState === "APP_STATE_ACTIVE") {
+				if(data.appInstanceId != GLOBALS.selfClientId )
+				{
+					await appApi.setVisible(GLOBALS.selfClientId,false);
+				}
+				appApi.setfocus(data.appInstanceId).then(() => {
+					this.LOG("setFocus success for " + data.appId  + data.appInstanceId);
+				}
+				).catch(err => {
+					this.ERR("setFocus error for " +data.appId + data.appInstanceId + " :" + JSON.stringify(err));
+				});
+				appApi.setVisible(data.appInstanceId, true).then(() => {
+					this.LOG("setVisible success for " + data.appId  + data.appInstanceId);
+				}).catch(err => {
+					this.ERR("setVisible error for " +data.appId  + data.appInstanceId + " :" + JSON.stringify(err));
+				});
+			}
+			this.LOG('onAppLifecycleStateChanged ' + JSON.stringify(data));
+		});	
+		thunder.on('org.rdk.AppManager', 'onAppLaunchRequest', data => {
+			this.LOG('onAppLaunchRequested ' + JSON.stringify(data));
+		});
+		thunder.on('org.rdk.AppManager', 'onAppUnloaded',  async data => {
+			this.LOG('onAppUnloaded ' + JSON.stringify(data));
+			await appApi.setfocus(GLOBALS.selfClientId)
+			await appApi.setVisible(GLOBALS.selfClientId,true);
 		});
 	}
 	_subscribeToRDKShellNotifications() {
@@ -1887,13 +2044,15 @@ export default class App extends Router.App {
 	}
 
 	launchFeaturedApp = (appName) => {
-		let params = {
-			launchLocation: "dedicatedButton",
-			appIdentifier: this.appIdentifiers[appName]
-		}
-		appApi.launchApp(appName, params).catch(err => {
-			this.ERR("Error in launching " + JSON.stringify(appName) + " via dedicated key: " + JSON.stringify(err))
-		});
+		console.log("Launching Featured App from AI 2.0: " + appName);
+		// let params = {
+		// 	launchLocation: "dedicatedButton",
+		// 	appIdentifier: this.appIdentifiers[appName]
+		// }
+		// appApi.launchApp(appName, params).catch(err => {
+		// 	this.ERR("Error in launching " + JSON.stringify(appName) + " via dedicated key: " + JSON.stringify(err))
+		// });
+		AppManager.get().launchApp("com.rdk.app.cobalt2025")
 	}
 
 	/**
@@ -2101,25 +2260,14 @@ export default class App extends Router.App {
 				}
 			})
 
-			thunder.Controller.activate({
-					callsign: 'org.rdk.RDKShell.1'
-				})
-				.then(res => {
-					this.LOG("activated the rdk shell plugin trying to set the inactivity listener; res = " + JSON.stringify(res));
-					thunder.on("org.rdk.RDKShell.1", "onUserInactivity", notification => {
-						this.LOG('onUserInactivity: ' + JSON.stringify(notification));
-						if (GLOBALS.powerState === "ON" && (GLOBALS.topmostApp === GLOBALS.selfClientName)) {
-							this.standby("STANDBY");
-						}
-					}, err => {
-						this.ERR("error while inactivity monitoring , " + JSON.stringify(err))
-					})
-					resolve(res)
-				}).catch((err) => {
-					Metrics.error(Metrics.ErrorType.OTHER, 'AppError', "Controller.activate error with " + JSON.stringify(err), false, null)
-					reject(err)
-					this.ERR("error while activating the displaysettings plugin; err = " + JSON.stringify(err))
-				})
+			thunder.on("org.rdk.RDKWindowManager", "onUserInactivity", notification => {
+				this.LOG('onUserInactivity: ' + JSON.stringify(notification));
+				if (GLOBALS.powerState === "ON" && (GLOBALS.topmostApp === GLOBALS.selfClientName)) {
+					this.standby("STANDBY");
+				}
+			}, err => {
+				this.ERR("error while inactivity monitoring , " + JSON.stringify(err))
+			})
 		})
 	}
 
@@ -2132,7 +2280,7 @@ export default class App extends Router.App {
 			var temp = arr[1].substring(0, 1);
 			if (temp === 'H') {
 				let temp1 = parseFloat(arr[0]) * 60;
-				RDKShellApis.setInactivityInterval(temp1).then(() => {
+				appApi.setInactivityInterval(temp1).then(() => {
 					Storage.set('TimeoutInterval', t)
 					this.LOG("successfully set the timer to " + JSON.stringify(t) + " hours")
 				}).catch(err => {
@@ -2141,7 +2289,7 @@ export default class App extends Router.App {
 			} else if (temp === 'M') {
 				this.LOG("minutes");
 				let temp1 = parseFloat(arr[0]);
-				RDKShellApis.setInactivityInterval(temp1).then(() => {
+				appApi.setInactivityInterval(temp1).then(() => {
 					Storage.set('TimeoutInterval', t)
 					this.LOG("successfully set the timer to " + JSON.stringify(t) + " minutes");
 				}).catch(err => {
@@ -2151,7 +2299,7 @@ export default class App extends Router.App {
 		}
 
 		if (arr.length < 2) {
-			RDKShellApis.enableInactivityReporting(false).then((res) => {
+			appApi.enableInactivityReporting(false).then((res) => {
 				if (res === true) {
 					Storage.set('TimeoutInterval', false)
 					this.LOG("Disabled inactivity reporting");
@@ -2161,7 +2309,7 @@ export default class App extends Router.App {
 				this.ERR("error : unable to set the reset; error = " + JSON.stringify(err))
 			});
 		} else {
-			RDKShellApis.enableInactivityReporting(true).then(res => {
+			appApi.enableInactivityReporting(true).then(res => {
 				if (res === true) {
 					this.LOG("Enabled inactivity reporting; trying to set the timer to " + JSON.stringify(t));
 					// this.timerIsOff = false;

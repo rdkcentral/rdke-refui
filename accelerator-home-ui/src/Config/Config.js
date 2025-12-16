@@ -81,9 +81,19 @@ export const GLOBALS = {
   _previousapp_onActiveSourceStatusUpdated:null,
   _previousapp_onDisplayConnectionChanged:null,
   _constantselfClientName: window.__firebolt && window.__firebolt.endpoint !== undefined ? "FireboltMainApp-refui" : "ResidentApp",
+  _selfclientId: window.__firebolt && window.__firebolt.endpoint !== undefined ? "FireboltMainApp-refui" : null,
   _LocalDeviceDiscoveryStatus:false,
   get selfClientName() {
     return this._constantselfClientName;
+  },
+  set selfClientName(value) {
+    this._constantselfClientName = value;
+  },
+  get selfClientId() {
+    return this._selfclientId;
+  },
+  set selfClientId(value) {
+   this._selfclientId = value;
   },
   _currentTopMostApp: localStorage.getItem('topmostApp') || (window.__firebolt && window.__firebolt.endpoint !== undefined ? "FireboltMainApp-refui" : "ResidentApp"),
   get topmostApp() {

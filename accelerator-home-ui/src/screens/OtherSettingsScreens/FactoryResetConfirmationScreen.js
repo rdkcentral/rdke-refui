@@ -195,7 +195,7 @@ export default class RebootConfirmationScreen extends Lightning.Component {
         await Warehouse.get().resetDevice().catch(err => { this.ERR("resetDevice" + JSON.stringify(err)) });
 
         let rsactivitytime = await appApi.resetInactivityTime().catch(err => { this.ERR("resetInactivityTime" + JSON.stringify(err)) });
-        if (rsactivitytime.success != true) { this.LOG("rsactivitytime" + JSON.stringify(rsactivitytime)) }
+        if (rsactivitytime != null) { this.LOG("rsactivitytime" + JSON.stringify(rsactivitytime)) }
         let GetKnownSSIDs = await NetworkManager.GetKnownSSIDs().then((ssids)=>{ssids}).catch(err =>  { console.error("GetKnownssids",err) });
         let clearSSID =false
         if(GetKnownSSIDs && GetKnownSSIDs.length>0)
@@ -208,6 +208,13 @@ export default class RebootConfirmationScreen extends Lightning.Component {
         if (clearSSID != true)  { this.LOG("clearSSID" + JSON.stringify(clearSSID)) }
         let wifidisconnect = await NetworkManager.WiFiDisconnect().catch(err =>{ this.ERR("wifidisconnect" + JSON.stringify(err)) });
         if (wifidisconnect.success != true) { this.LOG("wifidisconnect" + JSON.stringify(wifidisconnect)) }
+        try {
+            localStorage.clear();
+            this.LOG("localStorage cleared successfully");
+        } 
+        catch (err) {
+            this.ERR("Error clearing localStorage: " + JSON.stringify(err));
+        }
         await appApi.clearCache().catch(err => { this.ERR("clearCache error: " + JSON.stringify(err)) })
         await appApi.reboot("User Trigger").then(result => { this.LOG('device rebooting' + JSON.stringify(result))})
     }
