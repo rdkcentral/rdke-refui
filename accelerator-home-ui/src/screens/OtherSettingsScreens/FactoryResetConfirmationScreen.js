@@ -209,9 +209,10 @@ export default class RebootConfirmationScreen extends Lightning.Component {
         let wifidisconnect = await NetworkManager.WiFiDisconnect().catch(err =>{ this.ERR("wifidisconnect" + JSON.stringify(err)) });
         if (wifidisconnect.success != true) { this.LOG("wifidisconnect" + JSON.stringify(wifidisconnect)) }
         try {
-        localStorage.clear();
-        this.LOG("localStorage cleared successfully");
-        } catch (err) {
+            localStorage.clear();
+            this.LOG("localStorage cleared successfully");
+        } 
+        catch (err) {
             this.ERR("Error clearing localStorage: " + JSON.stringify(err));
         }
         await appApi.clearCache().catch(err => { this.ERR("clearCache error: " + JSON.stringify(err)) })

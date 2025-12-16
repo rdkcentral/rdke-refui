@@ -848,6 +848,7 @@ export default class MainView extends Lightning.Component {
             // this.appApi.launchApp(applicationType, params).catch(err => {
             //   this.ERR("ApplaunchError: "+ JSON.stringify(err))
             // });
+            //since we have only one bundle which is com.rdk.app.cobalt2025 for youtube app, directly hardcoding the app launch for youtube
             if(applicationType === "YouTube"){
             AppManager.get().launchApp("com.rdk.app.cobalt2025")}
           }

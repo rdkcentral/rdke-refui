@@ -147,13 +147,13 @@ export default class SreenSaverScreen extends Lightning.Component {
 
     setTimerValue(time) {
         if (time === "Off" || time === undefined || time === null) {
-            RDKWindowManager.get().enableInactivityReporting(false).then(resp => this.LOG("setTimerValue response: " + JSON.stringify(resp)))
+            appApi.enableInactivityReporting(false).then(resp => this.LOG("setTimerValue response: " + JSON.stringify(resp)))
             Storage.remove('ScreenSaverTimeoutInterval')
         }
         else {
             // 10
-            RDKWindowManager.get().enableInactivityReporting(true).then(() => {
-                RDKWindowManager.get().setInactivityInterval(parseInt(time)).then(res => {
+            appApi.enableInactivityReporting(true).then(() => {
+                appApi.setInactivityInterval(parseInt(time)).then(res => {
                     this.LOG("setinactivityres" + JSON.stringify(res))
                     Storage.set('ScreenSaverTimeoutInterval', time)
                     this.LOG("successfully set the timer to " + JSON.stringify(time) + " minutes")

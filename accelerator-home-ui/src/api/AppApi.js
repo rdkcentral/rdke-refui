@@ -1071,18 +1071,18 @@ export default class AppApi {
     RDKShellApis.destroy(client)
   }
 
-  enabledisableinactivityReporting(bool) {
-    RDKWindowManager.get().enableInactivityReporting(bool)
+  enableInactivityReporting(bool) {
+    return RDKWindowManager.get().enableInactivityReporting(bool)
   }
 
   setInactivityInterval(duration) {
-    RDKWindowManager.get().setInactivityInterval(duration)
+    return RDKWindowManager.get().setInactivityInterval(duration)
   }
 
-  async setfocustoResidentapp() {
+  async setfocus(value) {
     return AppManager.get().getLoadedApps().then(async (res) => {
             this.LOG('Currently loaded apps: ' + JSON.stringify(res));
-            const targetAppId = "com.rdk.app.wpebrowser_2.38";
+            const targetAppId = value;
             const targetApp = res.find(app => app.appId === targetAppId);
             if (targetApp) {
               const appInstanceId = targetApp.appInstanceId;
@@ -1092,33 +1092,48 @@ export default class AppApi {
               }	).catch((err) => {
                 this.ERR('setFocus error for ' + targetAppId + ': ' + JSON.stringify(err));
               });
-            } else {
+            } 
+            else if (value){
+              await RDKWindowManager.get().setFocus(value).then(() => {
+                this.LOG('setFocus successful for ' + value);
+              }	).catch((err) => {
+                this.ERR('setFocus error for ' + value + ': ' + JSON.stringify(err));
+              });
+            }
+            else {
               this.WARN('App not found: ' + targetAppId);
             }
-          }).catch((err) => {
-            this.ERR('Error getting loaded apps from setfocustoresidentapp ' + JSON.stringify(err));
-          });
+    }).catch((err) => {
+      this.ERR('Error getting loaded apps from setfocus ' + JSON.stringify(err));
+    });
   }
-  async setVisibletoResidentapp(visible) {
+  async setVisible(value,visible) {
     return AppManager.get().getLoadedApps().then(async (res) => {
             this.LOG('Currently loaded apps: ' + JSON.stringify(res));
-            const targetAppId = "com.rdk.app.wpebrowser_2.38";
-            const targetApp = res.find(app => app.appId === targetAppId); 
+            const targetAppId = value;
+            const targetApp = res.find(app => app.appId === targetAppId);
             if (targetApp) {
               const appInstanceId = targetApp.appInstanceId;
               this.LOG('Found appInstanceId for ' + targetAppId + ': ' + appInstanceId);
               await RDKWindowManager.get().setVisible(appInstanceId, visible).then(() => {
-                this.LOG('setVisibility successful for ' + targetAppId);
-              }  ).catch((err) => {
-                this.ERR('setVisibility error for ' + targetAppId + ': ' + JSON.stringify(err));
+                this.LOG('setFocus successful for ' + targetAppId);
+              }	).catch((err) => {
+                this.ERR('setFocus error for ' + targetAppId + ': ' + JSON.stringify(err));
               });
-              
-            } else {
-              this.WARN('App not found: ' + targetAppId);
             } 
-          }).catch((err) => {
-            this.ERR('Error getting loaded apps from setvisibletoresidentapp : ' + JSON.stringify(err));
-          });
+            else if (value){
+              await RDKWindowManager.get().setVisible(value, visible).then(() => {
+                this.LOG('setFocus successful for ' + value);
+              }	).catch((err) => {
+                this.ERR('setFocus error for ' + value + ': ' + JSON.stringify(err));
+              });
+            }
+            else {
+              this.WARN('App not found: ' + targetAppId);
+            }
+    }).catch((err) => {
+      this.ERR('Error getting loaded apps from setvisible ' + JSON.stringify(err));
+    });
   }
 
   /**

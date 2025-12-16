@@ -21,7 +21,7 @@ import { CONFIG } from '../Config/Config'
 import { Metrics } from "@firebolt-js/sdk"
 
 let instance = null
-export default class PackageManagerRDKEMSApi {
+export default class PackageManager {
   constructor() {
     this.thunder = ThunderJS(CONFIG.thunderConfig);
     this.callsign = 'org.rdk.PackageManagerRDKEMS';
@@ -31,7 +31,7 @@ export default class PackageManagerRDKEMSApi {
   }
   static get() {
     if (instance === null) {
-      instance = new PackageManagerRDKEMSApi()
+      instance = new PackageManager()
     }
     return instance;
   }
