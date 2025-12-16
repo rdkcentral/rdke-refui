@@ -18,7 +18,9 @@
  **/
 import { Language, Lightning, Router, Storage } from '@lightningjs/sdk'
 import SettingsItem from '../items/SettingsItem'
+import InactivityHelper from '../helpers/InactivityHelper';
 
+var inactivityHelper = new InactivityHelper();
 export default class SleepTimerScreen extends Lightning.Component {
 
     constructor(...args) {
@@ -87,12 +89,13 @@ export default class SleepTimerScreen extends Lightning.Component {
             }
         })
         this.tag('List').getElement(index).tag('Tick').visible = true
-        this.fireAncestors('$registerInactivityMonitoringEvents').then(() => {
-            this.fireAncestors('$resetSleepTimer', timeoutInterval);
-        }).catch(err => {
-            this.ERR('error while registering the inactivity monitoring event' + JSON.stringify(err))
-        })
-
+        // Convert value → minutes
+        const timeOutInMinutes = inactivityHelper._convertToMinutes(timeoutInterval);
+        if (timeOutInMinutes) {
+            this.fireAncestors("$setInactivityIntervalStage", "SleepTimer", timeOutInMinutes);
+        } else {
+            this.fireAncestors("$resetInactivityStage", "SleepTimer");
+        }
         this._setState('Options')
     }
 
@@ -123,8 +126,10 @@ export default class SleepTimerScreen extends Lightning.Component {
                     });
                     this.tag('List').element.tag('Tick').visible = true
                     //this.options[this.tag('List').index].tick = true
-                    this.fireAncestors('$sleepTimerText', this.options[this.tag('List').index].value)
-                    this.fireAncestors('$resetSleepTimer', this.options[this.tag('List').index].value);
+                    let timeout = this.options[this.tag('List').index].value;
+                    Storage.set("TimeoutInterval", timeout);
+                    this.fireAncestors('$sleepTimerText', timeout)
+                    this.fireAncestors("$setInactivityIntervalStage", "SleepTimer", inactivityHelper._convertToMinutes(timeout));
                 }
             }
         ]

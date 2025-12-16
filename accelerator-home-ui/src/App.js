@@ -69,7 +69,6 @@ import {
 	Keyboard,
 	PinChallenge
 } from '@firebolt-js/manage-sdk'
-import PersistentStoreApi from './api/PersistentStore.js';
 import {
 	Localization,
 	Metrics
@@ -80,6 +79,7 @@ import MiracastNotification from './screens/MiracastNotification.js';
 import NetworkManager from './api/NetworkManagerAPI.js';
 import PowerManagerApi, {PowerState} from './api/PowerManagerApi.js';
 import UserSettingsApi from './api/UserSettingsApi';
+import InactivityHelper from './helpers/InactivityHelper.js';
 
 var AlexaAudioplayerActive = false;
 var thunder = ThunderJS(CONFIG.thunderConfig);
@@ -89,6 +89,8 @@ var cecApi = new CECApi();
 var xcastApi = new XcastApi();
 var voiceApi = new VoiceApi();
 var miracast = new Miracast();
+var inactivityHelper = new InactivityHelper();
+const SLEEP_STATE = 'SLEEPING';
 
 export default class App extends Router.App {
 
@@ -209,12 +211,19 @@ export default class App extends Router.App {
 		if (GLOBALS.powerState !== "ON") {
 			appApi.setPowerState("ON").then(res => {
 				res ? this.LOG("successfully set the power state to ON from " + JSON.stringify(GLOBALS.powerState)) : this.LOG("Failure while turning ON the device")
-			})
+				GLOBALS.powerState = PowerState.POWER_STATE_ON;
+				this.LOG("powerState after ===>" + JSON.stringify(GLOBALS.powerState))
+				this.initializeInactivityEngine();
+			}) 
+			.catch(err => {
+                this.ERR("Error waking device: " + JSON.stringify(err));
+            })
 			return true
 		}
 		this.$hideImage(0);
 		return this._performKeyPressOPerations(key)
 	}
+
 	_performKeyPressOPerations(key) {
 		let self = this;
 			if(GLOBALS.MiracastNotificationstatus && key.keyCode !== Keymap.Power && key.keyCode !== Keymap.Home ){
@@ -399,43 +408,6 @@ export default class App extends Router.App {
 		})
 	}
 
-	userInactivity() {
-		PersistentStoreApi.get().activate().then(() => {
-			PersistentStoreApi.get().getValue('ScreenSaverTime', 'timerValue').then(result => {
-				// check if result has value property and if it is not undefined^M
-				if (result && result.value && result.value !== undefined && result.value !== "Off") {
-					this.LOG("App PersistentStoreApi screensaver timer value is: " + JSON.stringify(result.value));
-					RDKShellApis.enableInactivityReporting(true).then(() => {
-						RDKShellApis.setInactivityInterval(result.value).then(() => {
-							this.userInactivity = thunder.on('org.rdk.RDKShell', 'onUserInactivity', notification => {
-								this.LOG("UserInactivityStatusNotification: " + JSON.stringify(notification))
-								appApi.getAvCodeStatus().then(result => {
-									this.LOG("Avdecoder" + JSON.stringify(result.avDecoderStatus));
-									if ((result.avDecoderStatus === "IDLE" || result.avDecoderStatus === "PAUSE") && GLOBALS.topmostApp === "") {
-										this.$hideImage(1);
-									}
-								})
-							})
-						})
-					});
-				} else {
-					this.WARN("App PersistentStoreApi screensaver timer value is not set or is Off.")
-					RDKShellApis.enableInactivityReporting(false).then(() => {
-						this.userInactivity.dispose();
-					})
-				}
-			}).catch(err => {
-				this.ERR("App PersistentStoreApi getValue error: " + JSON.stringify(err));
-				RDKShellApis.enableInactivityReporting(false).then(() => {
-					this.userInactivity.dispose();
-				})
-			});
-		}).catch(err => {
-			this.ERR("App PersistentStoreApi activation error: " + JSON.stringify(err));
-			reject(err);
-		});
-	}
-
 	$hideImage(alpha) {
 		if (alpha === 1) {
 			this.tag("Widgets").visible = false;
@@ -448,8 +420,11 @@ export default class App extends Router.App {
 		// this.tag("ScreenSaver").alpha = alpha;
 	}
 	_init() {
-
 		let self = this;
+		this.inactivityEngineInitialized = false;
+		this.thunderListenerRegistered = false;
+		this.currentStage = null;
+		this.currentInterval = null;
 		self.appIdentifiers = {
 			"YouTubeTV": "n:4",
 			"YouTube": "n:3",
@@ -463,7 +438,6 @@ export default class App extends Router.App {
 		keyIntercept(GLOBALS.selfClientName).catch(err => {
 			this.ERR("App _init keyIntercept err:" + JSON.stringify(err));
 		});
-		this.userInactivity();
 		this._registerFireboltListeners()
 
 		Keyboard.provide('xrn:firebolt:capability:input:keyboard', new KeyboardUIProvider(this))
@@ -589,6 +563,11 @@ export default class App extends Router.App {
 					this.SubscribeToNetworkManager()
 				}
 			}
+			if (noti.callsign === "org.rdk.PowerManager") {
+				if (noti.data.state === "activated") {
+					this.subscribeToPowerChangeNotifications()
+				}
+			}
 		})
 		this._subscribeToRDKShellNotifications()
 		appApi.getPluginStatus("Cobalt").then(() => {
@@ -645,12 +624,12 @@ export default class App extends Router.App {
 		//video info change events begin here---------------------
 		/********************   RDKUI-341 CHANGES - DEEP SLEEP/LIGHT SLEEP **************************/
 		this._subscribeToControlNotifications()
-		let cachedPowerState = Storage.get(PowerState.POWER_STATE_SLEEP);
+		let cachedPowerState = Storage.get(SLEEP_STATE);
 		this.LOG("cached power state" + JSON.stringify(cachedPowerState))
 		this.LOG(typeof cachedPowerState)
 		if (cachedPowerState) {
 			appApi.getWakeupReason().then(result => {
-				if (result.result.wakeupReason !== 'WAKEUP_REASON_UNKNOWN') {
+				if (result.wakeupReason !== 'WAKEUP_REASON_UNKNOWN') {
 					cachedPowerState = PowerState.POWER_STATE_ON;
 				}
 			})
@@ -682,6 +661,15 @@ export default class App extends Router.App {
 			} else {
 				miracast.activatePlayer().then((res) => {
 					this.LOG("activating the miracst player from app.js " + JSON.stringify(res))
+				}).catch((err) => this.ERR(JSON.stringify(err)))
+			}
+		})
+		appApi.getPluginStatus('org.rdk.PowerManager').then(result => {
+			if (result[0].state === "activated") {
+				this.subscribeToPowerChangeNotifications()
+			} else {
+				PowerManagerApi.get().activate().then((res) => {
+					this.LOG("activating the power manager from app.js " + JSON.stringify(res))
 				}).catch((err) => this.ERR(JSON.stringify(err)))
 			}
 		})
@@ -1588,33 +1576,131 @@ export default class App extends Router.App {
 	}
 
 	_firstEnable() {
-		appApi.registerPowerEvent('onPowerModeChanged', notification => {
-			this.LOG(new Date().toISOString() + " onPowerModeChanged Notification: " + JSON.stringify(notification));
-			appApi.getPowerState().then(res => {
-				GLOBALS.powerState = res ? res.currentState : notification.newState
-			}).catch(e => GLOBALS.powerState = notification.newState)
-			if (notification.newState !== "ON" && notification.currentState === "ON") {
-				this.LOG("onPowerModeChanged Notification: power state was changed from ON to " + JSON.stringify(notification.newState))
-
-				//TURNING OFF THE DEVICE
-				Storage.set(PowerState.POWER_STATE_SLEEP, notification.newState)
-				let currentApp = GLOBALS.topmostApp
-				if (currentApp !== "") {
-					appApi.exitApp(currentApp); //will suspend/destroy the app depending on the setting.
-				}
-				Router.navigate('menu');
-			} else if (notification.newState === "ON" && notification.currentState !== "ON") {
-				//TURNING ON THE DEVICE
-				Storage.remove(PowerState.POWER_STATE_SLEEP)
-			}
-		})
-
 		this.LOG("App Calling listenToVoiceControl method to activate VoiceControl Plugin")
 		this.listenToVoiceControl();
 		this._updateLanguageToDefault()
 		/* Subscribe to Volume status events to report to Alexa. */
 		this._subscribeToAlexaNotifications()
+		this.initializeInactivityEngine();
 	}
+
+	initializeInactivityEngine() {
+		if (this.inactivityEngineInitialized) {
+			this.LOG("Inactivity engine already initialized. Skipping...");
+			return;
+		}
+		this.inactivityEngineInitialized = true;
+		this.initializeInactivity();
+	}
+
+	initializeInactivity() {
+        this.LOG('Into initialize');
+
+        const { energySaver, screenSaver, sleepTimer } = inactivityHelper.getInactivityConfig();
+		this.LOG(`Loaded config: energySaver=${energySaver}, screenSaver=${screenSaver}, sleep=${sleepTimer}`)
+
+		const hasValidTimer = inactivityHelper.isValidTimeout(screenSaver) || inactivityHelper.isValidTimeout(energySaver) || inactivityHelper.isValidTimeout(sleepTimer);
+
+        if (!hasValidTimer) {
+            this.LOG('No valid inactivity timers found. Disabling inactivity reporting.');
+			RDKShellApis.enableInactivityReporting(false)
+            .catch(err => this.ERR('Error disabling inactivity: ' + JSON.stringify(err)));
+			return;
+        }
+
+		// Set initial interval based on valid timers
+		if (inactivityHelper.isValidTimeout(screenSaver)) {
+            this.$setInactivityIntervalStage('ScreenSaver', screenSaver);
+        } else if (inactivityHelper.isValidTimeout(sleepTimer)) {
+            this.$setInactivityIntervalStage('SleepTimer', sleepTimer);
+        } else if(inactivityHelper.isValidTimeout(energySaver)) {
+            this.$setInactivityIntervalStage('EnergySaver', energySaver);
+        } else {
+            this.LOG('No valid inactivity timers found. Engine will not start.');
+        }
+    }
+
+	registerOnUserInactivityListener() {
+			thunder.Controller.activate({ callsign: 'org.rdk.RDKShell.1' }).then(res => {
+			this.LOG("RDKShell activated, trying to set the inactivity listener; res = " + JSON.stringify(res));
+			thunder.on("org.rdk.RDKShell.1", "onUserInactivity", async notification => {
+				const { energySaver, screenSaver, sleepTimer } = inactivityHelper.getInactivityConfig();
+				const minutes = Math.floor(Number(notification.minutes));
+
+				this.LOG(`onUserInactivity fired: ${notification.minutes} mins`);
+				// Screensaver stage
+				if (screenSaver && minutes === screenSaver) {
+					this.LOG("Screensaver event reached");
+					this.currentStage = 'ScreenSaver';
+					await this.triggerScreensaver();
+				}
+				// Sleep Timer Stage
+				if (inactivityHelper.isValidTimeout(sleepTimer) && minutes === sleepTimer) {
+					this.LOG('Sleep Timer triggered');
+					this.currentStage = 'SleepTimer';
+					if (GLOBALS.powerState === "ON" && GLOBALS.topmostApp === GLOBALS.selfClientName) {
+						inactivityHelper.standby('STANDBY');
+					}
+				}
+				// Energy Saver Stage
+				if (inactivityHelper.isValidTimeout(energySaver) && minutes === energySaver) {
+					this.LOG('Energy saver triggered');
+					this.currentStage = 'EnergySaver';
+					if (GLOBALS.powerState === "ON" && GLOBALS.topmostApp === GLOBALS.selfClientName) {
+						this.LOG("Going to sleep due to inactivity");
+						inactivityHelper._enterSleepMode();
+					}
+				}
+			}, err => this.ERR("Listener error: " + JSON.stringify(err)));
+		})
+	}
+
+	async triggerScreensaver() {
+		const result = await appApi.getAvCodeStatus();
+		if (["IDLE", "PAUSE"].includes(result.avDecoderStatus) &&
+			GLOBALS.topmostApp === GLOBALS.selfClientName) {
+			this.$hideImage(1);
+		}
+		return result;
+	}
+
+	$setInactivityIntervalStage(stage, minutes) {
+		this.LOG(`Request for set interval from stage=${stage} minutes=${minutes}`);
+		if (!inactivityHelper.isValidTimeout(minutes)) {
+			this.$resetInactivityStage(stage);
+			return;
+		}
+		this.currentStage = stage;
+		this.currentInterval = minutes;
+
+        const { energySaver, screenSaver, sleepTimer } = inactivityHelper.getInactivityConfig();
+		if (inactivityHelper.isValidTimeout(screenSaver)) {
+			this.currentStage = 'ScreenSaver';
+			this.currentInterval = screenSaver;
+		}
+
+		RDKShellApis.enableInactivityReporting(true)
+			.then(() => RDKShellApis.setInactivityInterval(this.currentInterval))
+			.then(() => {
+				this.LOG(`Inactivity interval set to ${this.currentInterval} for stage=${this.currentStage}`)
+
+				if (!this.thunderListenerRegistered) {
+					this.LOG("Registering listener for inactivity events...");
+					this.registerOnUserInactivityListener();
+					this.thunderListenerRegistered = true;
+				}
+				})
+			.catch(err => this.ERR("setInactivityIntervalStage error: " + JSON.stringify(err)));
+	}
+
+	$resetInactivityStage(stage) {
+        this.LOG(`Reset request for stage=${stage}`);
+        if (this.currentStage === stage) {
+            this.currentStage = null;
+            this.currentInterval = null;
+        }
+		inactivityHelper.$resetInactivity(stage);
+    }
 
 	async listenToVoiceControl() {
 		this.LOG("App listenToVoiceControl method got called, configuring VoiceControl Plugin")
@@ -1876,6 +1962,29 @@ export default class App extends Router.App {
 		}
 	}
 
+	subscribeToPowerChangeNotifications() {
+		thunder.on("org.rdk.PowerManager", "onPowerModeChanged", notification => {
+			this.LOG(new Date().toISOString() + " onPowerModeChanged Notification: " + JSON.stringify(notification));
+			appApi.getPowerState().then(res => {
+				GLOBALS.powerState = res ? res.currentState : notification.newState
+			}).catch(e => GLOBALS.powerState = notification.newState)
+			if (notification.newState !== "ON" && notification.currentState === "ON") {
+				this.LOG("onPowerModeChanged Notification: power state was changed from ON to " + JSON.stringify(notification.newState))
+
+				//TURNING OFF THE DEVICE
+				Storage.set(SLEEP_STATE, notification.newState)
+				let currentApp = GLOBALS.topmostApp
+				if (currentApp !== "") {
+					appApi.exitApp(currentApp); //will suspend/destroy the app depending on the setting.
+				}
+				Router.navigate('menu');
+			} else if (notification.newState === "ON" && notification.currentState !== "ON") {
+				//TURNING ON THE DEVICE
+				Storage.remove(SLEEP_STATE)
+			}
+		})
+	}
+
 	_moveApptoFront(appName, visibility) {
 		RDKShellApis.moveToFront(appName).then(() => {
 			RDKShellApis.setVisibility(appName, visibility);
@@ -2067,109 +2176,14 @@ export default class App extends Router.App {
 		this.LOG("successfully deregistered usb listener");
 	}
 
-	standby(value) {
-		this.LOG("standby call");
-		if (value == 'Back') {
-			// TODO: Identify what to do here.
-		} else {
-			if (GLOBALS.powerState == PowerState.POWER_STATE_ON) {
-				this.LOG("Power state was on trying to set it to standby");
-				appApi.setPowerState(value).then(res => {
-					if (res) {
-						this.LOG("successfully set to standby");
-						GLOBALS.powerState = PowerState.POWER_STATE_STANDBY
-						if (GLOBALS.topmostApp !== GLOBALS.selfClientName) {
-							appApi.exitApp(GLOBALS.topmostApp);
-						} else {
-							if (!Router.isNavigating()) {
-								Router.navigate('menu')
-							}
-						}
-					}
-				})
-				return true
-			}
-		}
-	}
-
-	$registerInactivityMonitoringEvents() {
-		return new Promise((resolve, reject) => {
-			this.LOG("registered inactivity listener");
-			appApi.setPowerState(PowerState.POWER_STATE_ON).then(res => {
-				if (res) {
-					GLOBALS.powerState = PowerState.POWER_STATE_ON
-				}
-			})
-
-			thunder.Controller.activate({
-					callsign: 'org.rdk.RDKShell.1'
-				})
-				.then(res => {
-					this.LOG("activated the rdk shell plugin trying to set the inactivity listener; res = " + JSON.stringify(res));
-					thunder.on("org.rdk.RDKShell.1", "onUserInactivity", notification => {
-						this.LOG('onUserInactivity: ' + JSON.stringify(notification));
-						if (GLOBALS.powerState === "ON" && (GLOBALS.topmostApp === GLOBALS.selfClientName)) {
-							this.standby("STANDBY");
-						}
-					}, err => {
-						this.ERR("error while inactivity monitoring , " + JSON.stringify(err))
-					})
-					resolve(res)
-				}).catch((err) => {
-					Metrics.error(Metrics.ErrorType.OTHER, 'AppError', "Controller.activate error with " + JSON.stringify(err), false, null)
-					reject(err)
-					this.ERR("error while activating the displaysettings plugin; err = " + JSON.stringify(err))
-				})
-		})
-	}
-
-	$resetSleepTimer(t) {
-		this.LOG("reset sleep timer call " + JSON.stringify(t));
-		var arr = t.split(" ");
-
-		const setTimer = () => {
-			this.LOG('Timer ' + JSON.stringify(arr))
-			var temp = arr[1].substring(0, 1);
-			if (temp === 'H') {
-				let temp1 = parseFloat(arr[0]) * 60;
-				RDKShellApis.setInactivityInterval(temp1).then(() => {
-					Storage.set('TimeoutInterval', t)
-					this.LOG("successfully set the timer to " + JSON.stringify(t) + " hours")
-				}).catch(err => {
-					this.ERR("error while setting the timer " + JSON.stringify(err))
-				});
-			} else if (temp === 'M') {
-				this.LOG("minutes");
-				let temp1 = parseFloat(arr[0]);
-				RDKShellApis.setInactivityInterval(temp1).then(() => {
-					Storage.set('TimeoutInterval', t)
-					this.LOG("successfully set the timer to " + JSON.stringify(t) + " minutes");
-				}).catch(err => {
-					this.ERR("error while setting the timer " + JSON.stringify(err))
-				});
-			}
-		}
-
-		if (arr.length < 2) {
-			RDKShellApis.enableInactivityReporting(false).then((res) => {
-				if (res === true) {
-					Storage.set('TimeoutInterval', false)
-					this.LOG("Disabled inactivity reporting");
-					// this.timerIsOff = true;
-				}
-			}).catch(err => {
-				this.ERR("error : unable to set the reset; error = " + JSON.stringify(err))
-			});
-		} else {
-			RDKShellApis.enableInactivityReporting(true).then(res => {
-				if (res === true) {
-					this.LOG("Enabled inactivity reporting; trying to set the timer to " + JSON.stringify(t));
-					// this.timerIsOff = false;
-					setTimer();
-				}
-			}).catch(err => {
-				this.ERR("error while enabling inactivity reporting " + JSON.stringify(err))
-			});
+	$setEnergySaverMode(time) {
+		var timeoutInMinutes = inactivityHelper.$setEnergySaver(time);
+        this.LOG("Final timeout (minutes): " + timeoutInMinutes);
+		try {
+			Storage.set('EnergySaverInterval', timeoutInMinutes);
+			this.$setInactivityIntervalStage("EnergySaver", parseInt(timeoutInMinutes));
+		} catch (err) {
+			this.ERR("Error setting energy saver mode: " + JSON.stringify(err));
 		}
 	}
 
