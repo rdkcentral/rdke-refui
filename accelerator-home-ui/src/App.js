@@ -1090,7 +1090,7 @@ export default class App extends Router.App {
 		});
 		thunder.on('org.rdk.AppManager', 'onAppLifecycleStateChanged', async data => {
 			if(data.newState === "APP_STATE_ACTIVE") {
-				if(data.appId != "com.rdk.app.wpebrowser_2.38")
+				if(data.appInstanceId != GLOBALS.selfClientId )
 				{
 					await appApi.setVisible(GLOBALS.selfClientId,false);
 				}
