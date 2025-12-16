@@ -86,7 +86,7 @@ export default class InactivityHelper {
     }
     let arr = time.split(" ");
     let value = parseFloat(arr[0]);
-        let unit = arr[1].substring(0, 1); // "M" or "H"
+    let unit = arr[1].substring(0, 1); // "M" or "H"
 
     let storedTimeout = Storage.get("TimeoutInterval");
     if (storedTimeout && storedTimeout !== "Off") {

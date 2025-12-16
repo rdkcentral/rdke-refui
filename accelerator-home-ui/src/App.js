@@ -213,7 +213,7 @@ export default class App extends Router.App {
 				res ? this.LOG("successfully set the power state to ON from " + JSON.stringify(GLOBALS.powerState)) : this.LOG("Failure while turning ON the device")
 				GLOBALS.powerState = PowerState.POWER_STATE_ON;
 				this.LOG("powerState after ===>" + JSON.stringify(GLOBALS.powerState))
-				this.initializeInactivityEngineSafely();
+				this.initializeInactivityEngine();
 			}) 
 			.catch(err => {
                 this.ERR("Error waking device: " + JSON.stringify(err));
@@ -1581,19 +1581,19 @@ export default class App extends Router.App {
 		this._updateLanguageToDefault()
 		/* Subscribe to Volume status events to report to Alexa. */
 		this._subscribeToAlexaNotifications()
-		this.initializeInactivityEngineSafely();
+		this.initializeInactivityEngine();
 	}
 
-	initializeInactivityEngineSafely() {
+	initializeInactivityEngine() {
 		if (this.inactivityEngineInitialized) {
 			this.LOG("Inactivity engine already initialized. Skipping...");
 			return;
 		}
 		this.inactivityEngineInitialized = true;
-		this.initializeInactivityEngine();
+		this.initializeInactivity();
 	}
 
-	initializeInactivityEngine() {
+	initializeInactivity() {
         this.LOG('Into initialize');
 
         const { energySaver, screenSaver, sleepTimer } = inactivityHelper.getInactivityConfig();
