@@ -158,7 +158,7 @@ export default class SreenSaverScreen extends Lightning.Component {
                 return;
             }
             Storage.set('ScreenSaverTimeoutInterval', timeout)
-            this.fireAncestors('$setInactivityIntervalSafely', 'ScreenSaver', timeout);
+            this.fireAncestors('$setInactivityIntervalStage', 'ScreenSaver', timeout);
         }
     }
 

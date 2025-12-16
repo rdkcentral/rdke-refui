@@ -18,6 +18,9 @@
  **/
 import { Language, Lightning, Router, Storage } from '@lightningjs/sdk'
 import SettingsItem from '../../items/SettingsItem'
+import InactivityHelper from '../../helpers/InactivityHelper';
+
+var inactivityHelper = new InactivityHelper();
 
 export default class SleepTimerScreen extends Lightning.Component {
     constructor(...args) {
@@ -79,23 +82,13 @@ export default class SleepTimerScreen extends Lightning.Component {
         })
         this.tag('List').getElement(index).tag('Tick').visible = true
         // Convert value → minutes
-        const timeOutInMinutes = this._convertToMinutes(timeoutInterval);
+        const timeOutInMinutes = inactivityHelper._convertToMinutes(timeoutInterval);
         if (timeOutInMinutes) {
-            this.fireAncestors("$setInactivityIntervalSafely", "SleepTimer", timeOutInMinutes);
+            this.fireAncestors("$setInactivityIntervalStage", "SleepTimer", timeOutInMinutes);
         } else {
             this.fireAncestors("$resetInactivityStage", "SleepTimer");
         }
         this._setState('Options')
-    }
-
-    _convertToMinutes(value) {
-        if (typeof value !== "string") {
-            return value;
-        }
-        if (value === "Off") return null;
-        if (value.includes("Minutes")) return parseInt(value);
-        if (value.includes("Hour")) return parseFloat(value) * 60;
-        return null;
     }
 
     static _states() {
@@ -122,7 +115,7 @@ export default class SleepTimerScreen extends Lightning.Component {
                     let timeout = this.options[this.tag('List').index].value;
                     Storage.set("TimeoutInterval", timeout);
                     this.fireAncestors('$sleepTimerText', timeout)
-                    this.fireAncestors("$setInactivityIntervalSafely", "SleepTimer", this._convertToMinutes(timeout));
+                    this.fireAncestors("$setInactivityIntervalStage", "SleepTimer", inactivityHelper._convertToMinutes(timeout));
                 }
             }
         ]

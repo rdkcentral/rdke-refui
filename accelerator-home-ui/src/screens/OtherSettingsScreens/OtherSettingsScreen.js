@@ -250,8 +250,10 @@ export default class OtherSettingsScreen extends Lightning.Component {
             this.tag('ScreenSaver.Title').text.text = Language.translate('Screen-Saver: ') + 'Off'
         }
         if (Storage.get('EnergySaverInterval')) {
+            GLOBALS.EnergySaverMode = true;
             this.tag('EnergySaver.Button').src = Utils.asset('images/settings/ToggleOnOrange.png')
         } else {
+            GLOBALS.EnergySaverMode = false;
             this.tag('EnergySaver.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
         }
     }
