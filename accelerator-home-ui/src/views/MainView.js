@@ -30,6 +30,7 @@ import { List } from '@lightningjs/ui'
 import HDMIApi from '../api/HDMIApi.js'
 import NetworkManager from '../api/NetworkManagerAPI.js'
 import FireBoltApi from '../api/firebolt/FireBoltApi.js'
+import AppManager from '../api/AppManagerApi.js'
 
 /** Class for main view component in home UI */
 export default class MainView extends Lightning.Component {
@@ -844,9 +845,12 @@ export default class MainView extends Lightning.Component {
               launchLocation: "mainView",
               appIdentifier: appIdentifier
             }
-            this.appApi.launchApp(applicationType, params).catch(err => {
-              this.ERR("ApplaunchError: "+ JSON.stringify(err))
-            });
+            // this.appApi.launchApp(applicationType, params).catch(err => {
+            //   this.ERR("ApplaunchError: "+ JSON.stringify(err))
+            // });
+            //since we have only one bundle which is com.rdk.app.cobalt2025 for youtube app, directly hardcoding the app launch for youtube
+            if(applicationType === "YouTube"){
+            AppManager.get().launchApp("com.rdk.app.cobalt2025")}
           }
         }
       },

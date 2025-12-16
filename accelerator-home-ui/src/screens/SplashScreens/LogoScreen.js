@@ -65,15 +65,21 @@ export default class LogoScreen extends Lightning.Component {
     pageTransition() {
         return 'right'
     }
-
     async _init() {
         this.btApi = new BluetoothApi()
-        await appApi.getPluginStatus("org.rdk.Bluetooth")
-            .then(()=> this._isBluetoothExist = true)
-            .catch(()=>this._isBluetoothExist = false)
-        await appApi.getPluginStatus("org.rdk.RemoteControl")
-            .then(() =>this._isRCcontrolExist = true)
-            .catch(()=>this._isRCcontrolExist = false)
+    }
+    async _checkPluginExists(pluginName, propertyName) {
+        try {
+            await appApi.getPluginStatus(pluginName);
+            this[propertyName] = true;
+        } catch (err) {
+            this[propertyName] = false;
+        }
+    }
+    async _checkPluginAvailability() {
+        await this._checkPluginExists("org.rdk.Bluetooth", "_isBluetoothExist");
+        await this._checkPluginExists("org.rdk.RemoteControl", "_isRCcontrolExist");
+        this.LOG("Plugin availability check completed - Bluetooth exists:", this._isBluetoothExist, "RC exists:", this._isRCcontrolExist);
     }
 
     checkPath(path) {
@@ -105,6 +111,7 @@ export default class LogoScreen extends Lightning.Component {
             this._setState('Next')
             return true;
         }
+        await this._checkPluginAvailability();
 
         if(!this._isBluetoothExist && !this._isRCcontrolExist) {
             this.tag('Error').notify({
