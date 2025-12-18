@@ -196,8 +196,6 @@ export default class RebootConfirmationScreen extends Lightning.Component {
 
         let rsactivitytime = await appApi.resetInactivityTime().catch(err => { this.ERR("resetInactivityTime" + JSON.stringify(err)) });
         if (rsactivitytime.success != true) { this.LOG("rsactivitytime" + JSON.stringify(rsactivitytime)) }
-        let clearLastDeepSleepReason = await appApi.clearLastDeepSleepReason().catch(err => { this.ERR("clearLastDeepSleepReason" + JSON.stringify(err)) });
-        if (clearLastDeepSleepReason.success != true) { this.LOG("clearLastDeepSleepReason" + JSON.stringify(clearLastDeepSleepReason)) }
         let GetKnownSSIDs = await NetworkManager.GetKnownSSIDs().then((ssids)=>{ssids}).catch(err =>  { console.error("GetKnownssids",err) });
         let clearSSID =false
         if(GetKnownSSIDs && GetKnownSSIDs.length>0)

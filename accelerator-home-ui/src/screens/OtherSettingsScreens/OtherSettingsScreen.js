@@ -19,9 +19,10 @@
 import { Lightning, Utils, Language, Router, Storage } from '@lightningjs/sdk'
 import SettingsMainItem from '../../items/SettingsMainItem'
 import { COLORS } from '../../colors/Colors'
-import { CONFIG } from '../../Config/Config'
+import { CONFIG, GLOBALS } from '../../Config/Config'
 import AppApi from '../../api/AppApi'
 
+const energySaverTimeout = '15 Minutes';
 /**
  * Class for Other Settings Screen.
  */
@@ -135,17 +136,17 @@ export default class OtherSettingsScreen extends Lightning.Component {
                     },
                     Button: {
                         h: 45,
-                        w: 45,
+                        w: 67,
                         x: 1600,
                         mountX: 1,
                         y: 45,
                         mountY: 0.5,
-                        src: Utils.asset('images/settings/Arrow.png'),
+                        src: Utils.asset('images/settings/ToggleOffWhite.png'),
                     },
                 },
                 Language: {
                     //alpha: 0.3, // disabled
-                    y: 450 - 90,
+                    y: 360,
                     type: SettingsMainItem,
                     Title: {
                         x: 10,
@@ -170,7 +171,7 @@ export default class OtherSettingsScreen extends Lightning.Component {
                 },
                 Privacy: {
                     //alpha: 0.3, // disabled
-                    y: 540 - 90,
+                    y: 450,
                     type: SettingsMainItem,
                     Title: {
                         x: 10,
@@ -194,7 +195,7 @@ export default class OtherSettingsScreen extends Lightning.Component {
                     },
                 },
                 AdvancedSettings: {
-                    y: 630 - 90,
+                    y: 540,
                     type: SettingsMainItem,
                     Title: {
                         x: 10,
@@ -224,10 +225,10 @@ export default class OtherSettingsScreen extends Lightning.Component {
         this._appApi = new AppApi();
         this._setState('SleepTimer')
     }
+
     $updateStandbyMode(standbyMode) {
         this.tag("EnergySaver.Title").text.text = Language.translate("Energy Saver: ") + Language.translate(standbyMode)
     }
-
     $sleepTimerText(text) {
         this.tag('SleepTimer.Title').text.text = Language.translate('Sleep Timer: ') + text
     }
@@ -237,28 +238,23 @@ export default class OtherSettingsScreen extends Lightning.Component {
 
     _focus() {
         this._setState(this.state)
-
         if (Storage.get('TimeoutInterval')) {
             this.tag('SleepTimer.Title').text.text = Language.translate('Sleep Timer: ') + Storage.get('TimeoutInterval')
         }
         else {
             this.tag('SleepTimer.Title').text.text = Language.translate('Sleep Timer: ') + 'Off'
         }
-
-        this._appApi.getPreferredStandbyMode().then(result => {
-            let currentStandbyMode = ""
-            if (result.preferredStandbyMode == "LIGHT_SLEEP") {
-                currentStandbyMode = "Light Sleep"
-            } else if (result.preferredStandbyMode == "DEEP_SLEEP") {
-                currentStandbyMode = "Deep Sleep"
-            }
-            this.tag("EnergySaver.Title").text.text = Language.translate("Energy Saver: ") + Language.translate(currentStandbyMode)
-        })
-
         if (Storage.get('ScreenSaverTimeoutInterval')) {
             this.tag('ScreenSaver.Title').text.text = Language.translate('Screen-Saver: ') + Storage.get('ScreenSaverTimeoutInterval') + ' min'
         } else {
             this.tag('ScreenSaver.Title').text.text = Language.translate('Screen-Saver: ') + 'Off'
+        }
+        if (Storage.get('EnergySaverInterval')) {
+            GLOBALS.EnergySaverMode = true;
+            this.tag('EnergySaver.Button').src = Utils.asset('images/settings/ToggleOnOrange.png')
+        } else {
+            GLOBALS.EnergySaverMode = false;
+            this.tag('EnergySaver.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
         }
     }
 
@@ -309,6 +305,32 @@ export default class OtherSettingsScreen extends Lightning.Component {
 
                 }
             },
+            class EnergySaver extends this {
+                $enter() {
+                    this.tag('EnergySaver')._focus()
+                }
+                $exit() {
+                    this.tag('EnergySaver')._unfocus()
+                }
+                _handleUp() {
+                    this._setState('ScreenSaver')
+                }
+                _handleDown() {
+                    this._setState('Language')
+                }
+                _handleEnter() {
+                    // Toggle Energy Saver mode
+                    GLOBALS.EnergySaverMode = !GLOBALS.EnergySaverMode;
+                    if (GLOBALS.EnergySaverMode) {
+                        this.fireAncestors('$setEnergySaverMode', energySaverTimeout)
+                        this.tag('EnergySaver.Button').src = Utils.asset('images/settings/ToggleOnOrange.png')
+                    } else {
+                        this.tag('EnergySaver.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
+                        this.fireAncestors("$resetInactivityStage", "EnergySaver");
+                    }
+                }
+            },
+
             class ScreenSaver extends this {
                 $enter() {
                     this.tag('ScreenSaver')._focus()
@@ -328,27 +350,6 @@ export default class OtherSettingsScreen extends Lightning.Component {
                     }
                 }
             },
-            class EnergySaver extends this {
-                $enter() {
-                    this.tag('EnergySaver')._focus()
-                }
-                $exit() {
-                    this.tag('EnergySaver')._unfocus()
-                }
-                _handleUp() {
-                    this._setState('ScreenSaver')
-                }
-                _handleDown() {
-                    // this._setState('Theme')
-                    this._setState('Language')
-                }
-                _handleEnter() {
-                    if(!Router.isNavigating()){
-                    Router.navigate('settings/other/energy')
-                    }
-                }
-            },
-
             class Language extends this {
                 $enter() {
                     this.tag('Language')._focus()
@@ -364,7 +365,7 @@ export default class OtherSettingsScreen extends Lightning.Component {
                 }
                 _handleEnter() {
                     if(!Router.isNavigating()){
-                    Router.navigate('settings/other/language')
+                        Router.navigate('settings/other/language')
                     }
                 }
             },
@@ -383,7 +384,7 @@ export default class OtherSettingsScreen extends Lightning.Component {
                 }
                 _handleEnter() {
                     if(!Router.isNavigating()){
-                    Router.navigate('settings/other/privacy')
+                        Router.navigate('settings/other/privacy')
                     }
                 }
             },

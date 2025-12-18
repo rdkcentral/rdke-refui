@@ -22,7 +22,6 @@
  import { CONFIG } from '../../Config/Config'
  import AppApi from '../../api/AppApi'
  import SleepTimerScreen from './SleepTimerOverlay'
- import EnergySavingsScreen from './EnergySaverOverlay'
  import LanguageScreen from './LanguageScreenOverlay'
  import PrivacyScreen from './PrivacyScreenOverlay'
  import AdvanceSettingsScreen from './AdvancedSettingsScreenOverlay'
@@ -110,33 +109,9 @@
                          src: Utils.asset('images/settings/Arrow.png'),
                      },
                  },
-                 EnergySaver: {
-                     y: 270,
-                     type: SettingsMainItem,
-                     Title: {
-                         x: 10,
-                         y: 45,
-                         mountY: 0.5,
-                         text: {
-                             text: Language.translate('Energy Saver: '),
-                             textColor: COLORS.titleColor,
-                             fontFace: CONFIG.language.font,
-                             fontSize: 25,
-                         }
-                     },
-                     Button: {
-                         h: 45,
-                         w: 45,
-                         x: 1600,
-                         mountX: 1,
-                         y: 45,
-                         mountY: 0.5,
-                         src: Utils.asset('images/settings/Arrow.png'),
-                     },
-                 },
                  Language: {
                      alpha: 0.3, // disabled
-                     y: 450 - 90,
+                     y: 270,
                      type: SettingsMainItem,
                      Title: {
                          x: 10,
@@ -161,7 +136,7 @@
                  },
                  Privacy: {
                      //alpha: 0.3, // disabled
-                     y: 540 - 90,
+                     y: 360,
                      type: SettingsMainItem,
                      Title: {
                          x: 10,
@@ -185,7 +160,7 @@
                      },
                  },
                  AdvancedSettings: {
-                     y: 630 - 90,
+                     y: 450,
                      type: SettingsMainItem,
                      Title: {
                          x: 10,
@@ -213,10 +188,6 @@
                 type: SleepTimerScreen,
                 visible: false
              },
-             EnergySavingsScreen:{
-                type: EnergySavingsScreen,
-                visible: false
-             },
              LanguageScreen: {
                 type: LanguageScreen,
                 visible: false
@@ -236,10 +207,6 @@
          this._appApi = new AppApi();
          this._setState('SleepTimer')
      }
-     $updateStandbyMode(standbyMode) {
-         this.tag("EnergySaver.Title").text.text = Language.translate("Energy Saver: ") + standbyMode
-     }
-
      $sleepTimerText(text) {
          this.tag('SleepTimer.Title').text.text = Language.translate('Sleep Timer: ') + text
      }
@@ -253,17 +220,6 @@
          else {
              this.tag('SleepTimer.Title').text.text = Language.translate('Sleep Timer: ') + 'Off'
          }
-
-         this._appApi.getPreferredStandbyMode().then(result => {
-             let currentStandbyMode = ""
-             if (result.preferredStandbyMode == "LIGHT_SLEEP") {
-                 currentStandbyMode = "Light Sleep"
-             } else if (result.preferredStandbyMode == "DEEP_SLEEP") {
-                 currentStandbyMode = "Deep Sleep"
-             }
-             this.tag("EnergySaver.Title").text.text = Language.translate("Energy Saver: ") + currentStandbyMode
-         })
-
          if (Storage.get('ScreenSaverTimeoutInterval')) {
             this.tag('ScreenSaver.Title').text.text = Language.translate('Screen-Saver: ') + Storage.get('ScreenSaverTimeoutInterval') + ' min'
          } else {
@@ -294,7 +250,7 @@
                  }
                  _handleDown() {
                      // this._setState('RemoteControl')
-                     this._setState('EnergySaver')
+                     this._setState('Privacy')
                  }
                  _handleEnter() {
                     this._setState("SleepTimerScreen")
@@ -329,27 +285,10 @@
                      this._setState('RemoteControl')
                  }
                  _handleDown() {
-                     this._setState('EnergySaver')
-                 }
-                 _handleEnter() {
-                     //
-                 }
-             },
-             class EnergySaver extends this {
-                 $enter() {
-                     this.tag('EnergySaver')._focus()
-                 }
-                 $exit() {
-                     this.tag('EnergySaver')._unfocus()
-                 }
-                 _handleUp() {
-                     this._setState('SleepTimer')
-                 }
-                 _handleDown() {
                      this._setState('Privacy')
                  }
                  _handleEnter() {
-                    this._setState("EnergySavingsScreen")
+                     //
                  }
              },
 
@@ -361,7 +300,7 @@
                      this.tag('Language')._unfocus()
                  }
                  _handleUp() {
-                     this._setState('EnergySaver')
+                     this._setState('SleepTimer')
                  }
                  _handleDown() {
                      this._setState('Privacy')
@@ -378,7 +317,7 @@
                      this.tag('Privacy')._unfocus()
                  }
                  _handleUp() {
-                     this._setState('EnergySaver')
+                     this._setState('SleepTimer')
                  }
                  _handleDown() {
                      this._setState('AdvancedSettings')
@@ -422,26 +361,6 @@
                 }
                 _handleBack() {
                   this._setState('SleepTimer')
-                }
-              },
-              class EnergySavingsScreen extends this {
-                $enter() {
-                  ////console.log("bpscreen")
-                  this.hide()
-                  this.tag('EnergySavingsScreen').visible = true
-                  this.fireAncestors("$updatePageTitle",'Settings  Other Settings  Energy Saver')
-                }
-                _getFocused() {
-                  //console.log("getfocusedbp")
-                  return this.tag('EnergySavingsScreen')
-                }
-                $exit() {
-                  this.show()
-                  this.tag('EnergySavingsScreen').visible = false
-                  this.fireAncestors("$updatePageTitle",'Settings  Other Settings')
-                }
-                _handleBack() {
-                  this._setState('EnergySaver')
                 }
               },
               //LanguageScreen

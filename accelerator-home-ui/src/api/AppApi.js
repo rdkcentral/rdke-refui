@@ -26,6 +26,8 @@ import AlexaApi from './AlexaApi.js';
 import RDKShellApis from './RDKShellApis.js';
 import { Metrics } from '@firebolt-js/sdk';
 import Network from './NetworkApi.js';
+import UserSettingsApi from './UserSettingsApi.js';
+import PowerManagerApi from './PowerManagerApi.js';
 
 const thunder = ThunderJS(CONFIG.thunderConfig)
 
@@ -71,27 +73,6 @@ export default class AppApi {
    * Function to launch Html app.
    * @param {String} url url of app.
    */
-  getIP() {
-    return new Promise((resolve) => {
-      thunder.Controller.activate({ callsign: 'org.rdk.System' })
-        .then(() => {
-          thunder
-            .call('org.rdk.System', 'getDeviceInfo', { params: 'estb_ip' })
-            .then(result => {
-              resolve(result.success)
-            })
-            .catch(err => {
-              this.ERR("AppAPI System getDeviceInfo estb_ip failed." + JSON.stringify(err));
-              Metrics.error(Metrics.ErrorType.NETWORK, "Network Error", "Error in Thunder system getDeviceInfo" + JSON.stringify(err), false, null)
-              resolve(false)
-            })
-        })
-        .catch(err => {
-          this.ERR("AppAPI activate System failed." + JSON.stringify(err));
-          Metrics.error(Metrics.ErrorType.NETWORK, "Network Error", "Error in Thunder system activation " + JSON.stringify(err), false, null)
-        })
-    })
-  }
   /**
   *  Function to get timeZone
   */
@@ -1043,6 +1024,10 @@ export default class AppApi {
     })
   }
 
+  registerPowerEvent(callback) {
+    return PowerManagerApi.get().registerEvent("onPowerModeChanged", callback);
+  }
+
   /**
    * Function to deactivate html app.
    */
@@ -1118,30 +1103,11 @@ export default class AppApi {
   }
 
   setPowerState(value) {
-    return new Promise((resolve) => {
-      thunder
-        .call('org.rdk.System', 'setPowerState', { "powerState": value, "standbyReason": "ResidentApp User Requested" })
-        .then(result => {
-          resolve(result)
-        })
-        .catch(err => {
-          this.ERR("AppAPI System setPowerState failed: ", JSON.stringify(err));
-          Metrics.error(Metrics.ErrorType.OTHER, "PowerStateFailure", "Error in Thunder System setPowerState " + JSON.stringify(err), false, null)
-          resolve(false)
-        })
-    })
+    return PowerManagerApi.get().setPowerState(value)
   }
 
   getPowerStateBeforeReboot() {
-    return new Promise((resolve, reject) => {
-      thunder.call('org.rdk.System', 'getPowerStateBeforeReboot').then(result => {
-        resolve(result);
-      }).catch(err => {
-        this.ERR("AppAPI System getPowerStateBeforeReboot failed: ", JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER, "PowerStateFailure", "Error in Thunder System getPowerStateBeforeReboot " + JSON.stringify(err), false, null);
-        reject(err);
-      });
-    });
+    return PowerManagerApi.get().getPowerStateBeforeReboot();
   }
 
   getPowerStateIsManagedByDevice() {
@@ -1157,17 +1123,12 @@ export default class AppApi {
   }
 
   getPowerState() {
-    return new Promise((resolve, reject) => {
-      thunder
-        .call('org.rdk.System', 'getPowerState')
-        .then(result => {
-          resolve(result)
-        })
-        .catch(err => {
-          this.ERR("AppAPI System getPowerState failed: ", JSON.stringify(err));
-          Metrics.error(Metrics.ErrorType.OTHER, "PowerStateFailure", "Error in Thunder System getPowerState " + JSON.stringify(err), false, null)
-          reject(err)
-        })
+    return PowerManagerApi.get().getPowerState().then(result => {
+      this.LOG("AppApi getPowerState result:", JSON.stringify(result))
+      return {
+        currentState: result?.currentState ?? null,
+        previousState: result?.previousState ?? null
+      };
     })
   }
 
@@ -1529,20 +1490,7 @@ export default class AppApi {
 
   // 6. Reboot and add default reason as FIRMWARE_FAILURE
   reboot(reason = "FIRMWARE_FAILURE") {
-    return new Promise((resolve) => {
-      thunder
-        .call('org.rdk.System', 'reboot', {
-          "rebootReason": reason
-        })
-        .then(result => {
-          resolve(result)
-        })
-        .catch(err => {
-          this.ERR("AppAPI reboot error:", JSON.stringify(err, 3, null))
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder system reboot " + JSON.stringify(err), false, null)
-          resolve(false)
-        })
-    })
+    return PowerManagerApi.get().reboot(reason)
   }
 
   getNetflixESN() {
@@ -1564,23 +1512,6 @@ export default class AppApi {
         .catch(err => {
           this.ERR("AppAPI getPreferredStandbyMode error:", JSON.stringify(err, 3, null))
           Metrics.error(Metrics.ErrorType.NETWORK, "PluginError", "Error in Thunder system getPreferredStandbyMode " + JSON.stringify(err), false, null)
-          resolve(false)
-        })
-    })
-  }
-
-  setPreferredStandbyMode(standbyMode) {
-    this.LOG("setPreferredStandbyMode called : " + standbyMode)
-    return new Promise((resolve) => {
-      thunder
-        .call('org.rdk.System', 'setPreferredStandbyMode', {
-          "standbyMode": standbyMode
-        }).then(result => {
-          resolve(result)
-        })
-        .catch(err => {
-          this.ERR("AppAPI setPreferredStandbyMode error:", JSON.stringify(err, 3, null))
-          Metrics.error(Metrics.ErrorType.NETWORK, "PluginError", "Error in Thunder system setPreferredStandbyMode " + JSON.stringify(err), false, null)
           resolve(false)
         })
     })
@@ -1611,31 +1542,9 @@ export default class AppApi {
     })
   }
 
-  setNetworkStandbyMode(nwStandby = true) {
-    return new Promise((resolve, reject) => {
-      thunder.call('org.rdk.System', 'setNetworkStandbyMode', { nwStandby: nwStandby }).then(result => {
-        resolve(result.success)
-      }).catch(err => {
-        this.ERR("AppAPI setNetworkStandbyMode error:", JSON.stringify(err, 3, null))
-        Metrics.error(Metrics.ErrorType.NETWORK, "NetworkError", "Error in Thunder system setNetworkStandbyMode " + JSON.stringify(err), false, null)
-        reject(err)
-      })
-    })
-  }
-
   setWakeupSrcConfiguration(params) {
-    this.LOG("AppAPI: setWakeupSrcConfiguration params:", JSON.stringify(params));
-    return new Promise((resolve, reject) => {
-      thunder.call('org.rdk.System', 'setWakeupSrcConfiguration', params).then(result => {
-        resolve(result.success)
-      }).catch(err => {
-        this.ERR("AppAPI setWakeupSrcConfiguration error:", JSON.stringify(err, 3, null))
-        Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder system setWakeupSrcConfiguration " + JSON.stringify(err), false, null)
-        reject(err)
-      })
-    })
+    return PowerManagerApi.get().setWakeupSrcConfig(params)
   }
-
 
   async sendAppState(value) {
     const state = await thunder
@@ -1859,22 +1768,6 @@ export default class AppApi {
     })
   }
 
-  //clearLastDeepSleepReason
-  clearLastDeepSleepReason() {
-    return new Promise((resolve) => {
-      thunder
-        .call('org.rdk.System', 'clearLastDeepSleepReason')
-        .then(result => {
-          resolve(result)
-        })
-        .catch(err => {
-          this.ERR("AppAPI clearLastDeepSleepReason error:", err)
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder clearLastDeepSleepReason of system " + JSON.stringify(err), false, null)
-          resolve(false)
-        })
-    })
-  }
-
   monitorStatus(callsign) {
     return new Promise((resolve) => {
       thunder
@@ -1964,28 +1857,13 @@ export default class AppApi {
         });
     })
   }
-
+  
   setUILanguage(updatedLanguage) {
-    return new Promise((resolve) => {
-      thunder.call('org.rdk.UserPreferences', 'setUILanguage', { "ui_language": updatedLanguage }).then(result => {
-        resolve(result)
-      }).catch(err => {
-        this.ERR('AppAPI setUILanguage failed:' + JSON.stringify(err))
-        Metrics.error(Metrics.ErrorType.OTHER, "PluginError", 'Error in Thunder setUILanguage of UserPreferences' + JSON.stringify(err), false, null)
-        resolve(false)
-      })
-    })
+    return UserSettingsApi.get().setPresentationLanguage(updatedLanguage)
   }
+  
   getUILanguage() {
-    return new Promise((resolve) => {
-      thunder.call('org.rdk.UserPreferences', 'getUILanguage').then(result => {
-        resolve(result.ui_language)
-      }).catch(err => {
-        this.ERR('AppAPI getUILanguage failed:' + JSON.stringify(err))
-        Metrics.error(Metrics.ErrorType.OTHER, "PluginError", 'Error in Thunder getUILanguage of UserPreferences' +JSON.stringify(err), false, null)
-        resolve(false)
-      })
-    })
+    return UserSettingsApi.get().getPresentationLanguage(updatedLanguage)
   }
 
   deeplinkToApp(app = undefined, payload = undefined, launchLocation = "voice", namespace = undefined) {
