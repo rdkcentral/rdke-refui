@@ -21,31 +21,35 @@ import { Storage } from '@lightningjs/sdk';
 import Keymap from "../Config/Keymap";
 import { CONFIG, GLOBALS } from "../Config/Config";
 import {Metrics} from '@firebolt-js/sdk'
+import RDKWindowManager from "../api/RDKWindowManagerApi";
 
 const thunder = ThunderJS(CONFIG.thunderConfig);
 
-export function keyIntercept(clientName = GLOBALS.selfClientName) {
+export function keyIntercept(clientName = GLOBALS.selfClientId) {
     return new Promise((resolve, reject) => {
-        thunder.call('org.rdk.RDKShell', 'addKeyIntercepts',
+        RDKWindowManager.get().addKeyIntercepts(
             {
-                "intercepts": [{
-                    "client": clientName, "keys": [
-                        { "keyCode": Keymap.Home, "modifiers": [] },
-                        { "keyCode": Keymap.AudioVolumeDown, "modifiers": [] },
-                        { "keyCode": Keymap.AudioVolumeUp, "modifiers": [] },
-                        { "keyCode": Keymap.AudioVolumeMute, "modifiers": [] },
-                        { "keyCode": Keymap.Inputs_Shortcut, "modifiers": [] },
-                        { "keyCode": Keymap.Picture_Setting_Shortcut, "modifiers": [] },
-                        { "keyCode": Keymap.Youtube, "modifiers": [] },
-                        { "keyCode": Keymap.Power, "modifiers": [] },
-                        { "keyCode": Keymap.Amazon, "modifiers": [] },
-                        { "keyCode": Keymap.Netflix, "modifiers": [] },
-                        { "keyCode": Keymap.Settings_Shortcut, "modifiers": [] },
-                        { "keyCode": Keymap.Guide_Shortcut, "modifiers": [] },
-                        { "keyCode": Keymap.AppCarousel, "modifiers": [] },
-                        { "keyCode": Keymap.Escape, "modifiers": [] }
-                    ]
-                }]
+                "intercepts":{
+                    "intercepts": [{
+                        "keys": [
+                            { "keyCode": Keymap.Home, "modifiers": [] },
+                            { "keyCode": Keymap.AudioVolumeDown, "modifiers": [] },
+                            { "keyCode": Keymap.AudioVolumeUp, "modifiers": [] },
+                            { "keyCode": Keymap.AudioVolumeMute, "modifiers": [] },
+                            { "keyCode": Keymap.Inputs_Shortcut, "modifiers": [] },
+                            { "keyCode": Keymap.Picture_Setting_Shortcut, "modifiers": [] },
+                            { "keyCode": Keymap.Youtube, "modifiers": [] },
+                            { "keyCode": Keymap.Power, "modifiers": [] },
+                            { "keyCode": Keymap.Amazon, "modifiers": [] },
+                            { "keyCode": Keymap.Netflix, "modifiers": [] },
+                            { "keyCode": Keymap.Settings_Shortcut, "modifiers": [] },
+                            { "keyCode": Keymap.Guide_Shortcut, "modifiers": [] },
+                            { "keyCode": Keymap.AppCarousel, "modifiers": [] },
+                            { "keyCode": Keymap.Escape, "modifiers": [] }
+                        ],
+                        "client": clientName,
+                    }]
+                },
             }
         ).then(result => {
             if (result.success) resolve(result.success);

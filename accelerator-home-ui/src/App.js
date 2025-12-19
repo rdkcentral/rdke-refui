@@ -147,7 +147,7 @@ export default class App extends Router.App {
 		}];
 	}
 
-	_setup() {
+	async _setup() {
 		this.LOG("accelerator-home-ui version: " + JSON.stringify(Settings.get("platform", "version")));
 		this.LOG("UI setup selfClientName:" + JSON.stringify(GLOBALS.selfClientName) + ", current topmostApp:" + JSON.stringify(GLOBALS.topmostApp));
 		Storage.set("ResolutionChangeInProgress", false);
@@ -166,21 +166,24 @@ export default class App extends Router.App {
 			}
 		}
 		window.addEventListener("offline", updateAddress)
-
-		// Use promise chain instead of async/await in Lightning.js lifecycle method
-		AppManager.get().getLoadedApps().then(res => {
+		try {
+			const res = await AppManager.get().getLoadedApps();
 			const targetAppId = "com.rdk.app.wpebrowser_2.38";
 			const targetApp = res.find(app => app.appId === targetAppId);
 			if (targetApp) {
-				GLOBALS.selfClientName = targetAppId;
-				GLOBALS.selfClientId = targetApp.appInstanceId;
-				this.LOG('Setting selfClientId to: ' + targetApp.appInstanceId);
+				const appInstanceId = targetApp.appInstanceId;
+				GLOBALS.selfClientId = appInstanceId;
+				this.LOG('Setting selfClientId to: ' + appInstanceId);
 				this.LOG('Current selfClientName: ' + GLOBALS.selfClientName);
 			} else {
 				this.WARN('App not found: ' + targetAppId);
 			}
-		}).catch(err => {
+		} catch (err) {
 			this.ERR('Error getting loaded apps from setup ' + JSON.stringify(err));
+		}
+		
+		keyIntercept(GLOBALS.selfClientId).catch(err => {
+			this.ERR("App _setup keyIntercept err:" + JSON.stringify(err));
 		});
 	}
 
@@ -512,10 +515,6 @@ export default class App extends Router.App {
 			"Prime": "n:2"
 		}
 		this._getPowerStatebeforeReboot();
-
-		keyIntercept(GLOBALS.selfClientName).catch(err => {
-			this.ERR("App _init keyIntercept err:" + JSON.stringify(err));
-		});
 		this.userInactivity();
 		this._registerFireboltListeners()
 
@@ -928,6 +927,30 @@ export default class App extends Router.App {
 		})
 	}
 
+	addKeyInterceptstoYotube(clientid) {
+		RDKWindowManager.get().addKeyIntercepts({
+				"intercepts":{
+					"intercepts": [{
+						"keys": [{
+							"keyCode": 173,
+							"modifiers": []
+						}, {
+							"keyCode": 174,
+							"modifiers": []
+						}, {
+							"keyCode": 175,
+							"modifiers": []
+						}, {
+							"keyCode": 115,
+							"modifiers": []
+						}],
+						"client": clientid
+					}]
+				}
+				}).then(res => {
+					this.WARN(JSON.stringify(res))
+				})
+	}
 	SubscribeToNetworkManager() {
 		thunder.on('org.rdk.NetworkManager', 'onInterfaceStateChange', data => {
 			console.warn("onInterfaceStateChange:", data);
@@ -1089,10 +1112,15 @@ export default class App extends Router.App {
 			this.LOG('onAppUninstallStatus ' + JSON.stringify(data));
 		});
 		thunder.on('org.rdk.AppManager', 'onAppLifecycleStateChanged', async data => {
+			this.LOG('onAppLifecycleStateChanged ' + JSON.stringify(data));
 			if(data.newState === "APP_STATE_ACTIVE") {
 				if(data.appInstanceId != GLOBALS.selfClientId )
 				{
 					await appApi.setVisible(GLOBALS.selfClientId,false);
+				}
+				if(data.appId ==="com.rdk.app.cobalt2025")
+				{
+					this.addKeyInterceptstoYotube(data.appInstanceId)
 				}
 				appApi.setfocus(data.appInstanceId).then(() => {
 					this.LOG("setFocus success for " + data.appId  + data.appInstanceId);
@@ -1106,7 +1134,6 @@ export default class App extends Router.App {
 					this.ERR("setVisible error for " +data.appId  + data.appInstanceId + " :" + JSON.stringify(err));
 				});
 			}
-			this.LOG('onAppLifecycleStateChanged ' + JSON.stringify(data));
 		});	
 		thunder.on('org.rdk.AppManager', 'onAppLaunchRequest', data => {
 			this.LOG('onAppLaunchRequested ' + JSON.stringify(data));
