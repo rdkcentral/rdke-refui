@@ -932,16 +932,16 @@ export default class App extends Router.App {
 				"intercepts":{
 					"intercepts": [{
 						"keys": [{
-							"keyCode": 173,
+							"keyCode": Keymap.AudioVolumeMute,
 							"modifiers": []
 						}, {
-							"keyCode": 174,
+							"keyCode": Keymap.AudioVolumeDown,
 							"modifiers": []
 						}, {
-							"keyCode": 175,
+							"keyCode": Keymap.AudioVolumeUp,
 							"modifiers": []
 						}, {
-							"keyCode": 115,
+							"keyCode": Keymap.Youtube,
 							"modifiers": []
 						}],
 						"client": clientid
