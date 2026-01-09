@@ -927,8 +927,9 @@ export default class App extends Router.App {
 		})
 	}
 
-	addKeyInterceptstoYotube(clientid) {
-		RDKWindowManager.get().addKeyIntercepts({
+	addKeyInterceptstoApp(appId,clientid) {
+		if (appId="com.rdk.app.cobalt2025"){
+			RDKWindowManager.get().addKeyIntercepts({
 				"intercepts":{
 					"intercepts": [{
 						"keys": [{
@@ -949,7 +950,8 @@ export default class App extends Router.App {
 				}
 				}).then(res => {
 					this.WARN(JSON.stringify(res))
-				})
+			})
+		}
 	}
 	SubscribeToNetworkManager() {
 		thunder.on('org.rdk.NetworkManager', 'onInterfaceStateChange', data => {
@@ -1118,10 +1120,7 @@ export default class App extends Router.App {
 				{
 					await appApi.setVisible(GLOBALS.selfClientId,false);
 				}
-				if(data.appId ==="com.rdk.app.cobalt2025")
-				{
-					this.addKeyInterceptstoYotube(data.appInstanceId)
-				}
+				this.addKeyInterceptstoApp(data.appId,data.appInstanceId)
 				appApi.setfocus(data.appInstanceId).then(() => {
 					this.LOG("setFocus success for " + data.appId  + data.appInstanceId);
 				}
