@@ -252,6 +252,7 @@ export default class NetworkList extends Lightning.Component {
         seenSSIDs.add(uniqueKey)
         return device
       })
+      this.tag('Networks.AvailableNetworks').tag("List").rollMax=this._otherList.length * 90
       this.tag('Networks.AvailableNetworks').h = this._otherList.length * 90
       this.tag('Networks.AvailableNetworks').tag('List').h = this._otherList.length * 90
       this.tag('Networks.AvailableNetworks').tag('List').items = this._otherList.map((item, index) => {
