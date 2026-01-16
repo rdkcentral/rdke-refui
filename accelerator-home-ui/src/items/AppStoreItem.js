@@ -1,7 +1,7 @@
 import { Lightning, Utils, Language, Storage } from "@lightningjs/sdk";
 import { CONFIG } from "../Config/Config";
 import { ProgressBar } from '@lightningjs/ui-components'
-import { startDACApp, fetchAppIcon, fetchLocalAppIcon } from '../api/DACApi'
+import { startDACApp } from '../api/DACApi'
 
 export default class AppStoreItem extends Lightning.Component {
     static _template() {
@@ -91,22 +91,6 @@ export default class AppStoreItem extends Lightning.Component {
         this._app.isInstalling = false
         this._app.isUnInstalling = false
         this._buttonIndex = 0;
-        if (Storage.get("CloudAppStore")) {
-            if (this.data.installed && this.data.installed.length > 0 && this.data.installed[0].version) {
-                let icon = await fetchAppIcon(this.data.id, this.data.installed[0].version)
-                this.tag('Image').patch({
-                    src: icon,
-                });
-            }
-        }
-        else {
-            let icon = await fetchLocalAppIcon(this.data.id)
-            if (icon !== undefined) {
-                this.tag('Image').patch({
-                    src: Utils.asset(icon),
-                });
-            }
-        }
     }
 
     _focus() {

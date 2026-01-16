@@ -16,12 +16,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
 import ThunderJS from 'ThunderJS';
 import { CONFIG } from '../Config/Config'
 import { Metrics } from "@firebolt-js/sdk"
+import { ThunderError } from './ThunderError';
 
-let instance = null
+let instance = null;
+
 export default class PackageManager {
+  static get() {
+    if (instance === null) {
+      instance = new PackageManager()
+    }
+
+    return instance;
+  }
+
   constructor() {
     this.thunder = ThunderJS(CONFIG.thunderConfig);
     this.callsign = 'org.rdk.PackageManagerRDKEMS';
@@ -29,111 +40,138 @@ export default class PackageManager {
     this.LOG = console.log;
     this.ERR = console.error;
   }
-  static get() {
-    if (instance === null) {
-      instance = new PackageManager()
-    }
-    return instance;
+
+  handleThunderError(thunderCall, thunderErr) {
+    const err = new ThunderError(thunderCall, thunderErr);
+    const errString = err.toString();
+    this.ERR(errString);
+    Metrics.error(Metrics.ErrorType.OTHER, "PackageManagerRDKEMS", errString, false, null)
+
+    throw err;
   }
 
-   activate() {
-          return new Promise((resolve, reject) => {
-              this.thunder.Controller.activate({ callsign: callsign })
-                  .then(() => {
-                      resolve(true)
-                      this.INFO("PackageManagerRDKEMS activated successfully");
-                  })
-                  .catch(err => {
-                      this.ERR("Error Activation PackageManagerRDKEMS" + JSON.stringify(err))
-                      Metrics.error(Metrics.ErrorType.OTHER, "PackageManagerRDKEMS", `Error while Thunder Controller ${callsign} activate ${JSON.stringify(err)}`, false, null)
-                      reject(err)
-                  })
-          })
-    } 
+  activate() {
+    return this.thunder.Controller.activate(
+      { callsign: this.callsign }
+    ).then(() => {
+      this.INFO("PackageManagerRDKEMS activated");
+      return true;
+    }).catch(err => {
+      this.handleThunderError(`activate(${this.callsign})`, err);
+    });
+  }
 
-    deactivate() {
-        return new Promise((resolve, reject) => {
-            this.thunder.Controller.deactivate({ callsign: callsign })
-                .then(() => {
-                    resolve(true)
-                    this.INFO("PackageManagerRDKEMS deactivated successfully");
-                })
-                .catch(err => {
-                    this.ERR("Error Deactivation PackageManagerRDKEMS" + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, "PackageManagerRDKEMS", `Error while Thunder Controller ${callsign} deactivate ${JSON.stringify(err)}`, false, null)
-                    reject(err)
-                })
-        })
-    }
+  deactivate() {
+    return this.thunder.Controller.deactivate(
+      { callsign: this.callsign }
+    ).then(() => {
+      this.INFO("PackageManagerRDKEMS deactivated");
+      return true;
+    }).catch(err => {
+      this.handleThunderError(`deactivate(${this.callsign})`, err);
+    });
+  }
 
-    listPackages() {
-        return new Promise((resolve, reject) => {
-          this.thunder.call(this.callsign, 'listPackages', {}).then(result => {
-            this.LOG(" listPackages result:", JSON.stringify(result))
-            resolve(result.packages)
-          }).catch(err => {
-            this.ERR(" listPackages error:", JSON.stringify(err))
-            reject(err)
-          })
-    })
-    }
+  configuration() {
+    const thunderCall = `configuration@${this.callsign}`;
 
-    getStorageDetails(packageId,version) {
-        return new Promise((resolve, reject) => {
-          this.thunder.call(this.callsign, 'getStorageDetails', { "packageId":packageId, "version":version }).then(result => {
-            this.LOG(" getStorageDetails result:", JSON.stringify(result))
-            resolve(result)
-          }).catch(err => {
-            this.ERR(" getStorageDetails error:", JSON.stringify(err))
-            reject(err)
-          })
-    })
-    }
-    
-    config(packageId,version) {
-        return new Promise((resolve, reject) => {   
-            this.thunder.call(this.callsign, 'config', { "packageId":packageId, "version":version }).then(result => {   
-            this.LOG(" config result:", JSON.stringify(result))
-            resolve(result)
-          }).catch(err => {
-            this.ERR(" config error:", JSON.stringify(err))
-            reject(err)
-          })
-    })
-    }
+    return this.thunder.Controller[thunderCall](
+    ).then(result => {
+      this.LOG(thunderCall, " result:", JSON.stringify(result));
+      return result;
+    }).catch(err => {
+      this.handleThunderError(thunderCall, err);
+    });
+  }
 
-    uninstall(packageId,version,fileLocator,additionalMetadata) {
-        return new Promise((resolve, reject) => {   
-            this.thunder.call(this.callsign, 'uninstall', { "packageId":packageId, "version":version, "fileLocator":fileLocator, "additionalMetadata":additionalMetadata }).then(result => {   
-            this.LOG(" uninstall result:", JSON.stringify(result))
-            resolve(result)
-          }).catch(err => {
-            this.ERR(" uninstall error:", JSON.stringify(err))
-            reject(err)
-          })
-    })
-    }
+  listPackages() {
+    const thunderCall = "listPackages";
 
-    install(packageId,version,fileLocator,additionalMetadata) {
-        return new Promise((resolve, reject) => {   
-            this.thunder.call(this.callsign, 'install', { "packageId":packageId, "version":version, "fileLocator":fileLocator, "additionalMetadata":additionalMetadata }).then(result => {   
-            this.LOG(" install result:", JSON.stringify(result))
-            resolve(result)
-          }).catch(err => {
-            this.ERR(" install error:", JSON.stringify(err))
-            reject(err)
-          })
-    })
-    }
-    packageState(packageId,version) {
-        return new Promise((resolve, reject) => {
-            this.thunder.call(this.callsign, 'packageState', { "packageId":packageId, "version":version }).then(result => {
-            this.LOG(" packageState result:", JSON.stringify(result))
-            resolve(result)
-          } ).catch(err => {  
-            this.ERR(" packageState error:", JSON.stringify(err))
-            reject(err)
-          })
-    })
-    }
+    return this.thunder.call(
+      this.callsign, thunderCall
+    ).then(result => {
+      this.LOG(thunderCall, " result:", JSON.stringify(result));
+      return result.packages ?? result;
+    }).catch(err => {
+      this.handleThunderError(thunderCall, err);
+    });
+  }
+
+  getStorageDetails(packageId, version) {
+    const thunderCall = "getStorageDetails";
+
+    return this.thunder.call(
+      this.callsign, thunderCall,
+      /* ThunderJS treats "version" as its own parameter.
+         To forward a version to the remote function, use "versionAsParameter". */
+      { packageId, "versionAsParameter": version }
+    ).then(result => {
+      this.LOG(thunderCall, " result:", JSON.stringify(result));
+      return result;
+    }).catch(err => {
+      this.handleThunderError(thunderCall, err);
+    });
+  }
+
+  config(packageId, version) {
+    const thunderCall = "config";
+
+    return this.thunder.call(
+      this.callsign, thunderCall,
+      /* ThunderJS treats "version" as its own parameter.
+         To forward a version to the remote function, use "versionAsParameter". */
+      { packageId, "versionAsParameter": version }
+    ).then(result => {
+      this.LOG(thunderCall, " result:", JSON.stringify(result));
+      return result;
+    }).catch(err => {
+      this.handleThunderError(thunderCall, err);
+    });
+  }
+
+  uninstall(packageId) {
+    const thunderCall = "uninstall";
+
+    return this.thunder.call(
+      this.callsign, thunderCall,
+      { packageId }
+    ).then(result => {
+      this.LOG(thunderCall, " result:", JSON.stringify(result));
+      return result;
+    }).catch(err => {
+      this.handleThunderError(thunderCall, err);
+    });
+  }
+
+  install(packageId, version, fileLocator) {
+    const thunderCall = "install";
+
+    return this.thunder.call(
+      this.callsign, thunderCall,
+      /* ThunderJS treats "version" as its own parameter.
+         To forward a version to the remote function, use "versionAsParameter". */
+      { packageId, "versionAsParameter": version, fileLocator }
+    ).then(result => {
+      this.LOG(thunderCall, " result:", JSON.stringify(result));
+      return result;
+    }).catch(err => {
+      this.handleThunderError(thunderCall, err);
+    });
+  }
+
+  packageState(packageId, version) {
+    const thunderCall = "packageState";
+
+    return this.thunder.call(
+      this.callsign, thunderCall,
+      /* ThunderJS treats "version" as its own parameter.
+         To forward a version to the remote function, use "versionAsParameter". */
+      { packageId, "versionAsParameter": version }
+    ).then(result => {
+      this.LOG(thunderCall, " result:", JSON.stringify(result));
+      return result;
+    }).catch(err => {
+      this.handleThunderError(thunderCall, err);
+    });
+  }
 }
