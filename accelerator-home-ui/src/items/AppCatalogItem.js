@@ -20,8 +20,7 @@
 import { Lightning, Utils, Language, Storage } from "@lightningjs/sdk";
 import { CONFIG } from "../Config/Config";
 import StatusProgress from '../overlays/StatusProgress'
-import { installDACApp, getInstalledDACApps, fetchAppUrl } from '../api/DACApi'
-import LISAApi from '../api/LISAApi';
+import { installDACApp, isDACAppInstalled } from '../api/DACApi'
 
 export default class AppCatalogItem extends Lightning.Component {
     constructor(...args) {
@@ -107,7 +106,6 @@ export default class AppCatalogItem extends Lightning.Component {
         if (this._app.isInstalling) {
             this._app.isInstalled = success
             this._app.isInstalling = false
-            if (Object.prototype.hasOwnProperty.call(this._app, "handle")) delete this._app.handle;
             if (Object.prototype.hasOwnProperty.call(this._app, "errorCode")) delete this._app.errorCode;
             this.updateStatus()
             if (!success) {
@@ -143,24 +141,6 @@ export default class AppCatalogItem extends Lightning.Component {
         }
     }
     async myfireINSTALL() {
-        if ((Object.prototype.hasOwnProperty.call(this._app, "handle") && (this._app.handle.length))
-            || (Object.prototype.hasOwnProperty.call(this._app, "errorCode") && (this._app.errorCode))) {
-            let result = null
-            if (this._app.handle) {
-                result = await LISAApi.get().getProgress(this._app.handle)
-                this.tag("OverlayText").text.text = Language.translate("Please wait");
-                this.tag("Overlay").alpha = 0.7
-                this.tag("OverlayText").alpha = 1
-                this.tag("Overlay").setSmooth('alpha', 0, { duration: 5 })
-            }
-            if ((result && result.code) || this._app.errorCode) {
-                this.tag("OverlayText").text.text = Language.translate("Status") + ':' + ((result && result.code) ? result.code : this._app.errorCode);
-                this.tag("Overlay").alpha = 0.7
-                this.tag("OverlayText").alpha = 1
-                this.tag("Overlay").setSmooth('alpha', 0, { duration: 5 })
-            }
-            return
-        }
         if (this._app.isInstalled) {
             this.LOG("App is already installed")
             this.tag("Overlay").alpha = 0.7
@@ -168,9 +148,24 @@ export default class AppCatalogItem extends Lightning.Component {
             this.tag("OverlayText").text.text = Language.translate('Already installed') + "!";
             this.tag("Overlay").setSmooth('alpha', 0, { duration: 5 })
             return
+        } else if (this._app.isInstalling) {
+            console.log(`App installation is in progress`);
+            return;
         }
-        this._app.isInstalling = await installDACApp(this._app, this.tag('StatusProgress'))
-        this.updateStatus()
+
+        this.tag("OverlayText").text.text = Language.translate("Please wait");
+        this.tag("Overlay").alpha = 0.7;
+        this.tag("OverlayText").alpha = 1;
+        this.tag("Overlay").setSmooth('alpha', 0, { duration: 5 });
+
+        this._app.isInstalling = true;
+        if (!await installDACApp(this._app, this.tag('StatusProgress'))) {
+            this._app.isInstalling = false;
+            this.tag("OverlayText").text.text = Language.translate("Status") + ':' + (this._app.errorCode ?? -1);
+            this.tag("Overlay").alpha = 0.7
+            this.tag("OverlayText").alpha = 1
+            this.tag("Overlay").setSmooth('alpha', 0, { duration: 5 })
+        }
     }
 
     _init() {
@@ -199,26 +194,10 @@ export default class AppCatalogItem extends Lightning.Component {
         this._app.name = this.data.name
         this._app.version = this.data.version
         this._app.type = this.data.type
-        if (Storage.get("CloudAppStore")) {
-            this._app.description = this.data.description
-            this._app.size = this.data.size
-            this._app.category = this.data.category
-            this._app.url = await fetchAppUrl(this._app.id, this._app.version)
-            this.LOG("fetchAppUrl: " + JSON.stringify(this._app.url))
-        }
-        else {
-            this._app.url = this.data.uri
-        }
-        let installedApps = await getInstalledDACApps()
-        this._app.isInstalled = installedApps.find((a) => {
-            return a.id === this._app.id && a.installed && a.installed.length > 0
-        })
-        if (this._app.isInstalled === undefined)
-            this._app.isInstalled = false
-        if (this._app.url !== undefined) {
-            this.myfireINSTALL()
-        }
-        else
-            this.ERR("App url undefined")
+        this._app.description = this.data.description;
+        this._app.size = this.data.size;
+        this._app.category = this.data.category;
+        this._app.isInstalled = await isDACAppInstalled(this._app);
+        this.myfireINSTALL();
     }
 }
