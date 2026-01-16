@@ -107,7 +107,7 @@ export default class AppManager {
                 })    
         })  
     }
-    Isinstalled(appId){
+    isInstalled(appId){
         return new Promise((resolve, reject) => {
             this.thunder.call(this.callsign, 'isInstalled', {appId:appId})
                 .then(response => {

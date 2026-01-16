@@ -17,716 +17,398 @@
  * limitations under the License.
  **/
 
-import ThunderJS from 'ThunderJS'
-import HomeApi from './HomeApi';
-import { Storage } from "@lightningjs/sdk";
-import { CONFIG, GLOBALS } from '../Config/Config';
-import LISAApi from './LISAApi';
-import {Metrics} from '@firebolt-js/sdk'
+import DownloadManager from './DownloadManagerApi';
+import PackageManager from './PackageManagerApi';
+import AppManager from './AppManagerApi';
+import { ThunderError } from './ThunderError';
+import { Metrics } from '@firebolt-js/sdk'
 
-let platform = null
-let thunder = null
+// the size that is assumed if it is not possible to retrieve package size
+// from the server, according to server API this should never happen
+const DEFAULT_SIZE = 1000000;
 
-function thunderJS() {
-  if (thunder)
-    return thunder
+// how many applications to request in one call
+const APPS_REQUEST_LIMIT = 200;
+// the maximum number of requests to retrieve apps
+const APPS_REQUESTS_MAX = 5;
 
-  thunder = ThunderJS(CONFIG.thunderConfig)
-  return thunder
+const APP_DETAILS_KEY = "refui.details";
+
+const APP_DEFAULT_ARCH = "arm";
+
+function makeLogMessage(call, err) {
+  return err.toString() + " <=> " + call;
 }
 
-async function registerListener(plugin, eventname, cb) {
-  return await LISAApi.get().thunder.on(plugin, eventname, (notification) => {
-    console.log("DACApi Received event " + plugin + ":" + eventname + " " + JSON.stringify(notification))
-    if (cb != null) {
-      cb(notification, eventname, plugin)
-    }
-  })
+function logWarning(call, err) {
+  console.warn(makeLogMessage(call, err));
 }
 
-async function addEventHandler(eventHandlers, pluginname, eventname, cb) {
-  eventHandlers.push(await registerListener(pluginname, eventname, cb))
+function logError(call, err) {
+  let errMessage = makeLogMessage(call, err);
+  console.error(errMessage);
+  Metrics.error(Metrics.ErrorType.OTHER, "DACApiError", errMessage, false, null);
 }
 
-function translateLisaProgressEvent(evtname) {
-  if (evtname === "DOWNLOADING") {
-    return "Downloading"
-  } else if (evtname === "UNTARING") {
-    return "Extracting"
-  } else if (evtname === "UPDATING_DATABASE") {
-    return "Installing"
-  } else if (evtname === "FINISHED") {
-    return "Finished"
-  } else {
-    return evtname
+class OperationLock {
+  constructor() {
+    this.prev = Promise.resolve();
   }
+
+  lock() {
+    let unlock;
+    const next = new Promise(resolve => {
+      unlock = resolve;
+    });
+    const result = this.prev.then(() => unlock);
+    this.prev = next;
+    return result;
+  }
+};
+
+let packageLock = new OperationLock();
+let storeConfig = null;
+
+async function getStoreConfig() {
+  if (!storeConfig) {
+    const config = await PackageManager.get().configuration();
+    if (typeof config?.configUrl !== "string") {
+      throw new Error("Invalid config: " + JSON.stringify(config));
+    }
+    const fetchResponse = await fetch(config.configUrl);
+    if (!fetchResponse.ok) {
+      throw new Error(`Unexpected response: ${fetchResponse.status}: ${fetchResponse.statusText}`);
+    }
+    const responseObject = await fetchResponse.json();
+    if (typeof responseObject?.["appstore-catalog"]?.url !== "string") {
+      throw new Error("Invalid response object: " + JSON.stringify(responseObject));
+    }
+    storeConfig = responseObject["appstore-catalog"];
+  }
+
+  return storeConfig;
 }
 
-async function registerLISAEvents(id, progress) {
-  let eventHandlers = []
-  if (progress === undefined) {
-    console.log("DACApi progress undefined, return")
-    return
-  }
-  progress.reset()
+async function fetchStoreObject(request) {
+  let config = await getStoreConfig();
+  let headers = new Headers();
 
-  let handleProgress = (notification, eventname, plugin) => {
-    console.log('DACApi handleProgress: ' + plugin + ' ' + eventname)
-    if (plugin !== 'LISA') {
-      return
-    }
-    if (notification.status === 'Progress') {
-      let parts = notification.details.split(" ")
-      if (parts.length >= 2) {
-        let pc = parseFloat(parts[1]) / 100.0
-        progress.setProgress(pc, translateLisaProgressEvent(parts[0]))
+  if (typeof config?.authentication?.user === "string" &&
+    typeof config?.authentication?.password === "string") {
+    headers.append(
+      "Authorization",
+      "Basic " + btoa(config.authentication.user + ':' + config.authentication.password)
+    );
+  }
+
+  let requestOptions = {
+    method: 'GET',
+    headers,
+    redirect: 'follow',
+  };
+
+  const fetchResponse = await fetch(config.url + request, requestOptions);
+  if (!fetchResponse.ok) {
+    throw new Error(`Unexpected response: ${fetchResponse.status}: ${fetchResponse.statusText}`);
+  }
+
+  return fetchResponse.json();
+}
+
+export async function getAppCatalogInfo() {
+  let result = [];
+  let offset = 0;
+
+  for (let i = 0; i < APPS_REQUESTS_MAX; ++i) {
+    const request = "/apps?arch=" + APP_DEFAULT_ARCH + "&offset=" + offset + "&limit=" + APPS_REQUEST_LIMIT;
+    console.log(`Requesting: ${request}`);
+    try {
+      const appsResponse = await fetchStoreObject(request);
+      if (!Array.isArray(appsResponse?.applications)) {
+        break;
       }
-    } else if (notification.status === 'Success') {
-      progress.fireAncestors('$fireDACOperationFinished', true)
-      eventHandlers.map(h => { h.dispose() })
-      eventHandlers = []
-    } else if (notification.status === 'Failed') {
-      progress.fireAncestors('$fireDACOperationFinished', false, 'Failed')
-      eventHandlers.map(h => { h.dispose() })
-      eventHandlers = []
-    }
-  }
-  addEventHandler(eventHandlers, 'LISA', 'operationStatus', handleProgress);
-}
-
-export const installDACApp = async (app, progress) => {
-  let platName = await getPlatformNameForDAC()
-  let url = app.url
-  if (!Storage.get("CloudAppStore")) {
-    url = app.url.replace(/ah212/g, platName)
-  }
-
-  registerLISAEvents(app.id, progress)
-
-  let param = {
-    id: app.id,
-    type: 'application/dac.native',
-    appName: app.name,
-    category: app.category,
-    versionAsParameter: app.version,
-    url: url
-  }
-
-  try {
-    console.info("installDACApp LISA.install with param:"+ JSON.stringify(param))
-    app.handle = await LISAApi.get().install(param)
-  } catch (error) {
-    console.error('DACApi Error on installDACApp: ' + error.code + ' ' + error.message)
-    Metrics.error(Metrics.ErrorType.OTHER, "DACApiError", 'DACApi Error on installDACApp: '+JSON.stringify(error), true, null)
-    app.errorCode = error.code;
-    return false
-  }
-  return true
-}
-
-export const uninstallDACApp = async (app, progress) => {
-  // Could be same app is running; lets end it if so.
-  await thunderJS()['org.rdk.RDKShell'].getClients().then(response => {
-    if (Array.isArray(response.clients) && response.clients.includes(app.id.toLowerCase())) {
-      console.log("DACApi killing " + app.id + " as we got a match in getClients response.");
-      thunderJS()['org.rdk.RDKShell'].kill({ client: app.id })
-    }
-  })
-
-  registerLISAEvents(app.id, progress)
-
-  let param = {
-    id: app.id,
-    type: 'application/dac.native',
-    versionAsParameter: app.version,
-    uninstallType: 'full'
-  }
-
-  try {
-    console.info("uninstallDACApp LISA.uninstall with params:"+ JSON.stringify(param))
-    if (Object.prototype.hasOwnProperty.call(app, "errorCode")) delete app.errorCode;
-    await LISAApi.get().uninstall(param)
-  } catch (error) {
-    console.error('DACApi Error on LISA uninstall: ' + error.code + ' ' + error.message)
-    Metrics.error(Metrics.ErrorType.OTHER, "DACApiError", 'DACApi Error on LISA uninstall: '+JSON.stringify(error), true, null)
-    app.errorCode = error.code;
-    return false
-  }
-  return true
-}
-
-export const isInstalledDACApp = async (app) => {
-  let result = null
-  try {
-    result = await LISAApi.get().getStorageDetails({
-      id: app.id,
-      type: 'application/dac.native',
-      versionAsParameter: app.version,
-    })
-  } catch (error) {
-    console.error('DACApi Error on LISA getStorageDetails: ' + JSON.stringify(error))
-    Metrics.error(Metrics.ErrorType.OTHER, "DACApiError", 'DACApi Error on LISA getStorageDetails: '+JSON.stringify(error), false, null)
-    return false
-  }
-
-  return result == null ? false : result.apps.path !== ''
-}
-
-export const getInstalledDACApps = async () => {
-  let result = null
-  try {
-    result = await LISAApi.get().getList()
-  } catch (error) {
-    console.error('DACApi Error on LISA getList: ' + JSON.stringify(error))
-    Metrics.error(Metrics.ErrorType.OTHER, "DACApiError", 'DACApi Error on LISA getList: '+JSON.stringify(error), false, null)
-  }
-
-  return result == null ? [] : (result.apps ? result.apps : [])
-}
-
-export const getPlatformNameForDAC = async () => {
-  //code temporarily added based on new api implementation
-  platform = await getPlatform()
-  if (platform == null || platform === "") {
-    platform = await getDeviceName()
-    platform = platform.split('-')[0]
-    console.info("getPlatformNameForDAC platform after split: " + JSON.stringify(platform))
-  }
-  else {
-    return platform
-  }
-
-  if (platform.startsWith('raspberrypi4')) {
-    return 'rpi4'
-  } else if (platform.startsWith('raspberrypi')) {
-    return 'rpi3'
-  } else if (platform === 'brcm972180hbc') {
-    return '7218c'
-  } else if (platform === 'brcm972127ott') {
-    return '72127ott'
-  } else if (platform === 'vip7802') {
-    return '7218c'
-  } else if (platform === 'm393') {
-    return '7218c'
-  } else if (platform.toLowerCase().includes('hp44h')) {
-    return 'ah212'
-  } else if (platform.toLowerCase().includes('amlogic')) {
-    return 'ah212'
-  } else if (platform.toLowerCase().includes('mediaclient')) {
-    return 'rtd1319'
-  } else if (platform.toLowerCase().includes('blade')) {
-    return 'rtd1319'
-  } else {
-    // default
-    return 'rpi3'
-  }
-}
-
-export const getDeviceName = async () => {
-  let result = null
-  try {
-    result = await thunderJS().DeviceInfo.systeminfo()
-  } catch (error) {
-    console.error('DAC Api Error on systeminfo: '+ error)
-    Metrics.error(Metrics.ErrorType.OTHER, "DACApiError", 'DAC Api Error on systeminfo: '+JSON.stringify(error), false, null)
-  }
-  return result == null ? "unknown" : result.devicename
-}
-
-export const startDACApp = async (app) => {
-  console.log('DACApi startDACApp invoked with data:' + app)
-  let result = null
-  try {
-    if (app.type === 'application/dac.native') {
-      result = await thunderJS()['org.rdk.RDKShell'].launchApplication({
-        client: app.id,
-        mimeType: app.type,
-        uri: app.id + ';' + app.version + ';' + app.type,
-        topmost: true,
-        focus: true
-      })
-    } else if (app.type === 'application/html') {
-      result = await thunderJS()['org.rdk.RDKShell'].launch({ callsign: app.id, uri: app.url, type: 'HtmlApp' })
-    } else if (app.type === 'application/lightning') {
-      result = await thunderJS()['org.rdk.RDKShell'].launch({ callsign: app.id, uri: app.url, type: 'LightningApp' })
-    } else {
-      console.warn('DACApi Unsupported app type: ' + app.type)
-      return false
-    }
-  } catch (error) {
-    console.error('DACApi Error on launchApplication: ' + JSON.stringify(error))
-    Metrics.error(Metrics.ErrorType.OTHER, "DACApiError", 'DACApi Error on launchApplication: '+JSON.stringify(error), false, null)
-    return false
-  }
-
-  if (result == null) {
-    console.error('DACApi launch error returned result: ' + JSON.stringify(result))
-    return false
-  } else if (!result.success) {
-    // Could be same app is in suspended mode.
-    await thunderJS()['org.rdk.RDKShell'].getClients().then(response => {
-      if (Array.isArray(response.clients) && response.clients.includes(app.id.toLowerCase())) {
-        console.log("DACApi " + app.id + " got a match in getClients response; could be in suspended mode, resume it.");
-        thunderJS()['org.rdk.RDKShell'].resumeApplication({ client: app.id }).then(result => {
-          if (!result.success) {
-            return false;
-          } else if (result.success) {
-            if (GLOBALS.topmostApp === GLOBALS.selfClientName) {
-              thunder.call('org.rdk.RDKShell', 'setVisibility', { "client": GLOBALS.selfClientName, "visible": false })
-            }
-          }
-        })
+      result = result.concat(appsResponse.applications);
+      if (result.length >= appsResponse?.meta?.resultSet?.total ?? 0) {
+        break;
       }
-    })
-  } else if (result.success) {
-    if (GLOBALS.topmostApp === GLOBALS.selfClientName) {
-      thunder.call('org.rdk.RDKShell', 'setVisibility', { "client": GLOBALS.selfClientName, "visible": false })
+      offset = result.length;
+    } catch (err) {
+      console.error(`fetch(${request}) ${err}`);
+      Metrics.error(Metrics.ErrorType.OTHER, "DACApiError", err.toString(), false, null);
+      break;
     }
-  } else {
-    // Nothing to do here.
   }
 
-  try {
-    result = await thunderJS()['org.rdk.RDKShell'].moveToFront({ client: app.id })
-  } catch (error) {
-    console.log('DACApi Error on moveToFront: ' + JSON.stringify(error))
-    Metrics.error(Metrics.ErrorType.OTHER, "DACApiError", "Error in Thunder RDKShell moveToFront DACApiError"+JSON.stringify(error), false, null)
-  }
-
-  try {
-    result = await thunderJS()['org.rdk.RDKShell'].setFocus({ client: app.id })
-    GLOBALS.topmostApp = (app.id + ';' + app.version + ';' + app.type);
-  } catch (error) {
-    console.log('DACApi Error on setFocus: ' + JSON.stringify(error))
-    Metrics.error(Metrics.ErrorType.OTHER, "DACApiError", "Error in Thunder DACApi setFocus"+JSON.stringify(error), false, null)
-    return false
-  }
-  return result == null ? false : result.success
-}
-
-/* WorkAround until proper cloud based App Catalog support */
-export const getAppCatalogInfo = async () => {
-  Storage.set("CloudAppStore", true);
-  let appListArray = []
-  try {
-    let data = new HomeApi().getPartnerAppsInfo();
-    if (data) {
-      data = await JSON.parse(data);
-      if (data != null && Object.prototype.hasOwnProperty.call(data, "app-catalog-path")) {
-        Storage.set("CloudAppStore", false);
-        console.log("Fetching apps from local server")
-        let url = data["app-catalog-path"]
-        await fetch(url, { method: 'GET', cache: "no-store" })
-          .then(response => response.text())
-          .then(result => {
-            result = JSON.parse(result)
-            console.log("DACApi fetch result: " + JSON.stringify(result))
-            if (Object.prototype.hasOwnProperty.call(result, "applications")) {
-              appListArray = result["applications"];
-            } else {
-              console.error("DACApi result does not have applications")
-              Metrics.error(Metrics.ErrorType.OTHER, "DACApiError","DACApi result does not have applications", false, null)
-              Storage.set("CloudAppStore", true);
-            }
-          })
-          .catch(error => {
-            console.error("DACApi fetch error from local server", error)
-            Metrics.error(Metrics.ErrorType.OTHER, "DACApiError", JSON.stringify(error), false, null)
-            Storage.set("CloudAppStore", true);
-          });
-      }
-      else if (Storage.get("CloudAppStore") && (data != null) && Object.prototype.hasOwnProperty.call(data, "app-catalog-cloud")) {
-        console.log("Fetching apps from cloud server")
-        let cloud_data = data["app-catalog-cloud"]
-        if (cloud_data && Object.prototype.hasOwnProperty.call(cloud_data, "url")) {
-          let url = cloud_data["url"] + "?platform=arm:v7:linux&category=application"
-          await fetch(url, { method: 'GET', cache: "no-store" })
-            .then(response => response.text())
-            .then(result => {
-              result = JSON.parse(result)
-              console.log("DACApi fetch result: " + JSON.stringify(result))
-              if (Object.prototype.hasOwnProperty.call(result, "applications")) {
-                appListArray = result["applications"];
-              } else {
-                console.error("DACApi result does not have applications")
-                Metrics.error(Metrics.ErrorType.OTHER, "DACApiError", "DACApi result does not have applications", false, null)
-              }
-            })
-            .catch(error => {
-               console.log("DACApi fetch error from cloud: " + JSON.stringify(error))
-               Metrics.error(Metrics.ErrorType.OTHER, "DACApiError", JSON.stringify(error), false, null)
-            });
-        } else {
-          console.error("DACApi app-catalog-cloud does not have URL property.")
-          Metrics.error(Metrics.ErrorType.OTHER, "DACApiError", "DACApi app-catalog-cloud does not have URL property.", false, null)
-        }
-      }
-    } else {
-      let hasmore=true
-      let offset =0
-      let asms = await getAsmsUrlObj()
-      let myHeaders = new Headers();
-      if ((asms.password !== null) && (asms.username !== null)) {
-        myHeaders.append("Authorization", "Basic " + btoa(asms.username + ':' + asms.password));
-      }
-      let requestOptions = {
-        method: 'GET',
-        headers: myHeaders,
-        redirect: 'follow'
-      };
-      while(hasmore){
-        let url = asms.url +"?offset="+offset+"&platformName=" + await getPlatformNameForDAC() + "&firmwareVer=" + await getFirmwareVersion()
-        await fetch(url, requestOptions)
-        .then(response => response.json())
-        .then(result => {
-          if (Object.prototype.hasOwnProperty.call(result, "applications")) {
-            const apps = result["applications"];
-            appListArray = appListArray.concat(apps);
-            const count = result?.meta?.resultSet?.count || 0;
-
-            if (count < 10) {
-              hasmore= false; 
-            } else {
-              offset += 10; 
-            }
-          } else {
-            console.error("DACApi result does not have applications")
-            Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", "DACApi result does not have applications", false, null)
-            hasmore = false;
-          }
-        })
-        .catch(error => {
-          console.log("DACApi fetch error from cloud: " + JSON.stringify(error))
-          Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", error, false, null)
-          hasmore = false;
-        });
-        }
-    }
-  } catch (error) {
-    console.log("DACApi Using new getMetadata API.")
-    Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", "DACApi Using new getMetadata API.", false, null)
-    let hasmore=true
-    let offset =0
-    let asms = await getAsmsUrlObj()
-    let myHeaders = new Headers();
-    if ((asms.password !== null) && (asms.username !== null)) {
-      myHeaders.append("Authorization", "Basic " + btoa(asms.username + ':' + asms.password));
-    }
-    let requestOptions = {
-      method: 'GET',
-      headers: myHeaders,
-      redirect: 'follow'
-    };
-    while(hasmore){
-      let url = asms.url +"?offset="+offset+"&platformName=" + await getPlatformNameForDAC() + "&firmwareVer=" + await getFirmwareVersion()
-       await fetch(url, requestOptions)
-      .then(response => response.json())
-      .then(result => {
-        if (Object.prototype.hasOwnProperty.call(result, "applications")) {
-          appListArray = appListArray.concat(result["applications"]);
-          const count = result?.meta?.resultSet?.count || 0;
-
-          if (count < 10) {
-            hasmore= false; 
-          } else {
-            offset += 10; 
-          }
-        } else {
-          console.error("DACApi result does not have applications")
-          Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", "DACApi result does not have applications", false, null)
-          hasmore = false;
-        }
-      })
-      .catch(error => {
-        console.log("DACApi fetch error from cloud: " + JSON.stringify(error))
-        Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", error, false, null)
-        hasmore = false;
-      });
-  }
-    }
-  return appListArray == [] ? undefined : appListArray;
-}
-
-export const getFirmwareVersion = async () => {
-  let firmwareVerList = null, firmwareVer = null
-  try {
-    let data = new HomeApi().getPartnerAppsInfo();
-    if (data) {
-      data = await JSON.parse(data);
-      if (data != null && Object.prototype.hasOwnProperty.call(data, "app-catalog-cloud")) {
-        let cloud_data = data["app-catalog-cloud"]
-        if (Object.prototype.hasOwnProperty.call(cloud_data, "firmwareVersions")) {
-          firmwareVerList = cloud_data['firmwareVersions']
-          let i = 0
-          while (i < firmwareVerList.length) {
-            if (await getPlatformNameForDAC() === firmwareVerList[i].platform) {
-              firmwareVer = firmwareVerList[i].ver
-              break
-            }
-            i += 1
-          }
-          if (firmwareVer === null) {
-            console.error("Platform not supported")
-            Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", "Platform not supported", false, null)
-          }
-        }
-        else {
-          console.error("Firmware version not available")
-          Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", "Firmware version not available", false, null)
-        }
-      }
-    } else {
-      //code temporarily added based on new api implementation
-      firmwareVer = await getFirmareVer()
-    }
-  } catch (error) {
-    console.log("DACApi getFirmwareVersion Error: " + JSON.stringify(error))
-    //code temporarily added based on new api implementation
-    Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", error, false, null)
-    firmwareVer = await getFirmareVer()
-  }
-  return firmwareVer;
-}
-
-export const fetchAppIcon = async (id, version) => {
-  let appIcon = null
-  try {
-    let data = new HomeApi().getPartnerAppsInfo();
-    if (data) {
-      data = await JSON.parse(data);
-      if (data != null && Object.prototype.hasOwnProperty.call(data, "app-catalog-cloud")) {
-        let cloud_data = data["app-catalog-cloud"]
-        let url = cloud_data["url"] + "/" + id + ":" + version + "?platformName=" + await getPlatformNameForDAC() + "&firmwareVer=" + await getFirmwareVersion()
-        await fetch(url, { method: 'GET', cache: "no-store" })
-          .then(response => response.text())
-          .then(result => {
-            result = JSON.parse(result)
-            console.log("fetchAppIcon fetch result: " + JSON.stringify(result))
-            if (Object.prototype.hasOwnProperty.call(result, "header")) {
-              appIcon = result.header.icon;
-            } else {
-              console.error("fetchAppIcon App does not have URL")
-              Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", "fetchAppIcon App does not have URL", false, null)
-            }
-          })
-          .catch(error => {
-            console.log("App Icon fetch error: " + JSON.stringify(error))
-            Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", error, false, null)
-          });
-      }
-    } else {
-      //code temporarily added based on new api implementation
-      let asms = await getAsmsUrlObj()
-      let myHeaders = new Headers();
-      if ((asms.password !== null) && (asms.username !== null)) {
-        myHeaders.append("Authorization", "Basic " + btoa(asms.username + ':' + asms.password));
-      }
-
-      let requestOptions = {
-        method: 'GET',
-        headers: myHeaders,
-        redirect: 'follow'
-      };
-      let url = asms.url + "/" + id + ":" + version + "?platformName=" + await getPlatformNameForDAC() + "&firmwareVer=" + await getFirmwareVersion()
-
-      await fetch(url, requestOptions)
-        .then(response => response.text())
-        .then(result => {
-          result = JSON.parse(result)
-          if (Object.prototype.hasOwnProperty.call(result, "header")) {
-            appIcon = result.header.icon;
-          } else {
-            console.error("fetchAppIcon App does not have URL")
-            Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", "fetchAppIcon App does not have URL", false, null)
-          }
-        })
-        .catch(error => {
-          console.log("fetchAppIcon App Icon fetch error: " + JSON.stringify(error))
-          Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", error, false, null)
-        });
-    }
-  } catch (error) {
-    console.log("DACApi fetchAppIcon try block Error: " + JSON.stringify(error))
-    //code temporarily added based on new api implementation
-    let asms = await getAsmsUrlObj()
-    let myHeaders = new Headers();
-    if ((asms.password !== null) && (asms.username !== null)) {
-      myHeaders.append("Authorization", "Basic " + btoa(asms.username + ':' + asms.password));
-    }
-
-    let requestOptions = {
-      method: 'GET',
-      headers: myHeaders,
-      redirect: 'follow'
-    };
-    let url = asms.url + "/" + id + ":" + version + "?platformName=" + await getPlatformNameForDAC() + "&firmwareVer=" + await getFirmwareVersion()
-    await fetch(url, requestOptions)
-      .then(response => response.json())
-      .then(result => {
-        if (Object.prototype.hasOwnProperty.call(result, "header")) {
-          appIcon = result.header.icon;
-        } else {
-          console.error("fetchAppIcon App does not have URL")
-          Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", "fetchAppIcon App does not have URL", false, null)
-        }
-      })
-      .catch(error => {
-        console.log("fetchAppIcon App Icon fetch error: " + JSON.stringify(error))
-        Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", error, false, null)
-      });
-  }
-  return appIcon == null ? undefined : appIcon;
-}
-
-export const fetchLocalAppIcon = async (id) => {
-  let appIcon = null
-  try {
-    let data = new HomeApi().getPartnerAppsInfo();
-    if (data) {
-      data = await JSON.parse(data);
-      if (data != null && Object.prototype.hasOwnProperty.call(data, "app-catalog-path")) {
-        let url = data["app-catalog-path"]
-        await fetch(url, { method: 'GET', cache: "no-store" })
-          .then(response => response.text())
-          .then(result => {
-            result = JSON.parse(result)
-            if (Object.prototype.hasOwnProperty.call(result, "applications")) {
-              let appListArray = result["applications"];
-              for (let i = 0; i < appListArray.length; i++) {
-                if (appListArray[i].id === id) {
-                  appIcon = appListArray[i]["icon"]
-                  break;
-                }
-              }
-            } else {
-              console.error("fetchLocalAppIcon DACApi result does not have applications")
-              Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", "fetchLocalAppIcon DACApi result does not have applications", false, null)
-              Storage.set("CloudAppStore", true);
-            }
-          })
-          .catch(error => {
-            console.log("fetchLocalAppIcon App Icon fetch error: " + JSON.stringify(error))
-            Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", error, false, null)
-          });
-      }
-    } else {
-      console.error("fetchLocalAppIcon Appstore info not available; DAC features won't work.")
-      Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", "etchLocalAppIcon Appstore info not available; DAC features won't work", false, null)
-    }
-  } catch (error) {
-    console.log("fetchLocalAppIcon Appstore info Error: " + JSON.stringify(error))
-    Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", error, false, null)
-  }
-  return appIcon == null ? undefined : appIcon;
-}
-
-export const fetchAppUrl = async (id, version) => {
-  let appUrl = null
-  try {
-    let data = new HomeApi().getPartnerAppsInfo();
-    if (data) {
-      data = await JSON.parse(data);
-      if (data != null && Object.prototype.hasOwnProperty.call(data, "app-catalog-cloud")) {
-        let cloud_data = data["app-catalog-cloud"]
-        let url = cloud_data["url"] + "/" + id + ":" + version + "?platformName=" + await getPlatformNameForDAC() + "&firmwareVer=" + await getFirmwareVersion()
-        await fetch(url, { method: 'GET', cache: "no-store" })
-          .then(response => response.text())
-          .then(result => {
-            result = JSON.parse(result)
-            console.log("fetchAppUrl App fetch result: " + JSON.stringify(result))
-            if (Object.prototype.hasOwnProperty.call(result, "header")) {
-              appUrl = result.header.url;
-            } else {
-              console.error("fetchAppUrl App does not have URL")
-              Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", "fetchAppUrl App does not have URL", false, null)
-            }
-          })
-          .catch(error => {
-            console.log("fetchAppUrl App URL fetch error: " + JSON.stringify(error))
-            Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", error, false, null)
-          });
-      }
-    } else {
-      //code temporarily added based on new api implementation
-      let asms = await getAsmsUrlObj()
-      let myHeaders = new Headers();
-      if ((asms.password !== null) && (asms.username !== null)) {
-        myHeaders.append("Authorization", "Basic " + btoa(asms.username + ":" + asms.password));
-      }
-      let requestOptions = {
-        method: 'GET',
-        headers: myHeaders,
-        redirect: 'follow'
-      };
-      let platformName = await getPlatformNameForDAC();
-      let firmwareVer = await getFirmwareVersion();
-      let url = asms.url + "/" + id + ":" + version + "?platformName=" + platformName + "&firmwareVer=" + firmwareVer;
-      await fetch(url, requestOptions)
-        .then(response => response.json())
-        .then(result => {
-          if (Object.prototype.hasOwnProperty.call(result, "header")) {
-            appUrl = result.header.url;
-          } else {
-            console.error("fetchAppUrl App does not have URL")
-            Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", "fetchAppUrl App does not have URL", false, null)
-          }
-        })
-        .catch(error => { 
-          console.log("fetchAppUrl App URL fetch error: " + JSON.stringify(error))
-          Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", error, false, null)
-        });
-    }
-  } catch (error) {
-    console.log("fetchAppUrl DACApi Appstore info Error: " + JSON.stringify(error))
-    Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", error, false, null)
-  }
-  return appUrl == null ? undefined : appUrl;
-}
-
-//New api implementation
-
-export const getMetadata = async () => {
-  const result = await LISAApi.get().getMetadata();
   return result;
 }
 
-export const getAsmsUrlObj = async () => {
-  try {
-    let metadata = await getMetadata();
-    let response = await fetch(metadata.configUrl);
-    let result = await response.json();
+function getAppDetails(id, version) {
+  return fetchStoreObject("/apps/" + id + ":" + version + "?arch=" + APP_DEFAULT_ARCH);
+}
 
-    if (Object.prototype.hasOwnProperty.call(result, "appstore-catalog")) {
-      const appstoreCatalog = result['appstore-catalog'];
-      const asmsUrl = appstoreCatalog.url + "/apps" || null;
-      const authentication = appstoreCatalog.authentication || {};
-      const username = authentication.user || null;
-      const password = authentication.password || null;
-      return { url: asmsUrl, username: username, password: password };
-    } else {
-      console.error("getAsmsUrlObj: Don't have ASMS URL");
-      Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", "getAsmsUrlObj: Don't have ASMS URL", false, null)
-      throw new Error('getAsmsUrlObj: Failed to parse data');
+function retrieveURLAndSize(details) {
+  if (typeof details?.header?.url === "string") {
+    const url = details.header.url;
+    let size = DEFAULT_SIZE;
+
+    if (typeof details.header.size === "number") {
+      size = details.header.size;
+    }
+
+    return { url, size };
+  }
+
+  throw new Error(`No URL in details: ${JSON.stringify(details)}`);
+}
+
+async function isPackageInstalled(id, version) {
+  let result = false;
+
+  try {
+    const packageState = await PackageManager.get().packageState(id, version);
+    result = (packageState === "INSTALLED");
+  } catch (err) {
+    logWarning(`isPackageInstalled()`, err);
+  }
+
+  return result;
+}
+
+async function downloadAndInstall(pkg, downloadedSize, totalSize, progress) {
+  console.log(`downloadAndInstall(${pkg.url}, ${pkg.size})`);
+
+  const downloadId = await new Promise(async (resolve, reject) => {
+    try {
+      await DownloadManager.get().download(pkg.url, (downloadId, percent, failReason) => {
+        if (!failReason) {
+          if (percent !== 100) {
+            progress((downloadedSize + pkg.size * percent / 100) / totalSize, "Downloading");
+          } else {
+            resolve(downloadId);
+          }
+        } else {
+          reject(failReason);
+        }
+      });
+    } catch (err) {
+      reject(err);
+    }
+  });
+
+  let errResult = null;
+
+  const fileLocator = DownloadManager.get().getFileLocator(downloadId);
+  if (!fileLocator) {
+    throw new Error(`Missing file locator for downloadId ${downloadId}`);
+  }
+
+  try {
+    let installResult = await PackageManager.get().install(
+      pkg.id, pkg.version, fileLocator,
+    );
+
+    if (installResult !== "NONE") {
+      errResult = new Error(installResult);
     }
   } catch (err) {
-    console.error("getAsmsUrlObj FETCH error: " + JSON.stringify(err));
-    Metrics.error(Metrics.ErrorType.OTHER,"DACApiError", err, false, null)
-    throw new Error('getAsmsUrlObj: Failed to parse data: ' + err);
+    logError(`install(${pkg.id}, ${pkg.version})`, err);
+    errResult = err;
   }
+
+  try {
+    await DownloadManager.get().delete(downloadId);
+  } catch (err) {
+    logWarning(`delete(${downloadId})`, err);
+  }
+
+  try {
+    await AppManager.get().setAppProperty(pkg.id, APP_DETAILS_KEY, JSON.stringify(pkg.details));
+  } catch (err) {
+    logWarning(`downloadAndInstall(${pkg.id})`, new ThunderError("setAppProperty()", err));
+  }
+
+  if (errResult) {
+    throw errResult;
+  }
+
+  return true;
 }
 
-export const getFirmareVer = async () => {
-  const firmwareVer = await getMetadata().then(metadata => {
-    let key = metadata.dacBundleFirmwareCompatibilityKey;
-    return key
-  });
-  return firmwareVer
+export async function installDACApp(app, progressElement) {
+  let result = false;
+
+  console.log(`installDACApp ${JSON.stringify(app)}`);
+
+  const unlock = await packageLock.lock();
+
+  function progress(percent, state) {
+    progressElement.setProgress(percent, state);
+  }
+
+  function success() {
+    progressElement.fireAncestors('$fireDACOperationFinished', true);
+  }
+
+  try {
+    const appDetails = await getAppDetails(app.id, app.version);
+    const packages = [];
+    let totalSize = 0;
+
+    if (typeof appDetails?.dependencies === "object") {
+      for (const id in appDetails.dependencies) {
+        const version = appDetails.dependencies[id];
+        if (!await isPackageInstalled(id, version)) {
+          const depDetails = await getAppDetails(id, version);
+          packages.push(Object.assign(
+            retrieveURLAndSize(depDetails),
+            { id, version, details: depDetails }
+          ));
+          totalSize += packages.at(-1).size;
+        } else {
+          console.log(`Package ${id}+${version} is already installed`);
+        }
+      }
+    }
+
+    packages.push(Object.assign(
+      retrieveURLAndSize(appDetails),
+      { id: app.id, version: app.version, details: appDetails }
+    ));
+    totalSize += packages.at(-1).size;
+
+    let downloadedSize = 0;
+    for (let pkg of packages) {
+      await downloadAndInstall(pkg, downloadedSize, totalSize, progress);
+      downloadedSize += pkg.size;
+    }
+    success();
+    result = true;
+  } catch (err) {
+    app.errorCode = err?.cause?.code ?? -2;
+    logError(`installDACApp(${app.id})`, err);
+  } finally {
+    unlock();
+  }
+
+  return result;
 }
 
-export const getPlatform = async () => {
-  const platformName = await getMetadata().then(metadata => {
-    let platName = metadata.dacBundlePlatformNameOverride;
-    return platName
-  });
-  return platformName;
+export async function isDACAppInstalled(app) {
+  let result = false;
+  try {
+    result = await AppManager.get().isInstalled(app.id);
+  } catch (err) {
+    logWarning(`isDACAppInstalled(${app.id})`, new ThunderError("isInstalled()", err));
+  }
+  return result;
+}
+
+export async function uninstallDACApp(app, progressElement) {
+  let result = false;
+
+  console.log(`uninstallDACApp ${JSON.stringify(app)}`);
+
+  const unlock = await packageLock.lock();
+
+  function success() {
+    progressElement.fireAncestors('$fireDACOperationFinished', true);
+  }
+
+  try {
+    await AppManager.get().terminateApp(app.id);
+  } catch (err) {
+    logWarning(`uninstallDACApp(${app.id})`, new ThunderError("terminateApp()", err));
+  }
+
+  try {
+    await PackageManager.get().uninstall(app.id);
+    success();
+    result = true;
+  } catch (err) {
+    app.errorCode = err?.cause?.code ?? -2;
+    logError(`uninstall(${app.id})`, err);
+  } finally {
+    unlock();
+  }
+
+  return result;
+}
+
+const storedAppInfoCache = new Map();
+
+export async function getInstalledDACApps() {
+  const result = [];
+  console.log("getInstalledDACApps()");
+
+  try {
+    const packages = await PackageManager.get().listPackages();
+
+    for (const pkg of packages) {
+      const key = pkg.packageId + ":" + pkg.version;
+      let storedAppInfo = storedAppInfoCache.get(key);
+
+      if (!storedAppInfo) {
+        try {
+          let cachedAppDetails = null;
+          try {
+            cachedAppDetails = JSON.parse(await AppManager.get().getAppProperty(pkg.packageId, APP_DETAILS_KEY));
+            if (!cachedAppDetails?.header?.name) {
+              storedAppInfoCache.set(key, {});
+              continue;
+            }
+          } catch (err) {
+            logWarning("getInstalledDACApps()", new ThunderError(`getAppProperty(${pkg.packageId})`, err));
+          }
+
+          let appDetails = null;
+          try {
+            appDetails = await getAppDetails(pkg.packageId, pkg.version);
+          } catch (err) {
+            logWarning("getInstalledDACApps()", err);
+          }
+
+          storedAppInfo = {
+            name: appDetails?.header?.name ?? cachedAppDetails?.header?.name,
+            icon: appDetails?.header?.icon,
+          }
+          storedAppInfoCache.set(key, storedAppInfo);
+        } catch (err) {
+          logError(`getAppDetails(${pkg.packageId}, ${pkg.version})`, err);
+        }
+      }
+
+      if (storedAppInfo?.name) {
+        result.push({
+          id: pkg.packageId,
+          version: pkg.version,
+          name: storedAppInfo.name,
+          installed: (pkg.state === "INSTALLED") ? [{
+            appName: storedAppInfo.name,
+            version: pkg.version,
+          }] : [],
+        });
+        if (storedAppInfo.icon) {
+          result.at(-1).icon = storedAppInfo.icon;
+        }
+      }
+    }
+  } catch (err) {
+    logError("getInstalledDACApps()", err);
+  }
+
+  return result;
+}
+
+export async function startDACApp(app) {
+  let result = false;
+  console.log(`startDACApp ${JSON.stringify(app)}`);
+
+  try {
+    await AppManager.get().launchApp(app.id);
+    result = true;
+  } catch (err) {
+    logError(`startDACApp(${app.id})`, new ThunderError("launchApplication()", err));
+  }
+
+  return result;
 }
