@@ -1529,6 +1529,32 @@ export default class AppApi {
     })
   }
 
+  getFriendlyName() {
+    return new Promise((resolve, reject) => {
+      thunder.call('org.rdk.System', 'getFriendlyName').then(result => {
+        if (result.success) resolve(result)
+        reject(false)
+      }).catch(err => {
+        this.ERR("AppAPI getFriendlyName error:", JSON.stringify(err, 3, null))
+        Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder system getFriendlyName " + JSON.stringify(err), false, null)
+        reject(err)
+      })
+    })
+  }
+
+  setFriendlyName(name) {
+    return new Promise((resolve, reject) => {
+      thunder.call('org.rdk.System', 'setFriendlyName', { "friendlyName": name }).then(result => {
+        if (result.success) resolve(result)
+        reject(false)
+      }).catch(err => {
+        this.ERR("AppAPI setFriendlyName error:", JSON.stringify(err, 3, null))
+        Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder system setFriendlyName " + JSON.stringify(err), false, null)
+        reject(err)
+      })
+    })
+  }
+  
   getRFCConfig(rfcParamsList) {
     return new Promise((resolve, reject) => {
       thunder.call('org.rdk.System', 'getRFCConfig', rfcParamsList).then(result => {
