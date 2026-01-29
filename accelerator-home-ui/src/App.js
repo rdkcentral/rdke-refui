@@ -760,11 +760,8 @@ export default class App extends Router.App {
 				let modelName = "RDK" + GLOBALS.deviceType;
 				const serialRes = await appApi.getSerialNumber();
 				serialnumber = (serialRes.length < 6) ? serialRes : serialRes.slice(-6);
-				console.log("Serial number:", serialnumber);
 				const model = await this.xcastApi.getModelName();
-				console.log("Model from getModelName:", model);
 				modelName = (model || modelName) + serialnumber;
-				console.log("Combined modelName to set:", modelName);
 				this.LOG("Xcast friendly name to be set: " + JSON.stringify(modelName));
 				try {
 					await appApi.setFriendlyName(modelName);
