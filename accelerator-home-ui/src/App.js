@@ -702,9 +702,9 @@ export default class App extends Router.App {
 				setTimeout(() => {
 					appApi.getFriendlyName().then(res => {
 						getfriendlyname = res.friendlyName;
-						this.LOG("XcastApi getFriendlyName :" + JSON.stringify(getfriendlyname));
+						this.LOG("AppApi getFriendlyName :" + JSON.stringify(getfriendlyname));
 					}).catch(err => {
-						this.ERR("XcastApi getFriendlyName Error: " + JSON.stringify(err));
+						this.ERR("AppApi getFriendlyName Error: " + JSON.stringify(err));
 					})
 					cecApi.getOSDName().then(result => {
 						getosdname = result.name;
@@ -726,9 +726,9 @@ export default class App extends Router.App {
 					setTimeout(() => {
 						appApi.getFriendlyName().then(res => {
 							getfriendlyname = res.friendlyName;
-							this.LOG("XcastApi getFriendlyName :" + JSON.stringify(getfriendlyname));
+							this.LOG("AppApi getFriendlyName :" + JSON.stringify(getfriendlyname));
 						}).catch(err => {
-							this.ERR("XcastApi getFriendlyName Error: " + JSON.stringify(err));
+							this.ERR("AppApi getFriendlyName Error: " + JSON.stringify(err));
 						})
 						cecApi.getOSDName().then(result => {
 							getosdname = result.name;
@@ -766,7 +766,11 @@ export default class App extends Router.App {
 				modelName = (model || modelName) + serialnumber;
 				console.log("Combined modelName to set:", modelName);
 				this.LOG("Xcast friendly name to be set: " + JSON.stringify(modelName));
-				await appApi.setFriendlyName(modelName);
+				try {
+					await appApi.setFriendlyName(modelName);
+				} catch (err) {
+					this.ERR("AppApi setFriendlyName error: " + JSON.stringify(err) + " - continuing Xcast activation");
+				}
 				await this.xcastApi.setEnabled(true).then(res => {
 					GLOBALS.LocalDeviceDiscoveryStatus = true;
 					console.warn("Xcast setEnabled success" + JSON.stringify(res));
