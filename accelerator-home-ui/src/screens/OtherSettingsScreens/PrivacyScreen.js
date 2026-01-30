@@ -84,6 +84,7 @@ export default class PrivacyScreen extends Lightning.Component {
                     },
                 },
                 UsbMediaDevices: {
+                    alpha:0.3,
                     y: 90,
                     type: SettingsMainItem,
                     Title: {
@@ -196,7 +197,7 @@ export default class PrivacyScreen extends Lightning.Component {
     _focus() {
         this._setState(this.state)
         this.checkLocalDeviceStatus()
-        this.checkUSBDeviceStatus()
+        // this.checkUSBDeviceStatus()
     }
 
     _handleBack() {
@@ -267,7 +268,7 @@ export default class PrivacyScreen extends Lightning.Component {
                     // this._setState('PrivacyPolicy')
                 }
                 _handleDown() {
-                    this._setState('UsbMediaDevices')
+                    this._setState('AudioInput')
                 }
                 _handleEnter() {
                     this.toggleLocalDeviceDiscovery()
@@ -316,7 +317,7 @@ export default class PrivacyScreen extends Lightning.Component {
                     this.tag('AudioInput')._unfocus()
                 }
                 _handleUp() {
-                    this._setState('UsbMediaDevices')
+                    this._setState('LocalDeviceDiscovery')
                 }
                 _handleDown() {
                     this._setState('ClearCookies')
