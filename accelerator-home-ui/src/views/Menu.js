@@ -28,12 +28,7 @@ var route = {
         Router.navigate('epg')
         Router.focusPage()
     },
-    2: () =>{
-        GLOBALS.TofocusVOD = true
-        Router.navigate('menu');
-        Router.focusPage()
-    },
-    3: () => {
+    2: () => {
         Router.navigate('apps')
         Router.focusPage()
     },

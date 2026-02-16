@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-import { Lightning, Storage, Language, Router } from '@lightningjs/sdk'
+import { Lightning, Storage, Language, Router, Utils } from '@lightningjs/sdk'
 import ListItem from '../items/ListItem.js'
 import ThunderJS from 'ThunderJS'
 import AppApi from '../api/AppApi.js'
@@ -26,11 +26,10 @@ import { CONFIG, GLOBALS } from '../Config/Config.js'
 import XcastApi from '../api/XcastApi'
 import HomeApi from '../api/HomeApi.js'
 import GracenoteItem from '../items/GracenoteItem.js'
-import { List } from '@lightningjs/ui'
 import HDMIApi from '../api/HDMIApi.js'
 import NetworkManager from '../api/NetworkManagerAPI.js'
-import FireBoltApi from '../api/firebolt/FireBoltApi.js'
 import AppManager from '../api/AppManagerApi.js'
+import { getAppCatalogInfo, getInstalledDACApps } from '../api/DACApi.js'
 
 /** Class for main view component in home UI */
 export default class MainView extends Lightning.Component {
@@ -122,42 +121,55 @@ export default class MainView extends Lightning.Component {
           text: {
             fontFace: CONFIG.language.font,
             fontSize: 25,
-            text: Language.translate('Featured Content'),
+            text: Language.translate('My Apps'),
             fontStyle: 'normal',
             textColor: 0xFFFFFFFF,
           },
           zIndex: 0
         },
         AppList: {
-          y: 37,
-          x: 0,
-          type: List,
-          h: 400,
-          scroll: {
-            after: 2
-          },
-          spacing: 20,
-        },
-        Text2: {
-          // x: 10 + 25,
-          y: 395,
-          h: 30,
-          text: {
-            fontFace: CONFIG.language.font,
-            fontSize: 25,
-            text: Language.translate('Lightning Apps'),
-            fontStyle: 'normal',
-            textColor: 0xFFFFFFFF,
-          },
-        },
-        MetroApps: {
           x: -20,
-          y: 435,
+          y: 37,
           type: Lightning.components.ListComponent,
           flex: { direction: 'row', paddingLeft: 20, wrap: false },
           w: 1745,
           h: 300,
-          itemSize: 288,
+          itemSize: 345,
+          roll: true,
+          rollMax: 1745,
+          horizontal: true,
+          itemScrollOffset: -4,
+          clipping: false,
+        },
+        Text2: {
+          // x: 10 + 25,
+          y: 305,
+          h: 30,
+          text: {
+            fontFace: CONFIG.language.font,
+            fontSize: 25,
+            text: Language.translate('Recommended Apps'),
+            fontStyle: 'normal',
+            textColor: 0xFFFFFFFF,
+          },
+        },
+        DacAppsLoader: {
+          x: 150,
+          y: 437,
+          h: 60,
+          w: 60,
+          mountY: 0.5,
+          src: Utils.asset('images/settings/Loading.png'),
+          visible: true,
+        },
+        DacApps: {
+          x: -20,
+          y: 345,
+          type: Lightning.components.ListComponent,
+          flex: { direction: 'row', paddingLeft: 20, wrap: false },
+          w: 1745,
+          h: 300,
+          itemSize: 345,
           roll: true,
           rollMax: 1745,
           horizontal: true,
@@ -166,7 +178,7 @@ export default class MainView extends Lightning.Component {
         },
         Text3: {
           // x: 10 + 25,
-          y: 673,
+          y: 613,
           h: 30,
           text: {
             fontFace: CONFIG.language.font,
@@ -178,66 +190,13 @@ export default class MainView extends Lightning.Component {
         },
         TVShows: {
           x: -20,
-          y: 710,
+          y: 650,
           w: 1745,
           h: 400,
           type: Lightning.components.ListComponent,
           flex: { direction: 'row', paddingLeft: 20, wrap: false },
           roll: true,
-          itemSize: 277,
-          rollMax: 1745,
-          horizontal: true,
-          itemScrollOffset: -4,
-          clipping: false,
-        },
-        Text4: {
-          // x: 10 + 25,
-          y: 938,
-          h: 30,
-          text: {
-            fontFace: CONFIG.language.font,
-            fontSize: 25,
-            text: Language.translate('Lightning Showcase'),
-            fontStyle: 'normal',
-            textColor: 0xFFFFFFFF,
-          },
-        },
-        ShowcaseApps: {
-          x: -20,
-          y: 978,
-          type: Lightning.components.ListComponent,
-          flex: { direction: 'row', paddingLeft: 20, wrap: false },
-          w: 1745,
-          h: 400,
-          itemSize: 277,
-          roll: true,
-          rollMax: 1745,
-          horizontal: true,
-          itemScrollOffset: -4,
-          clipping: false,
-        },
-        Text5: {
-          alpha: 0,
-          // x: 10 + 25,
-          y: 1203,
-          h: 30,
-          text: {
-            fontFace: CONFIG.language.font,
-            fontSize: 25,
-            text: Language.translate('Partner Apps'),
-            fontStyle: 'normal',
-            textColor: 0xFFFFFFFF,
-          },
-        },
-        UsbApps: {
-          x: -20,
-          y: 1243,
-          type: Lightning.components.ListComponent,
-          flex: { direction: 'row', paddingLeft: 20, wrap: false },
-          w: 1745,
-          h: 400,
-          itemSize: 277,
-          roll: true,
+          itemSize: 345,
           rollMax: 1745,
           horizontal: true,
           itemScrollOffset: -4,
@@ -256,18 +215,15 @@ export default class MainView extends Lightning.Component {
     if (this.inputSelect) {
       inputSelectOffset = 275
     }
+    let myAppsOffset = this.myAppsEmpty ? -305 : 0
     this.tag('Text0').alpha = 1
     this.tag("Inputs").y = 440
     this.tag('Text1').y = 440 + inputSelectOffset
     this.tag('AppList').y = 477 + inputSelectOffset
-    this.tag("Text2").y = 705 + inputSelectOffset
-    this.tag("MetroApps").y = 745 + inputSelectOffset
-    this.tag("Text3").y = 980 + inputSelectOffset
-    this.tag("TVShows").y = 1020 + inputSelectOffset
-    this.tag("Text4").y = 1248 + inputSelectOffset
-    this.tag("ShowcaseApps").y = 1288 + inputSelectOffset
-    this.tag("Text5").y = 1516 + inputSelectOffset
-    this.tag("UsbApps").y = 1556 + inputSelectOffset
+    this.tag("Text2").y = 705 + inputSelectOffset + myAppsOffset
+    this.tag("DacApps").y = 745 + inputSelectOffset + myAppsOffset
+    this.tag("Text3").y = 980 + inputSelectOffset + myAppsOffset
+    this.tag("TVShows").y = 1020 + inputSelectOffset + myAppsOffset
   }
 
   showInputSelect() {
@@ -276,17 +232,14 @@ export default class MainView extends Lightning.Component {
     if (!this.gracenote) {
       gracenoteOffset = 440
     }
+    let myAppsOffset = this.myAppsEmpty ? -305 : 0
     this.tag("Inputs").y = this.gracenote ? 440 : 0
     this.tag('Text1').y = 440 + 275 - gracenoteOffset
     this.tag('AppList').y = 477 + 275 - gracenoteOffset
-    this.tag("Text2").y = 705 + 275 - gracenoteOffset
-    this.tag("MetroApps").y = 745 + 275 - gracenoteOffset
-    this.tag("Text3").y = 980 + 275 - gracenoteOffset
-    this.tag("TVShows").y = 1020 + 275 - gracenoteOffset
-    this.tag("Text4").y = 1248 + 275 - gracenoteOffset
-    this.tag("ShowcaseApps").y = 1288 + 275 - gracenoteOffset
-    this.tag("Text5").y = 1516 + 275 - gracenoteOffset
-    this.tag("UsbApps").y = 1556 + 275 - gracenoteOffset
+    this.tag("Text2").y = 705 + 275 - gracenoteOffset + myAppsOffset
+    this.tag("DacApps").y = 745 + 275 - gracenoteOffset + myAppsOffset
+    this.tag("Text3").y = 980 + 275 - gracenoteOffset + myAppsOffset
+    this.tag("TVShows").y = 1020 + 275 - gracenoteOffset + myAppsOffset
   }
 
 
@@ -304,10 +257,49 @@ export default class MainView extends Lightning.Component {
 
   _handleBack() { }
 
+  async _buildInstalledAppsList() {
+    let installedApps = await getInstalledDACApps()
+    return installedApps
+      .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+      .map(app => ({
+        displayName: app.name,
+        applicationType: 'DAC',
+        uri: app.id,
+        url: app.icon || '/images/apps/App_Store.png',
+        appIdentifier: app.id,
+        version: app.version
+      }))
+  }
+
+  async _buildDacAppsList() {
+    let dacCatalog = await getAppCatalogInfo()
+    let apps = dacCatalog
+      .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+      .slice(0, 4)
+      .map(app => ({
+        displayName: app.name,
+        applicationType: 'DAC',
+        uri: app.id,
+        url: app.icon || '/images/apps/App_Store.png',
+        appIdentifier: app.id,
+        version: app.version
+      }))
+    // Add "More Apps" item at the end
+    apps.push({
+      displayName: 'More Apps',
+      applicationType: 'MoreApps',
+      uri: 'apps',
+      url: '/images/sidePanel/moreapps.png',
+      appIdentifier: 'moreApps'
+    })
+    return apps
+  }
+
   async _init() {
     this.gracenote = false
     this.inputSelect = false //false by default
     this.settingsScreen = false
+    this.myAppsEmpty = true // Will be updated when appItems is set
     this.indexVal = 0
     this.usbApi = new UsbApi();
     this.homeApi = new HomeApi();
@@ -316,16 +308,35 @@ export default class MainView extends Lightning.Component {
     this.appApi = new AppApi()
     let thunder = ThunderJS(CONFIG.thunderConfig);
 
+    // Setup loading animation for DacApps
+    this.dacAppsLoadingAnimation = this.tag('DacAppsLoader').animation({
+      duration: 3, repeat: -1, stopMethod: 'immediate', stopDelay: 0.2,
+      actions: [{ p: 'rotation', v: { sm: 0, 0: 0, 1: 2 * Math.PI } }]
+    });
+    // Start loading animation
+    this._showDacAppsLoader()
+
     // for initially showing/hiding usb icon
 
-    let appItems = this.homeApi.getAppListInfo()
+    let appItems = []
+    try {
+      appItems = await this._buildInstalledAppsList()
+      this.LOG('Installed apps: ' + JSON.stringify(appItems))
+    } catch (err) {
+      this.ERR('Failed to fetch installed apps: ' + JSON.stringify(err))
+      appItems = []
+    }
     let data = this.homeApi.getPartnerAppsInfo()
-    let metroApps = this.homeApi.getOnlineMetroApps()
-    let showcaseApps = this.homeApi.getShowCaseApps()
 
-    await this.homeApi.checkAppCompatability(appItems).then(res => {
-      appItems = res
-    }).catch((err)=>console.log("checkappcompatability"+err))
+    // Fetch DAC catalog, sort alphabetically, and take first 4 apps + More Apps item
+    let dacCatalog = []
+    try {
+      dacCatalog = await this._buildDacAppsList()
+      this.LOG('DAC catalog apps: ' + JSON.stringify(dacCatalog))
+    } catch (err) {
+      this.ERR('Failed to fetch DAC catalog: ' + JSON.stringify(err))
+      dacCatalog = []
+    }
 
 
     let prop_apps = 'applications'
@@ -361,11 +372,10 @@ export default class MainView extends Lightning.Component {
     }
     this.firstRowItems = appdetails_format
     this.tempRow = JSON.parse(JSON.stringify(this.firstRowItems));
-    if (this.firstRowItems[0].uri === 'USB') {
+    if (this.firstRowItems.length > 0 && this.firstRowItems[0].uri === 'USB') {
       this.tempRow.shift()
     }
     this.appItems = this.tempRow
-    this.usbApps = usbAppsArr
 
     this.hdmiApi.activate()
       .then(() => {
@@ -448,13 +458,7 @@ export default class MainView extends Lightning.Component {
       this.refreshSecondRow()
     })
 
-    await this.homeApi.checkAppCompatability(metroApps).then(res => {
-      this.metroApps = res
-    })
-
-    await this.homeApi.checkAppCompatability(showcaseApps).then(res => {
-      this.showcaseApps = res
-    })
+    this.dacApps = dacCatalog
 
     this.fireAncestors("$mountEventConstructor", registerListener.bind(this))
 
@@ -485,6 +489,8 @@ export default class MainView extends Lightning.Component {
       this._setState("Gracenote")
     } else if (this.inputSelect) {
       this._setState("Inputs")
+    } else if (this.myAppsEmpty) {
+      this._setState("DacApps")
     } else {
       this._setState("AppList.0")
     }
@@ -492,12 +498,8 @@ export default class MainView extends Lightning.Component {
 
 
   _focus() {
-      if (GLOBALS.TofocusVOD === true) {
-        this._setState('TVShows');
-        GLOBALS.TofocusVOD=false
-      }
-      else{
-    this._setState(this.state);}
+    this._setState(this.state);
+
 
   }
 
@@ -514,8 +516,15 @@ export default class MainView extends Lightning.Component {
       }
     })
   }
-  refreshSecondRow() {
-    this.metroApps = this.homeApi.getOnlineMetroApps()
+  async refreshSecondRow() {
+    try {
+      // Show loader while fetching
+      this._showDacAppsLoader()
+      this.dacApps = await this._buildDacAppsList()
+    } catch (err) {
+      this.ERR('Failed to refresh DAC catalog: ' + JSON.stringify(err))
+      this._hideDacAppsLoader()
+    }
   }
   refreshFirstRow() {
     if (Storage.get('UsbMedia') === 'ON') {
@@ -582,14 +591,27 @@ export default class MainView extends Lightning.Component {
     this._setState("Inputs.0")
   }
 
-  set showcaseApps(items) {
-    this.tag('ShowcaseApps').items = items.map((info, idx) => {
+  /**
+   * Function to set details of items in app list.
+   */
+  set appItems(items) {
+    this.currentItems = items
+    this.myAppsEmpty = !items || items.length === 0
+    
+    // Hide My Apps row if empty
+    this.tag('Text1').visible = !this.myAppsEmpty
+    this.tag('AppList').visible = !this.myAppsEmpty
+    
+    // Update row positions based on My Apps visibility
+    this._updateRowPositions()
+    
+    this.tag('AppList').items = items.map((info, idx) => {
       return {
-        w: 268,
-        h: 151,
+        w: 325,
+        h: 183,
         type: ListItem,
         data: info,
-        focus: 1.11,
+        focus: 1.15,
         unfocus: 1,
         idx: idx,
         bar: 12
@@ -598,30 +620,50 @@ export default class MainView extends Lightning.Component {
   }
 
   /**
-   * Function to set details of items in app list.
+   * Update row positions based on My Apps visibility
    */
-  set appItems(items) {
-    this.currentItems = items
-    this.tag('AppList').clear()
-    this.tag('AppList').add(items.map((info, idx) => {
-      return {
-        w: this.gracenote || this.inputSelect ? 268 : 454,
-        h: this.gracenote || this.inputSelect ? 151 : 255,
-        type: ListItem,
-        data: info,
-        focus: 1.11,
-        unfocus: 1,
-        idx: idx,
-        bar: 12
-      }
-    }))
+  _updateRowPositions() {
+    // My Apps row takes approximately 305px (Text1 at 0 + AppList at 37 with height ~268)
+    const myAppsOffset = this.myAppsEmpty ? -305 : 0
+    
+    // Update positions for rows below My Apps
+    this.tag('Text2').y = 305 + myAppsOffset
+    this.tag('DacAppsLoader').y = 437 + myAppsOffset  // Centered in DacApps row (345 + 183/2 ≈ 437)
+    this.tag('DacApps').y = 345 + myAppsOffset
+    this.tag('Text3').y = 613 + myAppsOffset
+    this.tag('TVShows').y = 650 + myAppsOffset
   }
 
-  set metroApps(items) {
-    this.tag('MetroApps').items = items.map((info, index) => {
+  /**
+   * Show loading spinner for DacApps row
+   */
+  _showDacAppsLoader() {
+    this.tag('DacAppsLoader').visible = true
+    this.tag('DacApps').visible = false
+    if (this.dacAppsLoadingAnimation) {
+      this.dacAppsLoadingAnimation.start()
+    }
+  }
+
+  /**
+   * Hide loading spinner for DacApps row
+   */
+  _hideDacAppsLoader() {
+    this.tag('DacAppsLoader').visible = false
+    this.tag('DacApps').visible = true
+    if (this.dacAppsLoadingAnimation) {
+      this.dacAppsLoadingAnimation.stop()
+    }
+  }
+
+  set dacApps(items) {
+    // Hide loader and show content
+    this._hideDacAppsLoader()
+    
+    this.tag('DacApps').items = items.map((info, index) => {
       return {
-        w: 268,
-        h: 151,
+        w: 325,
+        h: 183,
         type: ListItem,
         data: info,
         focus: 1.15,
@@ -638,8 +680,8 @@ export default class MainView extends Lightning.Component {
   set tvShowItems(items) {
     this.tag('TVShows').items = items.map((info, idx) => {
       return {
-        w: 257,
-        h: 145,
+        w: 325,
+        h: 183,
         type: ListItem,
         data: info,
         focus: 1.15,
@@ -650,23 +692,6 @@ export default class MainView extends Lightning.Component {
     })
   }
 
-  set usbApps(items) {
-    if (items.length > 0) {
-      this.tag('Text5').alpha = 1;
-    }
-    this.tag('UsbApps').items = items.map((info, index) => {
-      return {
-        w: 257,
-        h: 145,
-        type: ListItem,
-        data: info,
-        focus: 1.15,
-        unfocus: 1,
-        idx: index,
-        bar: 12
-      }
-    })
-  }
   /**
    * Function to set the state in main view.
    */
@@ -674,15 +699,9 @@ export default class MainView extends Lightning.Component {
     if (index == 0) {
       this._setState('AppList')
     } else if (index == 1) {
-      this._setState('MetroApps')
+      this._setState('DacApps')
     } else if (index == 2) {
       this._setState('TVShows')
-    } else if (index == 3) {
-      if (this.tag('UsbApps').length) {
-        this._setState('UsbApps')
-      } else {
-        this._setState('TVShows')
-      }
     }
   }
   /**
@@ -794,6 +813,11 @@ export default class MainView extends Lightning.Component {
       },
       class AppList extends this {
         $enter() {
+          // Skip to DacApps if My Apps is empty
+          if (this.myAppsEmpty) {
+            this._setState('DacApps')
+            return
+          }
           this.indexVal = 0
           if (this.inputSelect && this.gracenote) {
             this.scroll(-100)
@@ -807,11 +831,11 @@ export default class MainView extends Lightning.Component {
         _getFocused() {
           this.tag('Text1').text.fontStyle = 'bold'
           if (this.tag('AppList').length) {
-            return this.tag('AppList')
+            return this.tag('AppList').element
           }
         }
         _handleDown() {
-          this._setState('MetroApps')
+          this._setState('DacApps')
         }
         _handleUp() {
           if (this.inputSelect) {
@@ -824,9 +848,20 @@ export default class MainView extends Lightning.Component {
           }
 
         }
+        _handleRight() {
+          if (this.tag('AppList').length - 1 != this.tag('AppList').index) {
+            this.tag('AppList').setNext()
+            return this.tag('AppList').element
+          }
+        }
         _handleLeft() {
           this.tag('Text1').text.fontStyle = 'normal'
-          Router.focusWidget('Menu')
+          if (0 != this.tag('AppList').index) {
+            this.tag('AppList').setPrevious()
+            return this.tag('AppList').element
+          } else {
+            Router.focusWidget('Menu')
+          }
         }
         async _handleEnter() {
           if (Router.isNavigating()) return;
@@ -854,12 +889,14 @@ export default class MainView extends Lightning.Component {
           }
         }
       },
-      class MetroApps extends this {
+      class DacApps extends this {
         $enter() {
+          // Adjust scroll position based on My Apps visibility
+          let scrollOffset = this.myAppsEmpty ? 270 : 0
           if (this.inputSelect && this.gracenote) {
-            this.scroll(-200)
+            this.scroll(-200 + scrollOffset)
           } else {
-            this.scroll(-100)
+            this.scroll(0 + scrollOffset)
           }
           this.indexVal = 1
         }
@@ -868,69 +905,84 @@ export default class MainView extends Lightning.Component {
         }
         _getFocused() {
           this.tag('Text2').text.fontStyle = 'bold'
-          if (this.tag('MetroApps').length) {
-            return this.tag('MetroApps').element
+          if (this.tag('DacApps').length) {
+            return this.tag('DacApps').element
           }
         }
         _handleUp() {
-          this._setState('AppList')
+          if (this.myAppsEmpty) {
+            if (this.inputSelect) {
+              this._setState('Inputs')
+            } else if (this.gracenote) {
+              this._setState('Gracenote')
+            } else {
+              this.widgets.menu.notify('TopPanel')
+            }
+          } else {
+            this._setState('AppList')
+          }
         }
         _handleDown() {
           this._setState('TVShows')
         }
         _handleRight() {
-          if (this.tag('MetroApps').length - 1 != this.tag('MetroApps').index) {
-            this.tag('MetroApps').setNext()
-            return this.tag('MetroApps').element
+          if (this.tag('DacApps').length - 1 != this.tag('DacApps').index) {
+            this.tag('DacApps').setNext()
+            return this.tag('DacApps').element
           }
         }
         _handleLeft() {
           this.tag('Text2').text.fontStyle = 'normal'
-          if (0 != this.tag('MetroApps').index) {
-            this.tag('MetroApps').setPrevious()
-            return this.tag('MetroApps').element
+          if (0 != this.tag('DacApps').index) {
+            this.tag('DacApps').setPrevious()
+            return this.tag('DacApps').element
           } else {
             Router.focusWidget('Menu')
           }
         }
         async _handleEnter() {
           if (Router.isNavigating()) return;
-          let applicationType = this.tag('MetroApps').items[this.tag('MetroApps').index].data.applicationType;
-          let appIdentifier = this.tag('MetroApps').items[this.tag('MetroApps').index].data.appIdentifier;
+          let applicationType = this.tag('DacApps').items[this.tag('DacApps').index].data.applicationType;
+          let appIdentifier = this.tag('DacApps').items[this.tag('DacApps').index].data.appIdentifier;
+          
+          // Handle "More Apps" item - navigate to apps route
+          if (applicationType === 'MoreApps') {
+            Router.navigate('apps');
+            return;
+          }
+          
           let params = {
-            url: this.tag('MetroApps').items[this.tag('MetroApps').index].data.uri,
+            url: this.tag('DacApps').items[this.tag('DacApps').index].data.uri,
             launchLocation: "mainView",
             appIdentifier: appIdentifier
           }
-          await NetworkManager.IsConnectedToInternet()
-            .then(result => {
-              if (result.connected) {
-                this.appApi.launchApp(applicationType, params).catch(err => {
-                  this.ERR("ApplaunchError: " + JSON.stringify(err))
-                });
-              }
-              else {
-                this.widgets.fail.notify({ title: 'Network State', msg: 'Offline'})
-                Router.focusWidget('Fail')
-              }
-            })
-            .catch(err => {
-              this.ERR("isconnectedtointernet failed" + JSON.stringify(err))
-            })
+          
+          if (GLOBALS.IsConnectedToInternet) {
+            this.appApi.launchApp(applicationType, params).catch(err => {
+              this.ERR("ApplaunchError: " + JSON.stringify(err))
+            });
+          }
+          else {
+            this.widgets.fail.notify({ title: 'Network State', msg: 'Offline'})
+            Router.focusWidget('Fail')
+          }
         }
       },
       class TVShows extends this {
         $enter() {
           this.indexVal = 2
+          // Adjust scroll position based on My Apps visibility
+          let scrollOffset = this.myAppsEmpty ? 270 : 0
           if (this.inputSelect && this.gracenote) {
-            this.scroll(-600)
+            this.scroll(-600 + scrollOffset)
           } else {
-            this.scroll(-400)
+            this.scroll(-300 + scrollOffset)
           }
         }
         _handleUp() {
-          this.scroll(270)
-          this._setState('MetroApps')
+          let scrollOffset = this.myAppsEmpty ? 270 : 0
+          this.scroll(270 + scrollOffset)
+          this._setState('DacApps')
         }
         _getFocused() {
           this.tag('Text3').text.fontStyle = 'bold'
@@ -953,149 +1005,17 @@ export default class MainView extends Lightning.Component {
             Router.focusWidget('Menu')
           }
         }
-        _handleDown() {
-          // if (this.tag('UsbApps').length) {
-          this._setState("ShowcaseApps");
-          //}
-        }
         async _handleEnter() {
           if (Router.isNavigating()) return;
-          try {
-            this.internetConnectivity = await NetworkManager.IsConnectedToInternet();
-          } catch {
-            this.internetConnectivity = false
-          }
-          this.LOG("MainView: internetConnectivity " + JSON.stringify(this.internetConnectivity));
+          this.LOG("MainView: internetConnectivity " + JSON.stringify(GLOBALS.IsConnectedToInternet));
           let params ={url: this.tag('TVShows').items[this.tag('TVShows').index].data.uri,
           }
-          if (this.internetConnectivity) {
+          if (GLOBALS.IsConnectedToInternet) {
             Router.navigate("player",params)
           }
         }
         $exit() {
           this.tag('Text3').text.fontStyle = 'normal'
-        }
-      },
-
-      class ShowcaseApps extends this {
-        $enter() {
-          if (this.inputSelect && this.gracenote) {
-            this.scroll(-750)
-          } else {
-            this.scroll(-550)
-          }
-        }
-        $exit() {
-          this.tag('Text4').text.fontStyle = 'normal'
-        }
-        _getFocused() {
-          this.tag('Text4').text.fontStyle = 'bold'
-          if (this.tag('ShowcaseApps').length) {
-            return this.tag('ShowcaseApps').element
-          }
-        }
-        _handleUp() {
-          this._setState('TVShows')
-        }
-
-        _handleRight() {
-          if (this.tag('ShowcaseApps').length - 1 != this.tag('ShowcaseApps').index) {
-            this.tag('ShowcaseApps').setNext()
-            return this.tag('ShowcaseApps').element
-          }
-        }
-        _handleDown() {
-          if (this.tag('UsbApps').length) {
-            this._setState("UsbApps");
-          }
-        }
-        _handleLeft() {
-          this.tag('Text4').text.fontStyle = 'normal'
-          if (0 != this.tag('ShowcaseApps').index) {
-            this.tag('ShowcaseApps').setPrevious()
-            return this.tag('ShowcaseApps').element
-          } else {
-            Router.focusWidget('Menu')
-          }
-        }
-        async _handleEnter() {
-          if (Router.isNavigating()) return;
-          let applicationType = this.tag('ShowcaseApps').items[this.tag('ShowcaseApps').index].data.applicationType;
-          let appIdentifier = this.tag('ShowcaseApps').items[this.tag('ShowcaseApps').index].data.appIdentifier;
-          let appId = this.tag('ShowcaseApps').items[this.tag('ShowcaseApps').index].data.appId;
-          let intent = this.tag('ShowcaseApps').items[this.tag('ShowcaseApps').index].data.intent;
-          let params = {
-            url: this.tag('ShowcaseApps').items[this.tag('ShowcaseApps').index].data.uri,
-            launchLocation: "mainView",
-            appIdentifier: appIdentifier
-          }
-          if (applicationType == "FireboltApp") {
-            FireBoltApi.get().discovery.launch(appId, intent).then(res => {
-              this.LOG("Firebolt launch response" + JSON.stringify(res))
-              GLOBALS.topmostApp = "FireboltApp";
-            })
-          }
-          else {
-            this.appApi.launchApp(applicationType, params).catch(err => {
-              this.ERR("ApplaunchError: " + JSON.stringify(err))
-            });
-          }
-        }
-      },
-
-      class UsbApps extends this {
-        $enter() {
-          if (this.inputSelect && this.gracenote) {
-            this.scroll(-1000)
-          } else {
-            this.scroll(-750)
-          }
-        }
-        $exit() {
-          this.tag('Text5').text.fontStyle = 'normal'
-        }
-        _getFocused() {
-          this.tag('Text5').text.fontStyle = 'bold'
-          if (this.tag('UsbApps').length) {
-            return this.tag('UsbApps').element
-          }
-        }
-        _handleUp() {
-          this._setState('ShowcaseApps')
-        }
-
-        _handleRight() {
-          if (this.tag('UsbApps').length - 1 != this.tag('MetroApps').index) {
-            this.tag('UsbApps').setNext()
-            return this.tag('UsbApps').element
-          }
-        }
-        _handleLeft() {
-          this.tag('Text5').text.fontStyle = 'normal'
-          if (0 != this.tag('UsbApps').index) {
-            this.tag('UsbApps').setPrevious()
-            return this.tag('UsbApps').element
-          } else {
-            Router.focusWidget('Menu')
-          }
-        }
-        async _handleEnter() {
-          if (Router.isNavigating()) return;
-          let applicationType = this.tag('UsbApps').items[this.tag('UsbApps').index].data.applicationType;
-          let params = {
-            url: this.tag('UsbApps').items[this.tag('UsbApps').index].data.uri,
-            launchLocation: "mainView"
-          }
-          if (applicationType === "CameraApp") {
-            let cameraParams = {
-              cameraUrl: this.tag('UsbApps').items[this.tag('UsbApps').index].data.uri
-            }
-            Router.navigate("camera/player", cameraParams)
-          } else {
-            this.appApi.launchApp(applicationType, params).catch(err => {
-              this.ERR("ApplaunchError: " + JSON.stringify(err))
-            });
-          }
         }
       },
       class RightArrow extends this {

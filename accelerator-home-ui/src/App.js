@@ -572,6 +572,12 @@ export default class App extends Router.App {
 		GLOBALS.Setup = Storage.get("setup")
 		Storage.set("lastVisitedRoute", "menu"); //setting to menu so that it will be always defaulted to #menu
 		GLOBALS.LastvisitedRoute = "menu";
+		NetworkManager.IsConnectedToInternet().then(result => {
+		if (result.connected)
+			GLOBALS.IsConnectedToInternet = true;
+		else
+			GLOBALS.IsConnectedToInternet = false;
+		});
 		appApi.enableDisplaySettings().then(res => {
 			this.LOG("results : " + JSON.stringify(res))
 		}).catch(err => {
