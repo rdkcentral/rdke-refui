@@ -18,6 +18,7 @@
  **/
 import { Lightning, Storage, Language, Router, Utils } from '@lightningjs/sdk'
 import ListItem from '../items/ListItem.js'
+import DacAppItem from '../items/DacAppItem.js'
 import ThunderJS from 'ThunderJS'
 import AppApi from '../api/AppApi.js'
 import RDKShellApis from '../api/RDKShellApis.js'
@@ -29,7 +30,7 @@ import GracenoteItem from '../items/GracenoteItem.js'
 import HDMIApi from '../api/HDMIApi.js'
 import NetworkManager from '../api/NetworkManagerAPI.js'
 import AppManager from '../api/AppManagerApi.js'
-import { getAppCatalogInfo, getInstalledDACApps } from '../api/DACApi.js'
+import { getAppCatalogInfo, getInstalledDACApps, startDACApp } from '../api/DACApi.js'
 
 /** Class for main view component in home UI */
 export default class MainView extends Lightning.Component {
@@ -280,7 +281,7 @@ export default class MainView extends Lightning.Component {
         displayName: app.name,
         applicationType: 'DAC',
         uri: app.id,
-        url: app.icon || '/images/apps/App_Store.png',
+        url: app.icon || '/images/apps/DACApp_455_255.png',
         appIdentifier: app.id,
         version: app.version
       }))
@@ -664,7 +665,7 @@ export default class MainView extends Lightning.Component {
       return {
         w: 325,
         h: 183,
-        type: ListItem,
+        type: DacAppItem,
         data: info,
         focus: 1.15,
         unfocus: 1,
@@ -672,6 +673,20 @@ export default class MainView extends Lightning.Component {
         bar: 12
       }
     })
+  }
+  async $refreshMainView() {
+    try {
+      let appItems = await this._buildInstalledAppsList()
+      this.tempRow = JSON.parse(JSON.stringify(appItems));
+      this.firstRowItems = appItems
+      this.appItems = this.tempRow
+    } catch (err) {
+      this.ERR('Failed to refresh MainView: ' + JSON.stringify(err))
+    }
+  }
+  $showNetworkError() {
+    this.widgets.fail.notify({ title: 'Network State', msg: 'Offline' })
+    Router.focusWidget('Fail')
   }
 
   /**
@@ -865,27 +880,31 @@ export default class MainView extends Lightning.Component {
         }
         async _handleEnter() {
           if (Router.isNavigating()) return;
-          let applicationType = this.tag('AppList').items[this.tag('AppList').index].data.applicationType;
-          let uri = this.tag('AppList').items[this.tag('AppList').index].data.uri;
-          let appIdentifier = this.tag('AppList').items[this.tag('AppList').index].data.appIdentifier;
+          let appData = this.tag('AppList').items[this.tag('AppList').index].data;
+          let applicationType = appData.applicationType;
+          let uri = appData.uri;
+          let appIdentifier = appData.appIdentifier;
           if (uri === 'USB') {
             this.usbApi.getMountedDevices().then(result => {
               if (result.mounted.length === 1) {
                 Router.navigate('usb');
               }
             })
-          } else {
-            let params = {
-              url: uri,
-              launchLocation: "mainView",
-              appIdentifier: appIdentifier
+          } else if (applicationType === 'DAC') {
+            // Launch DAC app using startDACApp
+            if (!GLOBALS.IsConnectedToInternet) {
+              this.fireAncestors('$showNetworkError')
+              return
             }
-            // this.appApi.launchApp(applicationType, params).catch(err => {
-            //   this.ERR("ApplaunchError: "+ JSON.stringify(err))
-            // });
-            //since we have only one bundle which is com.rdk.app.cobalt2025 for youtube app, directly hardcoding the app launch for youtube
-            if(applicationType === "YouTube"){
-            AppManager.get().launchApp("com.rdk.app.cobalt2025")}
+            let dacApp = {
+              id: appIdentifier || uri,
+              name: appData.displayName,
+              version: appData.version,
+              type: 'application/dac.native',
+              url: uri
+            }
+            this.LOG('Launching DAC app from My Apps: ' + JSON.stringify(dacApp))
+            startDACApp(dacApp)
           }
         }
       },
@@ -940,33 +959,7 @@ export default class MainView extends Lightning.Component {
             Router.focusWidget('Menu')
           }
         }
-        async _handleEnter() {
-          if (Router.isNavigating()) return;
-          let applicationType = this.tag('DacApps').items[this.tag('DacApps').index].data.applicationType;
-          let appIdentifier = this.tag('DacApps').items[this.tag('DacApps').index].data.appIdentifier;
-          
-          // Handle "More Apps" item - navigate to apps route
-          if (applicationType === 'MoreApps') {
-            Router.navigate('apps');
-            return;
-          }
-          
-          let params = {
-            url: this.tag('DacApps').items[this.tag('DacApps').index].data.uri,
-            launchLocation: "mainView",
-            appIdentifier: appIdentifier
-          }
-          
-          if (GLOBALS.IsConnectedToInternet) {
-            this.appApi.launchApp(applicationType, params).catch(err => {
-              this.ERR("ApplaunchError: " + JSON.stringify(err))
-            });
-          }
-          else {
-            this.widgets.fail.notify({ title: 'Network State', msg: 'Offline'})
-            Router.focusWidget('Fail')
-          }
-        }
+        // Note: _handleEnter is handled by DacAppItem component for download/install functionality
       },
       class TVShows extends this {
         $enter() {
