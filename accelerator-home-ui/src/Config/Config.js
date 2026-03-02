@@ -204,5 +204,23 @@ export const GLOBALS = {
   get LocalDeviceDiscoveryStatus()
   {
     return this._LocalDeviceDiscoveryStatus
+  },
+  _refreshMyApps: false,
+  set refreshMyApps(status)
+  {
+    this._refreshMyApps = status
+  },
+  get refreshMyApps()
+  {
+    return this._refreshMyApps
+  },
+  _selfclientAppName: 'com.rdkcentral.refui',
+  set selfclientAppName(name)
+  {
+    this._selfclientAppName = name
+  },
+  get selfclientAppName()
+  {
+    return this._selfclientAppName
   }
 }

@@ -179,8 +179,8 @@ export default class DacAppItem extends DACAppMixin(Lightning.Component) {
     const wasInstalling = this._app.isInstalling;
     const completed = await this.fireDACOperationFinished(success, msg, 'ImageWrapper.StatusProgress', 'ImageWrapper.Overlay');
     if (completed && wasInstalling && success) {
-      // Refresh the main view to update My Apps list
-      this.fireAncestors('$refreshMainView')
+      // Refresh the My Apps row to update installed apps list
+      this.fireAncestors('$refreshMyAppsRow')
     }
   }
 

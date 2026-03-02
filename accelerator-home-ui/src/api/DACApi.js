@@ -322,6 +322,9 @@ export async function uninstallDACApp(app, progressElement) {
 
   try {
     await PackageManager.get().uninstall(app.id);
+    // Clear from in-memory cache
+    const key = app.id + ":" + app.version;
+    storedAppInfoCache.delete(key);
     success();
     result = true;
   } catch (err) {
@@ -344,6 +347,11 @@ export async function getInstalledDACApps() {
     const packages = await PackageManager.get().listPackages();
 
     for (const pkg of packages) {
+      // Skip packages that are not installed
+      if (pkg.state !== "INSTALLED") {
+        continue;
+      }
+
       const key = pkg.packageId + ":" + pkg.version;
       let storedAppInfo = storedAppInfoCache.get(key);
 
@@ -382,10 +390,10 @@ export async function getInstalledDACApps() {
           id: pkg.packageId,
           version: pkg.version,
           name: storedAppInfo.name,
-          installed: (pkg.state === "INSTALLED") ? [{
+          installed: [{
             appName: storedAppInfo.name,
             version: pkg.version,
-          }] : [],
+          }],
         });
         if (storedAppInfo.icon) {
           result.at(-1).icon = storedAppInfo.icon;

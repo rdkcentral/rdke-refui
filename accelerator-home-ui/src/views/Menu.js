@@ -29,7 +29,7 @@ var route = {
         Router.focusPage()
     },
     2: () => {
-        Router.navigate('apps')
+        Router.navigate('appinfo')
         Router.focusPage()
     },
     'default': () => {

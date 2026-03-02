@@ -168,11 +168,12 @@ export default class App extends Router.App {
 		window.addEventListener("offline", updateAddress)
 		try {
 			const res = await AppManager.get().getLoadedApps();
-			const targetAppId = "com.rdk.app.wpebrowser_2.38";
+			const targetAppId = GLOBALS.selfclientAppName;
 			const targetApp = res.find(app => app.appId === targetAppId);
 			if (targetApp) {
 				const appInstanceId = targetApp.appInstanceId;
 				GLOBALS.selfClientId = appInstanceId;
+				GLOBALS.topmostApp = targetAppId;
 				this.LOG('Setting selfClientId to: ' + appInstanceId);
 				this.LOG('Current selfClientName: ' + GLOBALS.selfClientName);
 			} else {
@@ -1079,8 +1080,9 @@ export default class App extends Router.App {
 		thunder.on('org.rdk.RDKWindowManager', 'onConnected	', data => {
 			this.LOG('RDKWindowManager onConnected	 ' + JSON.stringify(data));
 		});
-		thunder.on('org.rdk.RDKWindowManager', 'onDisconnected', data => {
+		thunder.on('org.rdk.RDKWindowManager', 'onDisconnected', async data => {
 			this.LOG('RDKWindowManager onDisconnected ' + JSON.stringify(data));
+			this._moveRefuiToFront()
 		});
 		thunder.on('org.rdk.RDKWindowManager', 'onReady', data => {
 			this.LOG('RDKWindowManager onReady ' + JSON.stringify(data));
@@ -1124,20 +1126,11 @@ export default class App extends Router.App {
 			if(data.newState === "APP_STATE_ACTIVE") {
 				if(data.appInstanceId != GLOBALS.selfClientId )
 				{
-					await appApi.setVisible(GLOBALS.selfClientId,false);
+					await appApi.setDacAppVisibility(GLOBALS.selfClientId,false);
 				}
+				GLOBALS.topmostApp = data.appId;
 				this.addKeyInterceptstoApp(data.appId,data.appInstanceId)
-				appApi.setfocus(data.appInstanceId).then(() => {
-					this.LOG("setFocus success for " + data.appId  + data.appInstanceId);
-				}
-				).catch(err => {
-					this.ERR("setFocus error for " +data.appId + data.appInstanceId + " :" + JSON.stringify(err));
-				});
-				appApi.setVisible(data.appInstanceId, true).then(() => {
-					this.LOG("setVisible success for " + data.appId  + data.appInstanceId);
-				}).catch(err => {
-					this.ERR("setVisible error for " +data.appId  + data.appInstanceId + " :" + JSON.stringify(err));
-				});
+				await appApi.setDacAppVisibility(data.appInstanceId,true);
 			}
 		});	
 		thunder.on('org.rdk.AppManager', 'onAppLaunchRequest', data => {
@@ -1145,8 +1138,7 @@ export default class App extends Router.App {
 		});
 		thunder.on('org.rdk.AppManager', 'onAppUnloaded',  async data => {
 			this.LOG('onAppUnloaded ' + JSON.stringify(data));
-			await appApi.setfocus(GLOBALS.selfClientId)
-			await appApi.setVisible(GLOBALS.selfClientId,true);
+			this._moveRefuiToFront()
 		});
 	}
 	_subscribeToRDKShellNotifications() {
@@ -2074,6 +2066,14 @@ export default class App extends Router.App {
 			});
 		});
 	}
+	async _moveRefuiToFront() {
+		try {
+			await appApi.setDacAppVisibility(GLOBALS.selfClientId, true);
+			GLOBALS.topmostApp = GLOBALS.selfclientAppName;
+		} catch (err) {
+			console.error('_moveRefuiToFront: failed to bring refui to front: ' + JSON.stringify(err));
+		}
+	}
 
 	launchFeaturedApp = (appName) => {
 		console.log("Launching Featured App from AI 2.0: " + appName);
@@ -2724,8 +2724,8 @@ export default class App extends Router.App {
 	}
 
 	jumpToRoute(route) {
-		if (GLOBALS.topmostApp != GLOBALS.selfClientName) {
-			appApi.exitApp(GLOBALS.topmostApp).catch(err => {
+		if (GLOBALS.topmostApp != GLOBALS.selfclientAppName) {
+			AppManager.get().terminateApp(GLOBALS.topmostApp).catch(err => {
 				this.ERR("jumpToRoute err: " + JSON.stringify(err))
 			});
 			Storage.set("lastVisitedRoute", route); // incase any state change event tries to navigate, it need to be navigated to alexa requested route

@@ -501,7 +501,12 @@ export default class MainView extends Lightning.Component {
   _focus() {
     this._setState(this.state);
 
-
+    // Check if My Apps row needs refreshing (e.g. after uninstall from AppInfoPage)
+    if (GLOBALS.refreshMyApps) {
+      GLOBALS.refreshMyApps = false;
+      console.log('MainView _focus: refreshMyApps flag detected, refreshing first row...');
+      this.$refreshMyAppsRow();
+    }
   }
 
   _firstEnable() {
@@ -674,14 +679,15 @@ export default class MainView extends Lightning.Component {
       }
     })
   }
-  async $refreshMainView() {
+  async $refreshMyAppsRow() {
+    console.log('Refreshing My Apps row...')
     try {
       let appItems = await this._buildInstalledAppsList()
       this.tempRow = JSON.parse(JSON.stringify(appItems));
       this.firstRowItems = appItems
       this.appItems = this.tempRow
     } catch (err) {
-      this.ERR('Failed to refresh MainView: ' + JSON.stringify(err))
+      this.ERR('Failed to refresh My Apps row: ' + JSON.stringify(err))
     }
   }
   $showNetworkError() {
