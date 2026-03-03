@@ -97,7 +97,11 @@ export default class RDKWindowManager {
         return new Promise((resolve, reject) => {
             this.thunder.call(this.callsign, 'getApps', {})     
                 .then(response => {
-                    resolve(response)
+                    if (typeof response === "string") {
+                        resolve(JSON.parse(response));
+                    } else {
+                        resolve(response)
+                    }
                     this.INFO("getApps response: " + JSON.stringify(response));
                 })
                 .catch(err => {

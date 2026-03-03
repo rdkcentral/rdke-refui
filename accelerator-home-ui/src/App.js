@@ -84,6 +84,7 @@ import AppManager from './api/AppManagerApi.js';
 import PackageManager from './api/PackageManagerApi.js';
 import RDKWindowManager from './api/RDKWindowManagerApi.js';
 import RuntimeManager from './api/RuntimeManagerApi.js';
+import AppController from './AppController.js';
 
 var AlexaAudioplayerActive = false;
 var thunder = ThunderJS(CONFIG.thunderConfig);
@@ -166,26 +167,12 @@ export default class App extends Router.App {
 			}
 		}
 		window.addEventListener("offline", updateAddress)
+
 		try {
-			const res = await AppManager.get().getLoadedApps();
-			const targetAppId = GLOBALS.selfclientAppName;
-			const targetApp = res.find(app => app.appId === targetAppId);
-			if (targetApp) {
-				const appInstanceId = targetApp.appInstanceId;
-				GLOBALS.selfClientId = appInstanceId;
-				GLOBALS.topmostApp = targetAppId;
-				this.LOG('Setting selfClientId to: ' + appInstanceId);
-				this.LOG('Current selfClientName: ' + GLOBALS.selfClientName);
-			} else {
-				this.WARN('App not found: ' + targetAppId);
-			}
+			await AppController.get().init();
 		} catch (err) {
-			this.ERR('Error getting loaded apps from setup ' + JSON.stringify(err));
+			this.ERR(`AppController.init(): ${err}`);
 		}
-		
-		keyIntercept(GLOBALS.selfClientId).catch(err => {
-			this.ERR("App _setup keyIntercept err:" + JSON.stringify(err));
-		});
 	}
 
 	static _template() {
@@ -934,32 +921,6 @@ export default class App extends Router.App {
 		})
 	}
 
-	addKeyInterceptstoApp(appId,clientid) {
-		if (appId="com.rdk.app.cobalt2025"){
-			RDKWindowManager.get().addKeyIntercepts({
-				"intercepts":{
-					"intercepts": [{
-						"keys": [{
-							"keyCode": Keymap.AudioVolumeMute,
-							"modifiers": []
-						}, {
-							"keyCode": Keymap.AudioVolumeDown,
-							"modifiers": []
-						}, {
-							"keyCode": Keymap.AudioVolumeUp,
-							"modifiers": []
-						}, {
-							"keyCode": Keymap.Youtube,
-							"modifiers": []
-						}],
-						"client": clientid
-					}]
-				}
-				}).then(res => {
-					this.WARN(JSON.stringify(res))
-			})
-		}
-	}
 	SubscribeToNetworkManager() {
 		thunder.on('org.rdk.NetworkManager', 'onInterfaceStateChange', data => {
 			console.warn("onInterfaceStateChange:", data);
@@ -1085,7 +1046,6 @@ export default class App extends Router.App {
 		});
 		thunder.on('org.rdk.RDKWindowManager', 'onDisconnected', async data => {
 			this.LOG('RDKWindowManager onDisconnected ' + JSON.stringify(data));
-			this._moveRefuiToFront()
 		});
 		thunder.on('org.rdk.RDKWindowManager', 'onReady', data => {
 			this.LOG('RDKWindowManager onReady ' + JSON.stringify(data));
@@ -1118,31 +1078,7 @@ export default class App extends Router.App {
 		});
 	}
 	_SubscribeToAppManagerNotifications() {
-		thunder.on('org.rdk.AppManager', 'onAppInstalled', data => {
-			this.LOG('onAppInstallStatus ' + JSON.stringify(data));
-		});
-		thunder.on('org.rdk.AppManager', 'onAppUninstalled', data => {
-			this.LOG('onAppUninstallStatus ' + JSON.stringify(data));
-		});
-		thunder.on('org.rdk.AppManager', 'onAppLifecycleStateChanged', async data => {
-			this.LOG('onAppLifecycleStateChanged ' + JSON.stringify(data));
-			if(data.newState === "APP_STATE_ACTIVE") {
-				if(data.appInstanceId != GLOBALS.selfClientId )
-				{
-					await appApi.setDacAppVisibility(GLOBALS.selfClientId,false);
-				}
-				GLOBALS.topmostApp = data.appId;
-				this.addKeyInterceptstoApp(data.appId,data.appInstanceId)
-				await appApi.setDacAppVisibility(data.appInstanceId,true);
-			}
-		});	
-		thunder.on('org.rdk.AppManager', 'onAppLaunchRequest', data => {
-			this.LOG('onAppLaunchRequested ' + JSON.stringify(data));
-		});
-		thunder.on('org.rdk.AppManager', 'onAppUnloaded',  async data => {
-			this.LOG('onAppUnloaded ' + JSON.stringify(data));
-			this._moveRefuiToFront()
-		});
+		AppController.get().subscribe(thunder);
 	}
 	_subscribeToRDKShellNotifications() {
 		thunder.on('org.rdk.RDKShell', 'onApplicationActivated', data => {
@@ -2068,14 +2004,6 @@ export default class App extends Router.App {
 				Metrics.error(Metrics.ErrorType.OTHER, 'APPError', "RDKShell setFocus error" + JSON.stringify(err), false, null)
 			});
 		});
-	}
-	async _moveRefuiToFront() {
-		try {
-			await appApi.setDacAppVisibility(GLOBALS.selfClientId, true);
-			GLOBALS.topmostApp = GLOBALS.selfclientAppName;
-		} catch (err) {
-			console.error('_moveRefuiToFront: failed to bring refui to front: ' + JSON.stringify(err));
-		}
 	}
 
 	launchFeaturedApp = (appName) => {
