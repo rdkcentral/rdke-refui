@@ -104,19 +104,20 @@ export default class DacAppItem extends DACAppMixin(Lightning.Component) {
     if (!this.data.url) {
       this.LOG("data from app carousal: " + JSON.stringify(this.data));
     }
-    if (this.data.url.startsWith('/images')) {
+    const imageUrl = this.data.url || '/images/apps/DACApp_455_255.png'
+    if (imageUrl.startsWith('/images')) {
       this.tag('ImageWrapper.Image').patch({
         rtt: true,
         w: this.w,
         h: this.h,
-        src: Utils.asset(this.data.url),
+        src: Utils.asset(imageUrl),
       });
     } else {
       this.tag('ImageWrapper.Image').patch({
         rtt: true,
         w: this.w,
         h: this.h,
-        src: this.data.url,
+        src: imageUrl,
       });
     }
 

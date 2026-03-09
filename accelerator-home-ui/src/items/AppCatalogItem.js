@@ -20,7 +20,7 @@
 import { Lightning, Utils, Language, Storage } from "@lightningjs/sdk";
 import { CONFIG } from "../Config/Config";
 import StatusProgress from '../overlays/StatusProgress'
-import { installDACApp, isDACAppInstalled } from '../api/DACApi'
+import { installDACApp, isDACAppInstalled, startDACApp } from '../api/DACApi'
 
 /**
  * Mixin providing common DAC app functionality (install, status updates, etc.)
@@ -85,10 +85,23 @@ export const DACAppMixin = (Base) => class extends Base {
 
     async performDACInstall(statusProgressTag, overlayTag) {
         if (this._app.isInstalled) {
-            this.LOG("App is already installed")
+            this.LOG("App is already installed, launching: " + this._app.name)
             this.tag(overlayTag).alpha = 0.7
             this.tag(overlayTag + '.OverlayText').alpha = 1
-            this.tag(overlayTag + '.OverlayText').text.text = Language.translate('Already installed') + "!";
+            this.tag(overlayTag + '.OverlayText').text.text = Language.translate('Launching') + "...";
+            try {
+                const launched = await startDACApp({ id: this._app.id })
+                if (launched) {
+                    this.LOG("App launched successfully: " + this._app.name)
+                    this.tag(overlayTag + '.OverlayText').text.text = Language.translate('Running') + "!";
+                } else {
+                    this.ERR("Failed to launch app: " + this._app.name)
+                    this.tag(overlayTag + '.OverlayText').text.text = Language.translate('Launch failed');
+                }
+            } catch (err) {
+                this.ERR("Error launching app: " + JSON.stringify(err))
+                this.tag(overlayTag + '.OverlayText').text.text = Language.translate('Launch failed');
+            }
             this.tag(overlayTag).setSmooth('alpha', 0, { duration: 5 })
             return true; // Already installed
         } else if (this._app.isInstalling) {

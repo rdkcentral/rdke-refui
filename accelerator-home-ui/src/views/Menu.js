@@ -23,6 +23,10 @@ import SidePanel from "./SidePanel"
 import TopPanel from "./TopPanel"
 
 var route = {
+    0: () => {
+        Router.navigate('menu')
+        Router.focusPage()
+    },
     1: () => {
         Router.navigate('epg')
         Router.focusPage()

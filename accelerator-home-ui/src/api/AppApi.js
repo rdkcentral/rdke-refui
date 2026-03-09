@@ -1093,20 +1093,20 @@ export default class AppApi {
         if (visible) {
           await RDKWindowManager.get().setFocus(appInstanceId).then(() => {
             this.LOG('setFocus successful for ' + targetAppId);
-          }).catch((err) => {
+          }).catch(async (err) => {
             this.ERR('setFocus error for ' + targetAppId + ': ' + JSON.stringify(err));
             if (!_isFallback) {
-              this.setDacAppVisibility(GLOBALS.selfClientId, true, true); // fallback to show resident app in case of error
+              await this.setDacAppVisibility(GLOBALS.selfClientId, true, true); // fallback to show resident app in case of error
             }
           });
         }
 
         await RDKWindowManager.get().setVisible(appInstanceId, visible).then(() => {
           this.LOG('setVisible successful for ' + targetAppId);
-        }).catch((err) => {
+        }).catch(async (err) => {
           this.ERR('setVisible error for ' + targetAppId + ': ' + JSON.stringify(err));
           if (!_isFallback) {
-            this.setDacAppVisibility(GLOBALS.selfClientId, true, true); // fallback to show resident app in case of error
+            await this.setDacAppVisibility(GLOBALS.selfClientId, true, true); // fallback to show resident app in case of error
           }
         });
       } else {
