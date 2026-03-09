@@ -974,6 +974,9 @@ export default class App extends Router.App {
 			if (data.status === "FULLY_CONNECTED") {
 				GLOBALS.IsConnectedToInternet = true
 			}
+			else {
+				GLOBALS.IsConnectedToInternet = false
+			}	
 			console.warn("onInternetStatusChange:", data);
 		});
 		thunder.on('org.rdk.NetworkManager', 'onAvailableSSIDs', data => {
