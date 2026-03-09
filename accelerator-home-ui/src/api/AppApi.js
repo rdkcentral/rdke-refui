@@ -1079,60 +1079,41 @@ export default class AppApi {
     return RDKWindowManager.get().setInactivityInterval(duration)
   }
 
-  async setfocus(value) {
+  async setDacAppVisibility(value, visible = true, _isFallback = false) {
     return AppManager.get().getLoadedApps().then(async (res) => {
-            this.LOG('Currently loaded apps: ' + JSON.stringify(res));
-            const targetAppId = value;
-            const targetApp = res.find(app => app.appId === targetAppId);
-            if (targetApp) {
-              const appInstanceId = targetApp.appInstanceId;
-              this.LOG('Found appInstanceId for ' + targetAppId + ': ' + appInstanceId);
-              await RDKWindowManager.get().setFocus(appInstanceId).then(() => {
-                this.LOG('setFocus successful for ' + targetAppId);
-              }	).catch((err) => {
-                this.ERR('setFocus error for ' + targetAppId + ': ' + JSON.stringify(err));
-              });
-            } 
-            else if (value){
-              await RDKWindowManager.get().setFocus(value).then(() => {
-                this.LOG('setFocus successful for ' + value);
-              }	).catch((err) => {
-                this.ERR('setFocus error for ' + value + ': ' + JSON.stringify(err));
-              });
+      this.LOG('Currently loaded apps: ' + JSON.stringify(res));
+      const targetAppId = value;
+      const targetApp = res.find(app => app.appId === targetAppId);
+      const appInstanceId = targetApp ? targetApp.appInstanceId : value;
+
+      if (appInstanceId) {
+        this.LOG('Using appInstanceId: ' + appInstanceId + ' for targetAppId: ' + targetAppId);
+        
+        // Only setFocus when making the app visible
+        if (visible) {
+          await RDKWindowManager.get().setFocus(appInstanceId).then(() => {
+            this.LOG('setFocus successful for ' + targetAppId);
+          }).catch(async (err) => {
+            this.ERR('setFocus error for ' + targetAppId + ': ' + JSON.stringify(err));
+            if (!_isFallback) {
+              await this.setDacAppVisibility(GLOBALS.selfClientId, true, true); // fallback to show resident app in case of error
             }
-            else {
-              this.WARN('App not found: ' + targetAppId);
-            }
+          });
+        }
+
+        await RDKWindowManager.get().setVisible(appInstanceId, visible).then(() => {
+          this.LOG('setVisible successful for ' + targetAppId);
+        }).catch(async (err) => {
+          this.ERR('setVisible error for ' + targetAppId + ': ' + JSON.stringify(err));
+          if (!_isFallback) {
+            await this.setDacAppVisibility(GLOBALS.selfClientId, true, true); // fallback to show resident app in case of error
+          }
+        });
+      } else {
+        this.WARN('App not found: ' + targetAppId);
+      }
     }).catch((err) => {
-      this.ERR('Error getting loaded apps from setfocus ' + JSON.stringify(err));
-    });
-  }
-  async setVisible(value,visible) {
-    return AppManager.get().getLoadedApps().then(async (res) => {
-            this.LOG('Currently loaded apps: ' + JSON.stringify(res));
-            const targetAppId = value;
-            const targetApp = res.find(app => app.appId === targetAppId);
-            if (targetApp) {
-              const appInstanceId = targetApp.appInstanceId;
-              this.LOG('Found appInstanceId for ' + targetAppId + ': ' + appInstanceId);
-              await RDKWindowManager.get().setVisible(appInstanceId, visible).then(() => {
-                this.LOG('setFocus successful for ' + targetAppId);
-              }	).catch((err) => {
-                this.ERR('setFocus error for ' + targetAppId + ': ' + JSON.stringify(err));
-              });
-            } 
-            else if (value){
-              await RDKWindowManager.get().setVisible(value, visible).then(() => {
-                this.LOG('setFocus successful for ' + value);
-              }	).catch((err) => {
-                this.ERR('setFocus error for ' + value + ': ' + JSON.stringify(err));
-              });
-            }
-            else {
-              this.WARN('App not found: ' + targetAppId);
-            }
-    }).catch((err) => {
-      this.ERR('Error getting loaded apps from setvisible ' + JSON.stringify(err));
+      this.ERR('Error getting loaded apps from setDacAppVisibility ' + JSON.stringify(err));
     });
   }
 
