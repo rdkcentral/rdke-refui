@@ -246,7 +246,9 @@ export async function installDACApp(app, progressElement) {
   }
 
   function success() {
-    progressElement.fireAncestors('$fireDACOperationFinished', true);
+    if (progressElement && typeof progressElement.fireAncestors === 'function') {
+      progressElement.fireAncestors('$fireDACOperationFinished', true);
+    }
   }
 
   try {
@@ -311,7 +313,9 @@ export async function uninstallDACApp(app, progressElement) {
   const unlock = await packageLock.lock();
 
   function success() {
-    progressElement.fireAncestors('$fireDACOperationFinished', true);
+    if (progressElement && typeof progressElement.fireAncestors === 'function') {
+      progressElement.fireAncestors('$fireDACOperationFinished', true);
+    }
   }
 
   try {
@@ -323,8 +327,18 @@ export async function uninstallDACApp(app, progressElement) {
   try {
     await PackageManager.get().uninstall(app.id);
     // Clear from in-memory cache
-    const key = app.id + ":" + app.version;
-    storedAppInfoCache.delete(key);
+    if (app.version) {
+      const key = app.id + ":" + app.version;
+      storedAppInfoCache.delete(key);
+    } else {
+      // If version is not provided, remove all cached entries for this app id
+      const prefix = app.id + ":";
+      for (const cacheKey of storedAppInfoCache.keys()) {
+        if (cacheKey.startsWith(prefix)) {
+          storedAppInfoCache.delete(cacheKey);
+        }
+      }
+    }
     success();
     result = true;
   } catch (err) {

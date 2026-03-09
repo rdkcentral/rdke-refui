@@ -287,8 +287,7 @@ export default class AppInfoPage extends Lightning.Component {
     async _uninstallApp(appInfo) {
         console.log(`Uninstalling ${appInfo.name}...`);
         try {
-            // Create a progress element for the uninstall operation
-            const result = await uninstallDACApp({ id: appInfo.id }, this);
+            const result = await uninstallDACApp({ id: appInfo.id, version: appInfo.version, name: appInfo.name }, this);
             if (result) {
                 console.log(`${appInfo.name} uninstalled successfully`);
                 // Refresh the list after uninstall

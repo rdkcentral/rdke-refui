@@ -29,7 +29,6 @@ import HomeApi from '../api/HomeApi.js'
 import GracenoteItem from '../items/GracenoteItem.js'
 import HDMIApi from '../api/HDMIApi.js'
 import NetworkManager from '../api/NetworkManagerAPI.js'
-import AppManager from '../api/AppManagerApi.js'
 import { getAppCatalogInfo, getInstalledDACApps, startDACApp } from '../api/DACApi.js'
 
 /** Class for main view component in home UI */
@@ -212,35 +211,13 @@ export default class MainView extends Lightning.Component {
   }
 
   moveDownContent() {
-    let inputSelectOffset = 0
-    if (this.inputSelect) {
-      inputSelectOffset = 275
-    }
-    let myAppsOffset = this.myAppsEmpty ? -305 : 0
     this.tag('Text0').alpha = 1
-    this.tag("Inputs").y = 440
-    this.tag('Text1').y = 440 + inputSelectOffset
-    this.tag('AppList').y = 477 + inputSelectOffset
-    this.tag("Text2").y = 705 + inputSelectOffset + myAppsOffset
-    this.tag("DacApps").y = 745 + inputSelectOffset + myAppsOffset
-    this.tag("Text3").y = 980 + inputSelectOffset + myAppsOffset
-    this.tag("TVShows").y = 1020 + inputSelectOffset + myAppsOffset
+    this._updateRowPositions()
   }
 
   showInputSelect() {
     this.tag("Inputs").visible = true
-    let gracenoteOffset = 0
-    if (!this.gracenote) {
-      gracenoteOffset = 440
-    }
-    let myAppsOffset = this.myAppsEmpty ? -305 : 0
-    this.tag("Inputs").y = this.gracenote ? 440 : 0
-    this.tag('Text1').y = 440 + 275 - gracenoteOffset
-    this.tag('AppList').y = 477 + 275 - gracenoteOffset
-    this.tag("Text2").y = 705 + 275 - gracenoteOffset + myAppsOffset
-    this.tag("DacApps").y = 745 + 275 - gracenoteOffset + myAppsOffset
-    this.tag("Text3").y = 980 + 275 - gracenoteOffset + myAppsOffset
-    this.tag("TVShows").y = 1020 + 275 - gracenoteOffset + myAppsOffset
+    this._updateRowPositions()
   }
 
 
@@ -359,7 +336,9 @@ export default class MainView extends Lightning.Component {
             usbAppsArr.push(appdetails[i])
           }
         }
-
+        for (let i = 0; i < usbAppsArr.length; i++) {
+          appdetails_format.push(usbAppsArr[i])
+        }
         for (let i = 0; i < appItems.length; i++) {
           appdetails_format.push(appItems[i])
         }
@@ -601,8 +580,9 @@ export default class MainView extends Lightning.Component {
    * Function to set details of items in app list.
    */
   set appItems(items) {
-    this.currentItems = items
-    this.myAppsEmpty = !items || items.length === 0
+    const safeItems = Array.isArray(items) ? items : []
+    this.currentItems = safeItems
+    this.myAppsEmpty = safeItems.length === 0
     
     // Hide My Apps row if empty
     this.tag('Text1').visible = !this.myAppsEmpty
@@ -611,7 +591,7 @@ export default class MainView extends Lightning.Component {
     // Update row positions based on My Apps visibility
     this._updateRowPositions()
     
-    this.tag('AppList').items = items.map((info, idx) => {
+    this.tag('AppList').items = safeItems.map((info, idx) => {
       return {
         w: 325,
         h: 183,
@@ -626,18 +606,39 @@ export default class MainView extends Lightning.Component {
   }
 
   /**
-   * Update row positions based on My Apps visibility
+   * Update row positions based on gracenote, inputSelect, and My Apps visibility.
+   * This is the single source of truth for vertical layout offsets.
    */
   _updateRowPositions() {
-    // My Apps row takes approximately 305px (Text1 at 0 + AppList at 37 with height ~268)
+    // Base y-values assume the default layout (no Gracenote, no Inputs)
+    const baseText1 = 0
+    const baseAppList = 37
+    const baseText2 = 305
+    const baseDacAppsLoader = 437
+    const baseDacApps = 345
+    const baseText3 = 613
+    const baseTVShows = 650
+
+    // Gracenote row pushes everything down by 440px
+    const gracenoteOffset = this.gracenote ? 440 : 0
+
+    // Input-select row adds 275px, but only contributes above
+    // the rows below Gracenote; its own position depends on Gracenote
+    const inputSelectOffset = this.inputSelect ? 275 : 0
+    this.tag('Inputs').y = this.gracenote ? 440 : 0
+
+    // My Apps row takes ~305px; collapse when empty
     const myAppsOffset = this.myAppsEmpty ? -305 : 0
-    
-    // Update positions for rows below My Apps
-    this.tag('Text2').y = 305 + myAppsOffset
-    this.tag('DacAppsLoader').y = 437 + myAppsOffset  // Centered in DacApps row (345 + 183/2 ≈ 437)
-    this.tag('DacApps').y = 345 + myAppsOffset
-    this.tag('Text3').y = 613 + myAppsOffset
-    this.tag('TVShows').y = 650 + myAppsOffset
+
+    const topOffset = gracenoteOffset + inputSelectOffset
+
+    this.tag('Text1').y = baseText1 + topOffset
+    this.tag('AppList').y = baseAppList + topOffset
+    this.tag('Text2').y = baseText2 + topOffset + myAppsOffset
+    this.tag('DacAppsLoader').y = baseDacAppsLoader + topOffset + myAppsOffset
+    this.tag('DacApps').y = baseDacApps + topOffset + myAppsOffset
+    this.tag('Text3').y = baseText3 + topOffset + myAppsOffset
+    this.tag('TVShows').y = baseTVShows + topOffset + myAppsOffset
   }
 
   /**

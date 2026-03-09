@@ -19,7 +19,7 @@
 import { Lightning, Utils, Language, Router } from '@lightningjs/sdk'
 import { CONFIG, GLOBALS } from '../Config/Config';
 import StatusProgress from '../overlays/StatusProgress'
-import { installDACApp, isDACAppInstalled, startDACApp } from '../api/DACApi'
+import {isDACAppInstalled, startDACApp } from '../api/DACApi'
 import { DACAppMixin } from './AppCatalogItem'
 
 /**

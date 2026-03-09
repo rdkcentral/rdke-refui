@@ -1079,7 +1079,7 @@ export default class AppApi {
     return RDKWindowManager.get().setInactivityInterval(duration)
   }
 
-  async setDacAppVisibility(value, visible = true) {
+  async setDacAppVisibility(value, visible = true, _isFallback = false) {
     return AppManager.get().getLoadedApps().then(async (res) => {
       this.LOG('Currently loaded apps: ' + JSON.stringify(res));
       const targetAppId = value;
@@ -1095,7 +1095,9 @@ export default class AppApi {
             this.LOG('setFocus successful for ' + targetAppId);
           }).catch((err) => {
             this.ERR('setFocus error for ' + targetAppId + ': ' + JSON.stringify(err));
-            this.setDacAppVisibility(GLOBALS.selfClientId,true); // fallback to show resident app in case of error
+            if (!_isFallback) {
+              this.setDacAppVisibility(GLOBALS.selfClientId, true, true); // fallback to show resident app in case of error
+            }
           });
         }
 
@@ -1103,7 +1105,9 @@ export default class AppApi {
           this.LOG('setVisible successful for ' + targetAppId);
         }).catch((err) => {
           this.ERR('setVisible error for ' + targetAppId + ': ' + JSON.stringify(err));
-          this.setDacAppVisibility(GLOBALS.selfClientId,true); // fallback to show resident app in case of error
+          if (!_isFallback) {
+            this.setDacAppVisibility(GLOBALS.selfClientId, true, true); // fallback to show resident app in case of error
+          }
         });
       } else {
         this.WARN('App not found: ' + targetAppId);

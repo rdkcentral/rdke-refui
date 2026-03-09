@@ -21,7 +21,6 @@ import { Lightning, Router } from "@lightningjs/sdk"
 import HomeApi from "../api/HomeApi"
 import SidePanel from "./SidePanel"
 import TopPanel from "./TopPanel"
-import { GLOBALS } from "../Config/Config"
 
 var route = {
     1: () => {
