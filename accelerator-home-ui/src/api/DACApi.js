@@ -20,6 +20,7 @@
 import DownloadManager from './DownloadManagerApi';
 import PackageManager from './PackageManagerApi';
 import AppManager from './AppManagerApi';
+import AppController from '../AppController';
 import { ThunderError } from './ThunderError';
 import { Metrics } from '@firebolt-js/sdk'
 
@@ -426,7 +427,7 @@ export async function startDACApp(app) {
   console.log(`startDACApp ${JSON.stringify(app)}`);
 
   try {
-    await AppManager.get().launchApp(app.id);
+    await AppController.get().launch(app.id);
     result = true;
   } catch (err) {
     logError(`startDACApp(${app.id})`, new ThunderError("launchApplication()", err));
