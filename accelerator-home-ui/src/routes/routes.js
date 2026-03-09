@@ -50,6 +50,7 @@ import { Storage } from '@lightningjs/sdk'
 import { Metrics } from '@firebolt-js/sdk'
 import { GLOBALS } from '../Config/Config.js'
 import MiracastNotification from '../screens/MiracastNotification.js'
+import AppInfoPage from '../views/AppInfoPage.js'
 
 let api = null
 
@@ -100,6 +101,11 @@ export default {
     {
       path: 'apps',
       component: AppStore,
+      widgets: ['Menu', 'Volume', "AppCarousel"]
+    },
+    {
+      path: 'appinfo',
+      component: AppInfoPage,
       widgets: ['Menu', 'Volume', "AppCarousel"]
     },
     {

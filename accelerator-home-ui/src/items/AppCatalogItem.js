@@ -20,15 +20,117 @@
 import { Lightning, Utils, Language, Storage } from "@lightningjs/sdk";
 import { CONFIG } from "../Config/Config";
 import StatusProgress from '../overlays/StatusProgress'
-import { installDACApp, isDACAppInstalled } from '../api/DACApi'
+import { installDACApp, isDACAppInstalled, startDACApp } from '../api/DACApi'
 
-export default class AppCatalogItem extends Lightning.Component {
-    constructor(...args) {
-        super(...args);
+/**
+ * Mixin providing common DAC app functionality (install, status updates, etc.)
+ * Can be used by both AppCatalogItem and DacAppItem to avoid code duplication.
+ */
+export const DACAppMixin = (Base) => class extends Base {
+    initDACApp() {
+        this._app = {}
+        this._app.isRunning = false
+        this._app.isInstalled = false
+        this._app.isInstalling = false
+        this._app.isUnInstalling = false
+    }
+
+    initLogging() {
         this.INFO = console.info;
         this.LOG = console.log;
         this.ERR = console.error;
         this.WARN = console.warn;
+    }
+
+    async fireDACOperationFinished(success, msg, statusProgressTag, overlayTag) {
+        if (this._app.isInstalling) {
+            this._app.isInstalled = success
+            this._app.isInstalling = false
+            if (Object.prototype.hasOwnProperty.call(this._app, "errorCode")) delete this._app.errorCode;
+            this.updateDACStatus(statusProgressTag, overlayTag)
+            if (!success) {
+                this.tag(statusProgressTag).setProgress(1.0, 'Error: ' + msg)
+            }
+            return true; // Installation operation completed
+        } else if (this._app.isUnInstalling) {
+            this._app.isInstalled = !success
+            this._app.isUnInstalling = false
+            this.updateDACStatus(statusProgressTag, overlayTag)
+            if (!success) {
+                this.tag(statusProgressTag).setProgress(1.0, 'Error: ' + msg)
+            }
+            return true; // Uninstall operation completed
+        }
+        return false;
+    }
+
+    updateDACStatus(statusProgressTag, overlayTag) {
+        if (this._app.isRunning) {
+            this.tag(statusProgressTag).setProgress(1.0, Language.translate('Running') + "!");
+        } else {
+            if (this._app.isInstalled) {
+                this.LOG("App is installed")
+                this.tag(statusProgressTag).setProgress(1.0, Language.translate('Installed') + '!')
+            } else {
+                this.tag(statusProgressTag).reset()
+            }
+        }
+        if (Object.prototype.hasOwnProperty.call(this._app, "errorCode")) {
+            this.tag(statusProgressTag).alpha = 0
+            this.tag(overlayTag + '.OverlayText').text.text = Language.translate('Error') + ':' + this._app.errorCode;
+            this.tag(overlayTag).alpha = 0.7
+            this.tag(overlayTag + '.OverlayText').alpha = 1
+        }
+    }
+
+    async performDACInstall(statusProgressTag, overlayTag) {
+        if (this._app.isInstalled) {
+            this.LOG("App is already installed, launching: " + this._app.name)
+            this.tag(overlayTag).alpha = 0.7
+            this.tag(overlayTag + '.OverlayText').alpha = 1
+            this.tag(overlayTag + '.OverlayText').text.text = Language.translate('Launching') + "...";
+            try {
+                const launched = await startDACApp({ id: this._app.id })
+                if (launched) {
+                    this.LOG("App launched successfully: " + this._app.name)
+                    this.tag(overlayTag + '.OverlayText').text.text = Language.translate('Running') + "!";
+                } else {
+                    this.ERR("Failed to launch app: " + this._app.name)
+                    this.tag(overlayTag + '.OverlayText').text.text = Language.translate('Launch failed');
+                }
+            } catch (err) {
+                this.ERR("Error launching app: " + JSON.stringify(err))
+                this.tag(overlayTag + '.OverlayText').text.text = Language.translate('Launch failed');
+            }
+            this.tag(overlayTag).setSmooth('alpha', 0, { duration: 5 })
+            return true; // Already installed
+        } else if (this._app.isInstalling) {
+            this.LOG(`App installation is in progress`);
+            return false; // In progress
+        }
+
+        this.tag(overlayTag + '.OverlayText').text.text = Language.translate("Please wait");
+        this.tag(overlayTag).alpha = 0.7;
+        this.tag(overlayTag + '.OverlayText').alpha = 1;
+        this.tag(overlayTag).setSmooth('alpha', 0, { duration: 5 });
+
+        this._app.isInstalling = true;
+        if (!await installDACApp(this._app, this.tag(statusProgressTag))) {
+            this._app.isInstalling = false;
+            this.tag(overlayTag + '.OverlayText').text.text = Language.translate("Status") + ':' + (this._app.errorCode ?? -1);
+            this.tag(overlayTag).alpha = 0.7
+            this.tag(overlayTag + '.OverlayText').alpha = 1
+            this.tag(overlayTag).setSmooth('alpha', 0, { duration: 5 })
+            return false;
+        }
+        return true;
+    }
+};
+
+export default class AppCatalogItem extends DACAppMixin(Lightning.Component) {
+    constructor(...args) {
+        super(...args);
+        this.initLogging();
     }
     static _template() {
         return {
@@ -103,77 +205,18 @@ export default class AppCatalogItem extends Lightning.Component {
     }
 
     async $fireDACOperationFinished(success, msg) {
-        if (this._app.isInstalling) {
-            this._app.isInstalled = success
-            this._app.isInstalling = false
-            if (Object.prototype.hasOwnProperty.call(this._app, "errorCode")) delete this._app.errorCode;
-            this.updateStatus()
-            if (!success) {
-                this.tag('StatusProgress').setProgress(1.0, 'Error: ' + msg)
-            }
-        } else if (this._app.isUnInstalling) {
-            this._app.isInstalled = !success
-            this._app.isUnInstalling = false
-            this.updateStatus()
-            if (!success) {
-                this.tag('StatusProgress').setProgress(1.0, 'Error: ' + msg)
-            }
-        }
+        this.fireDACOperationFinished(success, msg, 'StatusProgress', 'Overlay');
     }
 
     updateStatus() {
-        if (this._app.isRunning) {
-            this.tag('StatusProgress').setProgress(1.0, Language.translate('Running') + "!");
-        } else {
-            if (this._app.isInstalled) {
-                this.LOG("App is installed")
-                this.tag('StatusProgress').setProgress(1.0, Language.translate('Installed') + '!')
-            } else {
-                this.tag('StatusProgress').reset()
-            }
-        }
-        if (Object.prototype.hasOwnProperty.call(this._app, "errorCode")) {
-            this.tag('StatusProgress').alpha = 0
-            this.tag('Overlay.OverlayText').text.text = Language.translate('Error') + ':' + this._app.errorCode;
-            // this.tag("OverlayText").text.text = this._app.code;
-            this.tag("Overlay").alpha = 0.7
-            this.tag("OverlayText").alpha = 1
-        }
+        this.updateDACStatus('StatusProgress', 'Overlay');
     }
     async myfireINSTALL() {
-        if (this._app.isInstalled) {
-            this.LOG("App is already installed")
-            this.tag("Overlay").alpha = 0.7
-            this.tag("OverlayText").alpha = 1
-            this.tag("OverlayText").text.text = Language.translate('Already installed') + "!";
-            this.tag("Overlay").setSmooth('alpha', 0, { duration: 5 })
-            return
-        } else if (this._app.isInstalling) {
-            console.log(`App installation is in progress`);
-            return;
-        }
-
-        this.tag("OverlayText").text.text = Language.translate("Please wait");
-        this.tag("Overlay").alpha = 0.7;
-        this.tag("OverlayText").alpha = 1;
-        this.tag("Overlay").setSmooth('alpha', 0, { duration: 5 });
-
-        this._app.isInstalling = true;
-        if (!await installDACApp(this._app, this.tag('StatusProgress'))) {
-            this._app.isInstalling = false;
-            this.tag("OverlayText").text.text = Language.translate("Status") + ':' + (this._app.errorCode ?? -1);
-            this.tag("Overlay").alpha = 0.7
-            this.tag("OverlayText").alpha = 1
-            this.tag("Overlay").setSmooth('alpha', 0, { duration: 5 })
-        }
+        await this.performDACInstall('StatusProgress', 'Overlay');
     }
 
     _init() {
-        this._app = {}
-        this._app.isRunning = false
-        this._app.isInstalled = false
-        this._app.isInstalling = false
-        this._app.isUnInstalling = false
+        this.initDACApp();
         this._buttonIndex = 0;
     }
 
