@@ -899,8 +899,7 @@ export default class MainView extends Lightning.Component {
             })
           } else if (applicationType === 'DAC') {
             // Launch DAC app using startDACApp
-            const isConnected = await NetworkManager.IsConnectedToInternet()
-            if (!isConnected) {
+            if (!GLOBALS.IsConnectedToInternet) {
               this.fireAncestors('$showNetworkError')
               return
             }
