@@ -22,6 +22,7 @@ import { List } from "@lightningjs/ui";
 import { CONFIG, GLOBALS } from "../Config/Config";
 import AppCard from "../items/AppCard";
 import { getInstalledDACApps, startDACApp, uninstallDACApp } from "../api/DACApi";
+import { filterExcludedApps } from "../helpers/DACAppPresentation";
 
 export default class AppInfoPage extends Lightning.Component {
 
@@ -175,7 +176,7 @@ export default class AppInfoPage extends Lightning.Component {
      */
     async _fetchInstalledApps() {
         try {
-            const installedApps = await getInstalledDACApps();
+            const installedApps = filterExcludedApps(await getInstalledDACApps());
             console.log('Installed DAC Apps:', JSON.stringify(installedApps));
             
             // Transform the data to match AppCard expected format

@@ -30,6 +30,7 @@ import GracenoteItem from '../items/GracenoteItem.js'
 import HDMIApi from '../api/HDMIApi.js'
 import NetworkManager from '../api/NetworkManagerAPI.js'
 import { getAppCatalogInfo, getInstalledDACApps, startDACApp } from '../api/DACApi.js'
+import { filterExcludedApps } from '../helpers/DACAppPresentation.js'
 import AppController from '../AppController.js'
 
 /** Class for main view component in home UI */
@@ -237,7 +238,7 @@ export default class MainView extends Lightning.Component {
   _handleBack() { }
 
   async _buildInstalledAppsList() {
-    let installedApps = await getInstalledDACApps()
+    let installedApps = filterExcludedApps(await getInstalledDACApps())
     return installedApps
       .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
       .map(app => ({
@@ -530,7 +531,7 @@ export default class MainView extends Lightning.Component {
       })
       this.dacApps = await Promise.race([this._buildDacAppsList(), timeoutPromise])
     } catch (err) {
-      this.ERR('Failed to refresh DAC catalog: ' + JSON.stringify(err))
+      this.ERR('Failed to refresh DAC catalog: ' + (err instanceof Error ? err.message : JSON.stringify(err)))
       this._hideDacAppsLoader()
     } finally {
       clearTimeout(timeoutId)

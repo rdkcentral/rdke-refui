@@ -123,12 +123,24 @@ export default class AppController {
   async subscribe(thunder) {
     thunder.on('org.rdk.AppManager', 'onAppInstalled', data => {
       this.LOG('onAppInstallStatus ' + JSON.stringify(data));
-      this._packageChangedListeners.forEach(listener => listener('installed', data));
+      this._packageChangedListeners.forEach(listener => {
+        try {
+          listener('installed', data);
+        } catch (err) {
+          this.ERR('packageChangedListener error (installed): ' + err);
+        }
+      });
     });
 
     thunder.on('org.rdk.AppManager', 'onAppUninstalled', data => {
       this.LOG('onAppUninstallStatus ' + JSON.stringify(data));
-      this._packageChangedListeners.forEach(listener => listener('uninstalled', data));
+      this._packageChangedListeners.forEach(listener => {
+        try {
+          listener('uninstalled', data);
+        } catch (err) {
+          this.ERR('packageChangedListener error (uninstalled): ' + err);
+        }
+      });
     });
 
     thunder.on('org.rdk.AppManager', 'onAppLifecycleStateChanged', async data => {
