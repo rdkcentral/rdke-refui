@@ -37,6 +37,12 @@ const APP_DETAILS_KEY = "refui.details";
 
 const APP_DEFAULT_ARCH = "arm";
 
+// Default icon for sideloaded apps that have no icon from DAC server or cache
+const SIDELOADED_APP_DEFAULT_ICON = "/images/apps/DACApp_455_255.png";
+
+// Resolved names that should be excluded from the UI
+const EXCLUDED_RESOLVED_NAMES = ["base", "wpe-develop","wpe", "wpe-rdk", "refui", "cobalt"];
+
 function makeLogMessage(call, err) {
   return err.toString() + " <=> " + call;
 }
@@ -354,6 +360,17 @@ export async function uninstallDACApp(app, progressElement) {
 
 const storedAppInfoCache = new Map();
 
+function deriveNameFromPackageId(packageId) {
+  if (typeof packageId !== "string") return "Unknown App";
+  const parts = packageId.split(".");
+  const lastPart = parts[parts.length - 1];
+  // Capitalize first letter and replace hyphens with spaces
+  return lastPart
+    .split("-")
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
 export async function getInstalledDACApps() {
   const result = [];
   console.log("getInstalledDACApps()");
@@ -375,10 +392,6 @@ export async function getInstalledDACApps() {
           let cachedAppDetails = null;
           try {
             cachedAppDetails = JSON.parse(await AppManager.get().getAppProperty(pkg.packageId, APP_DETAILS_KEY));
-            if (!cachedAppDetails?.header?.name) {
-              storedAppInfoCache.set(key, {});
-              continue;
-            }
           } catch (err) {
             logWarning("getInstalledDACApps()", new ThunderError(`getAppProperty(${pkg.packageId})`, err));
           }
@@ -390,14 +403,26 @@ export async function getInstalledDACApps() {
             logWarning("getInstalledDACApps()", err);
           }
 
+          // Use server name, then cached name, then derive from packageId for sideloaded apps
+          const resolvedName = appDetails?.header?.name
+            ?? cachedAppDetails?.header?.name
+            ?? deriveNameFromPackageId(pkg.packageId);
+
           storedAppInfo = {
-            name: appDetails?.header?.name ?? cachedAppDetails?.header?.name,
-            icon: appDetails?.header?.icon,
+            name: resolvedName,
+            icon: appDetails?.header?.icon ?? cachedAppDetails?.header?.icon ?? SIDELOADED_APP_DEFAULT_ICON,
+            isSideloaded: !appDetails && !cachedAppDetails?.header?.name,
           }
           storedAppInfoCache.set(key, storedAppInfo);
         } catch (err) {
           logError(`getAppDetails(${pkg.packageId}, ${pkg.version})`, err);
         }
+      }
+
+      // Skip packages whose resolved name matches an excluded entry
+      const normalizedName = storedAppInfo?.name?.toLowerCase().replace(/\s+/g, "-");
+      if (EXCLUDED_RESOLVED_NAMES.includes(normalizedName)) {
+        continue;
       }
 
       if (storedAppInfo?.name) {

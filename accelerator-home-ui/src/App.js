@@ -2812,8 +2812,20 @@ export default class App extends Router.App {
 
 	jumpToRoute(route) {
 		if (GLOBALS.topmostApp != GLOBALS.selfclientAppName) {
-			AppManager.get().terminateApp(GLOBALS.topmostApp).catch(err => {
-				this.ERR("jumpToRoute err: " + JSON.stringify(err))
+			AppManager.get().closeApp(GLOBALS.topmostApp).then(() => {
+				console.log("closeApp success for: " + GLOBALS.topmostApp)
+				AppManager.get().terminateApp(GLOBALS.topmostApp).then(() => {
+					this.LOG("terminateApp success after closeApp for: " + GLOBALS.topmostApp)
+				}).catch(err => {
+					this.ERR("terminateApp err after closeApp: " + JSON.stringify(err))
+				});
+			}).catch(err => {
+				this.ERR("closeApp err: " + JSON.stringify(err))
+				AppManager.get().terminateApp(GLOBALS.topmostApp).then(() => {
+					this.LOG("terminateApp success after closeApp failure for: " + GLOBALS.topmostApp)
+				}).catch(termErr => {
+					this.ERR("terminateApp err after closeApp failure: " + JSON.stringify(termErr))
+				});
 			});
 			Storage.set("lastVisitedRoute", route); // incase any state change event tries to navigate, it need to be navigated to alexa requested route
 			GLOBALS.LastvisitedRoute = route

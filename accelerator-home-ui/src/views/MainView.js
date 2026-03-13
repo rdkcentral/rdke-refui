@@ -30,6 +30,7 @@ import GracenoteItem from '../items/GracenoteItem.js'
 import HDMIApi from '../api/HDMIApi.js'
 import NetworkManager from '../api/NetworkManagerAPI.js'
 import { getAppCatalogInfo, getInstalledDACApps, startDACApp } from '../api/DACApi.js'
+import AppController from '../AppController.js'
 
 /** Class for main view component in home UI */
 export default class MainView extends Lightning.Component {
@@ -435,8 +436,25 @@ export default class MainView extends Lightning.Component {
     }
     NetworkManager.thunder.on('org.rdk.NetworkManager', 'onInternetStatusChange', notification => {
       this.LOG('on InternetStatus Change' + JSON.stringify(notification))
-      this.refreshSecondRow()
+      if (notification.status === "FULLY_CONNECTED") {
+        this.refreshSecondRow()
+      } else if (notification.status === "NO_INTERNET") {
+        this._hideDacAppsLoader()
+        // Clear stale cached apps (broken/default icons) and show only "More Apps"
+        this.dacApps = [{
+          displayName: 'More Apps',
+          applicationType: 'MoreApps',
+          uri: 'apps',
+          url: '/images/sidePanel/moreapps.png',
+          appIdentifier: 'moreApps'
+        }]
+      }
     })
+    // Refresh My Apps row when apps are installed/uninstalled (including sideloaded via curl)
+    AppController.get().onPackageChanged = (action, data) => {
+      this.LOG('onPackageChanged: ' + action + ' ' + JSON.stringify(data))
+      this.$refreshMyAppsRow()
+    }
 
     this.dacApps = dacCatalog
 
@@ -479,13 +497,6 @@ export default class MainView extends Lightning.Component {
 
   _focus() {
     this._setState(this.state);
-
-    // Check if My Apps row needs refreshing (e.g. after uninstall from AppInfoPage)
-    if (GLOBALS.refreshMyApps) {
-      GLOBALS.refreshMyApps = false;
-      console.log('MainView _focus: refreshMyApps flag detected, refreshing first row...');
-      this.$refreshMyAppsRow();
-    }
   }
 
   _firstEnable() {
@@ -505,7 +516,12 @@ export default class MainView extends Lightning.Component {
     try {
       // Show loader while fetching
       this._showDacAppsLoader()
-      this.dacApps = await this._buildDacAppsList()
+      // Add a timeout to prevent the loader from spinning indefinitely on slow/flaky connections
+      const FETCH_TIMEOUT = 15000 // 15 seconds
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('DAC catalog fetch timed out')), FETCH_TIMEOUT)
+      )
+      this.dacApps = await Promise.race([this._buildDacAppsList(), timeoutPromise])
     } catch (err) {
       this.ERR('Failed to refresh DAC catalog: ' + JSON.stringify(err))
       this._hideDacAppsLoader()

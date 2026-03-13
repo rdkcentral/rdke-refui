@@ -43,6 +43,7 @@ export default class AppController {
     this.WARN = console.warn;
 
     this.launchedAppId = INVALID_APP_ID;
+    this.onPackageChanged = null; // callback for package install/uninstall events
   }
 
   async init() {
@@ -104,10 +105,16 @@ export default class AppController {
   async subscribe(thunder) {
     thunder.on('org.rdk.AppManager', 'onAppInstalled', data => {
       this.LOG('onAppInstallStatus ' + JSON.stringify(data));
+      if (typeof this.onPackageChanged === 'function') {
+        this.onPackageChanged('installed', data);
+      }
     });
 
     thunder.on('org.rdk.AppManager', 'onAppUninstalled', data => {
       this.LOG('onAppUninstallStatus ' + JSON.stringify(data));
+      if (typeof this.onPackageChanged === 'function') {
+        this.onPackageChanged('uninstalled', data);
+      }
     });
 
     thunder.on('org.rdk.AppManager', 'onAppLifecycleStateChanged', async data => {

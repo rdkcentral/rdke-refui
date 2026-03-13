@@ -292,8 +292,6 @@ export default class AppInfoPage extends Lightning.Component {
                 console.log(`${appInfo.name} uninstalled successfully`);
                 // Refresh the list after uninstall
                 await this._fetchInstalledApps();
-                // Set flag so MainView refreshes My Apps row when it regains focus
-                GLOBALS.refreshMyApps = true;
             } else {
                 console.error(`Failed to uninstall ${appInfo.name}`);
             }
