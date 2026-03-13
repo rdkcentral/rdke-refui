@@ -451,10 +451,11 @@ export default class MainView extends Lightning.Component {
       }
     })
     // Refresh My Apps row when apps are installed/uninstalled (including sideloaded via curl)
-    AppController.get().onPackageChanged = (action, data) => {
+    this._onPackageChanged = (action, data) => {
       this.LOG('onPackageChanged: ' + action + ' ' + JSON.stringify(data))
       this.$refreshMyAppsRow()
     }
+    AppController.get().addPackageChangedListener(this._onPackageChanged)
 
     this.dacApps = dacCatalog
 
@@ -462,6 +463,11 @@ export default class MainView extends Lightning.Component {
 
     this.refreshFirstRow()
     // this._setState('AppList.0')
+  }
+
+  _detach() {
+    // Unsubscribe to avoid stale references to this MainView instance
+    AppController.get().removePackageChangedListener(this._onPackageChanged)
   }
 
   _firstActive() {
@@ -513,18 +519,21 @@ export default class MainView extends Lightning.Component {
     })
   }
   async refreshSecondRow() {
+    let timeoutId
     try {
       // Show loader while fetching
       this._showDacAppsLoader()
       // Add a timeout to prevent the loader from spinning indefinitely on slow/flaky connections
       const FETCH_TIMEOUT = 15000 // 15 seconds
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('DAC catalog fetch timed out')), FETCH_TIMEOUT)
-      )
+      const timeoutPromise = new Promise((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error('DAC catalog fetch timed out')), FETCH_TIMEOUT)
+      })
       this.dacApps = await Promise.race([this._buildDacAppsList(), timeoutPromise])
     } catch (err) {
       this.ERR('Failed to refresh DAC catalog: ' + JSON.stringify(err))
       this._hideDacAppsLoader()
+    } finally {
+      clearTimeout(timeoutId)
     }
   }
   refreshFirstRow() {

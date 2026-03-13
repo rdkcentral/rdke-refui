@@ -43,7 +43,25 @@ export default class AppController {
     this.WARN = console.warn;
 
     this.launchedAppId = INVALID_APP_ID;
-    this.onPackageChanged = null; // callback for package install/uninstall events
+    this._packageChangedListeners = new Set();
+  }
+
+  /**
+   * Register a listener for package install/uninstall events.
+   * @param {Function} listener - callback(action, data)
+   */
+  addPackageChangedListener(listener) {
+    if (typeof listener === 'function') {
+      this._packageChangedListeners.add(listener);
+    }
+  }
+
+  /**
+   * Unregister a previously registered package-changed listener.
+   * @param {Function} listener
+   */
+  removePackageChangedListener(listener) {
+    this._packageChangedListeners.delete(listener);
   }
 
   async init() {
@@ -105,16 +123,12 @@ export default class AppController {
   async subscribe(thunder) {
     thunder.on('org.rdk.AppManager', 'onAppInstalled', data => {
       this.LOG('onAppInstallStatus ' + JSON.stringify(data));
-      if (typeof this.onPackageChanged === 'function') {
-        this.onPackageChanged('installed', data);
-      }
+      this._packageChangedListeners.forEach(listener => listener('installed', data));
     });
 
     thunder.on('org.rdk.AppManager', 'onAppUninstalled', data => {
       this.LOG('onAppUninstallStatus ' + JSON.stringify(data));
-      if (typeof this.onPackageChanged === 'function') {
-        this.onPackageChanged('uninstalled', data);
-      }
+      this._packageChangedListeners.forEach(listener => listener('uninstalled', data));
     });
 
     thunder.on('org.rdk.AppManager', 'onAppLifecycleStateChanged', async data => {
