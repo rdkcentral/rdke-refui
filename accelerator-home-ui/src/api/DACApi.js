@@ -23,6 +23,7 @@ import AppManager from './AppManagerApi';
 import AppController from '../AppController';
 import { ThunderError } from './ThunderError';
 import { Metrics } from '@firebolt-js/sdk'
+import { SIDELOADED_APP_DEFAULT_ICON, deriveNameFromPackageId } from '../helpers/DACAppPresentation'
 
 // the size that is assumed if it is not possible to retrieve package size
 // from the server, according to server API this should never happen
@@ -375,10 +376,6 @@ export async function getInstalledDACApps() {
           let cachedAppDetails = null;
           try {
             cachedAppDetails = JSON.parse(await AppManager.get().getAppProperty(pkg.packageId, APP_DETAILS_KEY));
-            if (!cachedAppDetails?.header?.name) {
-              storedAppInfoCache.set(key, {});
-              continue;
-            }
           } catch (err) {
             logWarning("getInstalledDACApps()", new ThunderError(`getAppProperty(${pkg.packageId})`, err));
           }
@@ -390,9 +387,14 @@ export async function getInstalledDACApps() {
             logWarning("getInstalledDACApps()", err);
           }
 
+          // Use server name, then cached name, then derive from packageId for sideloaded apps
+          const resolvedName = appDetails?.header?.name
+            ?? cachedAppDetails?.header?.name
+            ?? deriveNameFromPackageId(pkg.packageId);
+
           storedAppInfo = {
-            name: appDetails?.header?.name ?? cachedAppDetails?.header?.name,
-            icon: appDetails?.header?.icon,
+            name: resolvedName,
+            icon: appDetails?.header?.icon ?? cachedAppDetails?.header?.icon ?? SIDELOADED_APP_DEFAULT_ICON,
           }
           storedAppInfoCache.set(key, storedAppInfo);
         } catch (err) {
