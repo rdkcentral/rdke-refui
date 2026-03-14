@@ -530,10 +530,14 @@ export default class App extends Router.App {
 			Storage.set("deviceType", ((result.devicetype != null) ? result.devicetype : "IpTv"));
 		});
 		UserSettingsApi.get().activate();
-		LEDController.isSupported().then(() => {
-			LEDController.activate().then(() => {
-				LEDController.getSupportedLEDStates();
-			});
+		LEDController.isSupported().then(isSupported => {
+			if (isSupported) {
+				LEDController.activate().then(() => {
+					LEDController.getSupportedLEDStates();
+				});
+			} else {
+				this.LOG("LEDController is not supported on this device");
+			}
 		});
 		thunder.Controller.activate({
 			callsign: 'org.rdk.System'

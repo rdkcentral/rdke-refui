@@ -23,7 +23,7 @@ import { KEYBOARD_FORMATS } from '../ui-components/components/Keyboard'
 import PasswordSwitch from './PasswordSwitch';
 import NetworkManager from '../api/NetworkManagerAPI';
 import PersistentStoreApi from '../api/PersistentStore';
-import LEDController from '../api/LEDControlApi'
+import LEDController, { LEDControlState } from '../api/LEDControlApi'
 
 export default class JoinAnotherNetworkComponent extends Lightning.Component {
 

@@ -237,7 +237,6 @@ export default class BluetoothScreen extends Lightning.Component {
       Registry.clearInterval(this.scanTimer)
     }
     this._bt.stopScan()
-    LEDController.matchLEDStateToPowerState();
   }
 
   /**

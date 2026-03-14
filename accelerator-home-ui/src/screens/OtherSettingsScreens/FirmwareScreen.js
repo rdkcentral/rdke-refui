@@ -18,7 +18,7 @@
  **/
 import { Lightning, Language, Router, Settings } from '@lightningjs/sdk'
 import { COLORS } from '../../colors/Colors'
-import { CONFIG, GLOBALS } from '../../Config/Config'
+import { CONFIG } from '../../Config/Config'
 import AppApi from '../../api/AppApi';
 import ThunderJS from 'ThunderJS';
 import { Metrics } from '@firebolt-js/sdk';

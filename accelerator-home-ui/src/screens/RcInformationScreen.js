@@ -18,7 +18,7 @@
  **/
 import { Lightning, Language, Router } from '@lightningjs/sdk'
 import { COLORS } from './../colors/Colors'
-import { CONFIG, GLOBALS } from '../Config/Config'
+import { CONFIG } from '../Config/Config'
 import ThunderJS from 'ThunderJS'
 import RCApi from '../api/RemoteControl';
 import LEDController, { LEDControlState } from '../api/LEDControlApi';

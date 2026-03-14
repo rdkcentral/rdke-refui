@@ -17,7 +17,7 @@
  * limitations under the License.
  **/
 import { Language,Registry, Lightning, Router } from "@lightningjs/sdk";
-import { CONFIG, GLOBALS } from '../Config/Config'
+import { CONFIG } from '../Config/Config'
 import LEDController, { LEDControlState } from "../api/LEDControlApi";
 
 const errorTitle = 'Error Title'

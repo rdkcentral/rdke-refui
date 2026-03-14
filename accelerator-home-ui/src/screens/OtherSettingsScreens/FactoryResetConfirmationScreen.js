@@ -216,8 +216,7 @@ export default class RebootConfirmationScreen extends Lightning.Component {
         catch (err) {
             this.ERR("Error clearing localStorage: " + JSON.stringify(err));
         }
-		await appApi.clearCache().catch(err => { this.ERR("clearCache error: " + JSON.stringify(err)) })
-        LEDController.matchLEDStateToPowerState();
+        await appApi.clearCache().catch(err => { this.ERR("clearCache error: " + JSON.stringify(err)) })
         await appApi.reboot("User Trigger").then(result => { this.LOG('device rebooting' + JSON.stringify(result))})
     }
 
