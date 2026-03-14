@@ -550,8 +550,8 @@ export default class App extends Router.App {
 				"wakeupSources": 262143
 			}
 			appApi.setWakeupSrcConfiguration(param);
-			appApi.setPowerState(GLOBALS.powerState).catch(err => {
-				this.ERR("App setPowerState error: " + JSON.stringify(err));
+			appApi.setPowerState(GLOBALS.powerState).then(res => {
+				if (res === false) this.ERR("setPowerState failed: " + JSON.stringify(GLOBALS.powerState));
 			});
 		}).catch(err => {
 			this.ERR("App System plugin activation error: " + JSON.stringify(err));

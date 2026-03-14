@@ -252,7 +252,6 @@ export default class RCInformationScreen extends Lightning.Component {
     onStatusCB(cbData) {
         // getStatus response has 'success' property; notification payload does not have that.
         if ((cbData !== undefined) && ("success" in cbData ? cbData.success : true)) {
-            LEDController.setLEDState(LEDControlState.WPS_CONNECTED);
             let cbDatastatus
             if (Array.isArray(cbData.status)) {
                 cbDatastatus = cbData.status[0] || {};
@@ -279,6 +278,9 @@ export default class RCInformationScreen extends Lightning.Component {
                 })
                 cbDatastatus.remoteData.map(item => {
                     connectedStatus.push(item.connected)
+                    if (item.connected === true) {
+                        LEDController.setLEDState(LEDControlState.WPS_CONNECTED);
+                    }
                 })
                 this.tag("Status.Value").text.text = connectedStatus
                 this.tag("MacAddress.Value").text.text = MacAddress
