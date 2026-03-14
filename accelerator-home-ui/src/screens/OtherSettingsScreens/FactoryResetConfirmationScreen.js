@@ -156,7 +156,7 @@ export default class RebootConfirmationScreen extends Lightning.Component {
         }
     }
 
-	async _performFactoryReset() {
+    async _performFactoryReset() {
         LEDController.setLEDState(LEDControlState.FACTORY_RESET);
         // Deactivate SmartScreen instance to prevent overlay when Auth is revoked.
         AlexaApi.get().disableSmartScreen();

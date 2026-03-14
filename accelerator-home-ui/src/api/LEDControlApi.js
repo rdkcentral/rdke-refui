@@ -186,7 +186,7 @@ class LEDControlApi {
   }
 
   matchLEDStateToPowerState() {
-	this.setLEDState(GLOBALS.powerState !== 'ON' ? LEDControlState.STANDBY : LEDControlState.ACTIVE);
+    return this.setLEDState(GLOBALS.powerState !== 'ON' ? LEDControlState.STANDBY : LEDControlState.ACTIVE);
   }
 }
 
