@@ -23,6 +23,7 @@ import AppApi from '../../api/AppApi';
 import BluetoothApi from '../../api/BluetoothApi';
 import ThunderJS from 'ThunderJS'
 import RCApi from '../../api/RemoteControl';
+import LEDController, { LEDControlState } from '../../api/LEDControlApi';
 
 var appApi = new AppApi();
 var bluetoothApi = new BluetoothApi();
@@ -145,6 +146,7 @@ export default class BluetoothScreen extends Lightning.Component {
         bluetoothApi.enable().then(res => {
             this.LOG("SplashBluetoothScreen enable result: " + JSON.stringify(res))
             bluetoothApi.startScanBluetooth().then(startScanresult => {
+                LEDController.setLEDState(LEDControlState.WPS_CONNECTING);
                 this.LOG('SplashBluetoothScreen startScanresult ' + JSON.stringify(startScanresult))
                 var SubscribeEvent = _thunder.on('org.rdk.Bluetooth', 'onDiscoveredDevice', notification => {
                     bluetoothApi.getDiscoveredDevices().then((getdocoveredInfo) => {
@@ -158,6 +160,7 @@ export default class BluetoothScreen extends Lightning.Component {
                                 this.LOG("SplashBluetoothScreen getConnectedDevices" + JSON.stringify(getCdresult))
                                 bluetoothApi.getPairedDevices().then(getpairedDevices => {
                                     this.LOG("SplashBluetoothScreen getpairedDevices" + JSON.stringify(getpairedDevices))
+                                    LEDController.setLEDState(LEDControlState.WPS_CONNECTED);
                                     bluetoothApi.stopScan().then(stopScan => {
                                         this.LOG("SplashBluetoothScreen stopscan" + JSON.stringify(stopScan))
                                         SubscribeEvent.dispose();
@@ -185,12 +188,14 @@ export default class BluetoothScreen extends Lightning.Component {
                             })
                             .catch(err => {
                                 this.ERR(`SplashBluetoothScreen Can't pair device : ${JSON.stringify(err)}`)
+                                LEDController.setLEDState(LEDControlState.WPS_ERROR);
                             })
                     })
                 })
             })
             .catch(err => {
                 this.ERR("Can't scan enable : " + JSON.stringify(err))
+                LEDController.setLEDState(LEDControlState.WPS_ERROR);
             })
         })
     }
@@ -202,7 +207,7 @@ export default class BluetoothScreen extends Lightning.Component {
             let cbDatastatus
             if (Array.isArray(cbData.status)) {
                 cbDatastatus = cbData.status[0] || {};
-              } 
+              }
             else if (cbData.status && typeof cbData.status === 'object') {
                 cbDatastatus = cbData.status;
               }
@@ -210,6 +215,7 @@ export default class BluetoothScreen extends Lightning.Component {
                 //console.log("BluetoothScreen rcPairingApis RemoteData Length ", cbData.status.remoteData.length)
                 cbDatastatus.remoteData.map(item => {
                     this.tag('Info').text.text = `paired with device ${item.name}`
+                    LEDController.setLEDState(LEDControlState.WPS_CONNECTED);
                     // Do not clear this.RCTimeout if need to run this in background to reconnect on loss.
                     // if (this.RCTimeout) {
                     //     console.log("SplashBluetoothScreen clearTimeout(this.RCTimeout)");
@@ -230,8 +236,11 @@ export default class BluetoothScreen extends Lightning.Component {
                     for(let i=0;i<cbDatastatus.netTypesSupported.length;i++)
                     {
                         this.LOG("Netypesupported" + JSON.stringify(cbDatastatus.netTypesSupported[i]))
-                        RCApi.get().startPairing(30,cbDatastatus.netTypesSupported[i]).catch(err => {
+                        RCApi.get().startPairing(30,cbDatastatus.netTypesSupported[i]).then(() => {
+                            LEDController.setLEDState(LEDControlState.WPS_CONNECTING);
+                        }).catch(err => {
                             this.ERR("RCInformationScreen startPairing error: " + JSON.stringify(err));
+                            LEDController.setLEDState(LEDControlState.WPS_ERROR);
                         });
                     }
                 }
@@ -302,6 +311,7 @@ export default class BluetoothScreen extends Lightning.Component {
         if (this.RCTimeout) {
             Registry.clearTimeout(this.RCTimeout)
         }
+        LEDController.matchLEDStateToPowerState();
     }
 
     static _states() {

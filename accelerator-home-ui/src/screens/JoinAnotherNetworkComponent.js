@@ -23,6 +23,7 @@ import { KEYBOARD_FORMATS } from '../ui-components/components/Keyboard'
 import PasswordSwitch from './PasswordSwitch';
 import NetworkManager from '../api/NetworkManagerAPI';
 import PersistentStoreApi from '../api/PersistentStore';
+import LEDController from '../api/LEDControlApi'
 
 export default class JoinAnotherNetworkComponent extends Lightning.Component {
 
@@ -42,6 +43,10 @@ export default class JoinAnotherNetworkComponent extends Lightning.Component {
     this.hidePasswd = true
     this.star = ""
     this.tag("Keyboard").visible = false
+  }
+
+  _inactive() {
+    LEDController.matchLEDStateToPowerState();
   }
 
   handleDone() {
@@ -69,6 +74,7 @@ export default class JoinAnotherNetworkComponent extends Lightning.Component {
   }
 
   async startConnectForAnotherNetwork(device, passphrase) {
+    LEDController.setLEDState(LEDControlState.WPS_CONNECTING);
     await NetworkManager.WiFiConnect(false, { ssid: device.ssid, security: device.security }, passphrase).then(() => {
       NetworkManager.AddToKnownSSIDs(device.ssid, passphrase, device.security).then((response) => {
         if (response === true ) {

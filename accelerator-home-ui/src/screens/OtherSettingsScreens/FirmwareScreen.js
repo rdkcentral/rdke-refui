@@ -18,10 +18,11 @@
  **/
 import { Lightning, Language, Router, Settings } from '@lightningjs/sdk'
 import { COLORS } from '../../colors/Colors'
-import { CONFIG } from '../../Config/Config'
+import { CONFIG, GLOBALS } from '../../Config/Config'
 import AppApi from '../../api/AppApi';
 import ThunderJS from 'ThunderJS';
 import { Metrics } from '@firebolt-js/sdk';
+import LEDController, { LEDControlState } from '../../api/LEDControlApi'
 
 /**
  * Class for Firmware screen.
@@ -148,7 +149,9 @@ export default class FirmwareScreen extends Lightning.Component {
                     this.LOG("Downloading...");
                     this.getDownloadPercent();
                 }, 1000)
+                LEDController.setLEDState(LEDControlState.USB_UPGRADE);
             } else if (notification.firmwareUpdateStateChange > 3) {
+                LEDController.matchLEDStateToPowerState();
                 this.showUpdateButton(notification.firmwareUpdateStateChange)
                 this.getDownloadFirmwareInfo()
             } else if (FirmwareScreen.STATES[notification.firmwareUpdateStateChange] != "Downloading") {
@@ -203,6 +206,7 @@ export default class FirmwareScreen extends Lightning.Component {
 
     _disable() {
         if (this.onFirmwareUpdateStateChangeCB) this.onFirmwareUpdateStateChangeCB.dispose();
+        LEDController.matchLEDStateToPowerState();
     }
 
     async _focus() {

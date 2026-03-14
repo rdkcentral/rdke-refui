@@ -85,6 +85,7 @@ import PackageManager from './api/PackageManagerApi.js';
 import RDKWindowManager from './api/RDKWindowManagerApi.js';
 import RuntimeManager from './api/RuntimeManagerApi.js';
 import AppController from './AppController.js';
+import LEDController, { LEDControlState } from './api/LEDControlApi.js';
 
 var AlexaAudioplayerActive = false;
 var thunder = ThunderJS(CONFIG.thunderConfig);
@@ -257,7 +258,7 @@ export default class App extends Router.App {
 				GLOBALS.powerState = PowerState.POWER_STATE_ON;
 				this.LOG("powerState after ===>" + JSON.stringify(GLOBALS.powerState))
 				this.initializeInactivityEngine();
-			}) 
+			})
 			.catch(err => {
                 this.ERR("Error waking device: " + JSON.stringify(err));
             })
@@ -281,7 +282,7 @@ export default class App extends Router.App {
 			} else if(GLOBALS.MiracastNotificationstatus){
 				this.jumpToRoute("menu");
 				miracast.acceptClientConnection("Reject").then(res=>{
-					if(res.success){Router.focusPage()} 
+					if(res.success){Router.focusPage()}
 				})
 		    } else {
 				this.jumpToRoute("menu"); //method to exit the current app(if any) and route to home screen
@@ -529,6 +530,11 @@ export default class App extends Router.App {
 			Storage.set("deviceType", ((result.devicetype != null) ? result.devicetype : "IpTv"));
 		});
 		UserSettingsApi.get().activate();
+		LEDController.isSupported().then(() => {
+			LEDController.activate().then(() => {
+				LEDController.getSupportedLEDStates();
+			});
+		});
 		thunder.Controller.activate({
 			callsign: 'org.rdk.System'
 		}).then(result => {
@@ -537,10 +543,10 @@ export default class App extends Router.App {
 				//https://github.com/rdkcentral/entservices-apis/blob/1.15.11/docs/apis/PowerManagerPlugin.md#setWakeupSrcConfig
 				//By the above documentation we passed the Enum value sum to enable all wakeup sources expect WAKEUP_REASON_UNKNOWN
 				//Enum indicating bit position (bit counting starts at 1)
-				"wakeupSources": 262143 
+				"wakeupSources": 262143
 			}
 			appApi.setWakeupSrcConfiguration(param);
-			appApi.setPowerState(GLOBALS.powerState).then(res => {});
+			appApi.setPowerState(GLOBALS.powerState);
 		}).catch(err => {
 			this.ERR("App System plugin activation error: " + JSON.stringify(err));
 		})
@@ -839,28 +845,28 @@ export default class App extends Router.App {
 		this._updateLanguageToDefault()
 		// Initialize plugins using the abstraction
 		this._activatePlugin(
-			"org.rdk.PackageManagerRDKEMS", 
-			"PackageManagerRDKEMS", 
+			"org.rdk.PackageManagerRDKEMS",
+			"PackageManagerRDKEMS",
 			() => packagemangerRdkems.activate()
 		);
-		
+
 		this._activatePlugin(
-			"org.rdk.AppManager", 
-			"AppManager", 
+			"org.rdk.AppManager",
+			"AppManager",
 			() => AppManager.get().activate(),
 			() => this._SubscribeToAppManagerNotifications()
 		);
-		
+
 		this._activatePlugin(
-			"org.rdk.RDKWindowManager", 
-			"RDKWindowManager", 
+			"org.rdk.RDKWindowManager",
+			"RDKWindowManager",
 			() => RDKWindowManager.get().activate(),
 			() => this._SubscribeToRDKWindowManagerNotifications()
 		);
-		
+
 		this._activatePlugin(
-			"org.rdk.RuntimeManager", 
-			"RuntimeManager", 
+			"org.rdk.RuntimeManager",
+			"RuntimeManager",
 			() => RuntimeManager.get().activate(),
 			() => this._SubscribeToRuntimeManagerNotifications()
 		);
@@ -961,7 +967,7 @@ export default class App extends Router.App {
 			}
 			else {
 				GLOBALS.IsConnectedToInternet = false
-			}	
+			}
 			console.warn("onInternetStatusChange:", data);
 		});
 		thunder.on('org.rdk.NetworkManager', 'onAvailableSSIDs', data => {
@@ -2121,6 +2127,7 @@ export default class App extends Router.App {
 	subscribeToPowerChangeNotifications() {
 		thunder.on("org.rdk.PowerManager", "onPowerModeChanged", notification => {
 			this.LOG(new Date().toISOString() + " onPowerModeChanged Notification: " + JSON.stringify(notification));
+			LEDController.setLEDState(notification.newState === "ON" ? LEDControlState.ACTIVE : LEDControlState.STANDBY);
 			appApi.getPowerState().then(res => {
 				GLOBALS.powerState = res ? res.currentState : notification.newState
 			}).catch(e => GLOBALS.powerState = notification.newState)

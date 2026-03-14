@@ -23,7 +23,8 @@ import PasswordSwitch from './PasswordSwitch'
 import { Keyboard } from '../ui-components/index'
 import { KEYBOARD_FORMATS } from '../ui-components/components/Keyboard'
 import PersistentStoreApi from '../api/PersistentStore'
-import NetworkManager,{WiFiState} from '../api/NetworkManagerAPI'
+import NetworkManager, { WiFiState } from '../api/NetworkManagerAPI'
+import LEDController, { LEDControlState } from '../api/LEDControlApi'
 
 let Ssid = null
 
@@ -194,6 +195,7 @@ export default class WifiPairingScreen extends Lightning.Component {
   _inactive() {
     if (this.onWIFIStateChangedCB) this.onWIFIStateChangedCB.dispose();
     if (this.waitToConnectTO) Registry.clearTimeout(this.waitToConnectTO);
+    LEDController.matchLEDStateToPowerState();
   }
 
    async pressEnter(option) {
@@ -235,10 +237,15 @@ export default class WifiPairingScreen extends Lightning.Component {
     this.onWIFIStateChangedCB = NetworkManager.thunder.on(NetworkManager.callsign, 'onWiFiStateChange', notification => {
       if (notification.state === WiFiState.WIFI_STATE_INVALID_CREDENTIALS|| notification.state === WiFiState.WIFI_STATE_SSID_CHANGED || notification.state === WiFiState.WIFI_STATE_AUTHENTICATION_FAILED) {
         this.LOG("INVALID_CREDENTIALS; deleting WiFi Persistence data.")
+        LEDController.setLEDState(LEDControlState.WPS_ERROR);
         NetworkManager.RemoveKnownSSID(Ssid).then(() => {
           PersistentStoreApi.get().deleteNamespace('wifi')
         });
         flag = 1
+      } else if (notification.state === WiFiState.WIFI_STATE_PAIRING || notification.state === WiFiState.WIFI_STATE_CONNECTING) {
+        LEDController.setLEDState(LEDControlState.WPS_CONNECTING);
+      } else if (notification.state === WiFiState.WIFI_STATE_CONNECTED) {
+        LEDController.setLEDState(LEDControlState.WPS_CONNECTED);
       }
     })
     NetworkManager.WiFiConnect(false, this._item, password).then(() => {

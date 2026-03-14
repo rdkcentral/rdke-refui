@@ -25,6 +25,7 @@ import NetworkManager from '../../api/NetworkManagerAPI.js'
 import AlexaApi from '../../api/AlexaApi.js';
 import RCApi from '../../api/RemoteControl'
 import Warehouse from '../../api/WarehouseApis.js'
+import LEDController, { LEDControlState } from '../../api/LEDControlApi'
 
 const appApi = new AppApi()
 const _btApi = new BluetoothApi()
@@ -138,7 +139,6 @@ export default class RebootConfirmationScreen extends Lightning.Component {
         });
     }
 
-
     _firstEnable() {
         this.AppApi.checkStatus(Warehouse.get().callsign).then(resp => {
             this.LOG("FactoryReset: warehouse plugin status : " + JSON.stringify(resp[0].status));
@@ -156,7 +156,8 @@ export default class RebootConfirmationScreen extends Lightning.Component {
         }
     }
 
-    async _performFactoryReset() {
+	async _performFactoryReset() {
+        LEDController.setLEDState(LEDControlState.FACTORY_RESET);
         // Deactivate SmartScreen instance to prevent overlay when Auth is revoked.
         AlexaApi.get().disableSmartScreen();
         if(GLOBALS.AlexaAvsstatus){AlexaApi.get().resetAVSCredentials();}
@@ -211,11 +212,12 @@ export default class RebootConfirmationScreen extends Lightning.Component {
         try {
             localStorage.clear();
             this.LOG("localStorage cleared successfully");
-        } 
+        }
         catch (err) {
             this.ERR("Error clearing localStorage: " + JSON.stringify(err));
         }
-        await appApi.clearCache().catch(err => { this.ERR("clearCache error: " + JSON.stringify(err)) })
+		await appApi.clearCache().catch(err => { this.ERR("clearCache error: " + JSON.stringify(err)) })
+        LEDController.matchLEDStateToPowerState();
         await appApi.reboot("User Trigger").then(result => { this.LOG('device rebooting' + JSON.stringify(result))})
     }
 
