@@ -20,6 +20,7 @@
 import DownloadManager from './DownloadManagerApi';
 import PackageManager from './PackageManagerApi';
 import AppManager from './AppManagerApi';
+import AppApi from './AppApi';
 import AppController from '../AppController';
 import { ThunderError } from './ThunderError';
 import { Metrics } from '@firebolt-js/sdk'
@@ -73,11 +74,32 @@ let storeConfig = null;
 
 async function getStoreConfig() {
   if (!storeConfig) {
-    const config = await PackageManager.get().configuration();
-    if (typeof config?.configUrl !== "string") {
-      throw new Error("Invalid config: " + JSON.stringify(config));
+    const appApi = new AppApi();
+    const rfcKey = "Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.DAC.ConfigURL";
+    let resolvedConfigUrl = null;
+    try {
+      const result = await appApi.getRFCConfig(rfcKey);
+      const rfcUrl = result?.RFCConfig?.[rfcKey];
+      console.log("config URL from RFC :", rfcUrl);
+      if (typeof rfcUrl == "string" && rfcUrl.trim().length > 0) {
+        resolvedConfigUrl = rfcUrl.trim();
+      } else {
+        console.warn("RFC URL empty or invalid; will fall back to PackageManager.");
+      }
+    } catch (err) {
+      console.warn("getRFCConfig failed; will fall back to PackageManager.", err);
     }
-    const fetchResponse = await fetch(config.configUrl);
+
+    if (!resolvedConfigUrl) {
+      const config = await PackageManager.get().configuration();
+      if (typeof config?.configUrl !== "string") {
+        throw new Error("Invalid config: " + JSON.stringify(config));
+      } else {
+        resolvedConfigUrl = config?.configUrl;
+        console.log("config URL from packagemanager :", resolvedConfigUrl);
+      }
+    }
+    const fetchResponse = await fetch(resolvedConfigUrl);
     if (!fetchResponse.ok) {
       throw new Error(`Unexpected response: ${fetchResponse.status}: ${fetchResponse.statusText}`);
     }

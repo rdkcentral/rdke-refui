@@ -1607,7 +1607,7 @@ export default class AppApi {
   
   getRFCConfig(rfcParamsList) {
     return new Promise((resolve, reject) => {
-      thunder.call('org.rdk.System', 'getRFCConfig', rfcParamsList).then(result => {
+      thunder.call('org.rdk.System', 'getRFCConfig',{rfcList:[rfcParamsList]}).then(result => {
         if (result.success) {
           resolve(result)
         } else {
