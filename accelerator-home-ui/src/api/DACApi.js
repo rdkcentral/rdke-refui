@@ -80,7 +80,6 @@ async function getStoreConfig() {
     try {
       const result = await appApi.getRFCConfig(rfcKey);
       const rfcUrl = result?.RFCConfig?.[rfcKey];
-      console.log("config URL from RFC :", rfcUrl);
       if (typeof rfcUrl == "string" && rfcUrl.trim().length > 0) {
         resolvedConfigUrl = rfcUrl.trim();
       } else {
@@ -96,7 +95,6 @@ async function getStoreConfig() {
         throw new Error("Invalid config: " + JSON.stringify(config));
       } else {
         resolvedConfigUrl = config?.configUrl;
-        console.log("config URL from packagemanager :", resolvedConfigUrl);
       }
     }
     const fetchResponse = await fetch(resolvedConfigUrl);
