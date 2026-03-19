@@ -66,9 +66,6 @@ class ActionButton extends Lightning.Component {
 
     set primary(isPrimary) {
         this._isPrimary = isPrimary;
-        if (isPrimary) {
-            this.patch({ color: CONFIG.theme.hex });
-        }
     }
 
     get primary() {
@@ -97,7 +94,7 @@ class ActionButton extends Lightning.Component {
     _unfocus() {
         this.tag('FocusIndicator').alpha = 0;
         this.patch({
-            color: this._isPrimary ? CONFIG.theme.hex : 0xFF3D3D3D,
+            color: 0xFF3D3D3D,
             smooth: { scale: 1 }
         });
     }

@@ -78,6 +78,33 @@ export default class AppStore extends Lightning.Component {
         this._setState('Catalog')
     }
 
+    $showInstallError({ name, errorCode }) {
+        const appName = name || Language.translate('App')
+        const msg = Language.translate('Something went wrong while installing') + ` "${appName}". ` + Language.translate('Error code') + `: ${errorCode}`
+        this.widgets.failok.notify({ title: Language.translate('Installation Failed'), msg: msg })
+        Router.focusWidget('FailOk')
+    }
+
+    $showUninstallError({ name, error }) {
+        const appName = name || Language.translate('App')
+        let msg = Language.translate('Failed to uninstall') + ` "${appName}". ` + Language.translate('Please try again later.')
+        if (error) {
+            msg += ' ' + Language.translate('Error') + `: ${error}`
+        }
+        this.widgets.failok.notify({ title: Language.translate('Uninstall Failed'), msg: msg })
+        Router.focusWidget('FailOk')
+    }
+
+    $showLaunchError({ name, error }) {
+        const appName = name || Language.translate('App')
+        let msg = Language.translate('Something went wrong while launching') + ` "${appName}". ` + Language.translate('Please check the internet and remaining setup.')
+        if (error) {
+            msg += ' ' + Language.translate('Error') + `: ${error}`
+        }
+        this.widgets.failok.notify({ title: Language.translate('Launch Failed'), msg: msg })
+        Router.focusWidget('FailOk')
+    }
+
     static _states() {
         return [
             class Catalog extends this {

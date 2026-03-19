@@ -23,6 +23,7 @@ import { CONFIG, GLOBALS } from "../Config/Config";
 import AppCard from "../items/AppCard";
 import { getInstalledDACApps, startDACApp, uninstallDACApp } from "../api/DACApi";
 import { filterExcludedApps } from "../helpers/DACAppPresentation";
+import UninstallConfirmation from "../overlays/UninstallConfirmation";
 
 export default class AppInfoPage extends Lightning.Component {
 
@@ -158,6 +159,13 @@ export default class AppInfoPage extends Lightning.Component {
                         }
                     }
                 }
+            },
+
+            // Uninstall Confirmation Overlay
+            UninstallConfirmationOverlay: {
+                type: UninstallConfirmation,
+                visible: false,
+                zIndex: 10
             }
         }
     }
@@ -247,7 +255,7 @@ export default class AppInfoPage extends Lightning.Component {
                 break;
             case 'uninstall':
                 console.log("Uninstall app:", appInfo.name);
-                this._uninstallApp(appInfo);
+                this._showUninstallConfirmation(appInfo);
                 break;
             default:
                 console.log("Unknown action:", action);
@@ -293,12 +301,65 @@ export default class AppInfoPage extends Lightning.Component {
                 console.log(`${appInfo.name} uninstalled successfully`);
                 // Refresh the list after uninstall
                 await this._fetchInstalledApps();
+                return true;
             } else {
                 console.error(`Failed to uninstall ${appInfo.name}`);
+                return false;
             }
         } catch (error) {
             console.error(`Error uninstalling ${appInfo.name}:`, error);
+            return false;
         }
+    }
+
+    /**
+     * Show the uninstall confirmation overlay
+     */
+    _showUninstallConfirmation(appInfo) {
+        this._pendingUninstallApp = appInfo;
+        this.tag('UninstallConfirmationOverlay').appInfo = appInfo;
+        this.tag('UninstallConfirmationOverlay').visible = true;
+        this._setState('UninstallConfirmation');
+    }
+
+    /**
+     * Hide the uninstall confirmation overlay
+     */
+    _hideUninstallConfirmation() {
+        this.tag('UninstallConfirmationOverlay').visible = false;
+        this._pendingUninstallApp = null;
+        // Set correct state based on whether apps remain
+        if (this._appData.length > 0) {
+            this._setState('AppList');
+        } else {
+            this._setState('EmptyState');
+        }
+    }
+
+    /**
+     * Signal handler: user confirmed uninstall
+     */
+    $confirmUninstall(appInfo) {
+        console.log('Uninstall confirmed for:', appInfo.name);
+        this.tag('UninstallConfirmationOverlay').showUninstalling();
+        this._uninstallApp(appInfo).then((success) => {
+            this._hideUninstallConfirmation();
+            if (!success) {
+                this.widgets.failok.notify({
+                    title: Language.translate('Uninstall Failed'),
+                    msg: Language.translate('Failed to uninstall') + ` "${appInfo.name}". ` + Language.translate('Please try again later.'),
+                });
+                Router.focusWidget('FailOk');
+            }
+        });
+    }
+
+    /**
+     * Signal handler: user cancelled uninstall
+     */
+    $cancelUninstall() {
+        console.log('Uninstall cancelled');
+        this._hideUninstallConfirmation();
     }
 
     /**
@@ -378,6 +439,17 @@ export default class AppInfoPage extends Lightning.Component {
                     return false;
                 }
             },
+            class UninstallConfirmation extends this {
+                $enter() {
+                    this.tag('UninstallConfirmationOverlay').visible = true;
+                }
+                _getFocused() {
+                    return this.tag('UninstallConfirmationOverlay');
+                }
+                $exit() {
+                    this.tag('UninstallConfirmationOverlay').visible = false;
+                }
+            },
             class EmptyState extends this {
                 $enter() {
                     this.tag('EmptyState.OkButton').color = CONFIG.theme.hex;
@@ -393,6 +465,8 @@ export default class AppInfoPage extends Lightning.Component {
                     return this;
                 }
                 _focus() {
+                    // Re-fetch installed apps in case new apps were installed while away
+                    this._fetchInstalledApps();
                     this.tag('EmptyState.OkButton').color = CONFIG.theme.hex;
                     this.tag('EmptyState.OkButton.OkLabel').text.textColor = 0xFFFFFFFF;
                     this.tag('EmptyState.OkButton.FocusBorder').alpha = 1;

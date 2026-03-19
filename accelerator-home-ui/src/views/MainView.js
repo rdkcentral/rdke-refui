@@ -718,8 +718,35 @@ export default class MainView extends Lightning.Component {
     }
   }
   $showNetworkError() {
-    this.widgets.fail.notify({ title: 'Network State', msg: 'Offline' })
-    Router.focusWidget('Fail')
+    this.widgets.failok.notify({ title: Language.translate('No Internet'), msg: Language.translate('No internet connection. Please check your network and try again.') })
+    Router.focusWidget('FailOk')
+  }
+
+  $showInstallError({ name, errorCode }) {
+    const appName = name || Language.translate('App')
+    const msg = Language.translate('Something went wrong while installing') + ` "${appName}". ` + Language.translate('Error code') + `: ${errorCode}`
+    this.widgets.failok.notify({ title: Language.translate('Installation Failed'), msg: msg })
+    Router.focusWidget('FailOk')
+  }
+
+  $showUninstallError({ name, error }) {
+    const appName = name || Language.translate('App')
+    let msg = Language.translate('Failed to uninstall') + ` "${appName}". ` + Language.translate('Please try again later.')
+    if (error) {
+      msg += ' ' + Language.translate('Error') + `: ${error}`
+    }
+    this.widgets.failok.notify({ title: Language.translate('Uninstall Failed'), msg: msg })
+    Router.focusWidget('FailOk')
+  }
+
+  $showLaunchError({ name, error }) {
+    const appName = name || Language.translate('App')
+    let msg = Language.translate('Something went wrong while launching') + ` "${appName}". ` + Language.translate('Please check the internet and remaining setup.')
+    if (error) {
+      msg += ' ' + Language.translate('Error') + `: ${error}`
+    }
+    this.widgets.failok.notify({ title: Language.translate('Launch Failed'), msg: msg })
+    Router.focusWidget('FailOk')
   }
 
   /**
@@ -925,10 +952,11 @@ export default class MainView extends Lightning.Component {
             })
           } else if (applicationType === 'DAC') {
             // Launch DAC app using startDACApp
-            if (!GLOBALS.IsConnectedToInternet) {
-              this.fireAncestors('$showNetworkError')
-              return
-            }
+            // if (!GLOBALS.IsConnectedToInternet) {
+            //   console.log('No internet connection. Cannot launch DAC app.')
+            //   this.$showNetworkError()
+            //   return
+            // }
             let dacApp = {
               id: appIdentifier || uri,
               name: appData.displayName,
@@ -937,7 +965,14 @@ export default class MainView extends Lightning.Component {
               url: uri
             }
             this.LOG('Launching DAC app from My Apps: ' + JSON.stringify(dacApp))
-            startDACApp(dacApp)
+            try {
+              const launched = await startDACApp(dacApp)
+              if (!launched) {
+                this.$showLaunchError({ name: appData.displayName })
+              }
+            } catch (err) {
+              this.$showLaunchError({ name: appData.displayName, error: err.message || err })
+            }
           }
         }
       },

@@ -35,6 +35,7 @@ import {
 import Keymap from './Config/Keymap';
 import Menu from './views/Menu'
 import Failscreen from './screens/FailScreen';
+import FailAndOkScreen from './screens/FailAndOkScreen';
 import {
 	keyIntercept
 } from './keyIntercept/keyIntercept';
@@ -192,6 +193,9 @@ export default class App extends Router.App {
 				},
 				Fail: {
 					type: Failscreen,
+				},
+				FailOk: {
+					type: FailAndOkScreen,
 				},
 				Volume: {
 					type: Volume
@@ -514,7 +518,7 @@ export default class App extends Router.App {
 			"Prime": "n:2"
 		}
 		this._getPowerStatebeforeReboot();
-		this._registerFireboltListeners()
+		// this._registerFireboltListeners()
 
 		Keyboard.provide('xrn:firebolt:capability:input:keyboard', new KeyboardUIProvider(this))
 		this.LOG("Keyboard provider registered")
@@ -1704,32 +1708,32 @@ export default class App extends Router.App {
 			this._getPowerStateWhileReboot();
 		});
 	}
-	_registerFireboltListeners() {
-		FireBoltApi.get().deviceinfo.gettype()
-		FireBoltApi.get().lifecycle.ready()
+	// _registerFireboltListeners() {
+	// 	FireBoltApi.get().deviceinfo.gettype()
+	// 	FireBoltApi.get().lifecycle.ready()
 
-		FireBoltApi.get().lifecycle.registerEvent('foreground', value => {
-			this.LOG("FireBoltApi[foreground] value:" + JSON.stringify(value) + ", launchResidentApp with:" + JSON.stringify(GLOBALS.selfClientName));
-			// Ripple launches refui with this rdkshell client name.
-			GLOBALS.topmostApp = GLOBALS.selfClientName;
-			FireBoltApi.get().discovery.launch("refui", {
-				"action": "home",
-				"context": {
-					"source": "device"
-				}
-			}).then(() => {
-				AlexaApi.get().reportApplicationState("menu", true);
-			})
-		})
-		FireBoltApi.get().lifecycle.registerEvent('background', value => {
-			// Ripple changed app states; it will be a 'FireboltApp'
-			GLOBALS.topmostApp = "FireboltApp";
-			this.LOG("FireBoltApi[foreground] value:" + JSON.stringify(value) + ", Updating top app as:" + JSON.stringify(GLOBALS.topmostApp));
-		})
-		FireBoltApi.get().lifecycle.state().then(res => {
-			this.LOG("Lifecycle.state result:" + JSON.stringify(res))
-		});
-	}
+	// 	FireBoltApi.get().lifecycle.registerEvent('foreground', value => {
+	// 		this.LOG("FireBoltApi[foreground] value:" + JSON.stringify(value) + ", launchResidentApp with:" + JSON.stringify(GLOBALS.selfClientName));
+	// 		// Ripple launches refui with this rdkshell client name.
+	// 		GLOBALS.topmostApp = GLOBALS.selfClientName;
+	// 		FireBoltApi.get().discovery.launch("refui", {
+	// 			"action": "home",
+	// 			"context": {
+	// 				"source": "device"
+	// 			}
+	// 		}).then(() => {
+	// 			AlexaApi.get().reportApplicationState("menu", true);
+	// 		})
+	// 	})
+	// 	FireBoltApi.get().lifecycle.registerEvent('background', value => {
+	// 		// Ripple changed app states; it will be a 'FireboltApp'
+	// 		GLOBALS.topmostApp = "FireboltApp";
+	// 		this.LOG("FireBoltApi[foreground] value:" + JSON.stringify(value) + ", Updating top app as:" + JSON.stringify(GLOBALS.topmostApp));
+	// 	})
+	// 	FireBoltApi.get().lifecycle.state().then(res => {
+	// 		this.LOG("Lifecycle.state result:" + JSON.stringify(res))
+	// 	});
+	// }
 
 	_firstEnable() {
 		this.LOG("App Calling listenToVoiceControl method to activate VoiceControl Plugin")
