@@ -193,6 +193,23 @@ export default class UninstallConfirmation extends Lightning.Component {
     });
   }
 
+  /**
+   * Safety-net cleanup when the overlay loses focus (e.g. parent hides or
+   * navigates away). Ensures the loader animation is stopped and the dialog
+   * UI is restored to its default state even if no explicit state transition
+   * (Uninstalling → Confirm) was triggered before dismissal.
+   */
+  _unfocus() {
+    if (this.loadingAnimation && this.loadingAnimation.isActive()) {
+      this.loadingAnimation.stop();
+    }
+    this.tag("UninstallDialog.Loader").visible = false;
+    this.tag("UninstallDialog.Title").text.text = Language.translate("Uninstall");
+    this.tag("UninstallDialog.Buttons").visible = true;
+    this.tag("UninstallDialog.Info").visible = true;
+    this.tag("UninstallDialog.AppName").visible = true;
+  }
+
   static _states() {
     return [
       class Confirm extends this {

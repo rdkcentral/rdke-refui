@@ -316,7 +316,6 @@ export default class AppInfoPage extends Lightning.Component {
      * Show the uninstall confirmation overlay
      */
     _showUninstallConfirmation(appInfo) {
-        this._pendingUninstallApp = appInfo;
         this.tag('UninstallConfirmationOverlay').appInfo = appInfo;
         this.tag('UninstallConfirmationOverlay').visible = true;
         this._setState('UninstallConfirmation');
@@ -326,8 +325,10 @@ export default class AppInfoPage extends Lightning.Component {
      * Hide the uninstall confirmation overlay
      */
     _hideUninstallConfirmation() {
+        // Reset overlay to its initial state so that Uninstalling.$exit() runs,
+        // stopping the loader animation and restoring hidden UI elements.
+        this.tag('UninstallConfirmationOverlay')._setState('Confirm');
         this.tag('UninstallConfirmationOverlay').visible = false;
-        this._pendingUninstallApp = null;
         // Set correct state based on whether apps remain
         if (this._appData.length > 0) {
             this._setState('AppList');

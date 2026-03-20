@@ -64,14 +64,6 @@ class ActionButton extends Lightning.Component {
         this.tag('Label').text.text = text;
     }
 
-    set primary(isPrimary) {
-        this._isPrimary = isPrimary;
-    }
-
-    get primary() {
-        return this._isPrimary || false;
-    }
-
     set action(actionType) {
         this._action = actionType;
     }
@@ -190,7 +182,6 @@ export default class AppCard extends Lightning.Component {
                     x: 0,
                     type: ActionButton,
                     label: Language.translate('Launch'),
-                    primary: true,
                     action: 'launch'
                 },
                 UpdateButton: {

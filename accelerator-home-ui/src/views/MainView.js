@@ -952,11 +952,11 @@ export default class MainView extends Lightning.Component {
             })
           } else if (applicationType === 'DAC') {
             // Launch DAC app using startDACApp
-            // if (!GLOBALS.IsConnectedToInternet) {
-            //   console.log('No internet connection. Cannot launch DAC app.')
-            //   this.$showNetworkError()
-            //   return
-            // }
+            if (!GLOBALS.IsConnectedToInternet) {
+              console.log('No internet connection. Cannot launch DAC app.')
+              this.$showNetworkError()
+              return
+            }
             let dacApp = {
               id: appIdentifier || uri,
               name: appData.displayName,
