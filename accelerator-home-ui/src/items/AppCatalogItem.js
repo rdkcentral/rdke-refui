@@ -46,11 +46,12 @@ export const DACAppMixin = (Base) => class extends Base {
         if (this._app.isInstalling) {
             this._app.isInstalled = success
             this._app.isInstalling = false
+            const errorCode = this._app.errorCode ?? -1;
             if (Object.prototype.hasOwnProperty.call(this._app, "errorCode")) delete this._app.errorCode;
             this.updateDACStatus(statusProgressTag, overlayTag)
             if (!success) {
                 this.tag(statusProgressTag).setProgress(1.0, 'Error: ' + msg)
-                this.fireAncestors('$showInstallError', { name: this._app.name, errorCode: msg || -1 })
+                this.fireAncestors('$showInstallError', { name: this._app.name, errorCode: errorCode })
             }
             return true; // Installation operation completed
         } else if (this._app.isUnInstalling) {

@@ -320,19 +320,15 @@ export default class AppInfoPage extends Lightning.Component {
     }
 
     /**
-     * Hide the uninstall confirmation overlay
+     * Hide the uninstall confirmation overlay.
+     * Only handles overlay cleanup; callers are responsible for
+     * setting the correct page state afterward.
      */
     _hideUninstallConfirmation() {
         // Reset overlay to its initial state so that Uninstalling.$exit() runs,
         // stopping the loader animation and restoring hidden UI elements.
         this.tag('UninstallConfirmationOverlay')._setState('Confirm');
         this.tag('UninstallConfirmationOverlay').visible = false;
-        // Set correct state based on whether apps remain
-        if (this._appData.length > 0) {
-            this._setState('AppList');
-        } else {
-            this._setState('EmptyState');
-        }
     }
 
     /**
@@ -342,11 +338,15 @@ export default class AppInfoPage extends Lightning.Component {
         console.log('Uninstall confirmed for:', appInfo.name);
         this.tag('UninstallConfirmationOverlay').showUninstalling();
         const success = await this._uninstallApp(appInfo);
-        // Dismiss overlay first, then refresh list so state transitions don't compete
+        // Dismiss overlay first, then let _fetchInstalledApps -> _loadAppData
+        // be the single source of truth for the next page state.
         this._hideUninstallConfirmation();
         if (success) {
+            // _loadAppData will set AppList or EmptyState based on refreshed data
             await this._fetchInstalledApps();
         } else {
+            // Uninstall failed — data hasn't changed, restore list focus
+            this._setState('AppList');
             this.widgets.failok.notify({
                 title: Language.translate('Uninstall Failed'),
                 msg: Language.translate('Failed to uninstall') + ` "${appInfo.name}". ` + Language.translate('Please try again later.'),
@@ -361,6 +361,12 @@ export default class AppInfoPage extends Lightning.Component {
     $cancelUninstall() {
         console.log('Uninstall cancelled');
         this._hideUninstallConfirmation();
+        // Data hasn't changed — restore previous page state
+        if (this._appData.length > 0) {
+            this._setState('AppList');
+        } else {
+            this._setState('EmptyState');
+        }
     }
 
     /**
