@@ -64,17 +64,6 @@ class ActionButton extends Lightning.Component {
         this.tag('Label').text.text = text;
     }
 
-    set primary(isPrimary) {
-        this._isPrimary = isPrimary;
-        if (isPrimary) {
-            this.patch({ color: CONFIG.theme.hex });
-        }
-    }
-
-    get primary() {
-        return this._isPrimary || false;
-    }
-
     set action(actionType) {
         this._action = actionType;
     }
@@ -97,7 +86,7 @@ class ActionButton extends Lightning.Component {
     _unfocus() {
         this.tag('FocusIndicator').alpha = 0;
         this.patch({
-            color: this._isPrimary ? CONFIG.theme.hex : 0xFF3D3D3D,
+            color: 0xFF3D3D3D,
             smooth: { scale: 1 }
         });
     }
@@ -193,7 +182,6 @@ export default class AppCard extends Lightning.Component {
                     x: 0,
                     type: ActionButton,
                     label: Language.translate('Launch'),
-                    primary: true,
                     action: 'launch'
                 },
                 UpdateButton: {

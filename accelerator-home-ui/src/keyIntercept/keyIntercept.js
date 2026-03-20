@@ -26,29 +26,26 @@ const thunder = ThunderJS(CONFIG.thunderConfig);
 
 export function keyIntercept(clientName = GLOBALS.selfClientId) {
     return new Promise((resolve, reject) => {
+        const intercepts = [
+            { "keyCode": Keymap.Home, "modifiers": [] },
+            { "keyCode": Keymap.AudioVolumeDown, "modifiers": [] },
+            { "keyCode": Keymap.AudioVolumeUp, "modifiers": [] },
+            { "keyCode": Keymap.AudioVolumeMute, "modifiers": [] },
+            { "keyCode": Keymap.Inputs_Shortcut, "modifiers": [] },
+            { "keyCode": Keymap.Picture_Setting_Shortcut, "modifiers": [] },
+            { "keyCode": Keymap.Youtube, "modifiers": [] },
+            { "keyCode": Keymap.Power, "modifiers": [] },
+            { "keyCode": Keymap.Amazon, "modifiers": [] },
+            { "keyCode": Keymap.Netflix, "modifiers": [] },
+            { "keyCode": Keymap.Settings_Shortcut, "modifiers": [] },
+            { "keyCode": Keymap.Guide_Shortcut, "modifiers": [] },
+            { "keyCode": Keymap.AppCarousel, "modifiers": [] },
+            { "keyCode": Keymap.Escape, "modifiers": [] }
+        ];
         RDKWindowManager.get().addKeyIntercepts(
             {
-                "intercepts":{
-                    "intercepts": [{
-                        "keys": [
-                            { "keyCode": Keymap.Home, "modifiers": [] },
-                            { "keyCode": Keymap.AudioVolumeDown, "modifiers": [] },
-                            { "keyCode": Keymap.AudioVolumeUp, "modifiers": [] },
-                            { "keyCode": Keymap.AudioVolumeMute, "modifiers": [] },
-                            { "keyCode": Keymap.Inputs_Shortcut, "modifiers": [] },
-                            { "keyCode": Keymap.Picture_Setting_Shortcut, "modifiers": [] },
-                            { "keyCode": Keymap.Youtube, "modifiers": [] },
-                            { "keyCode": Keymap.Power, "modifiers": [] },
-                            { "keyCode": Keymap.Amazon, "modifiers": [] },
-                            { "keyCode": Keymap.Netflix, "modifiers": [] },
-                            { "keyCode": Keymap.Settings_Shortcut, "modifiers": [] },
-                            { "keyCode": Keymap.Guide_Shortcut, "modifiers": [] },
-                            { "keyCode": Keymap.AppCarousel, "modifiers": [] },
-                            { "keyCode": Keymap.Escape, "modifiers": [] }
-                        ],
-                        "client": clientName,
-                    }]
-                },
+                "clientId": clientName,
+                "intercepts": JSON.stringify(intercepts)
             }
         ).then(result => {
             if (result.success) {

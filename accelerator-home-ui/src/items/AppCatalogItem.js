@@ -46,10 +46,12 @@ export const DACAppMixin = (Base) => class extends Base {
         if (this._app.isInstalling) {
             this._app.isInstalled = success
             this._app.isInstalling = false
+            const errorCode = this._app.errorCode ?? -1;
             if (Object.prototype.hasOwnProperty.call(this._app, "errorCode")) delete this._app.errorCode;
             this.updateDACStatus(statusProgressTag, overlayTag)
             if (!success) {
                 this.tag(statusProgressTag).setProgress(1.0, 'Error: ' + msg)
+                this.fireAncestors('$showInstallError', { name: this._app.name, errorCode: errorCode })
             }
             return true; // Installation operation completed
         } else if (this._app.isUnInstalling) {
@@ -58,6 +60,7 @@ export const DACAppMixin = (Base) => class extends Base {
             this.updateDACStatus(statusProgressTag, overlayTag)
             if (!success) {
                 this.tag(statusProgressTag).setProgress(1.0, 'Error: ' + msg)
+                this.fireAncestors('$showUninstallError', { name: this._app.name, error: msg })
             }
             return true; // Uninstall operation completed
         }
@@ -97,10 +100,12 @@ export const DACAppMixin = (Base) => class extends Base {
                 } else {
                     this.ERR("Failed to launch app: " + this._app.name)
                     this.tag(overlayTag + '.OverlayText').text.text = Language.translate('Launch failed');
+                    this.fireAncestors('$showLaunchError', { name: this._app.name });
                 }
             } catch (err) {
                 this.ERR("Error launching app: " + JSON.stringify(err))
                 this.tag(overlayTag + '.OverlayText').text.text = Language.translate('Launch failed');
+                this.fireAncestors('$showLaunchError', { name: this._app.name, error: err.message || err });
             }
             this.tag(overlayTag).setSmooth('alpha', 0, { duration: 5 })
             return true; // Already installed
@@ -114,13 +119,18 @@ export const DACAppMixin = (Base) => class extends Base {
         this.tag(overlayTag + '.OverlayText').alpha = 1;
         this.tag(overlayTag).setSmooth('alpha', 0, { duration: 5 });
 
+        // Reset progress bar to clear any stale state from a previous install cycle
+        this.tag(statusProgressTag).reset();
+
         this._app.isInstalling = true;
         if (!await installDACApp(this._app, this.tag(statusProgressTag))) {
             this._app.isInstalling = false;
-            this.tag(overlayTag + '.OverlayText').text.text = Language.translate("Status") + ':' + (this._app.errorCode ?? -1);
+            const errorCode = this._app.errorCode ?? -1;
+            this.tag(overlayTag + '.OverlayText').text.text = Language.translate("Status") + ':' + errorCode;
             this.tag(overlayTag).alpha = 0.7
             this.tag(overlayTag + '.OverlayText').alpha = 1
             this.tag(overlayTag).setSmooth('alpha', 0, { duration: 5 })
+            this.fireAncestors('$showInstallError', { name: this._app.name, errorCode: errorCode });
             return false;
         }
         return true;

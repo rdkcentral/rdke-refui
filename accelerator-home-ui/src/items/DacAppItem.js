@@ -189,7 +189,14 @@ export default class DacAppItem extends DACAppMixin(Lightning.Component) {
     if (this._app.isInstalled) {
       this.LOG("App is already installed, launching...")
       // Launch the installed app
-      this._app.isRunning = await startDACApp(this._app);
+      try {
+        this._app.isRunning = await startDACApp(this._app);
+        if (!this._app.isRunning) {
+          this.fireAncestors('$showLaunchError', { name: this._app.name });
+        }
+      } catch (err) {
+        this.fireAncestors('$showLaunchError', { name: this._app.name, error: err.message || err });
+      }
       return
     }
     await this.performDACInstall('ImageWrapper.StatusProgress', 'ImageWrapper.Overlay');
@@ -244,6 +251,10 @@ export default class DacAppItem extends DACAppMixin(Lightning.Component) {
   async _handleEnter() {
     // Handle "More Apps" item - navigate to apps route
     if (this.data.applicationType === 'MoreApps') {
+      if (!GLOBALS.IsConnectedToInternet) {
+        this.fireAncestors('$showNetworkError')
+        return
+      }
       Router.navigate('apps');
       return;
     }

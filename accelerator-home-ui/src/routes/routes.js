@@ -101,12 +101,12 @@ export default {
     {
       path: 'apps',
       component: AppStore,
-      widgets: ['Menu', 'Volume', "AppCarousel"]
+      widgets: ['Menu', 'FailOk', 'Volume', "AppCarousel"]
     },
     {
       path: 'appinfo',
       component: AppInfoPage,
-      widgets: ['Menu', 'Volume', "AppCarousel"]
+      widgets: ['Menu', 'FailOk', 'Volume', "AppCarousel"]
     },
     {
       path: 'usb/player',
@@ -140,7 +140,7 @@ export default {
         }
         return Promise.resolve()
       },
-      widgets: ['Menu', 'Fail', 'Volume','MiracastNotification', "AppCarousel", "VideoInfoChange"],
+      widgets: ['Menu', 'Fail', 'FailOk', 'Volume','MiracastNotification', "AppCarousel", "VideoInfoChange"],
     },
     {
       path: 'tv-overlay/:type',

@@ -23,6 +23,7 @@ import { CONFIG, GLOBALS } from "../Config/Config";
 import AppCard from "../items/AppCard";
 import { getInstalledDACApps, startDACApp, uninstallDACApp } from "../api/DACApi";
 import { filterExcludedApps } from "../helpers/DACAppPresentation";
+import UninstallConfirmation from "../overlays/UninstallConfirmation";
 
 export default class AppInfoPage extends Lightning.Component {
 
@@ -158,6 +159,13 @@ export default class AppInfoPage extends Lightning.Component {
                         }
                     }
                 }
+            },
+
+            // Uninstall Confirmation Overlay
+            UninstallConfirmationOverlay: {
+                type: UninstallConfirmation,
+                visible: false,
+                zIndex: 10
             }
         }
     }
@@ -247,7 +255,7 @@ export default class AppInfoPage extends Lightning.Component {
                 break;
             case 'uninstall':
                 console.log("Uninstall app:", appInfo.name);
-                this._uninstallApp(appInfo);
+                this._showUninstallConfirmation(appInfo);
                 break;
             default:
                 console.log("Unknown action:", action);
@@ -291,13 +299,73 @@ export default class AppInfoPage extends Lightning.Component {
             const result = await uninstallDACApp({ id: appInfo.id, version: appInfo.version, name: appInfo.name }, this);
             if (result) {
                 console.log(`${appInfo.name} uninstalled successfully`);
-                // Refresh the list after uninstall
-                await this._fetchInstalledApps();
+                return true;
             } else {
                 console.error(`Failed to uninstall ${appInfo.name}`);
+                return false;
             }
         } catch (error) {
             console.error(`Error uninstalling ${appInfo.name}:`, error);
+            return false;
+        }
+    }
+
+    /**
+     * Show the uninstall confirmation overlay
+     */
+    _showUninstallConfirmation(appInfo) {
+        this.tag('UninstallConfirmationOverlay').appInfo = appInfo;
+        this.tag('UninstallConfirmationOverlay').visible = true;
+        this._setState('UninstallConfirmation');
+    }
+
+    /**
+     * Hide the uninstall confirmation overlay.
+     * Only handles overlay cleanup; callers are responsible for
+     * setting the correct page state afterward.
+     */
+    _hideUninstallConfirmation() {
+        // Reset overlay to its initial state so that Uninstalling.$exit() runs,
+        // stopping the loader animation and restoring hidden UI elements.
+        this.tag('UninstallConfirmationOverlay')._setState('Confirm');
+        this.tag('UninstallConfirmationOverlay').visible = false;
+    }
+
+    /**
+     * Signal handler: user confirmed uninstall
+     */
+    async $confirmUninstall(appInfo) {
+        console.log('Uninstall confirmed for:', appInfo.name);
+        this.tag('UninstallConfirmationOverlay').showUninstalling();
+        const success = await this._uninstallApp(appInfo);
+        // Dismiss overlay first, then let _fetchInstalledApps -> _loadAppData
+        // be the single source of truth for the next page state.
+        this._hideUninstallConfirmation();
+        if (success) {
+            // _loadAppData will set AppList or EmptyState based on refreshed data
+            await this._fetchInstalledApps();
+        } else {
+            // Uninstall failed — data hasn't changed, restore list focus
+            this._setState('AppList');
+            this.widgets.failok.notify({
+                title: Language.translate('Uninstall Failed'),
+                msg: Language.translate('Failed to uninstall') + ` "${appInfo.name}". ` + Language.translate('Please try again later.'),
+            });
+            Router.focusWidget('FailOk');
+        }
+    }
+
+    /**
+     * Signal handler: user cancelled uninstall
+     */
+    $cancelUninstall() {
+        console.log('Uninstall cancelled');
+        this._hideUninstallConfirmation();
+        // Data hasn't changed — restore previous page state
+        if (this._appData.length > 0) {
+            this._setState('AppList');
+        } else {
+            this._setState('EmptyState');
         }
     }
 
@@ -378,6 +446,17 @@ export default class AppInfoPage extends Lightning.Component {
                     return false;
                 }
             },
+            class UninstallConfirmation extends this {
+                $enter() {
+                    this.tag('UninstallConfirmationOverlay').visible = true;
+                }
+                _getFocused() {
+                    return this.tag('UninstallConfirmationOverlay');
+                }
+                $exit() {
+                    this.tag('UninstallConfirmationOverlay').visible = false;
+                }
+            },
             class EmptyState extends this {
                 $enter() {
                     this.tag('EmptyState.OkButton').color = CONFIG.theme.hex;
@@ -393,6 +472,8 @@ export default class AppInfoPage extends Lightning.Component {
                     return this;
                 }
                 _focus() {
+                    // Re-fetch installed apps in case new apps were installed while away
+                    this._fetchInstalledApps();
                     this.tag('EmptyState.OkButton').color = CONFIG.theme.hex;
                     this.tag('EmptyState.OkButton.OkLabel').text.textColor = 0xFFFFFFFF;
                     this.tag('EmptyState.OkButton.FocusBorder').alpha = 1;

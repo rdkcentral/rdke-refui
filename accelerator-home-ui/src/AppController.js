@@ -175,25 +175,15 @@ export default class AppController {
   async addKeyIntercepts(appId, clientId) {
     if (appId === "com.rdkcentral.youtube") {
       try {
+        const intercepts = [
+          { "keyCode": Keymap.AudioVolumeMute, "modifiers": [] },
+          { "keyCode": Keymap.AudioVolumeDown, "modifiers": [] },
+          { "keyCode": Keymap.AudioVolumeUp, "modifiers": [] },
+          { "keyCode": Keymap.Youtube, "modifiers": [] }
+        ];
         await RDKWindowManager.get().addKeyIntercepts({
-          "intercepts": {
-            "intercepts": [{
-              "keys": [{
-                "keyCode": Keymap.AudioVolumeMute,
-                "modifiers": []
-              }, {
-                "keyCode": Keymap.AudioVolumeDown,
-                "modifiers": []
-              }, {
-                "keyCode": Keymap.AudioVolumeUp,
-                "modifiers": []
-              }, {
-                "keyCode": Keymap.Youtube,
-                "modifiers": []
-              }],
-              "client": clientId
-            }]
-          }
+          "clientId": clientId,
+          "intercepts": JSON.stringify(intercepts)
         });
       } catch (err) {
         throw new ThunderError("RDKWindowManager.addKeyIntercepts()", err);
