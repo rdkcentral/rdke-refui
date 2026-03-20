@@ -299,8 +299,6 @@ export default class AppInfoPage extends Lightning.Component {
             const result = await uninstallDACApp({ id: appInfo.id, version: appInfo.version, name: appInfo.name }, this);
             if (result) {
                 console.log(`${appInfo.name} uninstalled successfully`);
-                // Refresh the list after uninstall
-                await this._fetchInstalledApps();
                 return true;
             } else {
                 console.error(`Failed to uninstall ${appInfo.name}`);
@@ -340,19 +338,21 @@ export default class AppInfoPage extends Lightning.Component {
     /**
      * Signal handler: user confirmed uninstall
      */
-    $confirmUninstall(appInfo) {
+    async $confirmUninstall(appInfo) {
         console.log('Uninstall confirmed for:', appInfo.name);
         this.tag('UninstallConfirmationOverlay').showUninstalling();
-        this._uninstallApp(appInfo).then((success) => {
-            this._hideUninstallConfirmation();
-            if (!success) {
-                this.widgets.failok.notify({
-                    title: Language.translate('Uninstall Failed'),
-                    msg: Language.translate('Failed to uninstall') + ` "${appInfo.name}". ` + Language.translate('Please try again later.'),
-                });
-                Router.focusWidget('FailOk');
-            }
-        });
+        const success = await this._uninstallApp(appInfo);
+        // Dismiss overlay first, then refresh list so state transitions don't compete
+        this._hideUninstallConfirmation();
+        if (success) {
+            await this._fetchInstalledApps();
+        } else {
+            this.widgets.failok.notify({
+                title: Language.translate('Uninstall Failed'),
+                msg: Language.translate('Failed to uninstall') + ` "${appInfo.name}". ` + Language.translate('Please try again later.'),
+            });
+            Router.focusWidget('FailOk');
+        }
     }
 
     /**

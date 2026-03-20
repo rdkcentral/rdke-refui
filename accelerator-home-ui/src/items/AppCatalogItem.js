@@ -118,6 +118,9 @@ export const DACAppMixin = (Base) => class extends Base {
         this.tag(overlayTag + '.OverlayText').alpha = 1;
         this.tag(overlayTag).setSmooth('alpha', 0, { duration: 5 });
 
+        // Reset progress bar to clear any stale state from a previous install cycle
+        this.tag(statusProgressTag).reset();
+
         this._app.isInstalling = true;
         if (!await installDACApp(this._app, this.tag(statusProgressTag))) {
             this._app.isInstalling = false;

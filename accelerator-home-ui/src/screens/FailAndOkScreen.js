@@ -35,7 +35,7 @@ export default class FailAndOkScreen extends Lightning.Component {
         this.LOG("notify args: " + JSON.stringify(args))
         if (args.title && args.msg) {
             this.tag('FailScreen.Title').text.text = args.title
-            this.tag('FailScreen.Message').text.text = Language.translate(args.msg)
+            this.tag('FailScreen.Message').text.text = args.msg
         }
     }
 
