@@ -20,6 +20,7 @@
 import DownloadManager from './DownloadManagerApi';
 import PackageManager from './PackageManagerApi';
 import AppManager from './AppManagerApi';
+import AppApi from './AppApi';
 import AppController from '../AppController';
 import { ThunderError } from './ThunderError';
 import { Metrics } from '@firebolt-js/sdk'
@@ -37,6 +38,8 @@ const APPS_REQUESTS_MAX = 5;
 const APP_DETAILS_KEY = "refui.details";
 
 const APP_DEFAULT_ARCH = "arm";
+
+const APP_STORE_RFC_KEY = "Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.DAC.ConfigURL";
 
 function makeLogMessage(call, err) {
   return err.toString() + " <=> " + call;
@@ -71,13 +74,52 @@ class OperationLock {
 let packageLock = new OperationLock();
 let storeConfig = null;
 
-async function getStoreConfig() {
-  if (!storeConfig) {
+async function getConfigUrlFromRFC() {
+  try {
+    const appApi = new AppApi();
+    console.log("Resolving DAC Store URL from RFC ");
+    const result = await appApi.getRFCConfig(APP_STORE_RFC_KEY);
+    const rfcUrl = result?.RFCConfig?.[APP_STORE_RFC_KEY];
+    if (typeof rfcUrl === "string" && rfcUrl.trim().length > 0) {
+      const resolvedConfigUrl = rfcUrl.trim();
+      console.log("Resolved DAC Store URL from RFC ");
+      return resolvedConfigUrl;
+    }
+    console.warn("DAC Store RFC URL empty or invalid");
+    return null;
+  } catch (err) {
+    console.error("Failed to get DAC Store URL from RFC", err);
+    return null;
+  }
+}
+
+async function getConfigUrlFromPackageManager() {
+  try {
+    console.log("Resolving DAC Store URL from PackageManager...");
     const config = await PackageManager.get().configuration();
-    if (typeof config?.configUrl !== "string") {
+    console.log("Resolved DAC Store URL from PackageManager: ");
+    if (typeof config?.configUrl !== "string" || config.configUrl.trim().length === 0) {
       throw new Error("Invalid config: " + JSON.stringify(config));
     }
-    const fetchResponse = await fetch(config.configUrl);
+
+    return config.configUrl.trim();
+  } catch (err) {
+    console.error("Failed to resolve DAC Store URL from PackageManager", err);
+    throw err;
+  }
+}
+
+async function getStoreConfig() {
+  if (!storeConfig) {
+    console.log("Resolving DAC Store config URL...");
+    let resolvedConfigUrl = await getConfigUrlFromRFC();
+
+    if (!resolvedConfigUrl) {
+      resolvedConfigUrl = await getConfigUrlFromPackageManager();
+    }
+
+    console.log("Resolved DAC Store config URL ");
+    const fetchResponse = await fetch(resolvedConfigUrl);
     if (!fetchResponse.ok) {
       throw new Error(`Unexpected response: ${fetchResponse.status}: ${fetchResponse.statusText}`);
     }
