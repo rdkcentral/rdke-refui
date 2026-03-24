@@ -1066,14 +1066,10 @@ export default class MainView extends Lightning.Component {
             Router.focusWidget('Menu')
           }
         }
-        async _handleEnter() {
+        _handleEnter() {
           if (Router.isNavigating()) return;
-          this.LOG("MainView: internetConnectivity " + JSON.stringify(GLOBALS.IsConnectedToInternet));
-          let params ={url: this.tag('TVShows').items[this.tag('TVShows').index].data.uri,
-          }
-          if (GLOBALS.IsConnectedToInternet) {
-            Router.navigate("player",params)
-          }
+          this.widgets.failok.notify({ title: Language.translate('Not Supported'), msg: Language.translate('VOD feature is not supported.') })
+          Router.focusWidget('FailOk')
         }
         $exit() {
           this.tag('Text3').text.fontStyle = 'normal'
