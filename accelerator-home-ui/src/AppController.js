@@ -25,10 +25,25 @@ import Keymap from './Config/Keymap.js';
 import { keyIntercept } from './keyIntercept/keyIntercept.js';
 
 const INVALID_APP_ID = "";
+const APP_ID_YOUTUBE = "com.rdkcentral.youtube-exp";
 
 let instance = null;
 
+/**
+ * @typedef {'APP_STATE_INITIALIZING'
+ * | 'APP_STATE_ACTIVE'
+ * | 'APP_STATE_PAUSED'
+ * | 'APP_STATE_SUSPENDED'
+ * | 'APP_STATE_HIBERNATED'
+ * | 'APP_STATE_TERMINATING'} AppState;
+ *
+ * @typedef {(id: string, state: AppState) => void} AppLifecycleStateListener
+ */
+
 export default class AppController {
+  /**
+   * @returns {AppController}
+   */
   static get() {
     if (instance === null) {
       instance = new AppController();
@@ -36,6 +51,20 @@ export default class AppController {
     return instance;
   }
 
+  /**
+   * @private
+   * @type {Map<string, AppState>}
+   */
+  appLifecycleStates = new Map();
+  /**
+   * @private
+   * @type {Set<AppLifecycleStateListener>}
+   */
+  appLifecycleStateListeners = new Set();
+
+  /**
+   * @private
+   */
   constructor() {
     this.INFO = console.info;
     this.LOG = console.log;
@@ -44,6 +73,23 @@ export default class AppController {
 
     this.launchedAppId = INVALID_APP_ID;
     this._packageChangedListeners = new Set();
+  }
+
+  /**
+   * @param {string} id
+   * @returns {Promise<any>}
+   * @throws {ThunderError}
+   */
+  async isPackageInstalled(id) {
+    let result = false;
+
+    try {
+      result = await AppManager.get().isInstalled(id);
+    } catch (err) {
+      this.WARN(`isPackageInstalled(${id}): ${err}`);
+    }
+
+    return result;
   }
 
   /**
@@ -64,6 +110,34 @@ export default class AppController {
     this._packageChangedListeners.delete(listener);
   }
 
+  /**
+   * @param {string} id
+   * @returns {AppState}
+   */
+  getAppLifecycleState(id) {
+    return this.appLifecycleStates.get(id);
+  }
+
+  /**
+   * @param {AppLifecycleStateListener} listener
+   */
+  addAppLifecycleStateListener(listener) {
+    if (typeof listener === 'function') {
+      this.appLifecycleStateListeners.add(listener);
+    }
+  }
+
+  /**
+   * @param {AppLifecycleStateListener} listener
+   */
+  removeAppLifecycleStateListener(listener) {
+    this.appLifecycleStateListeners.delete(listener);
+  }
+
+  /**
+   * @returns {Promise<any>}
+   * @throws {ThunderError}
+   */
   async init() {
     const mainAppId = GLOBALS.selfclientAppName;
     let mainClientId;
@@ -72,7 +146,7 @@ export default class AppController {
       const appManagerApps = await AppManager.get().getLoadedApps();
       mainClientId = appManagerApps.find(app => app.appId === mainAppId)?.appInstanceId;
     } catch (err) {
-      this.WARN(new ThunderError("AppManager.getLoadedApps()", err).toString());
+      this.WARN(`AppManager.getLoadedApps(): ${err}`);
     }
 
     if (!mainClientId) {
@@ -101,6 +175,11 @@ export default class AppController {
     }
   }
 
+  /**
+   * @param {string} clientId
+   * @returns {Promise<any>}
+   * @throws {ThunderError}
+   */
   async setVisibleAndFocused(clientId) {
     try {
       await Promise.all([
@@ -112,6 +191,11 @@ export default class AppController {
     }
   }
 
+  /**
+   * @param {string} clientId
+   * @returns {Promise<any>}
+   * @throws {ThunderError}
+   */
   async setInvisible(clientId) {
     try {
       await RDKWindowManager.get().setVisible(clientId, false);
@@ -120,6 +204,10 @@ export default class AppController {
     }
   }
 
+  /**
+   * @param {{ on: function(string, string, function): void }} thunder
+   * @returns {Promise<any>}
+   */
   async subscribe(thunder) {
     thunder.on('org.rdk.AppManager', 'onAppInstalled', data => {
       this.LOG('onAppInstallStatus ' + JSON.stringify(data));
@@ -145,13 +233,16 @@ export default class AppController {
 
     thunder.on('org.rdk.AppManager', 'onAppLifecycleStateChanged', async data => {
       this.LOG('onAppLifecycleStateChanged ' + JSON.stringify(data));
+
+      if (data.oldState === data.newState) return;
+
       try {
         if (data.appId === this.launchedAppId && data.newState === "APP_STATE_ACTIVE") {
           GLOBALS.topmostApp = data.appId;
           this.focusedClientId = data.appInstanceId;
           await this.setVisibleAndFocused(data.appInstanceId);
-          await this.addKeyIntercepts(data.appId, data.appInstanceId);
           await this.setInvisible(this.mainClientId);
+          await this.addKeyIntercepts(data.appId, data.appInstanceId);
         } else if (data.appInstanceId === this.focusedClientId && data.oldState === "APP_STATE_ACTIVE") {
           this.launchedAppId = INVALID_APP_ID;
           GLOBALS.topmostApp = GLOBALS.selfclientAppName;
@@ -160,6 +251,16 @@ export default class AppController {
         }
       } catch (err) {
         this.ERR(`onAppLifecycleStateChanged: ${err}`);
+      }
+
+      this.appLifecycleStates.set(data.appId, data.newState);
+
+      for (const listener of this.appLifecycleStateListeners) {
+        try {
+          listener(data.appId, data.newState);
+        } catch (err) {
+          this.ERR(`${err} in onAppLifecycleStateChanged listener`);
+        }
       }
     });
 
@@ -172,8 +273,14 @@ export default class AppController {
     });
   }
 
-  async addKeyIntercepts(appId, clientId) {
-    if (appId === "com.rdkcentral.youtube") {
+  /**
+   * @param {string} id
+   * @param {string} clientId
+   * @returns {Promise<any>}
+   * @throws {ThunderError}
+   */
+  async addKeyIntercepts(id, clientId) {
+    if (id === APP_ID_YOUTUBE) {
       try {
         const intercepts = [
           { "keyCode": Keymap.AudioVolumeMute, "modifiers": [] },
@@ -182,8 +289,8 @@ export default class AppController {
           { "keyCode": Keymap.Youtube, "modifiers": [] }
         ];
         await RDKWindowManager.get().addKeyIntercepts({
-          "clientId": clientId,
-          "intercepts": JSON.stringify(intercepts)
+          clientId,
+          intercepts: JSON.stringify(intercepts)
         });
       } catch (err) {
         throw new ThunderError("RDKWindowManager.addKeyIntercepts()", err);
@@ -191,8 +298,50 @@ export default class AppController {
     }
   }
 
-  async launch(id) {
+  /**
+   * @param {string} id
+   * @returns {boolean}
+   */
+  isLaunched(id) {
+    return id === this.launchedAppId;
+  }
+
+  /**
+   * @param {string} id
+   * @param {string} intent
+   * @returns {Promise<any>}
+   * @throws {ThunderError}
+   */
+  async launch(id, intent) {
     this.launchedAppId = id;
-    await AppManager.get().launchApp(id);
+    await AppManager.get().launchApp(id, intent);
+  }
+
+  /**
+   * @param {string} id
+   * @param {string} intent
+   * @returns {Promise<any>}
+   * @throws {ThunderError}
+   */
+  async sendIntent(id, intent) {
+    await AppManager.get().sendIntent(id, intent);
+  }
+
+  /**
+   * @param {string} id
+   * @returns {Promise<any>}
+   * @throws {ThunderError}
+   */
+  async close(id) {
+    await AppManager.get().closeApp(id);
+  }
+
+  /**
+   * @param {string} id
+   * @returns {Promise<any>}
+   * @throws {ThunderError}
+   */
+  async terminate(id) {
+    await AppManager.get().terminateApp(id);
   }
 }

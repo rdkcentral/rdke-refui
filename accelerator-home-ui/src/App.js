@@ -26,7 +26,6 @@ import {
 import ThunderJS from 'ThunderJS';
 import routes from './routes/routes';
 import AppApi from '../src/api/AppApi.js';
-import XcastApi from '../src/api/XcastApi';
 import {
 	CONFIG,
 	GLOBALS,
@@ -86,13 +85,13 @@ import PackageManager from './api/PackageManagerApi.js';
 import RDKWindowManager from './api/RDKWindowManagerApi.js';
 import RuntimeManager from './api/RuntimeManagerApi.js';
 import AppController from './AppController.js';
+import DIALManager from './DIALManager.js';
 
 var AlexaAudioplayerActive = false;
 var thunder = ThunderJS(CONFIG.thunderConfig);
 var appApi = new AppApi();
 var dtvApi = new DTVApi();
 var cecApi = new CECApi();
-var xcastApi = new XcastApi();
 var voiceApi = new VoiceApi();
 var miracast = new Miracast();
 var inactivityHelper = new InactivityHelper();
@@ -546,43 +545,6 @@ export default class App extends Router.App {
 			if ((noti.data.url && noti.data.url.slice(-5) === "#boot") || (noti.data.httpstatus && noti.data.httpstatus != 200 && noti.data.httpstatus != -1)) { // to exit metro apps by pressing back key & to auto exit webapp if httpstatus is not 200
 				appApi.exitApp(GLOBALS.topmostApp);
 			}
-			// TODO: make the check based on XcastApi.supportedApps() list
-			if (Object.prototype.hasOwnProperty.call(noti, "callsign") && (noti.callsign.startsWith("YouTube") || noti.callsign.startsWith("Amazon") || noti.callsign.startsWith("Netflix"))) {
-				let params = {
-					applicationName: noti.callsign,
-					state: 'stopped'
-				};
-				switch (noti.data.state) {
-					case "activated":
-					case "resumed":
-						params.state = 'running';
-						break;
-					case "Activation":
-					case "deactivated":
-					case "Deactivation":
-						params.state = 'stopped';
-						break;
-					case "hibernated":
-					case "suspended":
-						params.state = 'suspended';
-						break;
-					case "Precondition":
-						break;
-				}
-				if (noti.callsign.startsWith("Amazon")) {
-					params.applicationName = "AmazonInstantVideo";
-				}
-				this.LOG("App Controller state change to xcast: " + JSON.stringify(params));
-				this.xcastApi.setApplicationState(params).then(status => {
-					if (status == false) {
-						this.ERR("App xcast setApplicationState failed, trying fallback. error: ");
-						this.xcastApi.onApplicationStateChanged(params).catch(err => {
-							this.ERR("App xcast onApplicationStateChanged failed: " + JSON.stringify(err));
-						});
-					}
-				});
-				params = null;
-			}
 			if (noti.callsign === "org.rdk.HdmiCecSource") {
 				this.SubscribeToHdmiCecSourcevent(noti.data.state, self.appIdentifiers)
 			}
@@ -826,85 +788,10 @@ export default class App extends Router.App {
 			() => RuntimeManager.get().activate(),
 			() => this._SubscribeToRuntimeManagerNotifications()
 		);
-		this.xcastApi = new XcastApi()
-		this.xcastApi.activate().then(async result => {
-			console.warn("Xcast plugin activate");
-			if (result) {
-				this.registerXcastListeners();
-				let serialnumber = "DefaultSLNO";
-				let modelName = "RDK" + GLOBALS.deviceType;
-				const serialRes = await appApi.getSerialNumber();
-				serialnumber = (serialRes.length < 6) ? serialRes : serialRes.slice(-6);
-				const model = await this.xcastApi.getModelName();
-				modelName = (model || modelName) + serialnumber;
-				this.LOG("Xcast friendly name to be set: " + JSON.stringify(modelName));
-				try {
-					await appApi.setFriendlyName(modelName);
-				} catch (err) {
-					this.ERR("AppApi setFriendlyName error: " + JSON.stringify(err) + " - continuing Xcast activation");
-				}
-				await this.xcastApi.setEnabled(true).then(res => {
-					GLOBALS.LocalDeviceDiscoveryStatus = true;
-					console.warn("Xcast setEnabled success" + JSON.stringify(res));
-				}).catch(err => {
-					GLOBALS.LocalDeviceDiscoveryStatus = false;
-					this.ERR("Xcast setEnabled error:" + JSON.stringify(err))
-				});
-				await this.xcastApi.setStandbyBehavior("active").then(async res => {
-					this.LOG("XcastApi setStandbyBehavior result:" + JSON.stringify(res));
-					let params = {
-						"applications": []
-					};
-					try {
-						await appApi.getPluginStatus("Cobalt").then(async res => {
-							params.applications.push({
-								"cors": ".youtube.com",
-								"name": "YouTube",
-								"prefix": "myYoutube"
-							}, {
-								"cors": ".youtube.com",
-								"name": "YouTubeTV",
-								"prefix": "myYouTubeTV"
-							});
-						});
-					} catch (e) {
-						this.ERR("getPluginStatus error :" + JSON.stringify(e))
-					}
-					try {
-						await appApi.getPluginStatus("Amazon").then(async res => {
-							params.applications.push({
-								"name": "AmazonInstantVideo",
-								"prefix": "myPrimeVideo",
-								"cors": ".amazon.com"
-							})
-						});
-					} catch (e) {
-						this.ERR("Amazon getPluginStatus error :" + JSON.stringify(e))
-					}
-					try {
-						await appApi.getPluginStatus("Netflix").then(async res => {
-							params.applications.push({
-								"name": "Netflix",
-								"prefix": "myNetflix",
-								"cors": ".netflix.com"
-							})
-						});
-					} catch (e) {
-						this.ERR("Amazon getPluginStatus error :" + JSON.stringify(e))
-					}
-					console.warn("Xcast register app param " + JSON.stringify(params));
-					await this.xcastApi.registerApplications(params).then(async res => {
-						console.warn("Xcast registerApplications success" + JSON.stringify(res));
-					}).catch(err => {
-						this.ERR("Xcast registerApplications error:" + JSON.stringify(err))
-					});
-				}).catch(error => {
-					this.ERR("XcastApi setStandbyBehavior error:" + JSON.stringify(error));
-				});
-			} else {
-				this.ERR("XcastApi activate failed");
-			}
-		})
+
+		DIALManager.get().start().catch(err => {
+			console.error(`DIALManager.start() failed: ${err}`);
+		});
 	}
 
 	SubscribeToNetworkManager() {
@@ -1963,41 +1850,12 @@ export default class App extends Router.App {
 				appApi.killNative();
 				break;
 			case 'Amazon':
-				appApi.suspendPremiumApp('Amazon').then(res => {
-					if (res) {
-						let params = {
-							applicationName: "AmazonInstantVideo",
-							state: 'suspended'
-						};
-						this.xcastApi.setApplicationState(params).then(status => {
-							if (status == false) {
-								this.ERR("App xcast setApplicationState failed, trying fallback. error: ");
-								this.xcastApi.onApplicationStateChanged(params).catch(err => {
-									this.ERR("App xcast onApplicationStateChanged failed: " + JSON.stringify(err));
-								});
-							}
-						});
-					}
-				});
+				appApi.suspendPremiumApp('Amazon');
 				break;
 			case "Netflix":
 				appApi.suspendPremiumApp("Netflix").then((res) => {
 					Router.navigate(GLOBALS.LastvisitedRoute);
 					this._moveApptoFront(GLOBALS.selfClientName, true)
-					if (res) {
-						let params = {
-							applicationName: "Netflix",
-							state: "suspended"
-						};
-						this.xcastApi.setApplicationState(params).then(status => {
-							if (status == false) {
-								this.ERR("App xcast setApplicationState failed, trying fallback. error: ");
-								this.xcastApi.onApplicationStateChanged(params).catch(err => {
-									this.ERR("App xcast onApplicationStateChanged failed: " + JSON.stringify(err));
-								});
-							}
-						});
-					}
 				});
 				break;
 			case 'HDMI':
@@ -2180,160 +2038,6 @@ export default class App extends Router.App {
 		// 	this.ERR("Error in launching " + JSON.stringify(appName) + " via dedicated key: " + JSON.stringify(err))
 		// });
 		AppManager.get().launchApp("com.rdk.app.cobalt2025")
-	}
-
-	/**
-	 * Function to register event listeners for Xcast plugin.
-	 */
-	registerXcastListeners() {
-		console.warn("Registering Xcast Listeners");
-		let self = this;
-		this.xcastApi.registerEvent('onApplicationLaunchRequest', notification => {
-			this.LOG('App onApplicationLaunchRequest: ' + JSON.stringify(notification));
-			appApi.getPowerState().then(res => {
-				if (res.currentState != PowerState.POWER_STATE_ON) {
-					appApi.setPowerState(PowerState.POWER_STATE_ON)
-				}
-			})
-			if (this.xcastApps(notification.applicationName)) {
-				let applicationName = this.xcastApps(notification.applicationName);
-				let baseUrl = Storage.get(notification.applicationName + "DefaultURL");
-				let pairingCode = notification.strPayLoad;
-				let additionalDataUrl = notification.strAddDataUrl;
-				let url = `${baseUrl}${pairingCode}&additionalDataUrl=${additionalDataUrl}`;
-				if (applicationName.startsWith("Netflix")) {
-					url = `${baseUrl}&dial=${pairingCode}&additionalDataUrl=${additionalDataUrl}`
-				}
-				let params = {
-					url: applicationName.startsWith("YouTube") || applicationName.startsWith("Netflix") ? url : notification.parameters.pluginUrl,
-					launchLocation: "dial",
-					appIdentifier: self.appIdentifiers[applicationName]
-				}
-				appApi.launchApp(applicationName, params).then(res => {
-					this.LOG("App onApplicationLaunchRequest: launched " + JSON.stringify(applicationName) + " : " + JSON.stringify(res));
-					GLOBALS.topmostApp = applicationName;
-					// TODO: move to Controller.statuschange event
-					let params = {
-						applicationName: notification.applicationName,
-						state: 'running'
-					};
-					this.xcastApi.setApplicationState(params).then(status => {
-						if (status == false) {
-							this.ERR("App xcast setApplicationState failed, trying fallback. error: ");
-							this.xcastApi.onApplicationStateChanged(params).catch(err => {
-								this.ERR("App xcast onApplicationStateChanged failed: " + JSON.stringify(err));
-							});
-						}
-					});
-				}).catch(err => {
-					this.ERR("App onApplicationLaunchRequest: error " + JSON.stringify(err))
-				})
-			} else {
-				this.LOG("App onApplicationLaunchRequest: " + JSON.stringify(notification.applicationName) + " is not supported.")
-			}
-		});
-
-		this.xcastApi.registerEvent('onApplicationHideRequest', notification => {
-			this.LOG('App onApplicationHideRequest: ' + JSON.stringify(notification));
-			if (this.xcastApps(notification.applicationName)) {
-				let applicationName = this.xcastApps(notification.applicationName);
-				this.LOG('App onApplicationHideRequest: ' + JSON.stringify(this.xcastApps(notification.applicationName)));
-				//second argument true means resident app won't be launched the required app will be exited in the background.
-				//only bring up the resident app when the notification is from the current app(ie app in focus)
-				this.LOG("App onApplicationHideRequest: exitApp as " + JSON.stringify(applicationName) + "!==" + JSON.stringify(GLOBALS.topmostApp));
-				appApi.exitApp(applicationName, applicationName !== GLOBALS.topmostApp);
-			} else {
-				this.LOG("App onApplicationHideRequest: " + JSON.stringify(notification.applicationName) + " is not supported.")
-			}
-		});
-
-		this.xcastApi.registerEvent('onApplicationResumeRequest', notification => {
-			this.LOG('App onApplicationResumeRequest: ' + JSON.stringify(notification));
-			appApi.getPowerState().then(res => {
-				if (res.currentState != PowerState.POWER_STATE_ON) {
-					appApi.setPowerState(PowerState.POWER_STATE_ON)
-				}
-			})
-			if (this.xcastApps(notification.applicationName)) {
-				let applicationName = this.xcastApps(notification.applicationName);
-				let params = {
-					url: notification.parameters.url,
-					launchLocation: "dial",
-					appIdentifier: self.appIdentifiers[applicationName]
-				}
-				this.LOG('App onApplicationResumeRequest: launchApp ' + JSON.stringify(applicationName) + " with params: " + JSON.stringify(params));
-				appApi.launchApp(applicationName, params).then(res => {
-					GLOBALS.topmostApp = applicationName;
-					this.LOG("App onApplicationResumeRequest: launched " + JSON.stringify(applicationName) + " result: " + JSON.stringify(res));
-				}).catch(err => {
-					this.ERR("Error in launching " + JSON.stringify(applicationName) + " on casting resume request: " + JSON.stringify(err));
-				})
-			} else {
-				this.LOG("App onApplicationResumeRequest: " + JSON.stringify(notification.applicationName) + " is not supported.")
-			}
-		});
-
-		this.xcastApi.registerEvent('onApplicationStopRequest', notification => {
-			this.LOG('App onApplicationStopRequest: ' + JSON.stringify(notification));
-			if (this.xcastApps(notification.applicationName)) {
-				let applicationName = this.xcastApps(notification.applicationName);
-				appApi.exitApp(applicationName, true, true);
-			} else {
-				this.LOG("App onApplicationStopRequest: " + JSON.stringify(notification.applicationName) + " is not supported.")
-			}
-		});
-
-		this.xcastApi.registerEvent('onApplicationStateRequest', notification => {
-			console.log("App onApplicationStateRequest: " + JSON.stringify(notification));
-			if (this.xcastApps(notification.applicationName)) {
-				let applicationName = this.xcastApps(notification.applicationName);
-				let appState = {
-					"applicationName": notification.applicationName,
-					"state": "stopped"
-				};
-				appApi.checkStatus(applicationName).then(result => {
-					this.LOG("result of xcast app status" + JSON.stringify(result[0].state))
-					switch (result[0].state) {
-						case "activated":
-						case "resumed":
-							appState.state = "running";
-							break;
-						case "Activation":
-						case "deactivated":
-						case "Deactivation":
-						case "Precondition":
-							appState.state = "stopped";
-							break;
-						case "hibernated":
-						case "suspended":
-							appState.state = "suspended";
-							break;
-					}
-					this.xcastApi.setApplicationState(appState).then(status => {
-						if (status == false) {
-							this.ERR("App xcast setApplicationState failed, trying fallback. error: ");
-							this.xcastApi.onApplicationStateChanged(appState).catch(err => {
-								this.ERR("App xcast onApplicationStateChanged failed: " + JSON.stringify(err));
-							});
-						}
-					});
-				}).catch(error => {
-					this.ERR("App onApplicationStateRequest: checkStatus error " + JSON.stringify(error));
-				})
-			} else {
-				this.LOG("App onApplicationStateRequest: " + JSON.stringify(notification.applicationName) + " is not supported.")
-			}
-		});
-	}
-
-	/**
-	 * Function to get the plugin name for the application name.
-	 * @param {string} app App instance.
-	 */
-	xcastApps(app) {
-		if (Object.keys(XcastApi.supportedApps()).includes(app)) {
-			return XcastApi.supportedApps()[app];
-		} else return false;
 	}
 
 	$mountEventConstructor(fun) {
