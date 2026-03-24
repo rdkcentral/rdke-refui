@@ -94,15 +94,20 @@ export default class AppManager {
 
   /**
    * @param {string} appId
+   * @param {string} intent
    * @returns {Promise<any>}
    * @throws {ThunderError}
    */
-  async launchApp(appId) {
+  async launchApp(appId, intent) {
     const thunderCall = "launchApp";
+    const params = { appId };
+
+    if (typeof intent === "string") {
+      params.intent = intent;
+    }
 
     return this.thunder.call(
-      this.callsign, thunderCall,
-      { appId }
+      this.callsign, thunderCall, params,
     ).then(result => {
       this.LOG(thunderCall, " result:", JSON.stringify(result));
       return result;
@@ -348,10 +353,10 @@ export default class AppManager {
       this.callsign, thunderCall,
       { appId, intent }
     ).then(result => {
-      this.LOG(thunderCall, " result:", JSON.stringify(result));
+      this.LOG(thunderCall, "(", intent, ") result:", JSON.stringify(result));
       return result;
     }).catch(err => {
-      this.handleThunderError(thunderCall, err);
+      this.handleThunderError(`${thunderCall}(${intent})`, err);
     });
   }
 
