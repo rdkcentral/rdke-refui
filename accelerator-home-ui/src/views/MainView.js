@@ -1066,7 +1066,7 @@ export default class MainView extends Lightning.Component {
             Router.focusWidget('Menu')
           }
         }
-        async _handleEnter() {
+        _handleEnter() {
           if (Router.isNavigating()) return;
           this.widgets.failok.notify({ title: Language.translate('Not Supported'), msg: Language.translate('VOD feature is not supported.') })
           Router.focusWidget('FailOk')
