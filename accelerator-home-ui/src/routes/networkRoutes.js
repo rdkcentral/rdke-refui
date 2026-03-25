@@ -26,7 +26,7 @@ import NetworkInterfaceScreen from "../screens/OtherSettingsScreens/NetworkInter
 import WifiPairingScreen from "../screens/WiFiPairingScreen"
 import WiFiScreen from "../screens/WifiScreen"
 import RCVolumeInfoScreen from '../screens/RcInformationScreen'
-import AppCatalogueLogicComponent from '../screens/AppCatalogueLogicComponent'
+import AppCatalogLoginComponent from '../screens/AppCatalogLoginComponent'
 
 const networkRoutes = [
     {
@@ -75,8 +75,8 @@ const networkRoutes = [
         widgets: ["Menu",'Volume', "Fail","AppCarousel"] 
     },
     {
-        path: 'settings/dacstore',
-        component: AppCatalogueLogicComponent,
+        path: 'settings/appcataloglogin',
+        component: AppCatalogLoginComponent,
         widgets: ['Volume', 'AppCarousel']
     }
 ]

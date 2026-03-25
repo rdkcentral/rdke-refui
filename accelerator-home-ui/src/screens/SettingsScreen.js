@@ -347,7 +347,7 @@ export default class SettingsScreen extends Lightning.Component {
         }
         _handleEnter() {
           if (!Router.isNavigating()) {
-            Router.navigate('settings/dacstore')
+            Router.navigate('settings/appcataloglogin')
           }
         }
       },
