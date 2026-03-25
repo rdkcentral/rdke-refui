@@ -22,7 +22,7 @@ import { Keyboard } from '../ui-components/index'
 import { KEYBOARD_FORMATS } from '../ui-components/components/Keyboard'
 import PasswordSwitch from './PasswordSwitch';
 
-export default class DacStoreLoginComponent extends Lightning.Component {
+export default class AppCatalogueLogicComponent extends Lightning.Component {
 
   constructor(...args) {
     super(...args);
