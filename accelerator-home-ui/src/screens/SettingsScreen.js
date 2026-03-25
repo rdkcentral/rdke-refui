@@ -79,7 +79,7 @@ export default class SettingsScreen extends Lightning.Component {
             src: Utils.asset('images/settings/Arrow.png'),
           },
         },
-        DacStore: {
+        ApplicationCatalogueLogin: {
           y: 90,
           type: SettingsMainItem,
           Title: {
@@ -324,7 +324,7 @@ export default class SettingsScreen extends Lightning.Component {
           this.tag('NetworkConfiguration')._unfocus()
         }
         _handleDown() {
-          this._setState('DacStore')
+          this._setState('ApplicationCatalogueLogin')
         }
         _handleEnter() {
           if (!Router.isNavigating()) {
@@ -332,12 +332,12 @@ export default class SettingsScreen extends Lightning.Component {
           }
         }
       },
-      class DacStore extends this {
+      class ApplicationCatalogueLogin extends this {
         $enter() {
-          this.tag('DacStore')._focus()
+          this.tag('ApplicationCatalogueLogin')._focus()
         }
         $exit() {
-          this.tag('DacStore')._unfocus()
+          this.tag('ApplicationCatalogueLogin')._unfocus()
         }
         _handleUp() {
           this._setState('NetworkConfiguration')
@@ -359,7 +359,7 @@ export default class SettingsScreen extends Lightning.Component {
           this.tag('Bluetooth')._unfocus()
         }
         _handleUp() {
-          this._setState('DacStore')
+          this._setState('ApplicationCatalogueLogin')
         }
         _handleDown() {
           this._setState('Video')
