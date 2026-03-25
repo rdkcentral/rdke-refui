@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-import { Language, Lightning, Router, Utils } from '@lightningjs/sdk'
+import { Language, Lightning, Router } from '@lightningjs/sdk'
 import { CONFIG } from '../Config/Config';
 import { Keyboard } from '../ui-components/index'
 import { KEYBOARD_FORMATS } from '../ui-components/components/Keyboard'
@@ -51,7 +51,7 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
       this._setState("EnterPassword");
     }
     else {
-      this.LOG('DAC Store Login - Username: ' + this.textCollection['EnterUsername'])
+      this.LOG('App Catalog Login - credentials submitted')
     }
   }
 
@@ -260,7 +260,7 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
           this.tag('ShowPassword').text.textColor = CONFIG.theme.hex
         }
         _handleDown() {
-          this._setState("Keyboard");
+          this._setState("ExitButton");
         }
         _handleUp() {
           this._setState("EnterUsername");
@@ -337,7 +337,7 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
             this.LOG('no saving')
           } else if (key === 'Space') {
             this.textCollection[this.prevState] += ' '
-            this.star += (this.prevState === "EnterPassword") ? '\u25CF' : this.star
+            this.star += (this.prevState === "EnterPassword") ? '\u25CF' : ''
             this.tag(this.element).text.text = this.encrypt() ? this.star : this.textCollection[this.prevState];
           } else if (key === 'Delete') {
             this.textCollection[this.prevState] = ''
@@ -345,7 +345,7 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
             this.tag(this.element).text.text = this.encrypt() ? this.star : this.textCollection[this.prevState];
           } else {
             this.textCollection[this.prevState] += key
-            this.star += (this.prevState === "EnterPassword") ? '\u25CF' : this.star
+            this.star += (this.prevState === "EnterPassword") ? '\u25CF' : ''
             this.tag(this.element).text.text = this.encrypt() ? this.star : this.textCollection[this.prevState];
           }
         }

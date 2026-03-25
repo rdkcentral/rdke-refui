@@ -487,7 +487,7 @@ export default class SettingsScreen extends Lightning.Component {
           this.tag('DTVSettings')._unfocus()
         }
         _handleUp() {
-          this._setState('NFRStatus')
+          this._setState('VoiceRemoteControl')
         }
         _handleEnter() {
           if (this.dtvPlugin) {
