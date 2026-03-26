@@ -122,17 +122,6 @@ export default class LanguageScreen extends Lightning.Component {
       }
     })
 
-    appApi.deactivateResidentApp(loader)
-    RDKShellApis.moveToFront(GLOBALS.selfClientName)
-    RDKShellApis.setFocus(GLOBALS.selfClientName).then(result => {
-      this.LOG('LanguageScreen: ResidentApp moveToFront Success')
-      RDKShellApis.getVisibility(GLOBALS.selfClientName).then(visible => {
-        if (!visible) RDKShellApis.setVisibility(GLOBALS.selfClientName, true)
-      })
-    }).catch(err => {
-      this.ERR('LanguageScreen: Error' + JSON.stringify(err))
-      Metrics.error(Metrics.ErrorType.OTHER, "AppLangugaeError", 'Thunder RDKShell setFocus Error' + JSON.stringify(err), false, null)
-    });
   }
 
   pageTransition() {
@@ -148,11 +137,7 @@ export default class LanguageScreen extends Lightning.Component {
   }
 
   updateUILanguage(index) {
-    if ("ResidentApp" === GLOBALS.selfClientName) {
-        appApi.setUILanguage(availableLanguageCodes[availableLanguages[index]])
-    } else {
-        FireBoltApi.get().localization.setlanguage(availableLanguages[index]).then(res => this.LOG("sucess language set ::::" + JSON.stringify(res)))
-    }
+    appApi.setUILanguage(availableLanguageCodes[availableLanguages[index]])
     localStorage.setItem('Language',availableLanguages[index])
   }
 
@@ -181,12 +166,6 @@ export default class LanguageScreen extends Lightning.Component {
             const index = this._Languages.tag('List').index
             localStorage.setItem('LanguageSelectedIndex', index)
             this.updateUILanguage(index)
-            let path = location.pathname.split('index.html')[0]
-            let url = path.slice(-1) === '/' ? "static/loaderApp/index.html" : "/static/loaderApp/index.html"
-            let notification_url = location.origin + path + url
-            this.LOG("LanguageScreen notification_url: " + JSON.stringify(notification_url))
-            appApi.launchResident(notification_url, loader).catch(err => { })
-            RDKShellApis.setVisibility(GLOBALS.selfClientName, false)
             location.reload();
           }
         }

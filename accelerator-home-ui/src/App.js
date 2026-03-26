@@ -1676,6 +1676,10 @@ export default class App extends Router.App {
 	}
 
 	_PowerStateHandlingWhileReboot() {
+		if (this._oldPowerStateWhileReboot === PowerState.POWER_STATE_STANDBY) {
+			this.LOG("_PowerStateHandlingWhileReboot: oldPowerStateWhileReboot is STANDBY, setting it to ON");
+			this._oldPowerStateWhileReboot = PowerState.POWER_STATE_ON;
+		}
 		this.LOG("_PowerStateHandlingWhileReboot: this._oldPowerStateWhileReboot , " + JSON.stringify(this._oldPowerStateWhileReboot) + " this._powerStateWhileReboot, " + JSON.stringify(this._powerStateWhileReboot) + " ");
 		if (this._oldPowerStateWhileReboot != this._powerStateWhileReboot) {
 			this.LOG("_PowerStateHandlingWhileReboot: old power state is not equal to powerstate while reboot " + JSON.stringify(this._oldPowerStateWhileReboot) + " " + JSON.stringify(this._powerStateWhileReboot));
@@ -2138,7 +2142,15 @@ export default class App extends Router.App {
 					appApi.exitApp(currentApp); //will suspend/destroy the app depending on the setting.
 				}
 				Router.navigate('menu');
-			} else if (notification.newState === "ON" && notification.currentState !== "ON") {
+			} 
+			else if(notification.newState === PowerState.POWER_STATE_LIGHT_SLEEP && notification.currentState === PowerState.POWER_STATE_DEEP_SLEEP){
+				appApi.setPowerState("ON").then(res => {	
+					this.LOG("Device woke up from DEEP_SLEEP to LIGHT_SLEEP . setPowerState result: " + JSON.stringify(res))
+				}).catch(err => {
+					this.ERR("Failed to set power state to ON when device woke up from DEEP_SLEEP to LIGHT_SLEEP. Error: " + JSON.stringify(err))
+				})
+			}
+			else if (notification.newState === "ON" && notification.currentState !== "ON") {
 				//TURNING ON THE DEVICE
 				Storage.remove(SLEEP_STATE)
 			}
