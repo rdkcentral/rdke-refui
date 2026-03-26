@@ -20,15 +20,10 @@ import { Language, Lightning } from '@lightningjs/sdk'
 import LanguageItem from '../../items/LanguageItem'
 import { availableLanguages, availableLanguageCodes } from '../../Config/Config'
 import AppApi from '../../api/AppApi';
-import RDKShellApis from '../../api/RDKShellApis';
-import thunderJS from 'ThunderJS';
-import { CONFIG, GLOBALS } from '../../Config/Config'
-import { Metrics } from '@firebolt-js/sdk';
-import FireBoltApi from '../../api/firebolt/FireBoltApi';
+
+
 
 const appApi = new AppApi()
-const thunder = thunderJS(CONFIG.thunderConfig)
-const loader = 'Loader'
 
 export default class LanguageScreen extends Lightning.Component {
   constructor(...args) {

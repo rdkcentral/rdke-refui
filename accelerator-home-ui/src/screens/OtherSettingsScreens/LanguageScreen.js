@@ -20,16 +20,12 @@ import { Language, Lightning, Router } from '@lightningjs/sdk'
 import LanguageItem from '../../items/LanguageItem'
 import { availableLanguages, availableLanguageCodes, CONFIG } from '../../Config/Config'
 import AppApi from '../../api/AppApi';
-import RDKShellApis from '../../api/RDKShellApis';
 import AlexaApi from '../../api/AlexaApi';
 import thunderJS from 'ThunderJS';
-import { GLOBALS } from '../../Config/Config'
-import FireBoltApi from '../../api/firebolt/FireBoltApi';
-import { Metrics } from '@firebolt-js/manage-sdk';
+
 
 const appApi = new AppApi()
 const thunder = thunderJS(CONFIG.thunderConfig)
-const loader = 'Loader'
 
 export default class LanguageScreen extends Lightning.Component {
 
@@ -77,11 +73,6 @@ export default class LanguageScreen extends Lightning.Component {
   }
 
   _active() {
-    if ("ResidentApp" !== GLOBALS.selfClientName) {
-      this.OnLanguageChangedfirebolt = FireBoltApi.get().localization.listen("languageChanged", value => {
-        this.LOG('language changed successfully' + JSON.stringify(value))
-      })
-    }
     this._Languages = this.tag('LanguageScreenContents.Languages')
     this._Languages.h = availableLanguages.length * 90
     this._Languages.tag('List').h = availableLanguages.length * 90

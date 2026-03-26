@@ -22,11 +22,8 @@ import { CONFIG, GLOBALS } from '../../Config/Config'
 import LanguageItem from '../../items/LanguageItem'
 import { availableLanguages, availableLanguageCodes } from '../../Config/Config'
 import AppApi from '../../api/AppApi'
-import RDKShellApis from '../../api/RDKShellApis'
-import FireBoltApi from '../../api/firebolt/FireBoltApi'
 
 const appApi = new AppApi()
-const loader = 'Loader'
 
 export default class LanguageScreen extends Lightning.Component {
   constructor(...args) {

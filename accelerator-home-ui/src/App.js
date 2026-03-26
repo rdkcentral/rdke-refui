@@ -2144,7 +2144,7 @@ export default class App extends Router.App {
 				Router.navigate('menu');
 			} 
 			else if(notification.newState === PowerState.POWER_STATE_LIGHT_SLEEP && notification.currentState === PowerState.POWER_STATE_DEEP_SLEEP){
-				appApi.setPowerState("ON").then(res => {	
+				appApi.setPowerState(PowerState.POWER_STATE_ON).then(res => {	
 					this.LOG("Device woke up from DEEP_SLEEP to LIGHT_SLEEP . setPowerState result: " + JSON.stringify(res))
 				}).catch(err => {
 					this.ERR("Failed to set power state to ON when device woke up from DEEP_SLEEP to LIGHT_SLEEP. Error: " + JSON.stringify(err))
