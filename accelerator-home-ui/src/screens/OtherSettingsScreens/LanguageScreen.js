@@ -20,16 +20,12 @@ import { Language, Lightning, Router } from '@lightningjs/sdk'
 import LanguageItem from '../../items/LanguageItem'
 import { availableLanguages, availableLanguageCodes, CONFIG } from '../../Config/Config'
 import AppApi from '../../api/AppApi';
-import RDKShellApis from '../../api/RDKShellApis';
 import AlexaApi from '../../api/AlexaApi';
 import thunderJS from 'ThunderJS';
-import { GLOBALS } from '../../Config/Config'
-import FireBoltApi from '../../api/firebolt/FireBoltApi';
-import { Metrics } from '@firebolt-js/manage-sdk';
+
 
 const appApi = new AppApi()
 const thunder = thunderJS(CONFIG.thunderConfig)
-const loader = 'Loader'
 
 export default class LanguageScreen extends Lightning.Component {
 
@@ -77,11 +73,6 @@ export default class LanguageScreen extends Lightning.Component {
   }
 
   _active() {
-    if ("ResidentApp" !== GLOBALS.selfClientName) {
-      this.OnLanguageChangedfirebolt = FireBoltApi.get().localization.listen("languageChanged", value => {
-        this.LOG('language changed successfully' + JSON.stringify(value))
-      })
-    }
     this._Languages = this.tag('LanguageScreenContents.Languages')
     this._Languages.h = availableLanguages.length * 90
     this._Languages.tag('List').h = availableLanguages.length * 90
@@ -94,17 +85,6 @@ export default class LanguageScreen extends Lightning.Component {
         item: item,
       }
     })
-    appApi.deactivateResidentApp(loader)
-    RDKShellApis.moveToFront(GLOBALS.selfClientName)
-    RDKShellApis.setFocus(GLOBALS.selfClientName).then(result => {
-      this.LOG('LanguageScreen: ResidentApp moveToFront Success');
-      RDKShellApis.getVisibility(GLOBALS.selfClientName).then(visible => {
-        if (!visible) RDKShellApis.setVisibility(GLOBALS.selfClientName, true);
-      })
-    }).catch(err => {
-      this.ERR('LanguageScreen: Error' + JSON.stringify(err));
-      Metrics.error(Metrics.ErrorType.OTHER, "AppLangugaeError", 'Thunder RDKShell setFocus Error' + JSON.stringify(err), false, null)
-    });
   }
 
   _focus() {
@@ -146,17 +126,8 @@ export default class LanguageScreen extends Lightning.Component {
                 }
               })
             }
-            if ("ResidentApp" === GLOBALS.selfClientName) {
-              appApi.setUILanguage(updatedLanguage)
-            } else {
-              FireBoltApi.get().localization.setlanguage(availableLanguages[this._Languages.tag('List').index]).then(res => this.LOG("sucess language set ::::" + JSON.stringify(res)))
-            }
+            appApi.setUILanguage(updatedLanguage)
             localStorage.setItem('Language',availableLanguages[this._Languages.tag('List').index])
-            let path = location.pathname.split('index.html')[0]
-            let url = path.slice(-1) === '/' ? "static/loaderApp/index.html" : "/static/loaderApp/index.html"
-            let notification_url = location.origin + path + url
-            appApi.launchResident(notification_url, loader).catch(err => {this.ERR("error while launching loader url in resident app" + JSON.stringify(err)) })
-            RDKShellApis.setVisibility(GLOBALS.selfClientName, false)
             location.reload();
           }
         }

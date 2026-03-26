@@ -51,6 +51,7 @@ export default class AppStore extends Lightning.Component {
         } catch (error) {
             this.ERR("Failed to get App Catalog Info:" + JSON.stringify(error))
         }
+        Catalog.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
         this.tag('Catalog').add(Catalog.map((element) => {
             return { h: AppCatalogItem.height + 90, w: AppCatalogItem.width, info: element }
         }));
