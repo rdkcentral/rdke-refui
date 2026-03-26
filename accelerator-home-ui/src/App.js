@@ -255,8 +255,8 @@ export default class App extends Router.App {
 	_captureKey(key) {
 		this.LOG("Got keycode : " + JSON.stringify(key.keyCode))
 		this.LOG("powerState ===>" + JSON.stringify(GLOBALS.powerState))
-		if (GLOBALS.powerState !== "ON") {
-			appApi.setPowerState("ON").then(res => {
+		if (GLOBALS.powerState !== PowerState.POWER_STATE_ON) {
+			appApi.setPowerState(PowerState.POWER_STATE_ON).then(res => {
 				res ? this.LOG("successfully set the power state to ON from " + JSON.stringify(GLOBALS.powerState)) : this.LOG("Failure while turning ON the device")
 				GLOBALS.powerState = PowerState.POWER_STATE_ON;
 				this.LOG("powerState after ===>" + JSON.stringify(GLOBALS.powerState))
@@ -2132,7 +2132,7 @@ export default class App extends Router.App {
 			appApi.getPowerState().then(res => {
 				GLOBALS.powerState = res ? res.currentState : notification.newState
 			}).catch(e => GLOBALS.powerState = notification.newState)
-			if (notification.newState !== "ON" && notification.currentState === "ON") {
+			if (notification.newState !== PowerState.POWER_STATE_ON && notification.currentState === PowerState.POWER_STATE_ON) {
 				this.LOG("onPowerModeChanged Notification: power state was changed from ON to " + JSON.stringify(notification.newState))
 
 				//TURNING OFF THE DEVICE
@@ -2150,7 +2150,7 @@ export default class App extends Router.App {
 					this.ERR("Failed to set power state to ON when device woke up from DEEP_SLEEP to LIGHT_SLEEP. Error: " + JSON.stringify(err))
 				})
 			}
-			else if (notification.newState === "ON" && notification.currentState !== "ON") {
+			else if (notification.newState === PowerState.POWER_STATE_ON && notification.currentState !== PowerState.POWER_STATE_ON) {
 				//TURNING ON THE DEVICE
 				Storage.remove(SLEEP_STATE)
 			}

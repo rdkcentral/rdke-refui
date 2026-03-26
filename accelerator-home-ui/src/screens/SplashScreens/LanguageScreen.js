@@ -17,8 +17,8 @@
  * limitations under the License.
  **/
 
-import { Lightning, Router, Language, Storage } from '@lightningjs/sdk'
-import { CONFIG, GLOBALS } from '../../Config/Config'
+import { Lightning, Router, Language } from '@lightningjs/sdk'
+import { CONFIG } from '../../Config/Config'
 import LanguageItem from '../../items/LanguageItem'
 import { availableLanguages, availableLanguageCodes } from '../../Config/Config'
 import AppApi from '../../api/AppApi'
