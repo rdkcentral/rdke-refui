@@ -3,6 +3,7 @@ import { Grid } from "@lightningjs/ui";
 import { CONFIG } from "../Config/Config";
 import AppCatalogItem from "../items/AppCatalogItem";
 import { getAppCatalogInfo } from "../api/DACApi"
+import { eventTarget, RefreshNeeded } from '../api/AppCatalog'
 
 export default class AppStore extends Lightning.Component {
 
@@ -44,18 +45,37 @@ export default class AppStore extends Lightning.Component {
         }
     }
 
-    async _firstEnable() {
+    _firstEnable() {
+        this._onRefreshNeeded = () => {
+            this.LOG('RefreshNeeded event received - reloading catalog')
+            this._loadCatalog()
+        }
+        eventTarget.addEventListener(RefreshNeeded.eventName, this._onRefreshNeeded)
+    }
+
+    async _loadCatalog() {
         let Catalog = []
         try {
             Catalog = await getAppCatalogInfo()
         } catch (error) {
             this.ERR("Failed to get App Catalog Info:" + JSON.stringify(error))
         }
+        if (!Array.isArray(Catalog) || Catalog.length === 0) {
+            this.LOG('No apps available in catalog')
+            return
+        }
         Catalog.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+        this.tag('Catalog').clear()
         this.tag('Catalog').add(Catalog.map((element) => {
             return { h: AppCatalogItem.height + 90, w: AppCatalogItem.width, info: element }
         }));
         this._setState('Catalog')
+    }
+
+    _detach() {
+        if (this._onRefreshNeeded) {
+            eventTarget.removeEventListener(RefreshNeeded.eventName, this._onRefreshNeeded)
+        }
     }
 
 
@@ -76,6 +96,7 @@ export default class AppStore extends Lightning.Component {
     }
 
     _focus() {
+        this._loadCatalog()
         this._setState('Catalog')
     }
 

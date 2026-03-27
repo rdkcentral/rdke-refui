@@ -32,6 +32,7 @@ import NetworkManager from '../api/NetworkManagerAPI.js'
 import { getAppCatalogInfo, getInstalledDACApps, startDACApp } from '../api/DACApi.js'
 import { filterExcludedApps } from '../helpers/DACAppPresentation.js'
 import AppController from '../AppController.js'
+import { eventTarget, RefreshNeeded } from '../api/AppCatalog.js'
 
 /** Class for main view component in home UI */
 export default class MainView extends Lightning.Component {
@@ -458,6 +459,13 @@ export default class MainView extends Lightning.Component {
     }
     AppController.get().addPackageChangedListener(this._onPackageChanged)
 
+    // Refresh DAC apps row when app catalog authentication changes
+    this._onCatalogRefreshNeeded = () => {
+      this.LOG('RefreshNeeded event received - refreshing DAC apps row')
+      this.refreshSecondRow()
+    }
+    eventTarget.addEventListener(RefreshNeeded.eventName, this._onCatalogRefreshNeeded)
+
     this.dacApps = dacCatalog
 
     this.fireAncestors("$mountEventConstructor", registerListener.bind(this))
@@ -469,6 +477,9 @@ export default class MainView extends Lightning.Component {
   _detach() {
     // Unsubscribe to avoid stale references to this MainView instance
     AppController.get().removePackageChangedListener(this._onPackageChanged)
+    if (this._onCatalogRefreshNeeded) {
+      eventTarget.removeEventListener(RefreshNeeded.eventName, this._onCatalogRefreshNeeded)
+    }
   }
 
   _firstActive() {
