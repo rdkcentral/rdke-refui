@@ -21,6 +21,7 @@ import { CONFIG } from '../Config/Config';
 import { Keyboard } from '../ui-components/index'
 import { KEYBOARD_FORMATS } from '../ui-components/components/Keyboard'
 import PasswordSwitch from './PasswordSwitch';
+import { login } from '../api/AppCatalog';
 
 export default class AppCatalogLoginComponent extends Lightning.Component {
 
@@ -52,6 +53,8 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
     }
     else {
       this.LOG('App Catalog Login - credentials submitted')
+      login(this.textCollection['EnterUsername'], this.textCollection['EnterPassword'])
+        .then(result => console.log(result ? 'Login successful' : 'Login failed'))
     }
   }
 

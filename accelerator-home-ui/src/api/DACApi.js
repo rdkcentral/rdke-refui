@@ -20,11 +20,11 @@
 import DownloadManager from './DownloadManagerApi';
 import PackageManager from './PackageManagerApi';
 import AppManager from './AppManagerApi';
-import AppApi from './AppApi';
 import AppController from '../AppController';
 import { ThunderError } from './ThunderError';
 import { Metrics } from '@firebolt-js/sdk'
 import { SIDELOADED_APP_DEFAULT_ICON, deriveNameFromPackageId } from '../helpers/DACAppPresentation'
+import { getApps, getAppDetails, makeDownloadURL } from './AppCatalog';
 
 // the size that is assumed if it is not possible to retrieve package size
 // from the server, according to server API this should never happen
@@ -36,10 +36,6 @@ const APPS_REQUEST_LIMIT = 200;
 const APPS_REQUESTS_MAX = 5;
 
 const APP_DETAILS_KEY = "refui.details";
-
-const APP_DEFAULT_ARCH = "arm";
-
-const APP_STORE_RFC_KEY = "Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.DAC.ConfigURL";
 
 function makeLogMessage(call, err) {
   return err.toString() + " <=> " + call;
@@ -72,122 +68,29 @@ class OperationLock {
 };
 
 let packageLock = new OperationLock();
-let storeConfig = null;
-
-async function getConfigUrlFromRFC() {
-  try {
-    const appApi = new AppApi();
-    console.log("Resolving DAC Store URL from RFC ");
-    const result = await appApi.getRFCConfig(APP_STORE_RFC_KEY);
-    const rfcUrl = result?.RFCConfig?.[APP_STORE_RFC_KEY];
-    if (typeof rfcUrl === "string" && rfcUrl.trim().length > 0) {
-      const resolvedConfigUrl = rfcUrl.trim();
-      console.log("Resolved DAC Store URL from RFC ");
-      return resolvedConfigUrl;
-    }
-    console.warn("DAC Store RFC URL empty or invalid");
-    return null;
-  } catch (err) {
-    console.error("Failed to get DAC Store URL from RFC", err);
-    return null;
-  }
-}
-
-async function getConfigUrlFromPackageManager() {
-  try {
-    console.log("Resolving DAC Store URL from PackageManager...");
-    const config = await PackageManager.get().configuration();
-    console.log("Resolved DAC Store URL from PackageManager: ");
-    if (typeof config?.configUrl !== "string" || config.configUrl.trim().length === 0) {
-      throw new Error("Invalid config: " + JSON.stringify(config));
-    }
-
-    return config.configUrl.trim();
-  } catch (err) {
-    console.error("Failed to resolve DAC Store URL from PackageManager", err);
-    throw err;
-  }
-}
-
-async function getStoreConfig() {
-  if (!storeConfig) {
-    console.log("Resolving DAC Store config URL...");
-    let resolvedConfigUrl = await getConfigUrlFromRFC();
-
-    if (!resolvedConfigUrl) {
-      resolvedConfigUrl = await getConfigUrlFromPackageManager();
-    }
-
-    console.log("Resolved DAC Store config URL ");
-    const fetchResponse = await fetch(resolvedConfigUrl);
-    if (!fetchResponse.ok) {
-      throw new Error(`Unexpected response: ${fetchResponse.status}: ${fetchResponse.statusText}`);
-    }
-    const responseObject = await fetchResponse.json();
-    if (typeof responseObject?.["appstore-catalog"]?.url !== "string") {
-      throw new Error("Invalid response object: " + JSON.stringify(responseObject));
-    }
-    storeConfig = responseObject["appstore-catalog"];
-  }
-
-  return storeConfig;
-}
-
-async function fetchStoreObject(request) {
-  let config = await getStoreConfig();
-  let headers = new Headers();
-
-  if (typeof config?.authentication?.user === "string" &&
-    typeof config?.authentication?.password === "string") {
-    headers.append(
-      "Authorization",
-      "Basic " + btoa(config.authentication.user + ':' + config.authentication.password)
-    );
-  }
-
-  let requestOptions = {
-    method: 'GET',
-    headers,
-    redirect: 'follow',
-  };
-
-  const fetchResponse = await fetch(config.url + request, requestOptions);
-  if (!fetchResponse.ok) {
-    throw new Error(`Unexpected response: ${fetchResponse.status}: ${fetchResponse.statusText}`);
-  }
-
-  return fetchResponse.json();
-}
 
 export async function getAppCatalogInfo() {
   let result = [];
   let offset = 0;
 
   for (let i = 0; i < APPS_REQUESTS_MAX; ++i) {
-    const request = "/apps?arch=" + APP_DEFAULT_ARCH + "&offset=" + offset + "&limit=" + APPS_REQUEST_LIMIT;
-    console.log(`Requesting: ${request}`);
     try {
-      const appsResponse = await fetchStoreObject(request);
+      const appsResponse = await getApps(offset, APPS_REQUEST_LIMIT);
       if (!Array.isArray(appsResponse?.applications)) {
         break;
       }
       result = result.concat(appsResponse.applications);
-      if (result.length >= appsResponse?.meta?.resultSet?.total ?? 0) {
+      if (result.length >= (appsResponse?.meta?.resultSet?.total ?? 0)) {
         break;
       }
       offset = result.length;
     } catch (err) {
-      console.error(`fetch(${request}) ${err}`);
       Metrics.error(Metrics.ErrorType.OTHER, "DACApiError", err.toString(), false, null);
       break;
     }
   }
 
   return result;
-}
-
-function getAppDetails(id, version) {
-  return fetchStoreObject("/apps/" + id + ":" + version + "?arch=" + APP_DEFAULT_ARCH);
 }
 
 function retrieveURLAndSize(details) {
@@ -223,7 +126,8 @@ async function downloadAndInstall(pkg, downloadedSize, totalSize, progress) {
 
   const downloadId = await new Promise(async (resolve, reject) => {
     try {
-      await DownloadManager.get().download(pkg.url, (downloadId, percent, failReason) => {
+      const downloadURL = await makeDownloadURL(pkg.url);
+      await DownloadManager.get().download(downloadURL, (downloadId, percent, failReason) => {
         if (!failReason) {
           if (percent !== 100) {
             progress((downloadedSize + pkg.size * percent / 100) / totalSize, "Downloading");
