@@ -54,7 +54,17 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
     else {
       this.LOG('App Catalog Login - credentials submitted')
       login(this.textCollection['EnterUsername'], this.textCollection['EnterPassword'])
-        .then(result => console.log(result ? 'Login successful' : 'Login failed'))
+        .then(result => {
+          if (result) {
+            this.LOG('Login successful - navigating back')
+            if (!Router.isNavigating()) {
+              Router.back()
+            }
+          } else {
+            this.ERR('Login failed')
+          }
+        })
+        .catch(err => this.ERR('Login error: ' + err))
     }
   }
 
