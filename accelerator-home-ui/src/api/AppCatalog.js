@@ -23,7 +23,7 @@ import AppApi from './AppApi';
 const APP_DEFAULT_ARCH = "arm";
 const APP_STORE_RFC_KEY = "Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.DAC.ConfigURL";
 
-const debug = true;
+const debug = false;
 
 let appCatalogHandler = null;
 
