@@ -21,6 +21,7 @@ import { COLORS } from './../colors/Colors'
 import { CONFIG } from '../Config/Config'
 import ThunderJS from 'ThunderJS'
 import RCApi from '../api/RemoteControl';
+import LEDController, { LEDControlState } from '../api/LEDControlApi';
 
 const _thunder = ThunderJS(CONFIG.thunderConfig)
 let onStatusCBhandle = null;
@@ -245,6 +246,7 @@ export default class RCInformationScreen extends Lightning.Component {
         this.tag("BatteryPercent.Value").text.text = `N/A`
         this.tag("RCUName.Value").text.text = `N/A`
         //RCApi.get().deactivate().catch(err=> { console.error("RCInformationScreen error:", err)});
+        LEDController.matchLEDStateToPowerState();
     }
 
     onStatusCB(cbData) {
@@ -253,7 +255,7 @@ export default class RCInformationScreen extends Lightning.Component {
             let cbDatastatus
             if (Array.isArray(cbData.status)) {
                 cbDatastatus = cbData.status[0] || {};
-              } 
+              }
             else if (cbData.status && typeof cbData.status === 'object') {
                 cbDatastatus = cbData.status;
               }
@@ -276,6 +278,9 @@ export default class RCInformationScreen extends Lightning.Component {
                 })
                 cbDatastatus.remoteData.map(item => {
                     connectedStatus.push(item.connected)
+                    if (item.connected === true) {
+                        LEDController.setLEDState(LEDControlState.WPS_CONNECTED);
+                    }
                 })
                 this.tag("Status.Value").text.text = connectedStatus
                 this.tag("MacAddress.Value").text.text = MacAddress
@@ -287,7 +292,9 @@ export default class RCInformationScreen extends Lightning.Component {
                     for(let i=0;i<cbDatastatus.netTypesSupported.length;i++)
                     {
                         this.LOG("Netypesupported" + JSON.stringify(cbDatastatus.netTypesSupported[i]))
-                        RCApi.get().startPairing(30,cbDatastatus.netTypesSupported[i]).catch(err => {
+                        RCApi.get().startPairing(30, cbDatastatus.netTypesSupported[i]).then(() => {
+                            LEDController.setLEDState(LEDControlState.WPS_CONNECTING);
+                        }).catch(err => {
                             this.ERR("RCInformationScreen startPairing error: " + JSON.stringify(err));
                         });
                     }

@@ -23,7 +23,8 @@ import { COLORS } from './../colors/Colors'
 import { CONFIG, GLOBALS } from '../Config/Config'
 import AppApi from './../api/AppApi'
 import PersistentStoreApi from '../api/PersistentStore.js'
-import NetworkManager ,{WiFiState}from '../api/NetworkManagerAPI.js'
+import NetworkManager, { WiFiState } from '../api/NetworkManagerAPI.js'
+import LEDController, { LEDControlState } from '../api/LEDControlApi'
 
 let appApi = new AppApi()
 var previousFocusedItemSSid
@@ -501,6 +502,7 @@ export default class WiFiScreen extends Lightning.Component {
           notification.state === WiFiState.WIFI_STATE_ERROR || notification.state === WiFiState.WIFI_STATE_DISCONNECTED)
         {
           if ((notification.state === WiFiState.WIFI_STATE_INVALID_CREDENTIALS) || (notification.state === WiFiState.WIFI_STATE_SSID_CHANGED) || notification.state === WiFiState.WIFI_STATE_AUTHENTICATION_FAILED) {
+            LEDController.setLEDState(LEDControlState.WPS_ERROR);
             await NetworkManager.RemoveKnownSSID(selectedssid.ssid)
           }
           if (this.renderSSIDS.length) {
@@ -528,6 +530,7 @@ export default class WiFiScreen extends Lightning.Component {
         NetworkManager.GetInterfaceState("wlan0").then(enabled => {
           if (enabled) {
             NetworkManager.StartWiFiScan()
+            LEDController.setLEDState(LEDControlState.WPS_CONNECTING);
             this.wifiLoading.play()
             this.tag('Switch.Loader').visible = true
           }
@@ -540,5 +543,6 @@ export default class WiFiScreen extends Lightning.Component {
     previousFocusedItemSSid = undefined
     this.onWIFIStateChangedCB.dispose();
     this.onAvailableSSIDsCB.dispose();
+    LEDController.matchLEDStateToPowerState();
   }
 }

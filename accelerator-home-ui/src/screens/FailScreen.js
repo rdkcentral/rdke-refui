@@ -18,6 +18,7 @@
  **/
 import { Language,Registry, Lightning, Router } from "@lightningjs/sdk";
 import { CONFIG } from '../Config/Config'
+import LEDController, { LEDControlState } from "../api/LEDControlApi";
 
 const errorTitle = 'Error Title'
 const errorMsg = 'Error Message'
@@ -141,6 +142,7 @@ export default class Failscreen extends Lightning.Component {
         if(this.timeout > 0) {
             this.initTimer()
         }
+        LEDController.setLEDState(LEDControlState.WPS_ERROR);
     }
     initTimer() {
         this.timeInterval = Registry.setInterval(() => {
@@ -165,6 +167,7 @@ export default class Failscreen extends Lightning.Component {
         if (this.timeInterval) {
             Registry.clearInterval(this.timeInterval)
         }
+        LEDController.matchLEDStateToPowerState();
     }
     _handleBack() {
         Router.focusPage()

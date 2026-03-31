@@ -22,8 +22,8 @@ import { COLORS } from '../../colors/Colors'
 import { CONFIG,GLOBALS } from '../../Config/Config'
 import SettingsMainItem from '../../items/SettingsMainItem'
 import WiFiItem from '../../items/WiFiItem'
-import NetworkManager,{WiFiState}from '../../api/NetworkManagerAPI'
-
+import NetworkManager, { WiFiState } from '../../api/NetworkManagerAPI'
+import LEDController, { LEDControlState } from '../../api/LEDControlApi'
 
 export default class NetworkList extends Lightning.Component {
   constructor(...args) {
@@ -215,6 +215,9 @@ export default class NetworkList extends Lightning.Component {
     NetworkManager.StopWiFiScan()
   }
 
+  _inactive() {
+    LEDController.matchLEDStateToPowerState();
+  }
   /**
    * Function to render list of Wi-Fi networks.
    */
@@ -398,11 +401,13 @@ export default class NetworkList extends Lightning.Component {
       this.LOG(JSON.stringify(notification))
       if (notification.state === WiFiState.WIFI_STATE_CONNECTED && ! GLOBALS.Setup) {
         this.tag('Info').text.text = Language.translate("Connection successful");
+        LEDController.setLEDState(LEDControlState.WPS_CONNECTED);
         Registry.setTimeout(() => {
           Router.navigate('menu')
         }, 2000)
       } else if (notification.state === WiFiState.WIFI_STATE_CONNECTING || notification.state === WiFiState.WIFI_STATE_PAIRING) {
         this.tag('Info').text.text = Language.translate("Connecting, please wait");
+        LEDController.setLEDState(LEDControlState.WPS_CONNECTING);
       }
       else if(notification.state === WiFiState.WIFI_STATE_SSID_CHANGED|| notification.state === WiFiState.WIFI_STATE_CONNECTION_LOST ||
         notification.state === WiFiState.WIFI_STATE_CONNECTION_FAILED ||
@@ -411,6 +416,7 @@ export default class NetworkList extends Lightning.Component {
         notification.state === WiFiState.WIFI_STATE_AUTHENTICATION_FAILED ||
         notification.state === WiFiState.WIFI_STATE_ERROR )
         {
+          LEDController.setLEDState(LEDControlState.WPS_ERROR);
           if (notification.state === WiFiState.WIFI_STATE_INVALID_CREDENTIALS|| notification.state === WiFiState.WIFI_STATE_SSID_CHANGED || notification.state === WiFiState.WIFI_STATE_AUTHENTICATION_FAILED)
           {
             await NetworkManager.RemoveKnownSSID(this.selectedssid.ssid)
