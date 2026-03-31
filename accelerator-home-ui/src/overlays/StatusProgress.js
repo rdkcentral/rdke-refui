@@ -66,6 +66,7 @@ export default class Progress extends lng.Component {
         var ww = (this.w - 4) * pc
         if(pc != 1.0) {
             this.tag("BackgroundOverlay").alpha=0.6
+            this.tag("Label").alpha = 1.0
             this.tag("ProgressBar").setSmooth('alpha', 0.7, {duration: .1})
             this.tag("Progress").setSmooth('w', ww, { duration: 1 })
         }

@@ -50,6 +50,7 @@ import { Storage } from '@lightningjs/sdk'
 import { Metrics } from '@firebolt-js/sdk'
 import { GLOBALS } from '../Config/Config.js'
 import MiracastNotification from '../screens/MiracastNotification.js'
+import AppInfoPage from '../views/AppInfoPage.js'
 
 let api = null
 
@@ -100,7 +101,12 @@ export default {
     {
       path: 'apps',
       component: AppStore,
-      widgets: ['Menu', 'Volume', "AppCarousel"]
+      widgets: ['Menu', 'FailOk', 'Volume', "AppCarousel"]
+    },
+    {
+      path: 'appinfo',
+      component: AppInfoPage,
+      widgets: ['Menu', 'FailOk', 'Volume', "AppCarousel"]
     },
     {
       path: 'usb/player',
@@ -134,7 +140,7 @@ export default {
         }
         return Promise.resolve()
       },
-      widgets: ['Menu', 'Fail', 'Volume','MiracastNotification', "AppCarousel", "VideoInfoChange"],
+      widgets: ['Menu', 'Fail', 'FailOk', 'Volume','MiracastNotification', "AppCarousel", "VideoInfoChange"],
     },
     {
       path: 'tv-overlay/:type',

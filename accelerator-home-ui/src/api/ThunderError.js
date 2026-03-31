@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE
  * file the following copyright and licenses apply:
  *
- * Copyright 2020 RDK Management
+ * Copyright 2026 RDK Management
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,20 +16,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-/**
- * Class which contains data for listings in side panel.
- */
-export var sidePanelInfo = [
-  {
-    title: 'Apps',
-    url: '/images/sidePanel/menu.png',
-  },
-  {
-    title: 'EPG',
-    url: '/images/sidePanel/metro.png',
-  },
-  {
-    title: 'AppInfo',
-    url: '/images/sidePanel/settings.png',
-  },
-]
+
+export class ThunderError extends Error {
+  constructor(thunderCall, thunderErr) {
+    super(
+      thunderCall + ": " + (thunderErr?.message ?? thunderErr?.code ?? "Unknown"),
+      { cause: thunderErr }
+    );
+
+    this.name = this.constructor.name;
+  }
+}

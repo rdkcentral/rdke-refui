@@ -28,6 +28,8 @@ import { Metrics } from '@firebolt-js/sdk';
 import Network from './NetworkApi.js';
 import UserSettingsApi from './UserSettingsApi.js';
 import PowerManagerApi from './PowerManagerApi.js';
+import RDKWindowManager from './RDKWindowManagerApi.js';
+import AppManager from './AppManagerApi.js';
 
 const thunder = ThunderJS(CONFIG.thunderConfig)
 
@@ -1069,12 +1071,50 @@ export default class AppApi {
     RDKShellApis.destroy(client)
   }
 
-  enabledisableinactivityReporting(bool) {
-    RDKShellApis.enableInactivityReporting(bool)
+  enableInactivityReporting(bool) {
+    return RDKWindowManager.get().enableInactivityReporting(bool)
   }
 
   setInactivityInterval(duration) {
-    RDKShellApis.setInactivityInterval(duration)
+    return RDKWindowManager.get().setInactivityInterval(duration)
+  }
+
+  async setDacAppVisibility(value, visible = true, _isFallback = false) {
+    return AppManager.get().getLoadedApps().then(async (res) => {
+      this.LOG('Currently loaded apps: ' + JSON.stringify(res));
+      const targetAppId = value;
+      const targetApp = res.find(app => app.appId === targetAppId);
+      const appInstanceId = targetApp ? targetApp.appInstanceId : value;
+
+      if (appInstanceId) {
+        this.LOG('Using appInstanceId: ' + appInstanceId + ' for targetAppId: ' + targetAppId);
+        
+        // Only setFocus when making the app visible
+        if (visible) {
+          await RDKWindowManager.get().setFocus(appInstanceId).then(() => {
+            this.LOG('setFocus successful for ' + targetAppId);
+          }).catch(async (err) => {
+            this.ERR('setFocus error for ' + targetAppId + ': ' + JSON.stringify(err));
+            if (!_isFallback) {
+              await this.setDacAppVisibility(GLOBALS.selfClientId, true, true); // fallback to show resident app in case of error
+            }
+          });
+        }
+
+        await RDKWindowManager.get().setVisible(appInstanceId, visible).then(() => {
+          this.LOG('setVisible successful for ' + targetAppId);
+        }).catch(async (err) => {
+          this.ERR('setVisible error for ' + targetAppId + ': ' + JSON.stringify(err));
+          if (!_isFallback) {
+            await this.setDacAppVisibility(GLOBALS.selfClientId, true, true); // fallback to show resident app in case of error
+          }
+        });
+      } else {
+        this.WARN('App not found: ' + targetAppId);
+      }
+    }).catch((err) => {
+      this.ERR('Error getting loaded apps from setDacAppVisibility ' + JSON.stringify(err));
+    });
   }
 
   /**
@@ -1567,7 +1607,7 @@ export default class AppApi {
   
   getRFCConfig(rfcParamsList) {
     return new Promise((resolve, reject) => {
-      thunder.call('org.rdk.System', 'getRFCConfig', rfcParamsList).then(result => {
+      thunder.call('org.rdk.System', 'getRFCConfig',{"rfcList":[rfcParamsList]}).then(result => {
         if (result.success) {
           resolve(result)
         } else {
@@ -1795,18 +1835,7 @@ export default class AppApi {
   }
   //resetInactivityTime
   resetInactivityTime() {
-    return new Promise((resolve) => {
-      thunder
-        .call('org.rdk.RDKShell', 'resetInactivityTime')
-        .then(result => {
-          resolve(result)
-        })
-        .catch(err => {
-          this.ERR("AppAPI resetInactivityTime error:", err)
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in fetching Thunder resetInactivityTime of RDKShell " + JSON.stringify(err), false, null)
-          resolve(false)
-        })
-    })
+    return RDKWindowManager.get().resetInactivityTime();
   }
 
   monitorStatus(callsign) {

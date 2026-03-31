@@ -79,8 +79,32 @@ export default class SettingsScreen extends Lightning.Component {
             src: Utils.asset('images/settings/Arrow.png'),
           },
         },
-        Bluetooth: {
+        ApplicationCatalogueLogin: {
           y: 90,
+          type: SettingsMainItem,
+          Title: {
+            x: 10,
+            y: 45,
+            mountY: 0.5,
+            text: {
+              text: Language.translate('Connect to the Application Catalog'),
+              textColor: COLORS.titleColor,
+              fontFace: CONFIG.language.font,
+              fontSize: 25,
+            }
+          },
+          Button: {
+            h: 45,
+            w: 45,
+            x: 1600,
+            mountX: 1,
+            y: 45,
+            mountY: 0.5,
+            src: Utils.asset('images/settings/Arrow.png'),
+          },
+        },
+        Bluetooth: {
+          y: 180,
           type: SettingsMainItem,
           Title: {
             x: 10,
@@ -104,7 +128,7 @@ export default class SettingsScreen extends Lightning.Component {
           },
         },
         Video: {
-          y: 180,
+          y: 270,
           type: SettingsMainItem,
           Title: {
             x: 10,
@@ -128,7 +152,7 @@ export default class SettingsScreen extends Lightning.Component {
           },
         },
         Audio: {
-          y: 270,
+          y: 360,
           type: SettingsMainItem,
           Title: {
             x: 10,
@@ -152,7 +176,7 @@ export default class SettingsScreen extends Lightning.Component {
           },
         },
         OtherSettings: {
-          y: 360,
+          y: 450,
           type: SettingsMainItem,
           Title: {
             x: 10,
@@ -177,7 +201,7 @@ export default class SettingsScreen extends Lightning.Component {
         },
 
         NFRStatus: {
-          y: 450,
+          y: 540,
           type: SettingsMainItem,
           Title: {
             x: 10,
@@ -204,7 +228,7 @@ export default class SettingsScreen extends Lightning.Component {
 
         DTVSettings: {
           alpha: 0.3,
-          y: 630,
+          y: 720,
           type: SettingsMainItem,
           Title: {
             x: 10,
@@ -229,7 +253,7 @@ export default class SettingsScreen extends Lightning.Component {
         },
 
         VoiceRemoteControl: {
-          y: 540,
+          y: 630,
           type: SettingsMainItem,
           Title: {
             x: 10,
@@ -300,11 +324,30 @@ export default class SettingsScreen extends Lightning.Component {
           this.tag('NetworkConfiguration')._unfocus()
         }
         _handleDown() {
-          this._setState('Bluetooth')
+          this._setState('ApplicationCatalogueLogin')
         }
         _handleEnter() {
           if (!Router.isNavigating()) {
             Router.navigate('settings/network')
+          }
+        }
+      },
+      class ApplicationCatalogueLogin extends this {
+        $enter() {
+          this.tag('ApplicationCatalogueLogin')._focus()
+        }
+        $exit() {
+          this.tag('ApplicationCatalogueLogin')._unfocus()
+        }
+        _handleUp() {
+          this._setState('NetworkConfiguration')
+        }
+        _handleDown() {
+          this._setState('Bluetooth')
+        }
+        _handleEnter() {
+          if (!Router.isNavigating()) {
+            Router.navigate('settings/appcataloglogin')
           }
         }
       },
@@ -316,7 +359,7 @@ export default class SettingsScreen extends Lightning.Component {
           this.tag('Bluetooth')._unfocus()
         }
         _handleUp() {
-          this._setState('NetworkConfiguration')
+          this._setState('ApplicationCatalogueLogin')
         }
         _handleDown() {
           this._setState('Video')
@@ -444,7 +487,7 @@ export default class SettingsScreen extends Lightning.Component {
           this.tag('DTVSettings')._unfocus()
         }
         _handleUp() {
-          this._setState('NFRStatus')
+          this._setState('VoiceRemoteControl')
         }
         _handleEnter() {
           if (this.dtvPlugin) {

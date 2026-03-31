@@ -65,7 +65,7 @@ export default class PowerManagerApi {
               })
               .catch(err => {
                   this.ERR("Error Activation " + JSON.stringify(err))
-                  Metrics.error(Metrics.ErrorType.OTHER, errorName, `Error while Thunder Controller ${callsign} activate ${JSON.stringify(err)}`, false, null)
+                  Metrics.error(Metrics.ErrorType.OTHER, "PowerManager", `Error while Thunder Controller ${this.callsign} activate ${JSON.stringify(err)}`, false, null)
                   reject(err)
               })
       })
@@ -79,7 +79,7 @@ export default class PowerManagerApi {
               })
               .catch(err => {
                   this.ERR("Error Deactivation " + JSON.stringify(err))
-                  Metrics.error(Metrics.ErrorType.OTHER, errorName, `Error while Thunder Controller ${callsign} deactivate ${JSON.stringify(err)}`, false, null)
+                  Metrics.error(Metrics.ErrorType.OTHER, "PackageManager", `Error while Thunder Controller ${this.callsign} deactivate ${JSON.stringify(err)}`, false, null)
                   reject(err)
               })
       })
