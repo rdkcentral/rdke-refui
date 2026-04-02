@@ -135,10 +135,6 @@ export default class BluetoothScreen extends Lightning.Component {
         }
     }
 
-    _active() {
-        this.timeout = 30;
-    }
-
     _PairingApis() {
         //bluetoothApi.btactivate().then(enableResult =>{
         //  console.log('1')
@@ -175,11 +171,11 @@ export default class BluetoothScreen extends Lightning.Component {
                                     })
                                 })
                                 .catch(err => {
-                                    this.ERR("SplashBluetoothScreen cant stopscan device : " + JSON.stringify(err))
+                                    this.ERR("SplashBluetoothScreen getpairedDevices failed : " + JSON.stringify(err))
                                 })
                             })
                             .catch(err => {
-                                this.ERR("SplashBluetoothScreen cant getpaired device : " + JSON.stringify(err))
+                                this.ERR("SplashBluetoothScreen getConnectedDevices failed : " + JSON.stringify(err))
                             })
                         })
                         .catch(err => {
@@ -235,6 +231,11 @@ export default class BluetoothScreen extends Lightning.Component {
                             this.scanTrigger = null;
                         }, 2000);
                     }
+                } else if (cbDatastatus.pairingState === "COMPLETE") {
+                    if (this.scanTrigger) {
+                        Registry.clearTimeout(this.scanTrigger);
+                        this.scanTrigger = null;
+                    }
                 }
             }
         }
@@ -280,6 +281,7 @@ export default class BluetoothScreen extends Lightning.Component {
     }
 
     _active() {
+        this.timeout = 30;
         this.initTimer()
         this.scanTrigger = null;
     }

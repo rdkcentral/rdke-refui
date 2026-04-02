@@ -235,6 +235,7 @@ export default class RCInformationScreen extends Lightning.Component {
             onStatusCBhandle = _thunder.on('org.rdk.RemoteControl', 'onStatus', data => { this.onStatusCB(data) });
             this.onStatusCB(result);
         }).catch(err => this.ERR("RCInformationScreen error: " + JSON.stringify(err)));
+        this.findRemoteTrigger = true;
     }
 
     _inactive() {
@@ -247,7 +248,9 @@ export default class RCInformationScreen extends Lightning.Component {
         this.tag("RCUName.Value").text.text = `N/A`
         if (this.scanTrigger) {
             Registry.clearTimeout(this.scanTrigger);
+            this.scanTrigger = null;
         }
+        this.findRemoteTrigger = false;
     }
 
     onStatusCB(cbData) {
@@ -286,9 +289,12 @@ export default class RCInformationScreen extends Lightning.Component {
                 this.tag("SwVersion.Value").text.text = swVersion
                 this.tag("BatteryPercent.Value").text.text = BatteryPercent
                 this.tag("RCUName.Value").text.text = RemoteName
-                RCApi.get().findMyRemote().catch(err => {
-                    this.ERR("RCInformationScreen findMyRemote error: " + JSON.stringify(err))
-                });
+                if (this.findRemoteTrigger) {
+                    this.findRemoteTrigger = false;
+                    RCApi.get().findMyRemote().catch(err => {
+                        this.ERR("RCInformationScreen findMyRemote error: " + JSON.stringify(err))
+                    });
+                }
             } else {
                 if (cbDatastatus.pairingState === "IDLE" || cbDatastatus.pairingState === "FAILED") {
                     // after 2 seconds, initiate pairing flow if status is IDLE, as there is no paired device.
@@ -299,6 +305,11 @@ export default class RCInformationScreen extends Lightning.Component {
                             });
                             this.scanTrigger = null;
                         }, 2000);
+                    }
+                } else if (cbDatastatus.pairingState === "COMPLETE") {
+                    if (this.scanTrigger) {
+                        Registry.clearTimeout(this.scanTrigger);
+                        this.scanTrigger = null;
                     }
                 }
             }
