@@ -229,13 +229,13 @@ export default class RCInformationScreen extends Lightning.Component {
 
     async _active() {
         this.scanTrigger = null;
+        this.findRemoteTrigger = true;
         await RCApi.get().activate().catch(err => { this.ERR("RCInformationScreen error: " + JSON.stringify(err)) });
         await RCApi.get().getNetStatus().then(result => {
             this.INFO("RCInformationScreen getNetStatus: " + JSON.stringify(result))
             onStatusCBhandle = _thunder.on('org.rdk.RemoteControl', 'onStatus', data => { this.onStatusCB(data) });
             this.onStatusCB(result);
         }).catch(err => this.ERR("RCInformationScreen error: " + JSON.stringify(err)));
-        this.findRemoteTrigger = true;
     }
 
     _inactive() {

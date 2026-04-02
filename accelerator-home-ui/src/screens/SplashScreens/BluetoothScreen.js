@@ -167,7 +167,7 @@ export default class BluetoothScreen extends Lightning.Component {
                                         })
                                     })
                                     .catch(err => {
-                                        this.ERR(`SplashBluetoothScreen cant stopscan device : ${JSON.stringify(err)}`)
+                                        this.ERR(`SplashBluetoothScreen can't stop scan device : ${JSON.stringify(err)}`)
                                     })
                                 })
                                 .catch(err => {
@@ -327,6 +327,7 @@ export default class BluetoothScreen extends Lightning.Component {
         }
         if (this.scanTrigger) {
             Registry.clearTimeout(this.scanTrigger)
+            this.scanTrigger = null;
         }
     }
 
