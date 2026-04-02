@@ -276,6 +276,12 @@ export default class App extends Router.App {
 			if(GLOBALS.MiracastNotificationstatus && key.keyCode !== Keymap.Power && key.keyCode !== Keymap.Home ){
 				return false
 			} else if ((key.keyCode == Keymap.Home || key.keyCode == Keymap.Escape) && !Router.isNavigating()) {
+                        if (Router.getActiveHash().startsWith("splash")) {
+                                if (Router.getActiveHash() !== "splash/language") {
+                                        Router.navigate("splash/language");
+                                }
+                                return true;
+                        }
 			if (GLOBALS.topmostApp.includes("dac.native")) {
 				this.jumpToRoute("apps");
 			} else if (GLOBALS.Miracastclientdevicedetails.state === "INITIATED" || GLOBALS.Miracastclientdevicedetails.state === "INPROGRESS ") {

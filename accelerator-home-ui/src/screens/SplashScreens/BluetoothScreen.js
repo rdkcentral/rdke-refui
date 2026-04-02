@@ -203,6 +203,10 @@ export default class BluetoothScreen extends Lightning.Component {
             }
             if (cbDatastatus.remoteData.length) {
                 //console.log("BluetoothScreen rcPairingApis RemoteData Length ", cbData.status.remoteData.length)
+                if (this.scanTrigger) {
+                    Registry.clearTimeout(this.scanTrigger);
+                    this.scanTrigger = null;
+                }
                 cbDatastatus.remoteData.map(item => {
                     this.tag('Info').text.text = `paired with device ${item.name}`
                     // Do not clear this.RCTimeout if need to run this in background to reconnect on loss.
@@ -225,13 +229,28 @@ export default class BluetoothScreen extends Lightning.Component {
                     // after 2 seconds, initiate pairing flow if status is IDLE, as there is no paired device.
                     if (!this.scanTrigger) {
                         this.scanTrigger = Registry.setTimeout(() => {
-                            RCApi.get().startPairing().catch(err => {
-                                this.ERR("SplashBluetoothScreen startPairing error: " + JSON.stringify(err));
-                            });
                             this.scanTrigger = null;
+                            RCApi.get().getNetStatus().then(result => {
+                                let latestStatus = {};
+                                if (Array.isArray(result.status)) {
+                                    latestStatus = result.status[0] || {};
+                                } else if (result.status && typeof result.status === 'object') {
+                                    latestStatus = result.status;
+                                }
+
+                                const latestHasRemoteData = Array.isArray(latestStatus.remoteData) && latestStatus.remoteData.length;
+                                const latestInRetryState = latestStatus.pairingState === "IDLE" || latestStatus.pairingState === "FAILED";
+                                if (!latestHasRemoteData && latestInRetryState) {
+                                    RCApi.get().startPairing().catch(err => {
+                                        this.ERR("SplashBluetoothScreen startPairing error: " + JSON.stringify(err));
+                                    });
+                                }
+                            }).catch(err => {
+                                this.ERR("SplashBluetoothScreen getNetStatus before startPairing error: " + JSON.stringify(err));
+                            });
                         }, 2000);
                     }
-                } else if (cbDatastatus.pairingState === "COMPLETE") {
+                } else {
                     if (this.scanTrigger) {
                         Registry.clearTimeout(this.scanTrigger);
                         this.scanTrigger = null;

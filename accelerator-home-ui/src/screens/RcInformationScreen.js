@@ -269,6 +269,11 @@ export default class RCInformationScreen extends Lightning.Component {
                 let RemoteName = []; let connectedStatus = []; let MacAddress = [];
                 let swVersion = []; let BatteryPercent = [];
 
+                if (this.scanTrigger) {
+                    Registry.clearTimeout(this.scanTrigger);
+                    this.scanTrigger = null;
+                }
+
                 cbDatastatus.remoteData.map(item => {
                     RemoteName.push(item.name)
                 })
@@ -300,13 +305,29 @@ export default class RCInformationScreen extends Lightning.Component {
                     // after 2 seconds, initiate pairing flow if status is IDLE, as there is no paired device.
                     if (!this.scanTrigger) {
                         this.scanTrigger = Registry.setTimeout(() => {
-                            RCApi.get().startPairing().catch(err => {
-                                this.ERR("RCInformationScreen startPairing error: " + JSON.stringify(err));
-                            });
                             this.scanTrigger = null;
+                            RCApi.get().getNetStatus().then(result => {
+                                let latestStatus = {};
+                                if (Array.isArray(result.status)) {
+                                    latestStatus = result.status[0] || {};
+                                } else if (result.status && typeof result.status === 'object') {
+                                    latestStatus = result.status;
+                                }
+
+                                const latestHasRemoteData = Array.isArray(latestStatus.remoteData) && latestStatus.remoteData.length;
+                                const latestInRetryState = latestStatus.pairingState === "IDLE" || latestStatus.pairingState === "FAILED";
+
+                                if (!latestHasRemoteData && latestInRetryState) {
+                                    RCApi.get().startPairing().catch(err => {
+                                        this.ERR("RCInformationScreen startPairing error: " + JSON.stringify(err));
+                                    });
+                                }
+                            }).catch(err => {
+                                this.ERR("RCInformationScreen getNetStatus before startPairing error: " + JSON.stringify(err));
+                            });
                         }, 2000);
                     }
-                } else if (cbDatastatus.pairingState === "COMPLETE") {
+                } else {
                     if (this.scanTrigger) {
                         Registry.clearTimeout(this.scanTrigger);
                         this.scanTrigger = null;
