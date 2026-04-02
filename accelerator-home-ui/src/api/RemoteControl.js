@@ -92,10 +92,9 @@ export default class RCApi {
     })
   }
 
-  startPairing(timeout = 30, netType ) {
+  startPairing(timeout = 30) {
     return new Promise((resolve, reject) => {
-      //this.INFO("RCApi: startPairing netType " + netType + " timeout " + timeout);
-      this.thunder.call('org.rdk.RemoteControl', 'startPairing', { netType: netType, timeout: timeout }).then(result => {
+      this.thunder.call('org.rdk.RemoteControl', 'startPairing', { timeout: timeout, screenBindEnable:false }).then(result => {
         //this.INFO("RCApi: startPairing result: ", JSON.stringify(result))
         resolve(result.success);
       }).catch(err => {
@@ -103,8 +102,21 @@ export default class RCApi {
         Metrics.error(Metrics.ErrorType.OTHER,"RemoteControlApiError", "Error in Thunder RemoteControl startPairing "+JSON.stringify(err), false, null)
         reject(err);
       });
-      resolve(true);
     })
+  }
+
+  stopPairing() {
+    return new Promise((resolve, reject) => {
+      this.INFO("RCApi: stopPairing");
+      this.thunder.call('org.rdk.RemoteControl', 'stopPairing', {scanDisable: true}).then(result => {
+        this.INFO("RCApi: stopPairing result: " + JSON.stringify(result))
+        resolve(result.success);
+      }).catch(err => {
+        this.ERR("RCApi: stopPairing error: " + JSON.stringify(err));
+        Metrics.error(Metrics.ErrorType.OTHER, "RemoteControlApiError", "Error in Thunder RemoteControl stopPairing " + JSON.stringify(err), false, null)
+        reject(err);
+      });
+    });
   }
 
   initializeIRDB() {
@@ -186,10 +198,10 @@ export default class RCApi {
     })
   }
 
-  findMyRemote(netType = 1, level = "mid") {
+  findMyRemote(level = "mid") {
     return new Promise((resolve, reject) => {
-      this.INFO("RCApi: findMyRemote netType:" + JSON.stringify(netType) + " level:" + JSON.stringify(level));
-      this.thunder.call('org.rdk.RemoteControl', 'findMyRemote', { netType: netType, level: level }).then(result => {
+      this.INFO("RCApi: findMyRemote level:" + JSON.stringify(level));
+      this.thunder.call('org.rdk.RemoteControl', 'findMyRemote', { level: level }).then(result => {
         this.INFO("RCApi: findMyRemote result: " + JSON.stringify(result))
         resolve(result.success);
       }).catch(err => {
@@ -200,6 +212,8 @@ export default class RCApi {
     })
   }
 
+  // This is to reset the remote control firmware; not to be confused with factory reset of the device.
+  // This will not erase user data or settings on the device.
   factoryReset() {
     return new Promise((resolve, reject) => {
       this.INFO("RCApi: factoryReset");
@@ -212,5 +226,19 @@ export default class RCApi {
         reject(err);
       });
     })
+  }
+
+  unpair(macAddressList) {
+    return new Promise((resolve, reject) => {
+      this.INFO("RCApi: unpair macAddressList:" + JSON.stringify(macAddressList));
+        this.thunder.call('org.rdk.RemoteControl', 'unpair', { macAddressList: macAddressList }).then(result => {
+        this.INFO("RCApi: unpair result: " + JSON.stringify(result))
+        resolve(result.success);
+      }).catch(err => {
+        this.ERR("RCApi: unpair error: " + JSON.stringify(err));
+        Metrics.error(Metrics.ErrorType.OTHER, "RemoteControlApiError", "Error in Thunder RemoteControl unpair " + JSON.stringify(err), false, null)
+        reject(err);
+      });
+    });
   }
 }

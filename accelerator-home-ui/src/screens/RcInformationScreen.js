@@ -244,16 +244,16 @@ export default class RCInformationScreen extends Lightning.Component {
         this.tag("SwVersion.Value").text.text = `N/A`
         this.tag("BatteryPercent.Value").text.text = `N/A`
         this.tag("RCUName.Value").text.text = `N/A`
-        //RCApi.get().deactivate().catch(err=> { console.error("RCInformationScreen error:", err)});
     }
 
     onStatusCB(cbData) {
         // getStatus response has 'success' property; notification payload does not have that.
+        // this.LOG("RCInformationScreen onStatusCB cbData:" + JSON.stringify(cbData));
         if ((cbData !== undefined) && ("success" in cbData ? cbData.success : true)) {
             let cbDatastatus
             if (Array.isArray(cbData.status)) {
                 cbDatastatus = cbData.status[0] || {};
-              } 
+              }
             else if (cbData.status && typeof cbData.status === 'object') {
                 cbDatastatus = cbData.status;
               }
@@ -283,14 +283,14 @@ export default class RCInformationScreen extends Lightning.Component {
                 this.tag("BatteryPercent.Value").text.text = BatteryPercent
                 this.tag("RCUName.Value").text.text = RemoteName
             } else {
-                if(cbDatastatus.pairingState != "SEARCHING" && cbDatastatus.pairingState != "PAIRING" ) {
-                    for(let i=0;i<cbDatastatus.netTypesSupported.length;i++)
-                    {
-                        this.LOG("Netypesupported" + JSON.stringify(cbDatastatus.netTypesSupported[i]))
-                        RCApi.get().startPairing(30,cbDatastatus.netTypesSupported[i]).catch(err => {
+                if (cbDatastatus.pairingState === "IDLE" || cbDatastatus.pairingState === "FAILED") {
+                    // after 2 seconds, initiate pairing flow if status is IDLE, as there is no paired device.
+                    this.scanTrigger && Registry.clearTimeout(this.scanTrigger);
+                    this.scanTrigger = Registry.setTimeout(() => {
+                        RCApi.get().startPairing().catch(err => {
                             this.ERR("RCInformationScreen startPairing error: " + JSON.stringify(err));
                         });
-                    }
+                    }, 2000);
                 }
             }
         }
