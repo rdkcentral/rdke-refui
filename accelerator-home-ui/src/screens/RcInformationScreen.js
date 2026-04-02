@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-import { Lightning, Language, Router } from '@lightningjs/sdk'
+import { Lightning, Language, Registry, Router } from '@lightningjs/sdk'
 import { COLORS } from './../colors/Colors'
 import { CONFIG } from '../Config/Config'
 import ThunderJS from 'ThunderJS'
@@ -228,6 +228,7 @@ export default class RCInformationScreen extends Lightning.Component {
     }
 
     async _active() {
+        this.scanTrigger = null;
         await RCApi.get().activate().catch(err => { this.ERR("RCInformationScreen error: " + JSON.stringify(err)) });
         await RCApi.get().getNetStatus().then(result => {
             this.INFO("RCInformationScreen getNetStatus: " + JSON.stringify(result))
@@ -244,6 +245,9 @@ export default class RCInformationScreen extends Lightning.Component {
         this.tag("SwVersion.Value").text.text = `N/A`
         this.tag("BatteryPercent.Value").text.text = `N/A`
         this.tag("RCUName.Value").text.text = `N/A`
+        if (this.scanTrigger) {
+            Registry.clearTimeout(this.scanTrigger);
+        }
     }
 
     onStatusCB(cbData) {
@@ -282,15 +286,20 @@ export default class RCInformationScreen extends Lightning.Component {
                 this.tag("SwVersion.Value").text.text = swVersion
                 this.tag("BatteryPercent.Value").text.text = BatteryPercent
                 this.tag("RCUName.Value").text.text = RemoteName
+                RCApi.get().findMyRemote().catch(err => {
+                    this.ERR("RCInformationScreen findMyRemote error: " + JSON.stringify(err))
+                });
             } else {
                 if (cbDatastatus.pairingState === "IDLE" || cbDatastatus.pairingState === "FAILED") {
                     // after 2 seconds, initiate pairing flow if status is IDLE, as there is no paired device.
-                    this.scanTrigger && Registry.clearTimeout(this.scanTrigger);
-                    this.scanTrigger = Registry.setTimeout(() => {
-                        RCApi.get().startPairing().catch(err => {
-                            this.ERR("RCInformationScreen startPairing error: " + JSON.stringify(err));
-                        });
-                    }, 2000);
+                    if (!this.scanTrigger) {
+                        this.scanTrigger = Registry.setTimeout(() => {
+                            RCApi.get().startPairing().catch(err => {
+                                this.ERR("RCInformationScreen startPairing error: " + JSON.stringify(err));
+                            });
+                            this.scanTrigger = null;
+                        }, 2000);
+                    }
                 }
             }
         }

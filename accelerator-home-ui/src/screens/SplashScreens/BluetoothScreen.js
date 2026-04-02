@@ -169,23 +169,22 @@ export default class BluetoothScreen extends Lightning.Component {
                                                 Router.navigate('splash/language')
                                             }
                                         })
-
                                     })
-                                        .catch(err => {
-                                            this.ERR(`SplashBluetoothScreen cant stopscan device : ${JSON.stringify(err)}`)
-                                        })
-                                })
                                     .catch(err => {
-                                        this.ERR("SplashBluetoothScreen cant stopscan device : " + JSON.stringify(err))
+                                        this.ERR(`SplashBluetoothScreen cant stopscan device : ${JSON.stringify(err)}`)
                                     })
                                 })
                                 .catch(err => {
-                                    this.ERR("SplashBluetoothScreen cant getpaired device : " + JSON.stringify(err))
+                                    this.ERR("SplashBluetoothScreen cant stopscan device : " + JSON.stringify(err))
                                 })
                             })
                             .catch(err => {
-                                this.ERR(`SplashBluetoothScreen Can't pair device : ${JSON.stringify(err)}`)
+                                this.ERR("SplashBluetoothScreen cant getpaired device : " + JSON.stringify(err))
                             })
+                        })
+                        .catch(err => {
+                            this.ERR(`SplashBluetoothScreen Can't pair device : ${JSON.stringify(err)}`)
+                        })
                     })
                 })
             })
@@ -202,10 +201,10 @@ export default class BluetoothScreen extends Lightning.Component {
             let cbDatastatus
             if (Array.isArray(cbData.status)) {
                 cbDatastatus = cbData.status[0] || {};
-              }
+            }
             else if (cbData.status && typeof cbData.status === 'object') {
                 cbDatastatus = cbData.status;
-              }
+            }
             if (cbDatastatus.remoteData.length) {
                 //console.log("BluetoothScreen rcPairingApis RemoteData Length ", cbData.status.remoteData.length)
                 cbDatastatus.remoteData.map(item => {
@@ -228,12 +227,14 @@ export default class BluetoothScreen extends Lightning.Component {
             } else {
                 if (cbDatastatus.pairingState === "IDLE" || cbDatastatus.pairingState === "FAILED") {
                     // after 2 seconds, initiate pairing flow if status is IDLE, as there is no paired device.
-                    this.scanTrigger && Registry.clearTimeout(this.scanTrigger);
-                    this.scanTrigger = Registry.setTimeout(() => {
-                        RCApi.get().startPairing().catch(err => {
-                            this.ERR("RCInformationScreen startPairing error: " + JSON.stringify(err));
-                        });
-                    }, 2000);
+                    if (!this.scanTrigger) {
+                        this.scanTrigger = Registry.setTimeout(() => {
+                            RCApi.get().startPairing().catch(err => {
+                                this.ERR("SplashBluetoothScreen startPairing error: " + JSON.stringify(err));
+                            });
+                            this.scanTrigger = null;
+                        }, 2000);
+                    }
                 }
             }
         }
@@ -280,6 +281,7 @@ export default class BluetoothScreen extends Lightning.Component {
 
     _active() {
         this.initTimer()
+        this.scanTrigger = null;
     }
 
     pageTransition() {
@@ -301,6 +303,9 @@ export default class BluetoothScreen extends Lightning.Component {
         }
         if (this.RCTimeout) {
             Registry.clearTimeout(this.RCTimeout)
+        }
+        if (this.scanTrigger) {
+            Registry.clearTimeout(this.scanTrigger)
         }
     }
 

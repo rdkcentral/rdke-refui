@@ -94,8 +94,8 @@ export default class RCApi {
 
   startPairing(timeout = 30) {
     return new Promise((resolve, reject) => {
-      this.thunder.call('org.rdk.RemoteControl', 'startPairing', { timeout: timeout, screenBindEnable:false }).then(result => {
-        //this.INFO("RCApi: startPairing result: ", JSON.stringify(result))
+      this.thunder.call('org.rdk.RemoteControl', 'startPairing', { timeout: timeout, screenBindEnable: false }).then(result => {
+        this.INFO("RCApi: startPairing result: " + JSON.stringify(result))
         resolve(result.success);
       }).catch(err => {
         this.ERR("RCApi: startPairing error: " + JSON.stringify(err));
@@ -231,7 +231,7 @@ export default class RCApi {
   unpair(macAddressList) {
     return new Promise((resolve, reject) => {
       this.INFO("RCApi: unpair macAddressList:" + JSON.stringify(macAddressList));
-        this.thunder.call('org.rdk.RemoteControl', 'unpair', { macAddressList: macAddressList }).then(result => {
+      this.thunder.call('org.rdk.RemoteControl', 'unpair', { macAddressList: macAddressList }).then(result => {
         this.INFO("RCApi: unpair result: " + JSON.stringify(result))
         resolve(result.success);
       }).catch(err => {
