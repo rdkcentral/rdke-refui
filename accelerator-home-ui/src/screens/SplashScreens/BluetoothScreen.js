@@ -194,7 +194,7 @@ export default class BluetoothScreen extends Lightning.Component {
         //console.log("BluetoothScreen cbData:" + JSON.stringify(cbData));
         // getStatus response has 'success' property; notification payload does not have that.
         if ((cbData !== undefined) && (cbData.hasOwnProperty("success") ? cbData.success : true)) {
-            let cbDatastatus
+            let cbDatastatus = {};
             if (Array.isArray(cbData.status)) {
                 cbDatastatus = cbData.status[0] || {};
             }
