@@ -35,6 +35,7 @@ export default class BluetoothScreen extends Lightning.Component {
         this.LOG = console.log;
         this.ERR = console.error;
         this.WARN = console.warn;
+        this.scanTrigger = null;
     }
 
     static _template() {
@@ -135,10 +136,6 @@ export default class BluetoothScreen extends Lightning.Component {
         }
     }
 
-    _active() {
-        this.timeout = 30;
-    }
-
     _PairingApis() {
         //bluetoothApi.btactivate().then(enableResult =>{
         //  console.log('1')
@@ -169,23 +166,22 @@ export default class BluetoothScreen extends Lightning.Component {
                                                 Router.navigate('splash/language')
                                             }
                                         })
-
                                     })
-                                        .catch(err => {
-                                            this.ERR(`SplashBluetoothScreen cant stopscan device : ${JSON.stringify(err)}`)
-                                        })
-                                })
                                     .catch(err => {
-                                        this.ERR("SplashBluetoothScreen cant stopscan device : " + JSON.stringify(err))
+                                        this.ERR(`SplashBluetoothScreen can't stop scan device : ${JSON.stringify(err)}`)
                                     })
                                 })
                                 .catch(err => {
-                                    this.ERR("SplashBluetoothScreen cant getpaired device : " + JSON.stringify(err))
+                                    this.ERR("SplashBluetoothScreen getpairedDevices failed : " + JSON.stringify(err))
                                 })
                             })
                             .catch(err => {
-                                this.ERR(`SplashBluetoothScreen Can't pair device : ${JSON.stringify(err)}`)
+                                this.ERR("SplashBluetoothScreen getConnectedDevices failed : " + JSON.stringify(err))
                             })
+                        })
+                        .catch(err => {
+                            this.ERR(`SplashBluetoothScreen Can't pair device : ${JSON.stringify(err)}`)
+                        })
                     })
                 })
             })
@@ -196,19 +192,24 @@ export default class BluetoothScreen extends Lightning.Component {
     }
 
     onStatusCB(cbData) {
-        //console.log("BluetoothScreen cbData:", JSON.stringify(cbData));
+        //console.log("BluetoothScreen cbData:" + JSON.stringify(cbData));
         // getStatus response has 'success' property; notification payload does not have that.
         if ((cbData !== undefined) && (cbData.hasOwnProperty("success") ? cbData.success : true)) {
-            let cbDatastatus
+            let cbDatastatus = {};
             if (Array.isArray(cbData.status)) {
                 cbDatastatus = cbData.status[0] || {};
-              } 
+            }
             else if (cbData.status && typeof cbData.status === 'object') {
                 cbDatastatus = cbData.status;
-              }
-            if (cbDatastatus.remoteData.length) {
+            }
+            const remoteData = Array.isArray(cbDatastatus.remoteData) ? cbDatastatus.remoteData : [];
+            if (remoteData.length > 0) {
                 //console.log("BluetoothScreen rcPairingApis RemoteData Length ", cbData.status.remoteData.length)
-                cbDatastatus.remoteData.map(item => {
+                if (this.scanTrigger) {
+                    Registry.clearTimeout(this.scanTrigger);
+                    this.scanTrigger = null;
+                }
+                remoteData.map(item => {
                     this.tag('Info').text.text = `paired with device ${item.name}`
                     // Do not clear this.RCTimeout if need to run this in background to reconnect on loss.
                     // if (this.RCTimeout) {
@@ -226,13 +227,35 @@ export default class BluetoothScreen extends Lightning.Component {
                     }
                 })
             } else {
-                if(cbDatastatus.pairingState != "SEARCHING" && cbDatastatus.pairingState != "PAIRING" ) {
-                    for(let i=0;i<cbDatastatus.netTypesSupported.length;i++)
-                    {
-                        this.LOG("Netypesupported" + JSON.stringify(cbDatastatus.netTypesSupported[i]))
-                        RCApi.get().startPairing(30,cbDatastatus.netTypesSupported[i]).catch(err => {
-                            this.ERR("RCInformationScreen startPairing error: " + JSON.stringify(err));
-                        });
+                if (cbDatastatus.pairingState === "IDLE" || cbDatastatus.pairingState === "FAILED") {
+                    // after 2 seconds, initiate pairing flow if status is IDLE, as there is no paired device.
+                    if (!this.scanTrigger) {
+                        this.scanTrigger = Registry.setTimeout(() => {
+                            this.scanTrigger = null;
+                            RCApi.get().getNetStatus().then(result => {
+                                let latestStatus = {};
+                                if (Array.isArray(result.status)) {
+                                    latestStatus = result.status[0] || {};
+                                } else if (result.status && typeof result.status === 'object') {
+                                    latestStatus = result.status;
+                                }
+
+                                const latestHasRemoteData = Array.isArray(latestStatus.remoteData) && latestStatus.remoteData.length;
+                                const latestInRetryState = latestStatus.pairingState === "IDLE" || latestStatus.pairingState === "FAILED";
+                                if (!latestHasRemoteData && latestInRetryState) {
+                                    RCApi.get().startPairing().catch(err => {
+                                        this.ERR("SplashBluetoothScreen startPairing error: " + JSON.stringify(err));
+                                    });
+                                }
+                            }).catch(err => {
+                                this.ERR("SplashBluetoothScreen getNetStatus before startPairing error: " + JSON.stringify(err));
+                            });
+                        }, 2000);
+                    }
+                } else {
+                    if (this.scanTrigger) {
+                        Registry.clearTimeout(this.scanTrigger);
+                        this.scanTrigger = null;
                     }
                 }
             }
@@ -279,7 +302,11 @@ export default class BluetoothScreen extends Lightning.Component {
     }
 
     _active() {
+        this.timeout = 30;
         this.initTimer()
+        if (typeof this.scanTrigger === 'undefined') {
+            this.scanTrigger = null;
+        }
     }
 
     pageTransition() {
@@ -301,6 +328,10 @@ export default class BluetoothScreen extends Lightning.Component {
         }
         if (this.RCTimeout) {
             Registry.clearTimeout(this.RCTimeout)
+        }
+        if (this.scanTrigger) {
+            Registry.clearTimeout(this.scanTrigger)
+            this.scanTrigger = null;
         }
     }
 

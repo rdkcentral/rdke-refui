@@ -211,7 +211,7 @@ export default class RebootConfirmationScreen extends Lightning.Component {
         try {
             localStorage.clear();
             this.LOG("localStorage cleared successfully");
-        } 
+        }
         catch (err) {
             this.ERR("Error clearing localStorage: " + JSON.stringify(err));
         }

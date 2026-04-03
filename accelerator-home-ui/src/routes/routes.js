@@ -207,7 +207,7 @@ export default {
     if ("ResidentApp" !== GLOBALS.selfClientName) {
       Metrics.page(request.hash)
       .then(success => {
-        console.log("successfully routed to page  ==>", request.hash)
+        console.log("successfully routed to page  ==>" + JSON.stringify(request.hash))
       })
       .catch(err => console.log("error in metrics.page", err))
     }
