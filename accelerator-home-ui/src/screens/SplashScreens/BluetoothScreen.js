@@ -35,6 +35,7 @@ export default class BluetoothScreen extends Lightning.Component {
         this.LOG = console.log;
         this.ERR = console.error;
         this.WARN = console.warn;
+        this.scanTrigger = null;
     }
 
     static _template() {
@@ -201,13 +202,14 @@ export default class BluetoothScreen extends Lightning.Component {
             else if (cbData.status && typeof cbData.status === 'object') {
                 cbDatastatus = cbData.status;
             }
-            if (cbDatastatus.remoteData.length) {
+            const remoteData = Array.isArray(cbDatastatus.remoteData) ? cbDatastatus.remoteData : [];
+            if (remoteData.length > 0) {
                 //console.log("BluetoothScreen rcPairingApis RemoteData Length ", cbData.status.remoteData.length)
                 if (this.scanTrigger) {
                     Registry.clearTimeout(this.scanTrigger);
                     this.scanTrigger = null;
                 }
-                cbDatastatus.remoteData.map(item => {
+                remoteData.map(item => {
                     this.tag('Info').text.text = `paired with device ${item.name}`
                     // Do not clear this.RCTimeout if need to run this in background to reconnect on loss.
                     // if (this.RCTimeout) {
@@ -302,7 +304,9 @@ export default class BluetoothScreen extends Lightning.Component {
     _active() {
         this.timeout = 30;
         this.initTimer()
-        this.scanTrigger = null;
+        if (typeof this.scanTrigger === 'undefined') {
+            this.scanTrigger = null;
+        }
     }
 
     pageTransition() {
