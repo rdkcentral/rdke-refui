@@ -395,60 +395,24 @@ export default class App extends Router.App {
 			// Remote power key and keyboard F1 key used for STANDBY and POWER_ON
 			return this._powerKeyPressed()
 		} else if (key.keyCode === Keymap.AudioVolumeMute && !Router.isNavigating()) {
-			if (GLOBALS.topmostApp === GLOBALS.selfClientName) {
+			if (GLOBALS.topmostApp === GLOBALS.selfclientAppName) {
 				this.tag("Volume").onVolumeMute();
 			} else {
 				this.LOG("muting on some app")
-				if (Router.getActiveHash() === "applauncher") {
-					this.LOG("muting on some app while route is app launcher")
-					RDKShellApis.moveToFront(GLOBALS.selfClientName)
-					RDKShellApis.setVisibility(GLOBALS.selfClientName, true)
-					this.tag("Volume").onVolumeMute();
-				} else {
-					this.LOG("muting on some app while route is NOT app launcher")
-					RDKShellApis.moveToFront(GLOBALS.selfClientName)
-					RDKShellApis.setVisibility(GLOBALS.selfClientName, true)
-					Router.navigate("applauncher");
-					this.tag("Volume").onVolumeMute();
-				}
 			}
 			return true
 		} else if (key.keyCode == Keymap.AudioVolumeUp && !Router.isNavigating()) {
-			if (GLOBALS.topmostApp === GLOBALS.selfClientName) {
+			if (GLOBALS.topmostApp === GLOBALS.selfclientAppName) {
 				this.tag("Volume").onVolumeKeyUp();
 			} else {
 				this.LOG("muting on some app")
-				if (Router.getActiveHash() === "applauncher") {
-					this.LOG("muting on some app while route is app launcher")
-					RDKShellApis.moveToFront(GLOBALS.selfClientName)
-					RDKShellApis.setVisibility(GLOBALS.selfClientName, true)
-					this.tag("Volume").onVolumeKeyUp();
-				} else {
-					this.LOG("muting on some app while route is NOT app launcher")
-					RDKShellApis.moveToFront(GLOBALS.selfClientName)
-					RDKShellApis.setVisibility(GLOBALS.selfClientName, true)
-					Router.navigate("applauncher");
-					this.tag("Volume").onVolumeKeyUp();
-				}
 			}
 			return true
 		} else if (key.keyCode == Keymap.AudioVolumeDown && !Router.isNavigating()) {
-			if (GLOBALS.topmostApp === GLOBALS.selfClientName) {
+			if (GLOBALS.topmostApp === GLOBALS.selfclientAppName) {
 				this.tag("Volume").onVolumeKeyDown();
 			} else {
 				this.LOG("muting on some app")
-				if (Router.getActiveHash() === "applauncher") {
-					this.LOG("muting on some app while route is app launcher")
-					RDKShellApis.moveToFront(GLOBALS.selfClientName)
-					RDKShellApis.setVisibility(GLOBALS.selfClientName, true)
-					this.tag("Volume").onVolumeKeyDown();
-				} else {
-					this.LOG("muting on some app while route is NOT app launcher")
-					RDKShellApis.moveToFront(GLOBALS.selfClientName)
-					RDKShellApis.setVisibility(GLOBALS.selfClientName, true)
-					Router.navigate("applauncher");
-					this.tag("Volume").onVolumeKeyDown();
-				}
 			}
 			return true
 		} else {
