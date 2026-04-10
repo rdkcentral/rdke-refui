@@ -211,21 +211,20 @@ export default class BluetoothScreen extends Lightning.Component {
                 }
                 remoteData.map(item => {
                     this.tag('Info').text.text = `paired with device ${item.name}`
-                    // Do not clear this.RCTimeout if need to run this in background to reconnect on loss.
-                    // if (this.RCTimeout) {
-                    //     console.log("SplashBluetoothScreen clearTimeout(this.RCTimeout)");
-                    //     Registry.clearTimeout(this.RCTimeout)
-                    // }
-                    // To stop the display counter.
-                    if (Router.getActiveHash() === "splash/bluetooth") {
-                        if (this.timeInterval) {
-                            Registry.clearInterval(this.timeInterval)
-                        }
-                        Registry.setTimeout(() => {
-                            Router.navigate('splash/language')
-                        }, 2000)
-                    }
                 })
+                // To stop the display counter and navigate once.
+                if (Router.getActiveHash() === "splash/bluetooth") {
+                    if (this.timeInterval) {
+                        Registry.clearInterval(this.timeInterval)
+                    }
+                    if (this.navigateTimeout) {
+                        Registry.clearTimeout(this.navigateTimeout);
+                    }
+                    this.navigateTimeout = Registry.setTimeout(() => {
+                        this.navigateTimeout = null;
+                        Router.navigate('splash/language')
+                    }, 2000)
+                }
             } else {
                 if (cbDatastatus.pairingState === "IDLE" || cbDatastatus.pairingState === "FAILED") {
                     // after 2 seconds, initiate pairing flow if status is IDLE, as there is no paired device.
@@ -243,7 +242,17 @@ export default class BluetoothScreen extends Lightning.Component {
                                 const latestHasRemoteData = Array.isArray(latestStatus.remoteData) && latestStatus.remoteData.length;
                                 const latestInRetryState = latestStatus.pairingState === "IDLE" || latestStatus.pairingState === "FAILED";
                                 if (!latestHasRemoteData && latestInRetryState) {
-                                    RCApi.get().startPairing().catch(err => {
+                                    RCApi.get().startPairing().then(success => {
+                                        if (!success && !this.scanTrigger) {
+                                            this.ERR("SplashBluetoothScreen startPairing returned false, retrying...");
+                                            this.scanTrigger = Registry.setTimeout(() => {
+                                                this.scanTrigger = null;
+                                                RCApi.get().startPairing().catch(err => {
+                                                    this.ERR("SplashBluetoothScreen startPairing retry error: " + JSON.stringify(err));
+                                                });
+                                            }, 2000);
+                                        }
+                                    }).catch(err => {
                                         this.ERR("SplashBluetoothScreen startPairing error: " + JSON.stringify(err));
                                     });
                                 }
@@ -271,7 +280,27 @@ export default class BluetoothScreen extends Lightning.Component {
         }
         _thunder.on('org.rdk.RemoteControl', 'onStatus', data => { this.onStatusCB(data) });
         this.RCTimeout = Registry.setTimeout(() => {
-            RCApi.get().getNetStatus().then(result => { this.onStatusCB(result); });
+            RCApi.get().getNetStatus().then(result => {
+                this.onStatusCB(result);
+                // onStatusCB only schedules startPairing on IDLE/FAILED. If the plugin
+                // auto-started a PAIRING session (state="PAIRING"), onStatusCB clears
+                // scanTrigger without scheduling anything, causing a ~30s delay until
+                // the session expires. If no device is paired and no scanTrigger was set,
+                // ensure startPairing is called within 5 seconds of page load.
+                if (!this.scanTrigger) {
+                    let status = Array.isArray(result.status) ? (result.status[0] || {}) :
+                        (result.status && typeof result.status === 'object' ? result.status : {});
+                    const hasRemote = Array.isArray(status.remoteData) && status.remoteData.length > 0;
+                    if (!hasRemote) {
+                        this.scanTrigger = Registry.setTimeout(() => {
+                            this.scanTrigger = null;
+                            RCApi.get().startPairing().catch(err => {
+                                this.ERR("SplashBluetoothScreen startPairing error: " + JSON.stringify(err));
+                            });
+                        }, 3000);
+                    }
+                }
+            });
         }, 5, true);
     }
 
@@ -309,6 +338,10 @@ export default class BluetoothScreen extends Lightning.Component {
         }
     }
 
+    _handleBack() {
+        // Block back navigation during splash setup to prevent black screen.
+    }
+    
     pageTransition() {
         return 'left'
     }
@@ -332,6 +365,10 @@ export default class BluetoothScreen extends Lightning.Component {
         if (this.scanTrigger) {
             Registry.clearTimeout(this.scanTrigger)
             this.scanTrigger = null;
+        }
+        if (this.navigateTimeout) {
+            Registry.clearTimeout(this.navigateTimeout)
+            this.navigateTimeout = null;
         }
     }
 
