@@ -209,7 +209,7 @@ export default class BluetoothScreen extends Lightning.Component {
                     Registry.clearTimeout(this.scanTrigger);
                     this.scanTrigger = null;
                 }
-                remoteData.map(item => {
+                remoteData.forEach(item => {
                     this.tag('Info').text.text = `paired with device ${item.name}`
                 })
                 // To stop the display counter and navigate once.
@@ -243,7 +243,7 @@ export default class BluetoothScreen extends Lightning.Component {
                                 const latestInRetryState = latestStatus.pairingState === "IDLE" || latestStatus.pairingState === "FAILED";
                                 if (!latestHasRemoteData && latestInRetryState) {
                                     RCApi.get().startPairing().then(success => {
-                                        if (!success && !this.scanTrigger) {
+                                        if (success === false && !this.scanTrigger) {
                                             this.ERR("SplashBluetoothScreen startPairing returned false, retrying...");
                                             this.scanTrigger = Registry.setTimeout(() => {
                                                 this.scanTrigger = null;
@@ -291,7 +291,8 @@ export default class BluetoothScreen extends Lightning.Component {
                     let status = Array.isArray(result.status) ? (result.status[0] || {}) :
                         (result.status && typeof result.status === 'object' ? result.status : {});
                     const hasRemote = Array.isArray(status.remoteData) && status.remoteData.length > 0;
-                    if (!hasRemote) {
+                    const inRetryState = status.pairingState === "IDLE" || status.pairingState === "FAILED";
+                    if (!hasRemote && inRetryState) {
                         this.scanTrigger = Registry.setTimeout(() => {
                             this.scanTrigger = null;
                             RCApi.get().startPairing().catch(err => {
@@ -340,6 +341,7 @@ export default class BluetoothScreen extends Lightning.Component {
 
     _handleBack() {
         // Block back navigation during splash setup to prevent black screen.
+        return true;
     }
     
     pageTransition() {
