@@ -261,7 +261,7 @@ export default class App extends Router.App {
 				GLOBALS.powerState = PowerState.POWER_STATE_ON;
 				this.LOG("powerState after ===>" + JSON.stringify(GLOBALS.powerState))
 				this.initializeInactivityEngine();
-			}) 
+			})
 			.catch(err => {
                 this.ERR("Error waking device: " + JSON.stringify(err));
             })
@@ -291,7 +291,7 @@ export default class App extends Router.App {
 			} else if(GLOBALS.MiracastNotificationstatus){
 				this.jumpToRoute("menu");
 				miracast.acceptClientConnection("Reject").then(res=>{
-					if(res.success){Router.focusPage()} 
+					if(res.success){Router.focusPage()}
 				})
 		    } else {
 				this.jumpToRoute("menu"); //method to exit the current app(if any) and route to home screen
@@ -487,7 +487,6 @@ export default class App extends Router.App {
 			"Amazon": "n:2",
 			"Prime": "n:2"
 		}
-		this._getPowerStatebeforeReboot();
 		// this._registerFireboltListeners()
 
 		Keyboard.provide('xrn:firebolt:capability:input:keyboard', new KeyboardUIProvider(this))
@@ -511,7 +510,7 @@ export default class App extends Router.App {
 				//https://github.com/rdkcentral/entservices-apis/blob/1.15.11/docs/apis/PowerManagerPlugin.md#setWakeupSrcConfig
 				//By the above documentation we passed the Enum value sum to enable all wakeup sources expect WAKEUP_REASON_UNKNOWN
 				//Enum indicating bit position (bit counting starts at 1)
-				"wakeupSources": 262143 
+				"wakeupSources": 262143
 			}
 			appApi.setWakeupSrcConfiguration(param);
 			appApi.setPowerState(GLOBALS.powerState).then(res => {});
@@ -703,9 +702,11 @@ export default class App extends Router.App {
 		appApi.getPluginStatus('org.rdk.PowerManager').then(result => {
 			if (result && result.length > 0 && result[0].state === "activated") {
 				console.log("org.rdk.PowerManager is already activated");
+				this._getPowerStatebeforeReboot();
 			} else {
 				 PowerManagerApi.get().activate().then((res) => {
 					this.LOG("activating the powermanager from app.js " + JSON.stringify(res))
+					this._getPowerStatebeforeReboot();
 				}).catch((err) => this.ERR(JSON.stringify(err)))
 			}
 		})
@@ -813,28 +814,28 @@ export default class App extends Router.App {
 		this._updateLanguageToDefault()
 		// Initialize plugins using the abstraction
 		this._activatePlugin(
-			"org.rdk.PackageManagerRDKEMS", 
-			"PackageManagerRDKEMS", 
+			"org.rdk.PackageManagerRDKEMS",
+			"PackageManagerRDKEMS",
 			() => packagemangerRdkems.activate()
 		);
-		
+
 		this._activatePlugin(
-			"org.rdk.AppManager", 
-			"AppManager", 
+			"org.rdk.AppManager",
+			"AppManager",
 			() => AppManager.get().activate(),
 			() => this._SubscribeToAppManagerNotifications()
 		);
-		
+
 		this._activatePlugin(
-			"org.rdk.RDKWindowManager", 
-			"RDKWindowManager", 
+			"org.rdk.RDKWindowManager",
+			"RDKWindowManager",
 			() => RDKWindowManager.get().activate(),
 			() => this._SubscribeToRDKWindowManagerNotifications()
 		);
-		
+
 		this._activatePlugin(
-			"org.rdk.RuntimeManager", 
-			"RuntimeManager", 
+			"org.rdk.RuntimeManager",
+			"RuntimeManager",
 			() => RuntimeManager.get().activate(),
 			() => this._SubscribeToRuntimeManagerNotifications()
 		);
@@ -935,7 +936,7 @@ export default class App extends Router.App {
 			}
 			else {
 				GLOBALS.IsConnectedToInternet = false
-			}	
+			}
 			console.warn("onInternetStatusChange:", data);
 		});
 		thunder.on('org.rdk.NetworkManager', 'onAvailableSSIDs', data => {
@@ -2112,9 +2113,9 @@ export default class App extends Router.App {
 					appApi.exitApp(currentApp); //will suspend/destroy the app depending on the setting.
 				}
 				Router.navigate('menu');
-			} 
+			}
 			else if(notification.newState === PowerState.POWER_STATE_LIGHT_SLEEP && notification.currentState === PowerState.POWER_STATE_DEEP_SLEEP){
-				appApi.setPowerState(PowerState.POWER_STATE_ON).then(res => {	
+				appApi.setPowerState(PowerState.POWER_STATE_ON).then(res => {
 					this.LOG("Device woke up from DEEP_SLEEP to LIGHT_SLEEP . setPowerState result: " + JSON.stringify(res))
 				}).catch(err => {
 					this.ERR("Failed to set power state to ON when device woke up from DEEP_SLEEP to LIGHT_SLEEP. Error: " + JSON.stringify(err))
@@ -2125,6 +2126,21 @@ export default class App extends Router.App {
 				Storage.remove(SLEEP_STATE)
 			}
 		})
+		// Catch up: if onPowerModeChanged fired before this listener was registered,
+		// sync GLOBALS.powerState and Storage(SLEEP_STATE) against live plugin state now.
+		appApi.getPowerState().then(res => {
+			if (!res) return;
+			const liveState = res.currentState;
+			this.LOG("subscribeToPowerChangeNotifications catch-up getPowerState: " + JSON.stringify(liveState));
+			GLOBALS.powerState = liveState;
+			if (liveState !== PowerState.POWER_STATE_ON) {
+				Storage.set(SLEEP_STATE, liveState);
+			} else {
+				Storage.remove(SLEEP_STATE);
+			}
+		}).catch(err => {
+			this.ERR("subscribeToPowerChangeNotifications catch-up getPowerState error: " + JSON.stringify(err));
+		});
 	}
 
 	_moveApptoFront(appName, visibility) {
