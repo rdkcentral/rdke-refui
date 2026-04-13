@@ -301,6 +301,17 @@ export default class BluetoothScreen extends Lightning.Component {
                         }, 3000);
                     }
                 }
+            }).catch(err => {
+                this.ERR("SplashBluetoothScreen getNetStatus error: " + JSON.stringify(err));
+                // On failure, schedule startPairing as a recovery so pairing doesn't stall.
+                if (!this.scanTrigger) {
+                    this.scanTrigger = Registry.setTimeout(() => {
+                        this.scanTrigger = null;
+                        RCApi.get().startPairing().catch(pairErr => {
+                            this.ERR("SplashBluetoothScreen startPairing after getNetStatus failure error: " + JSON.stringify(pairErr));
+                        });
+                    }, 3000);
+                }
             });
         }, 5, true);
     }
