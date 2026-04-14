@@ -70,7 +70,7 @@ export default class InactivityHelper {
 
     if (activeStages.length === 0) {
       this.LOG('No active timers left. Disabling inactivity reporting.');
-      RDKShellApis.enableInactivityReporting(false)
+      appApi.enableInactivityReporting(false)
         .catch(err => this.ERR('Error disabling inactivity: ' + JSON.stringify(err)));
     } else {
       this.LOG(`Stage ${stage} cleared, but ${activeStages.join(', ')} still active.`);
