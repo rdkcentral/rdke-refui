@@ -18,9 +18,9 @@
  **/
 import { Router, Storage } from '@lightningjs/sdk';
 import AppApi from '../api/AppApi.js';
-import RDKShellApis from '../api/RDKShellApis.js';
 import { GLOBALS } from '../Config/Config.js';
 import { PowerState } from '../api/PowerManagerApi.js';
+import AppManager from '../api/AppManagerApi.js';
 
 var appApi = new AppApi();
 
@@ -110,8 +110,8 @@ export default class InactivityHelper {
           if (res) {
             this.LOG("successfully set to standby");
             GLOBALS.powerState = PowerState.POWER_STATE_STANDBY
-            if (GLOBALS.topmostApp !== GLOBALS.selfClientName) {
-              appApi.exitApp(GLOBALS.topmostApp);
+            if (GLOBALS.topmostApp !== GLOBALS.selfclientAppName) {
+              AppManager.get().terminateApp(GLOBALS.topmostApp);
             } else {
               if (!Router.isNavigating()) {
                 Router.navigate('menu')

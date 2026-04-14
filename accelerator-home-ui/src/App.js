@@ -1755,8 +1755,9 @@ export default class App extends Router.App {
         }
     }
 
-	registerOnUserInactivityListener() {
-			thunder.Controller.activate({ callsign: 'org.rdk.RDKWindowManager' }).then(res => {
+	async registerOnUserInactivityListener() {
+		try {
+			const res = await thunder.Controller.activate({ callsign: 'org.rdk.RDKWindowManager' });
 			this.LOG("RDKWindowManager activated, trying to set the inactivity listener; res = " + JSON.stringify(res));
 			thunder.on("org.rdk.RDKWindowManager", "onUserInactivity", async notification => {
 				const { energySaver, screenSaver, sleepTimer } = inactivityHelper.getInactivityConfig();
@@ -1787,7 +1788,9 @@ export default class App extends Router.App {
 					}
 				}
 			}, err => this.ERR("Listener error: " + JSON.stringify(err)));
-		})
+		} catch (err) {
+			this.ERR("Failed to activate RDKWindowManager for inactivity listener: " + JSON.stringify(err));
+		}
 	}
 
 	async triggerScreensaver() {
@@ -1816,12 +1819,12 @@ export default class App extends Router.App {
 
 		appApi.enableInactivityReporting(true)
 			.then(() => appApi.setInactivityInterval(this.currentInterval))
-			.then(() => {
+			.then(async () => {
 				this.LOG(`Inactivity interval set to ${this.currentInterval} for stage=${this.currentStage}`)
 
 				if (!this.thunderListenerRegistered) {
 					this.LOG("Registering listener for inactivity events...");
-					this.registerOnUserInactivityListener();
+					await this.registerOnUserInactivityListener();
 					this.thunderListenerRegistered = true;
 				}
 				})
