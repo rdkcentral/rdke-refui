@@ -111,7 +111,22 @@ export default class InactivityHelper {
             this.LOG("successfully set to standby");
             GLOBALS.powerState = PowerState.POWER_STATE_STANDBY
             if (GLOBALS.topmostApp !== GLOBALS.selfclientAppName) {
-              AppManager.get().terminateApp(GLOBALS.topmostApp);
+              const targetApp = GLOBALS.topmostApp;
+              AppManager.get().closeApp(targetApp).then(() => {
+                this.LOG("closeApp success for: " + targetApp);
+                AppManager.get().terminateApp(targetApp).then(() => {
+                  this.LOG("terminateApp success after closeApp for: " + targetApp);
+                }).catch(err => {
+                  this.ERR("terminateApp err after closeApp: " + JSON.stringify(err));
+                });
+              }).catch(err => {
+                this.ERR("closeApp err for " + targetApp + ": " + JSON.stringify(err));
+                AppManager.get().terminateApp(targetApp).then(() => {
+                  this.LOG("terminateApp success after closeApp failure for: " + targetApp);
+                }).catch(termErr => {
+                  this.ERR("terminateApp err after closeApp failure for " + targetApp + ": " + JSON.stringify(termErr));
+                });
+              });
             } else {
               if (!Router.isNavigating()) {
                 Router.navigate('menu')
@@ -119,6 +134,9 @@ export default class InactivityHelper {
             }
           }
         })
+        .catch(err => {
+          this.ERR("setPowerState error during standby: " + JSON.stringify(err));
+        });
         return true
       }
     }

@@ -1790,6 +1790,7 @@ export default class App extends Router.App {
 			}, err => this.ERR("Listener error: " + JSON.stringify(err)));
 		} catch (err) {
 			this.ERR("Failed to activate RDKWindowManager for inactivity listener: " + JSON.stringify(err));
+			throw err;
 		}
 	}
 
@@ -1824,8 +1825,12 @@ export default class App extends Router.App {
 
 				if (!this.thunderListenerRegistered) {
 					this.LOG("Registering listener for inactivity events...");
-					await this.registerOnUserInactivityListener();
-					this.thunderListenerRegistered = true;
+					try {
+						await this.registerOnUserInactivityListener();
+						this.thunderListenerRegistered = true;
+					} catch (err) {
+						this.ERR("Inactivity listener registration failed, will retry on next interval set: " + JSON.stringify(err));
+					}
 				}
 				})
 			.catch(err => this.ERR("setInactivityIntervalStage error: " + JSON.stringify(err)));
