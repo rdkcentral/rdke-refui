@@ -1738,7 +1738,7 @@ export default class App extends Router.App {
 
         if (!hasValidTimer) {
             this.LOG('No valid inactivity timers found. Disabling inactivity reporting.');
-			RDKShellApis.enableInactivityReporting(false)
+			appApi.enableInactivityReporting(false)
             .catch(err => this.ERR('Error disabling inactivity: ' + JSON.stringify(err)));
 			return;
         }
@@ -1755,10 +1755,11 @@ export default class App extends Router.App {
         }
     }
 
-	registerOnUserInactivityListener() {
-			thunder.Controller.activate({ callsign: 'org.rdk.RDKShell.1' }).then(res => {
-			this.LOG("RDKShell activated, trying to set the inactivity listener; res = " + JSON.stringify(res));
-			thunder.on("org.rdk.RDKShell.1", "onUserInactivity", async notification => {
+	async registerOnUserInactivityListener() {
+		try {
+			const res = await thunder.Controller.activate({ callsign: 'org.rdk.RDKWindowManager' });
+			this.LOG("RDKWindowManager activated, trying to set the inactivity listener; res = " + JSON.stringify(res));
+			thunder.on("org.rdk.RDKWindowManager", "onUserInactivity", async notification => {
 				const { energySaver, screenSaver, sleepTimer } = inactivityHelper.getInactivityConfig();
 				const minutes = Math.floor(Number(notification.minutes));
 
@@ -1773,7 +1774,7 @@ export default class App extends Router.App {
 				if (inactivityHelper.isValidTimeout(sleepTimer) && minutes === sleepTimer) {
 					this.LOG('Sleep Timer triggered');
 					this.currentStage = 'SleepTimer';
-					if (GLOBALS.powerState === "ON" && GLOBALS.topmostApp === GLOBALS.selfClientName) {
+					if (GLOBALS.powerState === "ON" && GLOBALS.topmostApp === GLOBALS.selfclientAppName) {
 						inactivityHelper.standby('STANDBY');
 					}
 				}
@@ -1781,19 +1782,22 @@ export default class App extends Router.App {
 				if (inactivityHelper.isValidTimeout(energySaver) && minutes === energySaver) {
 					this.LOG('Energy saver triggered');
 					this.currentStage = 'EnergySaver';
-					if (GLOBALS.powerState === "ON" && GLOBALS.topmostApp === GLOBALS.selfClientName) {
+					if (GLOBALS.powerState === "ON" && GLOBALS.topmostApp === GLOBALS.selfclientAppName) {
 						this.LOG("Going to sleep due to inactivity");
 						inactivityHelper._enterSleepMode();
 					}
 				}
 			}, err => this.ERR("Listener error: " + JSON.stringify(err)));
-		})
+		} catch (err) {
+			this.ERR("Failed to activate RDKWindowManager for inactivity listener: " + JSON.stringify(err));
+			throw err;
+		}
 	}
 
 	async triggerScreensaver() {
 		const result = await appApi.getAvCodeStatus();
 		if (["IDLE", "PAUSE"].includes(result.avDecoderStatus) &&
-			GLOBALS.topmostApp === GLOBALS.selfClientName) {
+			GLOBALS.topmostApp === GLOBALS.selfclientAppName) {
 			this.$hideImage(1);
 		}
 		return result;
@@ -1814,15 +1818,19 @@ export default class App extends Router.App {
 			this.currentInterval = screenSaver;
 		}
 
-		RDKShellApis.enableInactivityReporting(true)
-			.then(() => RDKShellApis.setInactivityInterval(this.currentInterval))
-			.then(() => {
+		appApi.enableInactivityReporting(true)
+			.then(() => appApi.setInactivityInterval(this.currentInterval))
+			.then(async () => {
 				this.LOG(`Inactivity interval set to ${this.currentInterval} for stage=${this.currentStage}`)
 
 				if (!this.thunderListenerRegistered) {
 					this.LOG("Registering listener for inactivity events...");
-					this.registerOnUserInactivityListener();
-					this.thunderListenerRegistered = true;
+					try {
+						await this.registerOnUserInactivityListener();
+						this.thunderListenerRegistered = true;
+					} catch (err) {
+						this.ERR("Inactivity listener registration failed, will retry on next interval set: " + JSON.stringify(err));
+					}
 				}
 				})
 			.catch(err => this.ERR("setInactivityIntervalStage error: " + JSON.stringify(err)));
