@@ -342,14 +342,18 @@ export default class NetworkInfo extends Lightning.Component {
             }).catch((err) => this.ERR("Error: " + JSON.stringify(err)))
 
             NetworkManager.GetAvailableInterfaces().then((interfaces) => {
-                currentInterface = interfaces.filter((data) => data.name === defaultInterface)
-                if (currentInterface[0].connected) {
+                const matchedInterface = interfaces.find((data) => data.name === defaultInterface)
+                if (!matchedInterface) {
+                    this.ERR("Interface not found for: " + defaultInterface)
+                    return
+                }
+                if (matchedInterface.connected) {
                     this.tag("Status.Value").text.text = Language.translate('Connected')
                 }
                 else {
                     this.tag('Status.Value').text.text = Language.translate('Disconnected')
                 }
-                this.tag('MACAddress.Value').text.text = currentInterface[0].mac
+                this.tag('MACAddress.Value').text.text = matchedInterface.mac
             }).catch((error) => this.ERR("Error: " + JSON.stringify(error)));
         }).catch((error) => this.ERR("Error: " + JSON.stringify(error)));
     }
