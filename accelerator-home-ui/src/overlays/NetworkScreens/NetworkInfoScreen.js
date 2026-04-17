@@ -311,7 +311,7 @@ export default class NetworkInfo extends Lightning.Component {
                             this.tag("SignalStrength.Value").text.text = `Poor`
                         }
                         this.tag("SSID.Value").text.text = `${result.ssid}`
-                    }).catch((error) => console.log(error));
+                    }).catch((error) => this.ERR("GetConnectedSSID error: " + JSON.stringify(error)));
                 } else if (result.interface === "eth0") {
                     this.tag("ConnectionType.Value").text.text = 'Ethernet'
                     this.tag("SSID").alpha = 0
@@ -320,7 +320,7 @@ export default class NetworkInfo extends Lightning.Component {
                 this.tag('InternetProtocol.Value').text.text = result.ipversion
                 this.tag('IPAddress.Value').text.text = result.ipaddress
                 this.tag("Gateway.Value").text.text = result.gateway
-            }).catch((err) => console.error(err))
+            }).catch((err) => this.ERR("GetIPSettings error: " + JSON.stringify(err)))
 
             NetworkManager.GetAvailableInterfaces().then((interfaces) => {
                 currentInterface = interfaces.filter((data) => data.name === defaultInterface)
@@ -331,8 +331,8 @@ export default class NetworkInfo extends Lightning.Component {
                     this.tag('Status.Value').text.text = Language.translate('Disconnected')
                 }
                 this.tag('MACAddress.Value').text.text = currentInterface[0].mac
-            }).catch((error) => console.log(error));
-        }).catch((error) => console.log(error));
+            }).catch((error) => this.ERR("GetAvailableInterfaces error: " + JSON.stringify(error)));
+        }).catch((error) => this.ERR("GetPrimaryInterface error: " + JSON.stringify(error)));
     }
 
     _focus() {
