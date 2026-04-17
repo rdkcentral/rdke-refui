@@ -18,9 +18,9 @@
  **/
 import { Router, Storage } from '@lightningjs/sdk';
 import AppApi from '../api/AppApi.js';
-import RDKShellApis from '../api/RDKShellApis.js';
 import { GLOBALS } from '../Config/Config.js';
 import { PowerState } from '../api/PowerManagerApi.js';
+import AppManager from '../api/AppManagerApi.js';
 
 var appApi = new AppApi();
 
@@ -70,7 +70,7 @@ export default class InactivityHelper {
 
     if (activeStages.length === 0) {
       this.LOG('No active timers left. Disabling inactivity reporting.');
-      RDKShellApis.enableInactivityReporting(false)
+      appApi.enableInactivityReporting(false)
         .catch(err => this.ERR('Error disabling inactivity: ' + JSON.stringify(err)));
     } else {
       this.LOG(`Stage ${stage} cleared, but ${activeStages.join(', ')} still active.`);
@@ -110,8 +110,23 @@ export default class InactivityHelper {
           if (res) {
             this.LOG("successfully set to standby");
             GLOBALS.powerState = PowerState.POWER_STATE_STANDBY
-            if (GLOBALS.topmostApp !== GLOBALS.selfClientName) {
-              appApi.exitApp(GLOBALS.topmostApp);
+            if (GLOBALS.topmostApp !== GLOBALS.selfclientAppName) {
+              const targetApp = GLOBALS.topmostApp;
+              AppManager.get().closeApp(targetApp).then(() => {
+                this.LOG("closeApp success for: " + targetApp);
+                AppManager.get().terminateApp(targetApp).then(() => {
+                  this.LOG("terminateApp success after closeApp for: " + targetApp);
+                }).catch(err => {
+                  this.ERR("terminateApp err after closeApp: " + JSON.stringify(err));
+                });
+              }).catch(err => {
+                this.ERR("closeApp err for " + targetApp + ": " + JSON.stringify(err));
+                AppManager.get().terminateApp(targetApp).then(() => {
+                  this.LOG("terminateApp success after closeApp failure for: " + targetApp);
+                }).catch(termErr => {
+                  this.ERR("terminateApp err after closeApp failure for " + targetApp + ": " + JSON.stringify(termErr));
+                });
+              });
             } else {
               if (!Router.isNavigating()) {
                 Router.navigate('menu')
@@ -119,6 +134,9 @@ export default class InactivityHelper {
             }
           }
         })
+        .catch(err => {
+          this.ERR("setPowerState error during standby: " + JSON.stringify(err));
+        });
         return true
       }
     }

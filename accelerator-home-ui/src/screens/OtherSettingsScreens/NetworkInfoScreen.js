@@ -309,55 +309,10 @@ export default class NetworkInfo extends Lightning.Component {
         this.tag("IPAddress.Value").text.text = `NA`
         this.tag("Gateway.Value").text.text = `NA`
         this.tag("MACAddress.Value").text.text = `NA`
-        if ("ResidentApp" === GLOBALS.selfClientName)
-        {
-            await NetworkManager.GetPrimaryInterface().then((defaultInterface) => {
-                console.log("defaultinterface"+defaultInterface)
-                NetworkManager.GetIPSettings(defaultInterface).then((result) => {
-                    if (result.interface === "wlan0") {
-                        this.tag("ConnectionType.Value").text.text = Language.translate("Wireless")
-                        this.tag("SSID").alpha = 1
-                        this.tag("SignalStrength").alpha = 1
-                        NetworkManager.GetConnectedSSID().then((result) => {
-                            if (parseInt(result.strength) >= -50) {
-                                this.tag("SignalStrength.Value").text.text = `Excellent`
-                            }
-                            else if (parseInt(result.strength) >= -60) {
-                                this.tag("SignalStrength.Value").text.text = `Good`
-                            }
-                            else if (parseInt(result.strength) >= -67) {
-                                this.tag("SignalStrength.Value").text.text = `Fair`
-                            }
-                            else {
-                                this.tag("SignalStrength.Value").text.text = `Poor`
-                            }
-                            this.tag("SSID.Value").text.text = `${result.ssid}`
-                        }).catch((error) => this.ERR("Error: " + JSON.stringify(error)));
-                    } else if (result.interface === "eth0") {
-                        this.tag("ConnectionType.Value").text.text = 'Ethernet'
-                        this.tag("SSID").alpha = 0
-                        this.tag("SignalStrength").alpha = 0
-                    }
-                    this.tag('InternetProtocol.Value').text.text = result.ipversion
-                    this.tag('IPAddress.Value').text.text = result.ipaddress
-                    this.tag("Gateway.Value").text.text = result.gateway
-                }).catch((err) => this.ERR("Error: " + JSON.stringify(err)))
-
-                NetworkManager.GetAvailableInterfaces().then((interfaces) => {
-                    currentInterface = interfaces.filter((data) => data.name === defaultInterface)
-                    if (currentInterface[0].connected) {
-                        this.tag("Status.Value").text.text = Language.translate('Connected')
-                    }
-                    else {
-                        this.tag('Status.Value').text.text = Language.translate('Disconnected')
-                    }
-                    this.tag('MACAddress.Value').text.text = currentInterface[0].mac
-                }).catch((error) => this.ERR("Error: " + JSON.stringify(error)));
-            }).catch((error) => this.ERR("Error: " + JSON.stringify(error)));
-        }
-        else{
-            await FireBoltApi.get().deviceinfo.getnetwork().then(res=>{
-                if (res.type === "wifi") {
+        await NetworkManager.GetPrimaryInterface().then((defaultInterface) => {
+            console.log("defaultinterface"+defaultInterface)
+            NetworkManager.GetIPSettings(defaultInterface).then((result) => {
+                if (result.interface === "wlan0") {
                     this.tag("ConnectionType.Value").text.text = Language.translate("Wireless")
                     this.tag("SSID").alpha = 1
                     this.tag("SignalStrength").alpha = 1
@@ -376,31 +331,31 @@ export default class NetworkInfo extends Lightning.Component {
                         }
                         this.tag("SSID.Value").text.text = `${result.ssid}`
                     }).catch((error) => this.ERR("Error: " + JSON.stringify(error)));
-                } else if (res.type === "ethernet") {
+                } else if (result.interface === "eth0") {
                     this.tag("ConnectionType.Value").text.text = 'Ethernet'
                     this.tag("SSID").alpha = 0
                     this.tag("SignalStrength").alpha = 0
                 }
-                if (res.state== "connected") {
+                this.tag('InternetProtocol.Value').text.text = result.ipversion
+                this.tag('IPAddress.Value').text.text = result.ipaddress
+                this.tag("Gateway.Value").text.text = result.gateway
+            }).catch((err) => this.ERR("Error: " + JSON.stringify(err)))
+
+            NetworkManager.GetAvailableInterfaces().then((interfaces) => {
+                const matchedInterface = interfaces.find((data) => data.name === defaultInterface)
+                if (!matchedInterface) {
+                    this.ERR("Interface not found for: " + defaultInterface)
+                    return
+                }
+                if (matchedInterface.connected) {
                     this.tag("Status.Value").text.text = Language.translate('Connected')
                 }
                 else {
                     this.tag('Status.Value').text.text = Language.translate('Disconnected')
                 }
-            NetworkManager.GetPrimaryInterface().then((defaultInterface) => {
-                NetworkManager.GetIPSettings(defaultInterface).then((result) => {
-                this.tag('InternetProtocol.Value').text.text = result.ipversion
-                this.tag('IPAddress.Value').text.text = result.ipaddress
-                this.tag("Gateway.Value").text.text = result.gateway
-                })
-                NetworkManager.GetAvailableInterfaces().then((res) => {
-                    currentInterface = res.interfaces.filter((data) => data.type === defaultInterface)
-                    this.tag('MACAddress.Value').text.text = currentInterface[0].mac
-                }).catch((error) => this.ERR("Error: " + JSON.stringify(error)));
-            })
-
+                this.tag('MACAddress.Value').text.text = matchedInterface.mac
             }).catch((error) => this.ERR("Error: " + JSON.stringify(error)));
-        }
+        }).catch((error) => this.ERR("Error: " + JSON.stringify(error)));
     }
 
     _focus() {
