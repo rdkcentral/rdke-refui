@@ -1623,8 +1623,8 @@ export default class AppApi {
     })
   }
 
-  setWakeupSrcConfiguration(params) {
-    return PowerManagerApi.get().setWakeupSrcConfig(params)
+  setWakeupSourceConfig(params) {
+    return PowerManagerApi.get().setWakeupSourceConfig(params)
   }
 
   async sendAppState(value) {
