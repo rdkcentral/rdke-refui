@@ -502,21 +502,6 @@ export default class App extends Router.App {
 			Storage.set("deviceType", ((result.devicetype != null) ? result.devicetype : "IpTv"));
 		});
 		UserSettingsApi.get().activate();
-		thunder.Controller.activate({
-			callsign: 'org.rdk.System'
-		}).then(result => {
-			this.LOG("App System plugin activation result: " + JSON.stringify(result))
-			let param = {
-				//https://github.com/rdkcentral/entservices-apis/blob/1.15.11/docs/apis/PowerManagerPlugin.md#setWakeupSrcConfig
-				//By the above documentation we passed the Enum value sum to enable all wakeup sources expect WAKEUP_REASON_UNKNOWN
-				//Enum indicating bit position (bit counting starts at 1)
-				"wakeupSources": 262143
-			}
-			appApi.setWakeupSrcConfiguration(param);
-			appApi.setPowerState(GLOBALS.powerState).then(res => {});
-		}).catch(err => {
-			this.ERR("App System plugin activation error: " + JSON.stringify(err));
-		})
 		appApi.getPluginStatus("org.rdk.DeviceDiagnostics").then(res => {
 			this.LOG("App DeviceDiagnostics state:" + JSON.stringify(res[0].state))
 			if (res[0].state === "deactivated") {
@@ -703,10 +688,12 @@ export default class App extends Router.App {
 			if (result && result.length > 0 && result[0].state === "activated") {
 				console.log("org.rdk.PowerManager is already activated");
 				this._getPowerStatebeforeReboot();
+				this._setWakeupSourceConfig();
 			} else {
 				 PowerManagerApi.get().activate().then((res) => {
 					this.LOG("activating the powermanager from app.js " + JSON.stringify(res))
 					this._getPowerStatebeforeReboot();
+					this._setWakeupSourceConfig();
 				}).catch((err) => this.ERR(JSON.stringify(err)))
 			}
 		})
@@ -1670,6 +1657,28 @@ export default class App extends Router.App {
 			this.LOG("_PowerStateHandlingWhileReboot: power state before reboot and curren tpowerstate is same " + JSON.stringify(this._oldPowerStateWhileReboot) + " " + JSON.stringify(this._powerStateWhileReboot));
 			GLOBALS.powerState = this._powerStateWhileReboot;
 		}
+	}
+
+	_setWakeupSourceConfig() {
+		//https://jira.rdkcentral.com/jira/browse/RDKEAPPRT-693
+		//by the above jira, we need to enable all wakeup sources in order to wake up the device from standby using any source. So enabling all the wakeup sources here.
+		let param = {
+			"wakeupSources": [
+				{"wakeupSource": "VOICE", "enabled": true},
+				{"wakeupSource": "IR", "enabled": true},
+				{"wakeupSource": "CEC", "enabled": true},
+				{"wakeupSource": "BLUETOOTH", "enabled": true},
+				{"wakeupSource": "WIFI", "enabled": true},
+				{"wakeupSource": "LAN", "enabled": true},
+				{"wakeupSource": "POWERKEY", "enabled": true},
+			]
+		}
+		this.LOG("_setWakeupSourceConfig: Calling with param: " + JSON.stringify(param))
+		appApi.setWakeupSourceConfig(param).then(res => {
+			this.LOG("_setWakeupSourceConfig: Successfully set wakeup source config: " + JSON.stringify(res))
+		}).catch(err => {
+			this.ERR("_setWakeupSourceConfig: Error setting wakeup source config: " + JSON.stringify(err))
+		})
 	}
 
 	_getPowerStatebeforeReboot() {

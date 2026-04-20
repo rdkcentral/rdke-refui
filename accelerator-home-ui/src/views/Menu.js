@@ -27,11 +27,11 @@ var route = {
         Router.navigate('menu')
         Router.focusPage()
     },
+    // 1: () => {
+    //     Router.navigate('epg')
+    //     Router.focusPage()
+    // },
     1: () => {
-        Router.navigate('epg')
-        Router.focusPage()
-    },
-    2: () => {
         Router.navigate('appinfo')
         Router.focusPage()
     },
