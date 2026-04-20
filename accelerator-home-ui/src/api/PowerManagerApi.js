@@ -85,15 +85,15 @@ export default class PowerManagerApi {
       })
   }
 
-  setWakeupSrcConfig(params) {
-      this.LOG("setWakeupSrcConfiguration params:", JSON.stringify(params));
+  setWakeupSourceConfig(params) {
+      this.LOG("setWakeupSourceConfig params:", JSON.stringify(params));
       return new Promise((resolve, reject) => {
-        this.thunder.call(this.callsign, 'setWakeupSrcConfig', params).then(result => {
-          this.LOG(" setWakeupSrcConfiguration result:", JSON.stringify(result))
+        this.thunder.call(this.callsign, 'setWakeupSourceConfig', params).then(result => {
+          this.LOG(" setWakeupSourceConfig result:", JSON.stringify(result))
           resolve(result)
         }).catch(err => {
-          this.ERR(" setWakeupSrcConfiguration error:", JSON.stringify(err))
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder system setWakeupSrcConfiguration " + JSON.stringify(err), false, null)
+          this.ERR(" setWakeupSourceConfig error:", JSON.stringify(err))
+          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder system setWakeupSourceConfig " + JSON.stringify(err), false, null)
           reject(err)
         })
       })

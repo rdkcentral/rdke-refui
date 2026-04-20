@@ -24,10 +24,10 @@ export var sidePanelInfo = [
     title: 'Apps',
     url: '/images/sidePanel/menu.png',
   },
-  {
-    title: 'EPG',
-    url: '/images/sidePanel/metro.png',
-  },
+  // {
+  //   title: 'EPG',
+  //   url: '/images/sidePanel/metro.png',
+  // },
   {
     title: 'AppInfo',
     url: '/images/sidePanel/settings.png',
