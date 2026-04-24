@@ -267,7 +267,7 @@ export default class MainView extends Lightning.Component {
       }))
     // Add "More Apps" item at the end
     apps.push({
-      displayName: 'More Apps',
+      displayName: Language.translate('More Apps'),
       applicationType: 'MoreApps',
       uri: 'apps',
       url: '/images/sidePanel/moreapps.png',
@@ -444,7 +444,7 @@ export default class MainView extends Lightning.Component {
         this._hideDacAppsLoader()
         // Clear stale cached apps (broken/default icons) and show only "More Apps"
         this.dacApps = [{
-          displayName: 'More Apps',
+          displayName: Language.translate('More Apps'),
           applicationType: 'MoreApps',
           uri: 'apps',
           url: '/images/sidePanel/moreapps.png',
