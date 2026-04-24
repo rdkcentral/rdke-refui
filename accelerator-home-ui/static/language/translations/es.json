@@ -282,5 +282,11 @@
   "TTS Endpoint":"Punto final TTS",
   "WiFi Status":"Estado WiFi",
   "Error Code :":"Código de error:",
-  "Error Msg :":"Mensaje de error:"
+  "Error Msg :":"Mensaje de error:",
+  "Recommended Apps":"Aplicaciones recomendadas",
+  "More Apps":"Más aplicaciones",
+  "Installed Apps":"Aplicaciones instaladas",
+  "Launch":"Lanzamiento",
+  "Uninstall":"Desinstalar",
+  "Update":"Actualizar"
 }
