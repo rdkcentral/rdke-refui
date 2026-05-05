@@ -255,7 +255,14 @@ export default class App extends Router.App {
 	_captureKey(key) {
 		this.LOG("Got keycode : " + JSON.stringify(key.keyCode))
 		this.LOG("powerState ===>" + JSON.stringify(GLOBALS.powerState))
-		if (GLOBALS.powerState !== PowerState.POWER_STATE_ON) {
+		if (GLOBALS.powerState === PowerState.POWER_STATE_DEEP_SLEEP || GLOBALS.powerState === PowerState.POWER_STATE_LIGHT_SLEEP) {
+			if (key.keyCode !== Keymap.Power) {
+				this.LOG("Ignoring non-power key press while device is in sleep state")
+				return true
+			}
+			this.initializeInactivityEngine();
+			return this._performKeyPressOPerations(key)
+		} else if (GLOBALS.powerState !== PowerState.POWER_STATE_ON) {
 			appApi.setPowerState(PowerState.POWER_STATE_ON).then(res => {
 				res ? this.LOG("successfully set the power state to ON from " + JSON.stringify(GLOBALS.powerState)) : this.LOG("Failure while turning ON the device")
 				GLOBALS.powerState = PowerState.POWER_STATE_ON;
@@ -1779,20 +1786,31 @@ export default class App extends Router.App {
 					this.currentStage = 'ScreenSaver';
 					await this.triggerScreensaver();
 				}
-				// Sleep Timer Stage
-				if (inactivityHelper.isValidTimeout(sleepTimer) && minutes === sleepTimer) {
-					this.LOG('Sleep Timer triggered');
+				// Sleep Timer + Energy Saver combined logic
+				const hasSleepTimer = inactivityHelper.isValidTimeout(sleepTimer);
+				const hasEnergySaver = inactivityHelper.isValidTimeout(energySaver);
+
+				if (hasSleepTimer && hasEnergySaver && minutes === sleepTimer) {
+					// Both enabled: at sleep timer time, execute energy saver (deep sleep)
+					this.LOG('Sleep Timer + Energy Saver triggered together — entering deep sleep');
+					this.currentStage = 'EnergySaver';
+					if (GLOBALS.powerState === "ON" && GLOBALS.topmostApp === GLOBALS.selfclientAppName) {
+						this.LOG("Going to deep sleep due to inactivity (sleep timer + energy saver)");
+						inactivityHelper._enterSleepMode();
+					}
+				} else if (hasSleepTimer && !hasEnergySaver && minutes === sleepTimer) {
+					// Only sleep timer: standby as before
+					this.LOG('Sleep Timer triggered (no energy saver) — entering standby');
 					this.currentStage = 'SleepTimer';
 					if (GLOBALS.powerState === "ON" && GLOBALS.topmostApp === GLOBALS.selfclientAppName) {
 						inactivityHelper.standby('STANDBY');
 					}
-				}
-				// Energy Saver Stage
-				if (inactivityHelper.isValidTimeout(energySaver) && minutes === energySaver) {
-					this.LOG('Energy saver triggered');
+				} else if (hasEnergySaver && !hasSleepTimer && minutes === energySaver) {
+					// Only energy saver (default 15 min): deep sleep
+					this.LOG('Energy Saver triggered (no sleep timer) — entering deep sleep');
 					this.currentStage = 'EnergySaver';
 					if (GLOBALS.powerState === "ON" && GLOBALS.topmostApp === GLOBALS.selfclientAppName) {
-						this.LOG("Going to sleep due to inactivity");
+						this.LOG("Going to deep sleep due to inactivity (energy saver only)");
 						inactivityHelper._enterSleepMode();
 					}
 				}
@@ -2077,13 +2095,19 @@ export default class App extends Router.App {
 		appApi.getPowerState().then(res => {
 			this.LOG("getPowerState: " + JSON.stringify(res));
 			if (res.currentState === "ON") {
-				this.LOG("current powerState is ON so setting power state to LIGHT_SLEEP/DEEP_SLEEP depending of preferred option");
-				appApi.setPowerState(res.previousState).then(result => {
-					if (result) {
-						this.LOG("successfully set powerstate to: " + JSON.stringify(res.previousState))
-						return result
-					}
-				})
+				const { energySaver } = inactivityHelper.getInactivityConfig();
+				if (inactivityHelper.isValidTimeout(energySaver)) {
+					this.LOG("Energy Saver is enabled — going to DEEP_SLEEP on power key press");
+					inactivityHelper._enterSleepMode();
+				} else {
+					this.LOG("current powerState is ON so setting power state to LIGHT_SLEEP : " + JSON.stringify(res.previousState));
+					appApi.setPowerState(PowerState.POWER_STATE_LIGHT_SLEEP).then(result => {
+						if (result) {
+							this.LOG("successfully set powerstate to: " + JSON.stringify(res.previousState))
+							return result
+						}
+					})
+				}
 			} else {
 				this.LOG("current powerState is " + JSON.stringify(res.currentState) + " so setting power state to ON");
 				appApi.setPowerState("ON").then(result => {
