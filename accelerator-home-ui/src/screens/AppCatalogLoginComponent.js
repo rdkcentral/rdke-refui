@@ -16,12 +16,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-import { Language, Lightning, Router } from '@lightningjs/sdk'
+import { Language, Lightning, Router, Utils } from '@lightningjs/sdk'
 import { CONFIG } from '../Config/Config';
 import { Keyboard } from '../ui-components/index'
 import { KEYBOARD_FORMATS } from '../ui-components/components/Keyboard'
 import PasswordSwitch from './PasswordSwitch';
-import { login } from '../api/AppCatalog';
+import { login, getCatalogServerURL } from '../api/AppCatalog';
 
 export default class AppCatalogLoginComponent extends Lightning.Component {
 
@@ -40,31 +40,45 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
   _active() {
     this.hidePasswd = true
     this.star = ""
+    this.catalogURL = null
     this.tag("Keyboard").visible = false
+    getCatalogServerURL()
+      .then(url => {
+        this.catalogURL = url || null
+        this.tag('CatalogURLValue').text.text = url || Language.translate('Unknown')
+      })
+      .catch(() => {
+        this.catalogURL = null
+        this.tag('CatalogURLValue').text.text = Language.translate('Unavailable')
+      })
+  }
+
+  _firstEnable() {
+    this.spinnerAnimation = this.tag('LoadingOverlay.Spinner').animation({
+      duration: 3,
+      repeat: -1,
+      stopMethod: 'immediate',
+      stopDelay: 0.2,
+      actions: [{ p: 'rotation', v: { sm: 0, 0: 0, 1: Math.PI * 2 } }],
+    })
+  }
+
+  _updateConnectButtonColor() {
+    if (this.textCollection && this.textCollection['EnterUsername']) {
+      this.tag('ConnectButton').color = 0xff00aa00
+    } else {
+      this.tag('ConnectButton').color = 0xff444444
+    }
   }
 
   handleDone() {
     this.tag("Keyboard").visible = false
     if (!this.textCollection['EnterUsername']) {
       this._setState("EnterUsername");
-    }
-    else if (!this.textCollection['EnterPassword']) {
+    } else if (!this.textCollection['EnterPassword']) {
       this._setState("EnterPassword");
-    }
-    else {
-      this.LOG('App Catalog Login - credentials submitted')
-      login(this.textCollection['EnterUsername'], this.textCollection['EnterPassword'])
-        .then(result => {
-          if (result) {
-            this.LOG('Login successful - navigating back')
-            if (!Router.isNavigating()) {
-              Router.back()
-            }
-          } else {
-            this.ERR('Login failed')
-          }
-        })
-        .catch(err => this.ERR('Login error: ' + err))
+    } else {
+      this._setState("ConnectButton");
     }
   }
 
@@ -89,9 +103,32 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
       BorderTop: {
         x: 190, y: 130, w: 1488, h: 2, rect: true,
       },
+      CatalogURLLabel: {
+        x: 190,
+        y: 148,
+        text: {
+          text: Language.translate("App Catalog URL") + ": ",
+          fontFace: CONFIG.language.font,
+          fontSize: 22,
+          textColor: 0xff808080,
+        },
+      },
+      CatalogURLValue: {
+        x: 450,
+        y: 148,
+        text: {
+          text: Language.translate("Loading..."),
+          fontFace: CONFIG.language.font,
+          fontSize: 22,
+          textColor: 0xff808080,
+          wordWrapWidth: 1200,
+          wordWrap: false,
+          textOverflow: 'ellipsis',
+        },
+      },
       Username: {
         x: 190,
-        y: 176,
+        y: 236,
         text: {
           text: Language.translate("Username") + ": ",
           fontFace: CONFIG.language.font,
@@ -100,12 +137,12 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
       },
       UsernameBox: {
         x: 400,
-        y: 160,
+        y: 220,
         texture: Lightning.Tools.getRoundRect(1273, 58, 0, 3, 0xffffffff, false)
       },
       UsernameText: {
         x: 420,
-        y: 170,
+        y: 230,
         zIndex: 2,
         text: {
           text: '',
@@ -119,7 +156,7 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
       },
       Password: {
         x: 190,
-        y: 246,
+        y: 306,
         text: {
           text: Language.translate("Password") + ":",
           fontFace: CONFIG.language.font,
@@ -128,12 +165,12 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
       },
       PasswordBox: {
         x: 400,
-        y: 230,
+        y: 290,
         texture: Lightning.Tools.getRoundRect(1273, 58, 0, 3, 0xffffffff, false)
       },
       Pwd: {
         x: 420,
-        y: 240,
+        y: 300,
         zIndex: 2,
         text: {
           text: '',
@@ -146,11 +183,11 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
         },
       },
       BorderBottom: {
-        x: 190, y: 326, w: 1488, h: 2, rect: true,
+        x: 190, y: 386, w: 1488, h: 2, rect: true,
       },
       ExitButton: {
-        x: 960,
-        y: 350,
+        x: 740,
+        y: 410,
         mountX: 0.5,
         w: 200,
         h: 50,
@@ -169,8 +206,42 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
           },
         },
       },
+      ConnectButton: {
+        x: 1180,
+        y: 410,
+        mountX: 0.5,
+        w: 200,
+        h: 50,
+        rect: true,
+        color: 0xff444444,
+        shader: { type: Lightning.shaders.RoundedRectangle, radius: 10 },
+        ConnectLabel: {
+          x: 100,
+          y: 25,
+          mount: 0.5,
+          text: {
+            text: Language.translate('Connect'),
+            fontFace: CONFIG.language.font,
+            fontSize: 22,
+            textColor: 0xffffffff,
+          },
+        },
+      },
+      ErrorText: {
+        x: 960,
+        y: 475,
+        mountX: 0.5,
+        visible: false,
+        text: {
+          text: Language.translate('Login failed. Please try again.'),
+          fontFace: CONFIG.language.font,
+          fontSize: 22,
+          textColor: 0xffff4444,
+          textAlign: 'center',
+        },
+      },
       Keyboard: {
-        y: 420,
+        y: 480,
         x: 400,
         type: Keyboard,
         visible: false,
@@ -181,7 +252,7 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
         h: 45,
         w: 66.9,
         x: 1642,
-        y: 260,
+        y: 320,
         zIndex: 2,
         type: PasswordSwitch,
         mount: 0.5,
@@ -189,13 +260,136 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
       },
       ShowPassword: {
         x: 1365,
-        y: 242,
+        y: 302,
         w: 300,
         h: 75,
         zIndex: 2,
         text: { text: Language.translate('Show Password'), fontSize: 25, fontFace: CONFIG.language.font, textColor: 0xffffffff, textAlign: 'left' },
         visible: true
-      }
+      },
+      AuthFailedPopup: {
+        x: 960,
+        y: 540,
+        mount: 0.5,
+        w: 560,
+        h: 200,
+        rect: true,
+        color: 0xff222222,
+        shader: { type: Lightning.shaders.RoundedRectangle, radius: 12 },
+        visible: false,
+        zIndex: 11,
+        PopupText: {
+          x: 280,
+          y: 60,
+          mountX: 0.5,
+          text: {
+            text: Language.translate('Authentication failed. Please try again.'),
+            fontFace: CONFIG.language.font,
+            fontSize: 26,
+            textColor: 0xffffffff,
+            textAlign: 'center',
+            wordWrapWidth: 500,
+            wordWrap: true,
+          },
+        },
+        OkButton: {
+          x: 280,
+          y: 145,
+          mountX: 0.5,
+          mountY: 0.5,
+          w: 150,
+          h: 46,
+          rect: true,
+          color: 0xff444444,
+          shader: { type: Lightning.shaders.RoundedRectangle, radius: 10 },
+          OkLabel: {
+            x: 75,
+            y: 23,
+            mount: 0.5,
+            text: {
+              text: Language.translate('OK'),
+              fontFace: CONFIG.language.font,
+              fontSize: 22,
+              textColor: 0xffffffff,
+            },
+          },
+        },
+      },
+      URLNotSetPopup: {
+        x: 960,
+        y: 540,
+        mount: 0.5,
+        w: 560,
+        h: 200,
+        rect: true,
+        color: 0xff222222,
+        shader: { type: Lightning.shaders.RoundedRectangle, radius: 12 },
+        visible: false,
+        zIndex: 11,
+        PopupText: {
+          x: 280,
+          y: 60,
+          mountX: 0.5,
+          text: {
+            text: Language.translate('App Catalog URL is not set'),
+            fontFace: CONFIG.language.font,
+            fontSize: 26,
+            textColor: 0xffffffff,
+            textAlign: 'center',
+            wordWrapWidth: 500,
+            wordWrap: true,
+          },
+        },
+        OkButton: {
+          x: 280,
+          y: 145,
+          mountX: 0.5,
+          mountY: 0.5,
+          w: 150,
+          h: 46,
+          rect: true,
+          color: 0xff444444,
+          shader: { type: Lightning.shaders.RoundedRectangle, radius: 10 },
+          OkLabel: {
+            x: 75,
+            y: 23,
+            mount: 0.5,
+            text: {
+              text: Language.translate('OK'),
+              fontFace: CONFIG.language.font,
+              fontSize: 22,
+              textColor: 0xffffffff,
+            },
+          },
+        },
+      },
+      LoadingOverlay: {
+        w: 1920,
+        h: 1080,
+        rect: true,
+        color: 0xCC000000,
+        visible: false,
+        zIndex: 10,
+        Spinner: {
+          x: 920,
+          y: 490,
+          w: 80,
+          h: 80,
+          mount: 0.5,
+          src: Utils.asset('images/settings/Loading.png'),
+        },
+        AuthText: {
+          x: 960,
+          y: 550,
+          mountX: 0.5,
+          text: {
+            text: Language.translate('Authenticating...'),
+            fontFace: CONFIG.language.font,
+            fontSize: 28,
+            textColor: 0xffffffff,
+          },
+        },
+      },
     }
   }
 
@@ -206,6 +400,8 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
     this.tag("UsernameText").text.text = Language.translate("Press OK to enter Username");
     this.tag('UsernameText').text.textColor = 0xff808080
     this.tag('Pwd').text.textColor = 0xff808080
+    this.tag('ErrorText').visible = false
+    this._updateConnectButtonColor()
   }
 
   encrypt() {
@@ -315,11 +511,117 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
         _handleDown() {
           this._setState('EnterUsername')
         }
+        _handleRight() {
+          this._setState('ConnectButton')
+        }
         _handleEnter() {
           if (!Router.isNavigating()) {
             Router.back()
           }
         }
+      },
+      class ConnectButton extends this {
+        $enter() {
+          this.tag('ConnectButton').color = this.textCollection['EnterUsername']
+            ? 0xff00cc00
+            : 0xff444444
+        }
+        $exit() {
+          this._updateConnectButtonColor()
+        }
+        _handleUp() {
+          this._setState('EnterPassword')
+        }
+        _handleDown() {
+          this._setState('EnterUsername')
+        }
+        _handleLeft() {
+          this._setState('ExitButton')
+        }
+        _handleEnter() {
+          this.tag('Keyboard').visible = false
+          if (!this.catalogURL) {
+            this._setState('URLNotSetPopup')
+            return
+          }
+          if (!this.textCollection['EnterUsername']) {
+            this._setState('EnterUsername')
+            return
+          }
+          this._setState('Authenticating')
+          login(this.textCollection['EnterUsername'], this.textCollection['EnterPassword'])
+            .then(result => {
+              if (result) {
+                this.LOG('Login successful - navigating to menu')
+                if (!Router.isNavigating()) {
+                  Router.navigate('menu')
+                }
+              } else {
+                this.ERR('Login failed')
+                setTimeout(() => this._setState('AuthFailedPopup'), 0)
+              }
+            })
+            .catch(err => {
+              this.ERR('Login error: ' + err)
+              setTimeout(() => this._setState('AuthFailedPopup'), 0)
+            })
+        }
+      },
+      class AuthFailedPopup extends this {
+        $enter() {
+          this.tag('AuthFailedPopup').visible = true
+          this.tag('AuthFailedPopup.OkButton').color = CONFIG.theme.hex
+        }
+        $exit() {
+          this.tag('AuthFailedPopup').visible = false
+          this.tag('AuthFailedPopup.OkButton').color = 0xff444444
+        }
+        _handleEnter() {
+          this._setState('ConnectButton')
+        }
+        _handleBack() {
+          this._setState('ConnectButton')
+        }
+        _handleUp() {}
+        _handleDown() {}
+        _handleLeft() {}
+        _handleRight() {}
+      },
+      class URLNotSetPopup extends this {
+        $enter() {
+          this.tag('URLNotSetPopup').visible = true
+          this.tag('URLNotSetPopup.OkButton').color = CONFIG.theme.hex
+        }
+        $exit() {
+          this.tag('URLNotSetPopup').visible = false
+          this.tag('URLNotSetPopup.OkButton').color = 0xff444444
+        }
+        _handleEnter() {
+          this._setState('ConnectButton')
+        }
+        _handleBack() {
+          this._setState('ConnectButton')
+        }
+        _handleUp() {}
+        _handleDown() {}
+        _handleLeft() {}
+        _handleRight() {}
+      },
+      class Authenticating extends this {
+        $enter() {
+          this.tag('LoadingOverlay').visible = true
+          this.spinnerAnimation.start()
+        }
+        $exit() {
+          this.spinnerAnimation.stop()
+          this.tag('LoadingOverlay').visible = false
+        }
+        _handleEnter() {}
+        _handleBack() {}
+        _handleUp() {}
+        _handleDown() {}
+        _handleLeft() {}
+        _handleRight() {}
       },
       class Keyboard extends this {
         $enter(state) {
@@ -361,6 +663,8 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
             this.star += (this.prevState === "EnterPassword") ? '\u25CF' : ''
             this.tag(this.element).text.text = this.encrypt() ? this.star : this.textCollection[this.prevState];
           }
+          this._updateConnectButtonColor()
+          this.tag('ErrorText').visible = false
         }
         _handleUp() {
           this._setState(this.prevState)
@@ -378,5 +682,7 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
     this.textCollection = { 'EnterUsername': '', 'EnterPassword': '' }
     this.tag("Pwd").text.text = this.textCollection['EnterPassword']
     this.tag("UsernameText").text.text = this.textCollection['EnterUsername']
+    this.tag('ConnectButton').color = 0xff444444
+    this.tag('ErrorText').visible = false
   }
 }
