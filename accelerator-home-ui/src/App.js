@@ -2100,10 +2100,10 @@ export default class App extends Router.App {
 					this.LOG("Energy Saver is enabled — going to DEEP_SLEEP on power key press");
 					inactivityHelper._enterSleepMode();
 				} else {
-					this.LOG("current powerState is ON so setting power state to LIGHT_SLEEP : " + JSON.stringify(res.previousState));
+					this.LOG("current powerState is ON so setting power state to LIGHT_SLEEP");
 					appApi.setPowerState(PowerState.POWER_STATE_LIGHT_SLEEP).then(result => {
 						if (result) {
-							this.LOG("successfully set powerstate to: " + JSON.stringify(res.previousState))
+							this.LOG("successfully set powerstate to LIGHT_SLEEP")
 							return result
 						}
 					})
