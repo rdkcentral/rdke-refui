@@ -406,20 +406,23 @@ export default class App extends Router.App {
 				this.tag("Volume").onVolumeMute();
 			} else {
 				this.LOG("muting on some app")
+				this.tag("Volume").onVolumeMute();
 			}
 			return true
 		} else if (key.keyCode == Keymap.AudioVolumeUp && !Router.isNavigating()) {
 			if (GLOBALS.topmostApp === GLOBALS.selfclientAppName) {
 				this.tag("Volume").onVolumeKeyUp();
 			} else {
-				this.LOG("muting on some app")
+				this.LOG("increasing volume on some app")
+				this.tag("Volume").onVolumeKeyUp();
 			}
 			return true
 		} else if (key.keyCode == Keymap.AudioVolumeDown && !Router.isNavigating()) {
 			if (GLOBALS.topmostApp === GLOBALS.selfclientAppName) {
 				this.tag("Volume").onVolumeKeyDown();
 			} else {
-				this.LOG("muting on some app")
+				this.LOG("decreasing volume on some app")
+				this.tag("Volume").onVolumeKeyDown();
 			}
 			return true
 		} else {
