@@ -138,7 +138,7 @@ export default class AppInfoPage extends Lightning.Component {
                         y: 30,
                         mount: 0.5,
                         text: {
-                            text: 'OK',
+                            text: Language.translate('OK'),
                             fontSize: 32,
                             fontFace: CONFIG.language.font,
                             textColor: 0xFF000000
