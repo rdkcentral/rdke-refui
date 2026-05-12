@@ -288,5 +288,12 @@
   "Installed Apps":"Aplicaciones instaladas",
   "Launch":"Iniciar",
   "Uninstall":"Desinstalar",
-  "Update":"Actualizar"
+  "Update":"Actualizar",
+  "Connect to the Application Catalog":"Conectar al Catálogo de Aplicaciones",
+  "No Apps Installed":"No hay aplicaciones instaladas",
+  "Manage your installed applications":"Administre sus aplicaciones instaladas",
+  "Are you sure you want to uninstall this app?":"¿Está seguro de que desea desinstalar esta aplicación?",
+  "Press OK to enter Username":"Presione OK para ingresar el nombre de usuario",
+  "Username":"Nombre de usuario",
+  "Downloading":"Descargando"
 }
