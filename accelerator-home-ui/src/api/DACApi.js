@@ -17,7 +17,7 @@
  * limitations under the License.
  **/
 
-import { Language } from '@lightningjs/sdk'
+import { Language } from '@lightningjs/sdk';
 import DownloadManager from './DownloadManagerApi';
 import PackageManager from './PackageManagerApi';
 import AppManager from './AppManagerApi';
