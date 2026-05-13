@@ -17,6 +17,7 @@
  * limitations under the License.
  **/
 
+import { Language } from '@lightningjs/sdk';
 import DownloadManager from './DownloadManagerApi';
 import PackageManager from './PackageManagerApi';
 import AppManager from './AppManagerApi';
@@ -130,7 +131,7 @@ async function downloadAndInstall(pkg, downloadedSize, totalSize, progress) {
       await DownloadManager.get().download(downloadURL, (downloadId, percent, failReason) => {
         if (!failReason) {
           if (percent !== 100) {
-            progress((downloadedSize + pkg.size * percent / 100) / totalSize, "Downloading");
+            progress((downloadedSize + pkg.size * percent / 100) / totalSize, Language.translate("Downloading"));
           } else {
             resolve(downloadId);
           }

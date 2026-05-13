@@ -91,7 +91,7 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
       },
       Username: {
         x: 190,
-        y: 176,
+        y: 170,
         text: {
           text: Language.translate("Username") + ": ",
           fontFace: CONFIG.language.font,
@@ -99,12 +99,12 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
         },
       },
       UsernameBox: {
-        x: 400,
+        x: 425,
         y: 160,
-        texture: Lightning.Tools.getRoundRect(1273, 58, 0, 3, 0xffffffff, false)
+        texture: Lightning.Tools.getRoundRect(1248, 58, 0, 3, 0xffffffff, false)
       },
       UsernameText: {
-        x: 420,
+        x: 445,
         y: 170,
         zIndex: 2,
         text: {
@@ -112,14 +112,14 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
           fontSize: 25,
           fontFace: CONFIG.language.font,
           textColor: 0xffffffff,
-          wordWrapWidth: 1300,
+          wordWrapWidth: 1225,
           wordWrap: false,
           textOverflow: 'ellipsis',
         },
       },
       Password: {
         x: 190,
-        y: 246,
+        y: 240,
         text: {
           text: Language.translate("Password") + ":",
           fontFace: CONFIG.language.font,
@@ -127,12 +127,12 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
         },
       },
       PasswordBox: {
-        x: 400,
+        x: 425,
         y: 230,
-        texture: Lightning.Tools.getRoundRect(1273, 58, 0, 3, 0xffffffff, false)
+        texture: Lightning.Tools.getRoundRect(1248, 58, 0, 3, 0xffffffff, false)
       },
       Pwd: {
-        x: 420,
+        x: 445,
         y: 240,
         zIndex: 2,
         text: {
@@ -140,7 +140,7 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
           fontSize: 25,
           fontFace: CONFIG.language.font,
           textColor: 0xffffffff,
-          wordWrapWidth: 1300,
+          wordWrapWidth: 1225,
           wordWrap: false,
           textOverflow: 'ellipsis',
         },
@@ -171,7 +171,7 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
       },
       Keyboard: {
         y: 420,
-        x: 400,
+        x: 425,
         type: Keyboard,
         visible: false,
         zIndex: 2,
@@ -229,7 +229,7 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
     return [
       class EnterUsername extends this {
         $enter() {
-          this.tag('UsernameBox').texture = Lightning.Tools.getRoundRect(1273, 58, 0, 3, CONFIG.theme.hex, false)
+          this.tag('UsernameBox').texture = Lightning.Tools.getRoundRect(1248, 58, 0, 3, CONFIG.theme.hex, false)
         }
         _handleDown() {
           this._setState("EnterPassword");
@@ -241,12 +241,12 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
           this.tag("Keyboard").visible = true
         }
         $exit() {
-          this.tag('UsernameBox').texture = Lightning.Tools.getRoundRect(1273, 58, 0, 3, 0xffffffff, false)
+          this.tag('UsernameBox').texture = Lightning.Tools.getRoundRect(1248, 58, 0, 3, 0xffffffff, false)
         }
       },
       class EnterPassword extends this {
         $enter() {
-          this.tag('PasswordBox').texture = Lightning.Tools.getRoundRect(1273, 58, 0, 3, CONFIG.theme.hex, false)
+          this.tag('PasswordBox').texture = Lightning.Tools.getRoundRect(1248, 58, 0, 3, CONFIG.theme.hex, false)
         }
         _handleUp() {
           this._setState("EnterUsername");
@@ -264,12 +264,12 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
           this.tag('Pwd').text.textColor = 0xffffffff
         }
         $exit() {
-          this.tag('PasswordBox').texture = Lightning.Tools.getRoundRect(1273, 58, 0, 3, 0xffffffff, false);
+          this.tag('PasswordBox').texture = Lightning.Tools.getRoundRect(1248, 58, 0, 3, 0xffffffff, false);
         }
       },
       class PasswordSwitchState extends this {
         $enter() {
-          this.tag("PasswordBox").texture = Lightning.Tools.getRoundRect(1273, 58, 0, 3, CONFIG.theme.hex, false)
+          this.tag("PasswordBox").texture = Lightning.Tools.getRoundRect(1248, 58, 0, 3, CONFIG.theme.hex, false)
           this.tag('ShowPassword').text.textColor = CONFIG.theme.hex
         }
         _handleDown() {
@@ -298,7 +298,7 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
         }
 
         $exit() {
-          this.tag("PasswordBox").texture = Lightning.Tools.getRoundRect(1273, 58, 0, 3, 0xffffffff, false)
+          this.tag("PasswordBox").texture = Lightning.Tools.getRoundRect(1248, 58, 0, 3, 0xffffffff, false)
           this.tag('ShowPassword').text.textColor = 0xffffffff
         }
       },
