@@ -572,6 +572,18 @@ export default class AppApi {
           }
           url += "launch=" + launchLocation
         }
+        if(launchLocation === "menu"&& !url.includes("utm_content=")){
+          if (!url.endsWith("&")) {
+            url += "&"
+          }
+          url += "utm_content=m"
+        }
+        if(launchLocation === "guide"&& !url.includes("utm_content=")){
+          if (!url.endsWith("&")) {
+            url += "&"
+          }
+          url += "utm_content=g"
+        }
         if ((launchLocation === "voice") && !url.includes("vs=")) {
           if (!url.endsWith("&")) {
             url += "&"
