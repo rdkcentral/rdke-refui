@@ -945,7 +945,7 @@ export default class App extends Router.App {
 					"modifiers": [],
 					"client": data.callsign
 				}).then(res => {
-					this.WARN(JSON.stringify(res))
+					console.warn(JSON.stringify(res))
 				})
       }
       if(data.success)
@@ -976,9 +976,9 @@ export default class App extends Router.App {
         RDKShellApis.removeKeyIntercept({
 					"keyCode": 115,
 					"modifiers": [],
-					"client": data.callsign
+					"client": data.client
 				}).then(res => {
-					this.WARN(JSON.stringify(res))
+					console.warn(JSON.stringify(res))
 				})
       }
       if ((GLOBALS.topmostApp === data.client)
@@ -1021,9 +1021,9 @@ export default class App extends Router.App {
           RDKShellApis.removeKeyIntercept({
 					"keyCode": 115,
 					"modifiers": [],
-					"client": data.callsign
+					"client": data.client
 				}).then(res => {
-					this.WARN(JSON.stringify(res))
+					console.warn(JSON.stringify(res))
 				})
         }
         if ((GLOBALS.topmostApp === data.client)
@@ -1045,9 +1045,9 @@ export default class App extends Router.App {
         RDKShellApis.removeKeyIntercept({
 					"keyCode": 115,
 					"modifiers": [],
-					"client": data.callsign
+					"client": data.client
 				}).then(res => {
-					this.WARN(JSON.stringify(res))
+					console.warn(JSON.stringify(res))
 				})
       }
       if ((GLOBALS.topmostApp === data.client)
@@ -1070,9 +1070,9 @@ export default class App extends Router.App {
         RDKShellApis.removeKeyIntercept({
 					"keyCode": 115,
 					"modifiers": [],
-					"client": data.callsign
+					"client": data.client
 				}).then(res => {
-					this.WARN(JSON.stringify(res))
+					console.warn(JSON.stringify(res))
 				})
       }
       if ((GLOBALS.topmostApp === data.client)
