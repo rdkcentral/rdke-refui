@@ -572,17 +572,12 @@ export default class AppApi {
           }
           url += "launch=" + launchLocation
         }
-        if(launchLocation === "menu"&& !url.includes("utm_content=")){
+        const utmContentMap = { "menu": "m", "guide": "g" }
+        if (utmContentMap[launchLocation] && !url.includes("utm_content=")) {
           if (!url.endsWith("&")) {
             url += "&"
           }
-          url += "utm_content=m"
-        }
-        if(launchLocation === "guide"&& !url.includes("utm_content=")){
-          if (!url.endsWith("&")) {
-            url += "&"
-          }
-          url += "utm_content=g"
+          url += "utm_content=" + utmContentMap[launchLocation]
         }
         if ((launchLocation === "voice") && !url.includes("vs=")) {
           if (!url.endsWith("&")) {

@@ -940,6 +940,13 @@ export default class App extends Router.App {
         RDKShellApis.removeKeyIntercept({"keyCode": 173, "modifiers": [],"client": data.callsign }).then(res=>{console.warn(JSON.stringify(res))})
         RDKShellApis.removeKeyIntercept({"keyCode": 174, "modifiers": [],"client": data.callsign }).then(res=>{console.warn(JSON.stringify(res))})
         RDKShellApis.removeKeyIntercept({"keyCode": 175, "modifiers": [],"client": data.callsign }).then(res=>{console.warn(JSON.stringify(res))})
+        RDKShellApis.removeKeyIntercept({
+					"keyCode": 115,
+					"modifiers": [],
+					"client": data.callsign
+				}).then(res => {
+					this.WARN(JSON.stringify(res))
+				})
       }
       if(data.success)
       {
@@ -955,7 +962,7 @@ export default class App extends Router.App {
       console.warn("[RDKSHELLEVT] onRestored:", data);
       if(data.callsign.startsWith('YouTube') )
         {
-          RDKShellApis.addKeyIntercepts({"intercepts":[{"keys":[{"keyCode":173,"modifiers":[]},{"keyCode":174,"modifiers":[]},{"keyCode":175,"modifiers":[]}],"client": data.callsign }]}).then(res=>{console.warn(JSON.stringify(res))})
+          RDKShellApis.addKeyIntercepts({"intercepts":[{"keys":[{"keyCode":173,"modifiers":[]},{"keyCode":174,"modifiers":[]},{"keyCode":175,"modifiers":[]}, {"keyCode": 115,"modifiers": []}],"client": data.callsign }]}).then(res=>{console.warn(JSON.stringify(res))})
         }
     });
     thunder.on('org.rdk.RDKShell', 'onDestroyed', data => {
@@ -966,6 +973,13 @@ export default class App extends Router.App {
         RDKShellApis.removeKeyIntercept({"keyCode": 173, "modifiers": [],"client": data.client }).then(res=>{console.warn(JSON.stringify(res))})
         RDKShellApis.removeKeyIntercept({"keyCode": 174, "modifiers": [],"client": data.client }).then(res=>{console.warn(JSON.stringify(res))})
         RDKShellApis.removeKeyIntercept({"keyCode": 175, "modifiers": [],"client": data.client }).then(res=>{console.warn(JSON.stringify(res))})
+        RDKShellApis.removeKeyIntercept({
+					"keyCode": 115,
+					"modifiers": [],
+					"client": data.callsign
+				}).then(res => {
+					this.WARN(JSON.stringify(res))
+				})
       }
       if ((GLOBALS.topmostApp === data.client)
         && (GLOBALS.selfClientName === "ResidentApp"|| GLOBALS.selfClientName === "FireboltMainApp-refui")) {
@@ -981,7 +995,7 @@ export default class App extends Router.App {
         // Change (Tracked TopMost) UI's visibility to false only for other apps.
         if(data.client.startsWith('YouTube') )
         {
-          RDKShellApis.addKeyIntercepts({"intercepts":[{"keys":[{"keyCode":173,"modifiers":[]},{"keyCode":174,"modifiers":[]},{"keyCode":175,"modifiers":[]}],"client": data.client }]}).then(res=>{console.warn(JSON.stringify(res))})
+          RDKShellApis.addKeyIntercepts({"intercepts":[{"keys":[{"keyCode":173,"modifiers":[]},{"keyCode":174,"modifiers":[]},{"keyCode":175,"modifiers":[]}, {"keyCode": 115,"modifiers": []}],"client": data.client }]}).then(res=>{console.warn(JSON.stringify(res))})
         }
         if ((data.client != GLOBALS.selfClientName)
           && ((GLOBALS.topmostApp === "ResidentApp")
@@ -1004,6 +1018,13 @@ export default class App extends Router.App {
           RDKShellApis.removeKeyIntercept({"keyCode": 173, "modifiers": [],"client": data.client }).then(res=>{console.warn(JSON.stringify(res))})
           RDKShellApis.removeKeyIntercept({"keyCode": 174, "modifiers": [],"client": data.client }).then(res=>{console.warn(JSON.stringify(res))})
           RDKShellApis.removeKeyIntercept({"keyCode": 175, "modifiers": [],"client": data.client }).then(res=>{console.warn(JSON.stringify(res))})
+          RDKShellApis.removeKeyIntercept({
+					"keyCode": 115,
+					"modifiers": [],
+					"client": data.callsign
+				}).then(res => {
+					this.WARN(JSON.stringify(res))
+				})
         }
         if ((GLOBALS.topmostApp === data.client)
           && (GLOBALS.selfClientName === "ResidentApp")) {
@@ -1021,6 +1042,13 @@ export default class App extends Router.App {
         RDKShellApis.removeKeyIntercept({"keyCode": 173, "modifiers": [],"client": data.client }).then(res=>{console.warn(JSON.stringify(res))})
         RDKShellApis.removeKeyIntercept({"keyCode": 174, "modifiers": [],"client": data.client }).then(res=>{console.warn(JSON.stringify(res))})
         RDKShellApis.removeKeyIntercept({"keyCode": 175, "modifiers": [],"client": data.client }).then(res=>{console.warn(JSON.stringify(res))})
+        RDKShellApis.removeKeyIntercept({
+					"keyCode": 115,
+					"modifiers": [],
+					"client": data.callsign
+				}).then(res => {
+					this.WARN(JSON.stringify(res))
+				})
       }
       if ((GLOBALS.topmostApp === data.client)
         && (GLOBALS.selfClientName === "ResidentApp" || GLOBALS.selfClientName === "FireboltMainApp-refui")) {
@@ -1039,6 +1067,13 @@ export default class App extends Router.App {
         RDKShellApis.removeKeyIntercept({"keyCode": 173, "modifiers": [],"client": data.client }).then(res=>{console.warn(JSON.stringify(res))})
         RDKShellApis.removeKeyIntercept({"keyCode": 174, "modifiers": [],"client": data.client }).then(res=>{console.warn(JSON.stringify(res))})
         RDKShellApis.removeKeyIntercept({"keyCode": 175, "modifiers": [],"client": data.client }).then(res=>{console.warn(JSON.stringify(res))})
+        RDKShellApis.removeKeyIntercept({
+					"keyCode": 115,
+					"modifiers": [],
+					"client": data.callsign
+				}).then(res => {
+					this.WARN(JSON.stringify(res))
+				})
       }
       if ((GLOBALS.topmostApp === data.client)
         && (GLOBALS.selfClientName === "ResidentApp" || GLOBALS.selfClientName === "FireboltMainApp-refui")) {
@@ -1381,14 +1416,19 @@ export default class App extends Router.App {
         }
         Router.navigate('menu');
       }
-      else if (notification.powerState === "LIGHT_SLEEP" && notification.currentPowerState === "DEEP_SLEEP") {
-        console.log("onSystemPowerStateChanged Notification: Received DEEP_SLEEP to LIGHT_SLEEP power state change notification, ignoring it.")
-        appApi.setPowerState("ON").then(res => {
-          console.log("onSystemPowerStateChanged Notification: Successfully set power state back to ON after receiving DEEP_SLEEP to LIGHT_SLEEP transition notification, response: " + JSON.stringify(res));
-        }).catch(err => {
-          console.error("onSystemPowerStateChanged Notification: Failed to set power state back to ON after receiving DEEP_SLEEP to LIGHT_SLEEP transition notification, error: " + JSON.stringify(err));
-        })
-      }
+      // else if (notification.powerState === "LIGHT_SLEEP" && notification.currentPowerState === "DEEP_SLEEP") {
+      //   // DEEP_SLEEP → LIGHT_SLEEP is not a valid user-facing state; force the device fully ON.
+      //   console.log("onSystemPowerStateChanged Notification: Received DEEP_SLEEP to LIGHT_SLEEP transition, setting power state to ON.")
+      //   appApi.setPowerState("ON").then(res => {
+      //     if (res && res.success) {
+      //       console.log("onSystemPowerStateChanged Notification: Successfully set power state to ON after DEEP_SLEEP to LIGHT_SLEEP transition, response: " + JSON.stringify(res));
+      //     } else {
+      //       console.error("onSystemPowerStateChanged Notification: Failed to set power state to ON after DEEP_SLEEP to LIGHT_SLEEP transition, response: " + JSON.stringify(res));
+      //     }
+      //   }).catch(err => {
+      //     console.error("onSystemPowerStateChanged Notification: Exception while setting power state to ON after DEEP_SLEEP to LIGHT_SLEEP transition, error: " + JSON.stringify(err));
+      //   })
+      // }
       else if (notification.powerState === "ON" && notification.currentPowerState !== "ON") {
         //TURNING ON THE DEVICE
         Storage.remove('SLEEPING')
