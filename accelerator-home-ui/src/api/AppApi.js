@@ -572,6 +572,13 @@ export default class AppApi {
           }
           url += "launch=" + launchLocation
         }
+        const utmContentMap = { "menu": "m", "guide": "g" }
+        if (utmContentMap[launchLocation] && !url.includes("utm_content=")) {
+          if (!url.endsWith("&")) {
+            url += "&"
+          }
+          url += "utm_content=" + utmContentMap[launchLocation]
+        }
         if ((launchLocation === "voice") && !url.includes("vs=")) {
           if (!url.endsWith("&")) {
             url += "&"
