@@ -1416,19 +1416,19 @@ export default class App extends Router.App {
         }
         Router.navigate('menu');
       }
-      // else if (notification.powerState === "LIGHT_SLEEP" && notification.currentPowerState === "DEEP_SLEEP") {
-      //   // DEEP_SLEEP → LIGHT_SLEEP is not a valid user-facing state; force the device fully ON.
-      //   console.log("onSystemPowerStateChanged Notification: Received DEEP_SLEEP to LIGHT_SLEEP transition, setting power state to ON.")
-      //   appApi.setPowerState("ON").then(res => {
-      //     if (res && res.success) {
-      //       console.log("onSystemPowerStateChanged Notification: Successfully set power state to ON after DEEP_SLEEP to LIGHT_SLEEP transition, response: " + JSON.stringify(res));
-      //     } else {
-      //       console.error("onSystemPowerStateChanged Notification: Failed to set power state to ON after DEEP_SLEEP to LIGHT_SLEEP transition, response: " + JSON.stringify(res));
-      //     }
-      //   }).catch(err => {
-      //     console.error("onSystemPowerStateChanged Notification: Exception while setting power state to ON after DEEP_SLEEP to LIGHT_SLEEP transition, error: " + JSON.stringify(err));
-      //   })
-      // }
+      else if (notification.powerState === "LIGHT_SLEEP" && notification.currentPowerState === "DEEP_SLEEP") {
+        // DEEP_SLEEP → LIGHT_SLEEP is not a valid user-facing state; force the device fully ON.
+        console.log("onSystemPowerStateChanged Notification: Received DEEP_SLEEP to LIGHT_SLEEP transition, setting power state to ON.")
+        appApi.setPowerState("ON").then(res => {
+          if (res && res.success) {
+            console.log("onSystemPowerStateChanged Notification: Successfully set power state to ON after DEEP_SLEEP to LIGHT_SLEEP transition, response: " + JSON.stringify(res));
+          } else {
+            console.error("onSystemPowerStateChanged Notification: Failed to set power state to ON after DEEP_SLEEP to LIGHT_SLEEP transition, response: " + JSON.stringify(res));
+          }
+        }).catch(err => {
+          console.error("onSystemPowerStateChanged Notification: Exception while setting power state to ON after DEEP_SLEEP to LIGHT_SLEEP transition, error: " + JSON.stringify(err));
+        })
+      }
       else if (notification.powerState === "ON" && notification.currentPowerState !== "ON") {
         //TURNING ON THE DEVICE
         Storage.remove('SLEEPING')
