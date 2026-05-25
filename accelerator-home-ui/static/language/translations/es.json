@@ -295,5 +295,9 @@
   "Are you sure you want to uninstall this app?":"¿Está seguro de que desea desinstalar esta aplicación?",
   "Press OK to enter Username":"Presione OK para ingresar el nombre de usuario",
   "Username":"Nombre de usuario",
-  "Downloading":"Descargando"
+  "Downloading":"Descargando",
+  "Authentication failed. Please try again.":"Autenticación fallida. Por favor, inténtelo de nuevo.",
+  "Login failed. Please try again.":"Error de inicio de sesión. Por favor, inténtelo de nuevo.",
+  "Exit":"Salir",
+  "App Catalog URL":"URL del catálogo de aplicaciones"
 }

@@ -114,7 +114,7 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
         },
       },
       CatalogURLValue: {
-        x: 450,
+        x: 525,
         y: 148,
         text: {
           text: Language.translate("Loading..."),
@@ -128,7 +128,7 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
       },
       Username: {
         x: 190,
-        y: 236,
+        y: 230,
         text: {
           text: Language.translate("Username") + ": ",
           fontFace: CONFIG.language.font,
@@ -136,12 +136,12 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
         },
       },
       UsernameBox: {
-        x: 400,
+        x: 425,
         y: 220,
-        texture: Lightning.Tools.getRoundRect(1273, 58, 0, 3, 0xffffffff, false)
+        texture: Lightning.Tools.getRoundRect(1248, 58, 0, 3, 0xffffffff, false)
       },
       UsernameText: {
-        x: 420,
+        x: 445,
         y: 230,
         zIndex: 2,
         text: {
@@ -156,7 +156,7 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
       },
       Password: {
         x: 190,
-        y: 306,
+        y: 300,
         text: {
           text: Language.translate("Password") + ":",
           fontFace: CONFIG.language.font,
@@ -164,12 +164,12 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
         },
       },
       PasswordBox: {
-        x: 400,
+        x: 425,
         y: 290,
-        texture: Lightning.Tools.getRoundRect(1273, 58, 0, 3, 0xffffffff, false)
+        texture: Lightning.Tools.getRoundRect(1248, 58, 0, 3, 0xffffffff, false)
       },
       Pwd: {
-        x: 420,
+        x: 445,
         y: 300,
         zIndex: 2,
         text: {
@@ -251,7 +251,7 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
       PasswrdSwitch: {
         h: 45,
         w: 66.9,
-        x: 1642,
+        x: 1617,
         y: 320,
         zIndex: 2,
         type: PasswordSwitch,
@@ -259,7 +259,7 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
         visible: true
       },
       ShowPassword: {
-        x: 1365,
+        x: 1350,
         y: 302,
         w: 300,
         h: 75,
