@@ -299,5 +299,11 @@
   "Authentication failed. Please try again.":"Autenticación fallida. Por favor, inténtelo de nuevo.",
   "Login failed. Please try again.":"Error de inicio de sesión. Por favor, inténtelo de nuevo.",
   "Exit":"Salir",
-  "App Catalog URL":"URL del catálogo de aplicaciones"
+  "App Catalog URL":"URL del catálogo de aplicaciones",
+  "Loading...":"Cargando...",
+  "Authenticating...":"Autenticando...",
+  "Unknown":"Desconocido",
+  "Unavailable":"No disponible",
+  "App Catalog URL is not set":"La URL del catálogo de aplicaciones no está configurada",
+  "Unable to retrieve App Catalog URL":"No se pudo obtener la URL del catálogo de aplicaciones"
 }

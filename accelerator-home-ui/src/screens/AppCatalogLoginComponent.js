@@ -41,14 +41,17 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
     this.hidePasswd = true
     this.star = ""
     this.catalogURL = null
+    this.catalogURLState = 'loading'
     this.tag("Keyboard").visible = false
     getCatalogServerURL()
       .then(url => {
         this.catalogURL = url || null
+        this.catalogURLState = url ? 'loaded' : 'not-set'
         this.tag('CatalogURLValue').text.text = url || Language.translate('Unknown')
       })
       .catch(() => {
         this.catalogURL = null
+        this.catalogURLState = 'error'
         this.tag('CatalogURLValue').text.text = Language.translate('Unavailable')
       })
   }
@@ -64,7 +67,7 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
   }
 
   _updateConnectButtonColor() {
-    if (this.textCollection && this.textCollection['EnterUsername']) {
+    if (this.textCollection && this.textCollection['EnterUsername'] && this.textCollection['EnterPassword']) {
       this.tag('ConnectButton').color = 0xff00aa00
     } else {
       this.tag('ConnectButton').color = 0xff444444
@@ -227,19 +230,6 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
           },
         },
       },
-      ErrorText: {
-        x: 960,
-        y: 475,
-        mountX: 0.5,
-        visible: false,
-        text: {
-          text: Language.translate('Login failed. Please try again.'),
-          fontFace: CONFIG.language.font,
-          fontSize: 22,
-          textColor: 0xffff4444,
-          textAlign: 'center',
-        },
-      },
       Keyboard: {
         y: 480,
         x: 400,
@@ -400,7 +390,6 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
     this.tag("UsernameText").text.text = Language.translate("Press OK to enter Username");
     this.tag('UsernameText').text.textColor = 0xff808080
     this.tag('Pwd').text.textColor = 0xff808080
-    this.tag('ErrorText').visible = false
     this._updateConnectButtonColor()
   }
 
@@ -522,7 +511,7 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
       },
       class ConnectButton extends this {
         $enter() {
-          this.tag('ConnectButton').color = this.textCollection['EnterUsername']
+          this.tag('ConnectButton').color = (this.textCollection['EnterUsername'] && this.textCollection['EnterPassword'])
             ? 0xff00cc00
             : 0xff444444
         }
@@ -540,12 +529,20 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
         }
         _handleEnter() {
           this.tag('Keyboard').visible = false
-          if (!this.catalogURL) {
+          if (this.catalogURLState === 'loading') {
+            this.LOG('Catalog URL still loading, please wait...')
+            return
+          }
+          if (this.catalogURLState === 'error' || this.catalogURLState === 'not-set' || !this.catalogURL) {
             this._setState('URLNotSetPopup')
             return
           }
           if (!this.textCollection['EnterUsername']) {
             this._setState('EnterUsername')
+            return
+          }
+          if (!this.textCollection['EnterPassword']) {
+            this._setState('EnterPassword')
             return
           }
           this._setState('Authenticating')
@@ -591,6 +588,10 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
         $enter() {
           this.tag('URLNotSetPopup').visible = true
           this.tag('URLNotSetPopup.OkButton').color = CONFIG.theme.hex
+          const msg = this.catalogURLState === 'error'
+            ? Language.translate('Unable to retrieve App Catalog URL')
+            : Language.translate('App Catalog URL is not set')
+          this.tag('URLNotSetPopup.PopupText').text.text = msg
         }
         $exit() {
           this.tag('URLNotSetPopup').visible = false
@@ -664,7 +665,6 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
             this.tag(this.element).text.text = this.encrypt() ? this.star : this.textCollection[this.prevState];
           }
           this._updateConnectButtonColor()
-          this.tag('ErrorText').visible = false
         }
         _handleUp() {
           this._setState(this.prevState)
@@ -683,6 +683,5 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
     this.tag("Pwd").text.text = this.textCollection['EnterPassword']
     this.tag("UsernameText").text.text = this.textCollection['EnterUsername']
     this.tag('ConnectButton').color = 0xff444444
-    this.tag('ErrorText').visible = false
   }
 }
