@@ -131,12 +131,8 @@
   "App Catalog URL is not set":"App Catalog URL is not set",
   "Unable to retrieve App Catalog URL":"Unable to retrieve App Catalog URL",
   "Authentication failed. Please try again.":"Authentication failed. Please try again.",
-  "Login failed. Please try again.":"Login failed. Please try again.",
   "Connect to the Application Catalog":"Connect to the Application Catalog",
   "App Catalog URL":"App Catalog URL",
   "Press OK to enter Username":"Press OK to enter Username",
-  "Press OK to enter Password":"Press OK to enter Password",
-  "Show Password":"Show Password",
-  "Connect":"Connect",
   "Exit":"Exit"
 }

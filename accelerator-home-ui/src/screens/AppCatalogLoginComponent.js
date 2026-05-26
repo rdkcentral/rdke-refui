@@ -42,6 +42,7 @@ export default class AppCatalogLoginComponent extends Lightning.Component {
     this.star = ""
     this.catalogURL = null
     this.catalogURLState = 'loading'
+    this.tag('CatalogURLValue').text.text = Language.translate('Loading...')
     this.tag("Keyboard").visible = false
     getCatalogServerURL()
       .then(url => {
