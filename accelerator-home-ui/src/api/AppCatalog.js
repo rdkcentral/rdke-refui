@@ -420,15 +420,12 @@ export async function login(user, pass) {
 
   try {
     const loginResponse = await handler.login(user, pass);
-    if (!loginResponse) {
-      console.warn('Login failed: no response from server');
+    if (!loginResponse || typeof loginResponse.expiresIn !== 'number') {
+      console.warn('Login failed: invalid response from server', loginResponse);
       return false;
     }
     appCatalogHandler = handler;
-    const expiresIn = Number(loginResponse.expiresIn);
-    if (Number.isFinite(expiresIn) && expiresIn > 0) {
-      handler.scheduleRefresh({ ...loginResponse, expiresIn }, () => handleAuthExpired(handler));
-    }
+    handler.scheduleRefresh(loginResponse, () => handleAuthExpired(handler));
     eventTarget.dispatchEvent(new RefreshNeeded());
     return true;
   } catch (err) {
