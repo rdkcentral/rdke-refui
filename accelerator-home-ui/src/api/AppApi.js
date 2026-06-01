@@ -572,7 +572,7 @@ export default class AppApi {
           }
           url += "launch=" + launchLocation
         }
-        const utmContentMap = { "menu": "m", "guide": "g", "remote": "r" }
+        const utmContentMap = { "menu": "m", "guide": "g", "remote": "r","voice": "v", "dial": "d", "launcher": "l" }
         if (utmContentMap[launchLocation]) {
           if (!url.includes("utm_content=")) {
             if (!url.endsWith("&")) {
