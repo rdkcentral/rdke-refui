@@ -572,12 +572,20 @@ export default class AppApi {
           }
           url += "launch=" + launchLocation
         }
-        const utmContentMap = { "menu": "m", "guide": "g" }
-        if (utmContentMap[launchLocation] && !url.includes("utm_content=")) {
-          if (!url.endsWith("&")) {
-            url += "&"
+        const utmContentMap = { "menu": "m", "guide": "g", "remote": "r" }
+        if (utmContentMap[launchLocation]) {
+          if (!url.includes("utm_content=")) {
+            if (!url.endsWith("&")) {
+              url += "&"
+            }
+            url += "utm_content=" + utmContentMap[launchLocation]
           }
-          url += "utm_content=" + utmContentMap[launchLocation]
+          if (!url.includes("utm_medium=")) {
+            if (!url.endsWith("&")) {
+              url += "&"
+            }
+            url += "utm_medium=ytb"
+          }
         }
         if ((launchLocation === "voice") && !url.includes("vs=")) {
           if (!url.endsWith("&")) {
