@@ -172,6 +172,11 @@ export default class RebootConfirmationScreen extends Lightning.Component {
             this.ERR("Error clearing localStorage: " + JSON.stringify(err));
         }
         await appApi.clearCache().catch(err => { this.ERR("clearCache error: " + JSON.stringify(err)) })
+        // Ensure Warehouse plugin is activated before calling resetDevice to avoid race with _firstEnable().
+        let warehouseStatus = await this.AppApi.checkStatus(Warehouse.get().callsign).catch(err => { this.ERR("FactoryReset: checkStatus error: " + JSON.stringify(err)); return null; });
+        if (warehouseStatus && warehouseStatus[0] && warehouseStatus[0].status !== 'activated') {
+            await Warehouse.get().activate().catch(err => { this.ERR("FactoryReset: warehouse activation failed before resetDevice: " + JSON.stringify(err)); });
+        }
         await Warehouse.get().resetDevice().catch(err => { this.ERR("resetDevice" + JSON.stringify(err)) });
     }
 
