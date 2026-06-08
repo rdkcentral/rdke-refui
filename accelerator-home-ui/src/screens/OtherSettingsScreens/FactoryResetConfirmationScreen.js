@@ -18,14 +18,12 @@
  **/
 import { Lightning, Utils, Router, Language } from '@lightningjs/sdk'
 import AppApi from '../../api/AppApi'
-import BluetoothApi from '../../api/BluetoothApi'
 import { CONFIG,GLOBALS } from '../../Config/Config'
 import AlexaApi from '../../api/AlexaApi.js';
 import RCApi from '../../api/RemoteControl'
 import Warehouse from '../../api/WarehouseApis.js'
 
 const appApi = new AppApi()
-const _btApi = new BluetoothApi()
 
 /**
  * Class for Reboot Confirmation Screen.
