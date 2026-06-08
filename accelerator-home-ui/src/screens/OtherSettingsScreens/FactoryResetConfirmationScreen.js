@@ -159,7 +159,7 @@ export default class RebootConfirmationScreen extends Lightning.Component {
         AlexaApi.get().disableSmartScreen();
         if(GLOBALS.AlexaAvsstatus){AlexaApi.get().resetAVSCredentials();}
         AlexaApi.get().setAlexaAuthStatus("AlexaAuthPending");
-        await RCApi.get().activate().then(()=>{ RCApi.get().factoryReset(); }).catch(err => this.ERR("error while resetting remote control" + JSON.stringify(err)));
+        await RCApi.get().activate().then(()=> RCApi.get().factoryReset()).catch(err => this.ERR("error while resetting remote control" + JSON.stringify(err)));
         let rsactivitytime = await appApi.resetInactivityTime().catch(err => { this.ERR("resetInactivityTime" + JSON.stringify(err)) });
         if (rsactivitytime != null) { this.LOG("rsactivitytime" + JSON.stringify(rsactivitytime)) }
         try {
