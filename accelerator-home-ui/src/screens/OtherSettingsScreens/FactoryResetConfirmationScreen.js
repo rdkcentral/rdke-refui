@@ -127,7 +127,7 @@ export default class RebootConfirmationScreen extends Lightning.Component {
     }
 
     _init() {
-        this.AppApi = new AppApi()
+        
     }
 
     _focus() {
@@ -141,12 +141,18 @@ export default class RebootConfirmationScreen extends Lightning.Component {
 
     _firstEnable() {
         appApi.checkStatus(Warehouse.get().callsign).then(resp => {
-            this.LOG("FactoryReset: warehouse plugin status : " + JSON.stringify(resp[0].status));
-            if (resp[0].status != 'activated') {
-                Warehouse.get().activate().catch(err => {
-                    this.ERR("FactoryReset: warehouse plugin activation failed; feature may not work." + JSON.stringify(err));
-                });
+            if (resp && resp[0] && resp[0].status) {
+                this.LOG("FactoryReset: warehouse plugin status : " + JSON.stringify(resp[0].status));
+                if (resp[0].status != 'activated') {
+                    Warehouse.get().activate().catch(err => {
+                        this.ERR("FactoryReset: warehouse plugin activation failed; feature may not work." + JSON.stringify(err));
+                    });
+                }
+            } else {
+                this.WARN("FactoryReset: unexpected checkStatus response: " + JSON.stringify(resp));
             }
+        }).catch(err => {
+            this.ERR("FactoryReset: checkStatus failed: " + JSON.stringify(err));
         });
     }
 
