@@ -20,8 +20,6 @@ import { Lightning, Utils, Router, Language } from '@lightningjs/sdk'
 import AppApi from '../../api/AppApi'
 import BluetoothApi from '../../api/BluetoothApi'
 import { CONFIG,GLOBALS } from '../../Config/Config'
-import WiFi from '../../api/WifiApi'
-import NetworkManager from '../../api/NetworkManagerAPI.js'
 import AlexaApi from '../../api/AlexaApi.js';
 import RCApi from '../../api/RemoteControl'
 import Warehouse from '../../api/WarehouseApis.js'
@@ -126,10 +124,6 @@ export default class RebootConfirmationScreen extends Lightning.Component {
         }
     }
 
-    _init() {
-        
-    }
-
     _focus() {
         this._setState('Confirm')
         this.loadingAnimation = this.tag('Loader').animation({
@@ -141,9 +135,9 @@ export default class RebootConfirmationScreen extends Lightning.Component {
 
     _firstEnable() {
         appApi.checkStatus(Warehouse.get().callsign).then(resp => {
-            if (resp && resp[0] && resp[0].status) {
-                this.LOG("FactoryReset: warehouse plugin status : " + JSON.stringify(resp[0].status));
-                if (resp[0].status != 'activated') {
+            if (resp && resp[0] && resp[0].state) {
+                this.LOG("FactoryReset: warehouse plugin state: " + JSON.stringify(resp[0].state));
+                if (resp[0].state !== 'activated') {
                     Warehouse.get().activate().catch(err => {
                         this.ERR("FactoryReset: warehouse plugin activation failed; feature may not work." + JSON.stringify(err));
                     });
@@ -180,8 +174,12 @@ export default class RebootConfirmationScreen extends Lightning.Component {
         await appApi.clearCache().catch(err => { this.ERR("clearCache error: " + JSON.stringify(err)) })
         // Ensure Warehouse plugin is activated before calling resetDevice to avoid race with _firstEnable().
         let warehouseStatus = await appApi.checkStatus(Warehouse.get().callsign).catch(err => { this.ERR("FactoryReset: checkStatus error: " + JSON.stringify(err)); return null; });
-        if (warehouseStatus && warehouseStatus[0] && warehouseStatus[0].status !== 'activated') {
-            await Warehouse.get().activate().catch(err => { this.ERR("FactoryReset: warehouse activation failed before resetDevice: " + JSON.stringify(err)); });
+        if (warehouseStatus && warehouseStatus[0] && warehouseStatus[0].state) {
+            if (warehouseStatus[0].state !== 'activated') {
+                await Warehouse.get().activate().catch(err => { this.ERR("FactoryReset: warehouse activation failed before resetDevice: " + JSON.stringify(err)); });
+            }
+        } else {
+            this.WARN("FactoryReset: unexpected checkStatus response before resetDevice: " + JSON.stringify(warehouseStatus));
         }
         await Warehouse.get().resetDevice().catch(err => {
             this.ERR("resetDevice" + JSON.stringify(err));
