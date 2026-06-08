@@ -143,8 +143,6 @@ export default class RebootConfirmationScreen extends Lightning.Component {
             } else {
                 this.WARN("FactoryReset: unexpected checkStatus response: " + JSON.stringify(resp));
             }
-        }).catch(err => {
-            this.ERR("FactoryReset: checkStatus failed: " + JSON.stringify(err));
         });
     }
 
