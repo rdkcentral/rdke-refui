@@ -127,8 +127,11 @@ export default class Warehouse {
       this.INFO(this.callsign + " resetDevice params: " + JSON.stringify(params));
       this.thunder.call(this.callsign, 'resetDevice', params).then(result => {
         this.INFO(this.callsign + " resetDevice result: " + JSON.stringify(result))
-        if (result.success)resolve(result.success)
-        reject(false)
+        if (result.success) {
+          resolve(result.success)
+        } else {
+          reject(false)
+        }
       }).catch(err => {
         this.ERR(this.callsign + " resetDevice error: " + JSON.stringify(err))
         Metrics.error(Metrics.ErrorType.OTHER,"WarehouseApiError", "Error while Thunder warehouseApi resetDevice "+JSON.stringify(err), false, null)

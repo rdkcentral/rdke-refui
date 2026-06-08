@@ -170,14 +170,26 @@ export default class RebootConfirmationScreen extends Lightning.Component {
             this.ERR("Error clearing localStorage: " + JSON.stringify(err));
         }
         await appApi.clearCache().catch(err => { this.ERR("clearCache error: " + JSON.stringify(err)) })
-        // Ensure Warehouse plugin is activated before calling resetDevice to avoid race with _firstEnable().
-        let warehouseStatus = await appApi.checkStatus(Warehouse.get().callsign).catch(err => { this.ERR("FactoryReset: checkStatus error: " + JSON.stringify(err)); return null; });
-        if (warehouseStatus && warehouseStatus[0] && warehouseStatus[0].state) {
-            if (warehouseStatus[0].state !== 'activated') {
-                await Warehouse.get().activate().catch(err => { this.ERR("FactoryReset: warehouse activation failed before resetDevice: " + JSON.stringify(err)); });
+        // Ensure Warehouse plugin is activated before calling resetDevice.
+        let warehouseStatus = await appApi.checkStatus(Warehouse.get().callsign);
+        let isActivated = warehouseStatus && warehouseStatus[0] && warehouseStatus[0].state === 'activated';
+        if (!isActivated) {
+            if (!warehouseStatus || !warehouseStatus[0] || !warehouseStatus[0].state) {
+                this.WARN("FactoryReset: checkStatus returned unexpected response: " + JSON.stringify(warehouseStatus) + "; attempting activation.");
+            } else {
+                this.LOG("FactoryReset: Warehouse state is '" + warehouseStatus[0].state + "'; activating.");
             }
-        } else {
-            this.WARN("FactoryReset: unexpected checkStatus response before resetDevice: " + JSON.stringify(warehouseStatus));
+            let activationSuccess = await Warehouse.get().activate().then(() => true).catch(err => {
+                this.ERR("FactoryReset: warehouse activation failed: " + JSON.stringify(err));
+                return false;
+            });
+            if (!activationSuccess) {
+                this.ERR("FactoryReset: cannot proceed without Warehouse plugin.");
+                this.tag("Title").text.text = Language.translate("Factory Reset");
+                this.tag("Info").text.text = Language.translate("Factory Reset failed. Please try again.");
+                this._setState('Confirm');
+                return;
+            }
         }
         await Warehouse.get().resetDevice().catch(err => {
             this.ERR("resetDevice" + JSON.stringify(err));
