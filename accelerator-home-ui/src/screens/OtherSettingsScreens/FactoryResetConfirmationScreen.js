@@ -161,53 +161,9 @@ export default class RebootConfirmationScreen extends Lightning.Component {
         AlexaApi.get().disableSmartScreen();
         if(GLOBALS.AlexaAvsstatus){AlexaApi.get().resetAVSCredentials();}
         AlexaApi.get().setAlexaAuthStatus("AlexaAuthPending");
-        let getsuportedmode = await appApi.getSupportedAudioPorts();
-        for (let i = 0; i < getsuportedmode.supportedAudioPorts.length; i++) {
-            if(getsuportedmode.supportedAudioPorts[i] != 'SPDIF0'){
-                let rsbass = await appApi.resetBassEnhancer(getsuportedmode.supportedAudioPorts[i]).catch((err) =>{ this.ERR("resetBassEnhancer" + JSON.stringify(err)) });
-                if (rsbass.success != true) { this.LOG("resetBassEnhancer" + JSON.stringify(rsbass)) }
-                let rsDialog = await appApi.resetDialogEnhancement(getsuportedmode.supportedAudioPorts[i]).catch((err) =>{ this.ERR("resetDialogEnhancement" + JSON.stringify(err)) })
-                if (rsDialog.success != true) { this.LOG("resetDialogEnhancement" + JSON.stringify(rsDialog)) }
-                let rsVirtualizer = await appApi.resetSurroundVirtualizer(getsuportedmode.supportedAudioPorts[i]).catch(err =>{ this.ERR("resetSurroundVirtualizer" + JSON.stringify(err)) });
-                if (rsVirtualizer.success != true) { this.LOG("resetSurroundVirtualizer" + JSON.stringify(rsVirtualizer)) }
-                let rsvolumelvel = await appApi.resetVolumeLeveller(getsuportedmode.supportedAudioPorts[i]).catch(err =>{ this.ERR("resetVolumeLeveller" + JSON.stringify(err)) });
-                if (rsvolumelvel.success != true) { this.LOG("resetVolumeLeveller" + JSON.stringify(rsvolumelvel)) }
-            }
-        }
-        let btActivate = await _btApi.btactivate().then(result => this.LOG("Btactivate" + JSON.stringify(result))).catch(err=> this.ERR("error while activating bluetooth"))
-        let getPairedDevices = await _btApi.getPairedDevices().then(res=>res).catch(err => 0)
-        this.LOG("getpairedDevices" + JSON.stringify(getPairedDevices))
-        for(let i=0 ; i<getPairedDevices.length; i++){
-            if(getPairedDevices.length > 0){
-                let btunpair =  await _btApi.unpair(getPairedDevices[i].deviceId).catch(err => { this.ERR("btunpair" + JSON.stringify(err)) });
-                if(btunpair.success != true){ this.LOG("btunpair" + JSON.stringify(btunpair)) }
-            }
-        }
         await RCApi.get().activate().then(()=>{ RCApi.get().factoryReset(); }).catch(err => this.ERR("error while resetting remote control" + JSON.stringify(err)));
-        let contollerStat = await appApi.checkStatus("Monitor")
-        for(let i=0; i< contollerStat[0].configuration.observables.length; i++){
-            let monitorstat = await appApi.monitorStatus(contollerStat[0].configuration.observables[i].callsign).catch(err =>{ this.ERR("monitorStatus" + JSON.stringify(err)) });
-            if(monitorstat.length < 0){ this.LOG("monitorStatus" + JSON.stringify(monitorstat)) }
-        }
-        await Warehouse.get().internalReset().catch(err => { this.ERR("internalReset" + JSON.stringify(err)) });
-        await Warehouse.get().isClean().catch(err => { this.ERR("isClean" + JSON.stringify(err)) });
-        await Warehouse.get().lightReset().catch(err => { this.ERR("lightReset" + JSON.stringify(err))});
-        await Warehouse.get().resetDevice().catch(err => { this.ERR("resetDevice" + JSON.stringify(err)) });
-
         let rsactivitytime = await appApi.resetInactivityTime().catch(err => { this.ERR("resetInactivityTime" + JSON.stringify(err)) });
         if (rsactivitytime != null) { this.LOG("rsactivitytime" + JSON.stringify(rsactivitytime)) }
-        let GetKnownSSIDs = await NetworkManager.GetKnownSSIDs().then((ssids)=>{ssids}).catch(err =>  { console.error("GetKnownssids",err) });
-        let clearSSID =false
-        if(GetKnownSSIDs && GetKnownSSIDs.length>0)
-        {
-            for(let i=0;i<GetKnownSSIDs.length;i++)
-            {
-                {clearSSID= await NetworkManager.RemoveKnownSSID(ssids[i]).catch(err =>  { this.ERR("clearSSID" + JSON.stringify(err)) });}
-            }
-        }
-        if (clearSSID != true)  { this.LOG("clearSSID" + JSON.stringify(clearSSID)) }
-        let wifidisconnect = await NetworkManager.WiFiDisconnect().catch(err =>{ this.ERR("wifidisconnect" + JSON.stringify(err)) });
-        if (wifidisconnect.success != true) { this.LOG("wifidisconnect" + JSON.stringify(wifidisconnect)) }
         try {
             localStorage.clear();
             this.LOG("localStorage cleared successfully");
@@ -216,7 +172,7 @@ export default class RebootConfirmationScreen extends Lightning.Component {
             this.ERR("Error clearing localStorage: " + JSON.stringify(err));
         }
         await appApi.clearCache().catch(err => { this.ERR("clearCache error: " + JSON.stringify(err)) })
-        await appApi.reboot("User Trigger").then(result => { this.LOG('device rebooting' + JSON.stringify(result))})
+        await Warehouse.get().resetDevice().catch(err => { this.ERR("resetDevice" + JSON.stringify(err)) });
     }
 
     static _states() {

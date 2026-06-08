@@ -121,7 +121,7 @@ export default class Warehouse {
     })
   }
 
-  resetDevice(resetType = "USERFACTORY", suppressReboot = "false") {
+  resetDevice(resetType = "WAREHOUSE_CLEAR", suppressReboot = "false") {
     return new Promise((resolve, reject) => {
       let params = { resetType: resetType, suppressReboot: suppressReboot}
       this.INFO(this.callsign + " resetDevice params: " + JSON.stringify(params));
