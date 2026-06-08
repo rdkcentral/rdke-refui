@@ -140,7 +140,7 @@ export default class RebootConfirmationScreen extends Lightning.Component {
 
 
     _firstEnable() {
-        this.AppApi.checkStatus(Warehouse.get().callsign).then(resp => {
+        appApi.checkStatus(Warehouse.get().callsign).then(resp => {
             this.LOG("FactoryReset: warehouse plugin status : " + JSON.stringify(resp[0].status));
             if (resp[0].status != 'activated') {
                 Warehouse.get().activate().catch(err => {
@@ -173,11 +173,16 @@ export default class RebootConfirmationScreen extends Lightning.Component {
         }
         await appApi.clearCache().catch(err => { this.ERR("clearCache error: " + JSON.stringify(err)) })
         // Ensure Warehouse plugin is activated before calling resetDevice to avoid race with _firstEnable().
-        let warehouseStatus = await this.AppApi.checkStatus(Warehouse.get().callsign).catch(err => { this.ERR("FactoryReset: checkStatus error: " + JSON.stringify(err)); return null; });
+        let warehouseStatus = await appApi.checkStatus(Warehouse.get().callsign).catch(err => { this.ERR("FactoryReset: checkStatus error: " + JSON.stringify(err)); return null; });
         if (warehouseStatus && warehouseStatus[0] && warehouseStatus[0].status !== 'activated') {
             await Warehouse.get().activate().catch(err => { this.ERR("FactoryReset: warehouse activation failed before resetDevice: " + JSON.stringify(err)); });
         }
-        await Warehouse.get().resetDevice().catch(err => { this.ERR("resetDevice" + JSON.stringify(err)) });
+        await Warehouse.get().resetDevice().catch(err => {
+            this.ERR("resetDevice" + JSON.stringify(err));
+            this.tag("Title").text.text = Language.translate("Factory Reset");
+            this.tag("Info").text.text = Language.translate("Factory Reset failed. Please try again.");
+            this._setState('Confirm');
+        });
     }
 
     static _states() {
