@@ -1,6 +1,7 @@
 {
   "en" : "English",
   "es": "Spanish",
+  "OK": "OK",
   "home": "Home",
   "click to launch": "click to launch",
   "wifi": "WiFi Settings",
@@ -123,5 +124,16 @@
   "INVALID_CREDENTIALS - The connection failed due to invalid credentials":"",
   "NO_SSID - The SSID does not exist":"",
   "UNKNOWN - Any other error":"",
-  "Configuring as default":"Configuring as default"
+  "Configuring as default":"Configuring as default",
+  "Loading...":"Loading...",
+  "Authenticating...":"Authenticating...",
+  "Unknown":"Unknown",
+  "Unavailable":"Unavailable",
+  "App Catalog URL is not set":"App Catalog URL is not set",
+  "Unable to retrieve App Catalog URL":"Unable to retrieve App Catalog URL",
+  "Authentication failed. Please try again.":"Authentication failed. Please try again.",
+  "Connect to the Application Catalog":"Connect to the Application Catalog",
+  "App Catalog URL":"App Catalog URL",
+  "Press OK to enter Username":"Press OK to enter Username",
+  "Exit":"Exit"
 }

@@ -447,3 +447,7 @@ export async function makeDownloadURL(url) {
   const handler = appCatalogHandler;
   return callAndHandleAuthExpired(handler, () => handler.makeDownloadURL(url));
 }
+
+export async function getCatalogServerURL() {
+  return getServerURL();
+}
