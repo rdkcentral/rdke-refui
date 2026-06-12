@@ -811,8 +811,8 @@ export default class App extends Router.App {
 		this._updateLanguageToDefault()
 		// Initialize plugins using the abstraction
 		this._activatePlugin(
-			"org.rdk.PackageManagerRDKEMS",
-			"PackageManagerRDKEMS",
+			"org.rdk.AppPackageManager",
+			"AppPackageManager",
 			() => packagemangerRdkems.activate()
 		);
 
