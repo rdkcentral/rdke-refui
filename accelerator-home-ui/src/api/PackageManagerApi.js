@@ -36,6 +36,7 @@ export default class PackageManager {
   constructor() {
     this.thunder = ThunderJS(CONFIG.thunderConfig);
     this.callsign = 'org.rdk.AppPackageManager';
+    this.metricsComponent = 'PackageManager';
     this.INFO = console.info;
     this.LOG = console.log;
     this.ERR = console.error;
@@ -45,7 +46,7 @@ export default class PackageManager {
     const err = new ThunderError(thunderCall, thunderErr);
     const errString = err.toString();
     this.ERR(errString);
-    Metrics.error(Metrics.ErrorType.OTHER, this.callsign, errString, false, null)
+    Metrics.error(Metrics.ErrorType.OTHER, this.metricsComponent, errString, false, null)
 
     throw err;
   }
