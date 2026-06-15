@@ -98,7 +98,7 @@ var miracast = new Miracast();
 var inactivityHelper = new InactivityHelper();
 const SLEEP_STATE = 'SLEEPING';
 var powermanagerapi = new PowerManagerApi();
-var packagemangerRdkems = new PackageManager();
+var packageManager = new PackageManager();
 
 export default class App extends Router.App {
 
@@ -813,7 +813,7 @@ export default class App extends Router.App {
 		this._activatePlugin(
 			"org.rdk.AppPackageManager",
 			"AppPackageManager",
-			() => packagemangerRdkems.activate()
+			() => packageManager.activate()
 		);
 
 		this._activatePlugin(
