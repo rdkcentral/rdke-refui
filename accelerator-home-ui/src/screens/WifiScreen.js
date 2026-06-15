@@ -338,7 +338,7 @@ export default class WiFiScreen extends Lightning.Component {
             if (ssids.length) { // ispaired.result == 0 means saved SSID.
                 if (ssids.includes(selectedssid.ssid) ) {
                   this.LOG("WiFiScreen getPairedSSID matched with current selection; try auto connect.")
-                  NetworkManager.WiFiConnect(true).then(() => {
+                  NetworkManager.ConnectToKnownSSID(selectedssid.ssid).then(() => {
                     NetworkManager.thunder.on('onWiFiStateChange', notification => {
                       if (notification.state === WiFiState.WIFI_STATE_SSID_CHANGED || notification.state === WiFiState.WIFI_STATE_INVALID_CREDENTIALS || notification.state === WiFiState.WIFI_STATE_AUTHENTICATION_FAILED) {
                         NetworkManager.RemoveKnownSSID(selectedssid.ssid).then(() => {

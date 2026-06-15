@@ -122,6 +122,7 @@ class NetworkManager {
   Trace =(endpoint,ipversion,noOfRequest,guid) => this.thunderCall('Trace', 'Trace', {endpoint,ipversion,noOfRequest,guid}, 'result');
   StartWiFiScan =(frequency) => this.thunderCall('StartWiFiScan', 'StartWiFiScan', {frequency});
   StopWiFiScan =() => this.thunderCall('StopWiFiScan', 'StopWiFiScan', {});
+  ConnectToKnownSSID =(ssid) => this.thunderCall('ConnectToKnownSSID', 'ConnectToKnownSSID', {"ssid":ssid}, 'result');
   GetKnownSSIDs =() => this.thunderCall('GetKnownSSIDs', 'GetKnownSSIDs', {}, 'ssids');
   AddToKnownSSIDs =(ssid,passphrase,securityMode) => this.thunderCall('AddToKnownSSIDs', 'AddToKnownSSIDs', {"ssid":ssid,"passphrase":passphrase,"securityMode":securityMode});
   RemoveKnownSSID =(ssid) => this.thunderCall('RemoveKnownSSID', 'RemoveKnownSSID', {"ssid":ssid});
