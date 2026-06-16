@@ -416,7 +416,7 @@ export default class NetworkList extends Lightning.Component {
       if (notification.state === WiFiState.CONNECTED && ! GLOBALS.Setup) {
         this.tag('Info').text.text = Language.translate("Connection successful");
         Registry.setTimeout(() => {
-          Router.navigate('menu')
+          Router.navigate('AlexaLoginScreen')
         }, 2000)
       } else if (notification.state === WiFiState.CONNECTING || notification.state === WiFiState.PAIRING) {
         this.tag('Info').text.text = Language.translate("Connecting, please wait");

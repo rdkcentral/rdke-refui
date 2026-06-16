@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-import { Lightning, Router, Language } from '@lightningjs/sdk'
+import { Lightning, Router, Language, Storage } from '@lightningjs/sdk'
 import AppApi from '../api/AppApi'
 import { CONFIG } from '../Config/Config'
 import AlexaApi from '../api/AlexaApi'
@@ -44,7 +44,7 @@ export default class AlexaConfirmationScreen extends Lightning.Component {
                     y: 0,
                     mountX: 0.5,
                     text: {
-                        text: Language.translate("Exit Alexa"),
+                        text: Language.translate("Skip YouTube Audio Sharing"),
                         fontFace: CONFIG.language.font,
                         fontSize: 40,
                         textColor: CONFIG.theme.hex,
@@ -58,7 +58,7 @@ export default class AlexaConfirmationScreen extends Lightning.Component {
                     y: 125,
                     mountX: 0.5,
                     text: {
-                        text: Language.translate("Alexa will be disabled, are you sure to exit?"),
+                        text: Language.translate("Continue without enabling YouTube Audio Sharing?"),
                         fontFace: CONFIG.language.font,
                         fontSize: 25,
                     },
@@ -118,7 +118,7 @@ export default class AlexaConfirmationScreen extends Lightning.Component {
                     this._focus()
                 }
                 _handleEnter() {
-                    AlexaApi.get().setAlexaAuthStatus("AlexaUserDenied")
+                    Storage.set("ytAudioSharingConsent", false)
                     Router.navigate("menu")
                 }
                 _handleRight() {

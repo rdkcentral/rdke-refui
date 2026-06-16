@@ -37,6 +37,7 @@ export default class TopPanel extends Lightning.Component {
           // zIndex: 2,
           y: 87,
           src: Utils.asset('/images/topPanel/microphone.png'),
+          color: 0xffffffff,
           w: 50,
           h: 50,
         },
@@ -136,6 +137,16 @@ export default class TopPanel extends Lightning.Component {
     }
     else {
       this.tag('Mic').src = Utils.asset('/images/topPanel/microphone.png')
+    }
+  }
+
+  setVoiceConfigured(configured) {
+    if (configured) {
+      this.tag('Mic').src = Utils.asset('/images/topPanel/mic_focused.png')
+      this.tag('Mic').color = 0xff14b8a6
+    } else {
+      this.tag('Mic').src = Utils.asset('/images/topPanel/microphone.png')
+      this.tag('Mic').color = 0xffffffff
     }
   }
 

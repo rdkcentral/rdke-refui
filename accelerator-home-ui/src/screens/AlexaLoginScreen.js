@@ -16,9 +16,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-import { Language, Lightning, Router, Utils } from '@lightningjs/sdk'
+import { Language, Lightning, Router, Storage, Utils } from '@lightningjs/sdk'
 import { CONFIG } from '../Config/Config'
-import AlexaApi from '../api/AlexaApi'
+import VoiceApi from '../api/VoiceApi'
+
+const voiceApi = new VoiceApi();
 
 export default class AlexaLoginScreen extends Lightning.Component {
     static _template() {
@@ -48,22 +50,22 @@ export default class AlexaLoginScreen extends Lightning.Component {
                 x: 1050,
                 y: 250,
                 Logo: {
-                    h: 220,
-                    w: 442,
+                    h: 255,
+                    w: 454,
                     x: 135,
                     mountX: 1,
                     y: 200,
                     mountY: 0.5,
-                    src: Utils.asset('/images/apps/AlexaBadge.png'),
+                    src: Utils.asset('/images/apps/App_YouTube_454x255.png'),
                 },
                 Description: {
                     x: -70,
                     y: 380,
                     mount: 0.5,
                     text: {
-                        text: Language.translate('Alexa welcome message'),
+                        text: Language.translate('YouTube Voice Consent'),
                         fontFace: CONFIG.language.font,
-                        fontSize: 32,
+                        fontSize: 30,
                         textColor: 0xFFF9F9F9,
                         fontStyle: 'normal',
                         wordWrap: true,
@@ -72,15 +74,15 @@ export default class AlexaLoginScreen extends Lightning.Component {
                 },
                 SignInButton:{
                     x: -100,
-                    y: 500, mountX: 0.5, h: 60, w: 350, rect: true, color: 0xFFFFFFFF,
+                    y: 500, mountX: 0.5, h: 60, w: 500, rect: true, color: 0xFFFFFFFF,
                     Title: {
-                        x: 180,
+                        x: 250,
                         y: 30,
                         mount: 0.5,
                         text: {
-                            text: Language.translate('Sign in with')+" Amazon",
+                            text: Language.translate('I Agree'),
                             fontFace: CONFIG.language.font,
-                            fontSize: 28,
+                            fontSize: 26,
                             textColor: 0xFF000000,
                             fontStyle: 'normal'
                         },
@@ -132,10 +134,15 @@ export default class AlexaLoginScreen extends Lightning.Component {
                     })
                 }
                 async _handleEnter() {
-                    if(AlexaApi.get().checkAlexaAuthStatus() != "AlexaUserDenied"){
-                        console.log("Code coming from AlexaLoginScreen")
-                        Router.navigate("CodeScreen")
-                    }
+                    console.log("Consent accepted on AlexaLoginScreen. Enabling YT AOWS endpoint.")
+                    Storage.set("ytAudioSharingConsent", true)
+					voiceApi.configureCobatlAOWSEndPoint().catch(err => {
+						console.error("Error enabling YouTube Audio Sharing endpoint: " + JSON.stringify(err));
+					}).then(() => {
+						voiceApi.configureVoice({ "enable": true })
+					}).then(() => {
+						Router.navigate("menu")
+					})
                  }
                 _handleUp(){
                     this._setState("BackButton")
@@ -186,7 +193,3 @@ export default class AlexaLoginScreen extends Lightning.Component {
         ]
     }
 }
-
-
-
-
