@@ -43,6 +43,28 @@ export default class VoiceMicOverlay extends Lightning.Component {
         color: CONFIG.theme.hex,
         shader: { type: Lightning.shaders.RoundedRectangle, radius: 50 },
       },
+      Glow: {
+        w: 128,
+        h: 128,
+        mount: 0.5,
+        rect: true,
+        alpha: 0,
+        color: CONFIG.theme.hex,
+        shader: { type: Lightning.shaders.RoundedRectangle, radius: 64 },
+      },
+      Orbit: {
+        mount: 0.5,
+        alpha: 0,
+        Dot: {
+          x: 70,
+          w: 10,
+          h: 10,
+          mount: 0.5,
+          rect: true,
+          color: CONFIG.theme.hex,
+          shader: { type: Lightning.shaders.RoundedRectangle, radius: 5 },
+        },
+      },
       // Mic icon centred on the ring
       MicIcon: {
         w: 56,
@@ -54,24 +76,97 @@ export default class VoiceMicOverlay extends Lightning.Component {
   }
 
   _init() {
-    this._pulseAnimation = this.tag('Ring').animation({
-      duration: 1,
+    this._sessionColor = CONFIG.theme.hex
+    this._streamColor = 0xFF1E90FF
+
+    this._sessionPulseAnimation = this.tag('Ring').animation({
+      duration: 1.2,
       repeat: -1,
       stopMethod: 'immediate',
       actions: [
-        { p: 'scale', v: { 0: 1, 0.5: 1.25, 1: 1 } },
-        { p: 'alpha', v: { 0: 1, 0.5: 0.5, 1: 1 } },
+        { p: 'scale', v: { 0: 1, 0.5: 1.14, 1: 1 } },
+        { p: 'alpha', v: { 0: 1, 0.5: 0.72, 1: 1 } },
+      ],
+    })
+
+    this._streamPulseAnimation = this.tag('Ring').animation({
+      duration: 0.55,
+      repeat: -1,
+      stopMethod: 'immediate',
+      actions: [
+        { p: 'scale', v: { 0: 1, 0.45: 1.28, 1: 1 } },
+        { p: 'alpha', v: { 0: 1, 0.45: 0.45, 1: 1 } },
+      ],
+    })
+
+    this._glowAnimation = this.tag('Glow').animation({
+      duration: 0.9,
+      repeat: -1,
+      stopMethod: 'immediate',
+      actions: [
+        { p: 'scale', v: { 0: 0.92, 0.5: 1.12, 1: 0.92 } },
+        { p: 'alpha', v: { 0: 0.12, 0.5: 0.28, 1: 0.12 } },
+      ],
+    })
+
+    this._orbitAnimation = this.tag('Orbit').animation({
+      duration: 1.2,
+      repeat: -1,
+      stopMethod: 'immediate',
+      actions: [
+        { p: 'rotation', v: { 0: 0, 1: 6.283 } },
+        { p: 'alpha', v: { 0: 0.3, 0.5: 0.9, 1: 0.3 } },
       ],
     })
   }
 
   show() {
-    this._pulseAnimation.start()
     this.patch({ smooth: { alpha: [1, { duration: 0.3 }] } })
   }
 
+  _applyColor(color) {
+    this.tag('Ring').color = color
+    this.tag('Glow').color = color
+    this.tag('Orbit.Dot').color = color
+  }
+
+  showSession() {
+    this._applyColor(this._sessionColor)
+    this._streamPulseAnimation.stop()
+    this._glowAnimation.stop()
+    this._orbitAnimation.stop()
+    this.tag('Glow').alpha = 0
+    this.tag('Orbit').alpha = 0
+    this._sessionPulseAnimation.start()
+    this.show()
+  }
+
+  setStreaming(isStreaming) {
+    if (isStreaming) {
+      this._applyColor(this._streamColor)
+      this._sessionPulseAnimation.stop()
+      this._streamPulseAnimation.start()
+      this._glowAnimation.start()
+      this._orbitAnimation.start()
+      return
+    }
+
+    this._applyColor(this._sessionColor)
+    this._streamPulseAnimation.stop()
+    this._glowAnimation.stop()
+    this._orbitAnimation.stop()
+    this.tag('Glow').alpha = 0
+    this.tag('Orbit').alpha = 0
+    this._sessionPulseAnimation.start()
+  }
+
   hide() {
-    this._pulseAnimation.stop()
+    this._sessionPulseAnimation.stop()
+    this._streamPulseAnimation.stop()
+    this._glowAnimation.stop()
+    this._orbitAnimation.stop()
+    this.tag('Glow').alpha = 0
+    this.tag('Orbit').alpha = 0
     this.patch({ smooth: { alpha: [0, { duration: 0.3 }] } })
   }
 }

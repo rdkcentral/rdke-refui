@@ -88,6 +88,84 @@ export default class AlexaLoginScreen extends Lightning.Component {
                         },
                     },
                     visible: true,
+                },
+                Legend: {
+                    x: -100,
+                    y: 620,
+                    mountX: 0.5,
+                    Title: {
+                        x: -165,
+                        y: 0,
+                        text: {
+                            text: Language.translate('Voice Activity Legend'),
+                            fontFace: CONFIG.language.font,
+                            fontSize: 22,
+                            textColor: 0xFFE0E0E0,
+                            fontStyle: 'normal'
+                        },
+                    },
+                    SessionState: {
+                        y: 42,
+                        Icon: {
+                            x: -148,
+                            y: 14,
+                            Ring: {
+                                w: 30,
+                                h: 30,
+                                mount: 0.5,
+                                rect: true,
+                                color: CONFIG.theme.hex,
+                                shader: { type: Lightning.shaders.RoundedRectangle, radius: 15 },
+                            },
+                            Mic: {
+                                w: 17,
+                                h: 17,
+                                mount: 0.5,
+                                src: Utils.asset('images/topPanel/microphone.png'),
+                            },
+                        },
+                        Label: {
+                            x: -130,
+                            text: {
+                                text: Language.translate('In a voice session'),
+                                fontFace: CONFIG.language.font,
+                                fontSize: 20,
+                                textColor: 0xFFF9F9F9,
+                                fontStyle: 'normal'
+                            },
+                        }
+                    },
+                    StreamState: {
+                        y: 78,
+                        Icon: {
+                            x: -148,
+                            y: 14,
+                            Ring: {
+                                w: 30,
+                                h: 30,
+                                mount: 0.5,
+                                rect: true,
+                                color: 0xFF1E90FF,
+                                shader: { type: Lightning.shaders.RoundedRectangle, radius: 15 },
+                            },
+                            Mic: {
+                                w: 17,
+                                h: 17,
+                                mount: 0.5,
+                                src: Utils.asset('images/topPanel/microphone.png'),
+                            },
+                        },
+                        Label: {
+                            x: -130,
+                            text: {
+                                text: Language.translate('Voice streaming'),
+                                fontFace: CONFIG.language.font,
+                                fontSize: 20,
+                                textColor: 0xFFF9F9F9,
+                                fontStyle: 'normal'
+                            },
+                        }
+                    }
                 }
             }
         }
@@ -97,6 +175,28 @@ export default class AlexaLoginScreen extends Lightning.Component {
     }
 
     _init(){
+        this._sessionLegendAnim = this.tag('Legend.SessionState.Icon.Ring').animation({
+            duration: 1.2,
+            repeat: -1,
+            stopMethod: 'immediate',
+            actions: [
+                { p: 'scale', v: { 0: 1, 0.5: 1.14, 1: 1 } },
+                { p: 'alpha', v: { 0: 1, 0.5: 0.72, 1: 1 } },
+            ],
+        })
+
+        this._streamLegendAnim = this.tag('Legend.StreamState.Icon.Ring').animation({
+            duration: 0.55,
+            repeat: -1,
+            stopMethod: 'immediate',
+            actions: [
+                { p: 'scale', v: { 0: 1, 0.45: 1.28, 1: 1 } },
+                { p: 'alpha', v: { 0: 1, 0.45: 0.45, 1: 1 } },
+            ],
+        })
+
+        this._sessionLegendAnim.start()
+        this._streamLegendAnim.start()
     }
     _focus() {
         this._setState('SignInButton')

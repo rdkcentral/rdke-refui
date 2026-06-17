@@ -499,6 +499,10 @@ export default class MainView extends Lightning.Component {
     this.internetConnectivity = false;
   }
 
+  _active() {
+    this.widgets.menu.tag('TopPanel').setVoiceConfigured((GLOBALS._voiceEnabled === true)? true : false)
+  }
+
   scroll(val) {
     this.tag('MainView').patch({
       smooth: {

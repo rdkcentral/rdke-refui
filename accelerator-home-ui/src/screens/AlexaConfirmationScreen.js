@@ -44,7 +44,7 @@ export default class AlexaConfirmationScreen extends Lightning.Component {
                     y: 0,
                     mountX: 0.5,
                     text: {
-                        text: Language.translate("Skip YouTube Audio Sharing"),
+                        text: Language.translate("Skip Voice Sharing with YouTube"),
                         fontFace: CONFIG.language.font,
                         fontSize: 40,
                         textColor: CONFIG.theme.hex,
@@ -58,7 +58,7 @@ export default class AlexaConfirmationScreen extends Lightning.Component {
                     y: 125,
                     mountX: 0.5,
                     text: {
-                        text: Language.translate("Continue without enabling YouTube Audio Sharing?"),
+                        text: Language.translate("Continue without enabling Voice Sharing with YouTube?"),
                         fontFace: CONFIG.language.font,
                         fontSize: 25,
                     },

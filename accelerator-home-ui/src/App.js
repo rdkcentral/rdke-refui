@@ -2004,7 +2004,7 @@ export default class App extends Router.App {
   _registerVoiceApiEvents() {
     let self = this;
     voiceApi.registerEvent('onServerMessage', notification => {
-      console.log('Arun App onServerMessage: ' + JSON.stringify(notification));
+      console.log('App onServerMessage: ' + JSON.stringify(notification));
       if (Storage.get("appSwitchingInProgress")) {
         console.warn("App is appSwitchingInProgress? " + Storage.get("appSwitchingInProgress") + ", dropping processing the server notification.");
         return;
@@ -2338,14 +2338,14 @@ export default class App extends Router.App {
       }
     });
     voiceApi.registerEvent('onSessionBegin', notification => {
-      console.log('Arun App onSessionBegin: ' + JSON.stringify(notification));
+      console.log('App onSessionBegin: ' + JSON.stringify(notification));
       this.$hideImage(0);
       if (GLOBALS.topmostApp === GLOBALS.selfClientName) {
-        this.tag('VoiceMicOverlay').show();
+        this.tag('VoiceMicOverlay').showSession();
       }
     });
     voiceApi.registerEvent('onSessionEnd', notification => {
-      console.log('Arun App onSessionEnd: ' + JSON.stringify(notification));
+      console.log('App onSessionEnd: ' + JSON.stringify(notification));
       this.tag('VoiceMicOverlay').hide();
       if (notification.result === "success" && notification.success.transcription === "User request to disable Alexa") {
         console.warn("App VoiceControl.onSessionEnd got disable Alexa.")
@@ -2360,10 +2360,16 @@ export default class App extends Router.App {
       }
     });
     voiceApi.registerEvent('onStreamBegin', notification => {
-      console.log('Arun App onStreamBegin: ' + JSON.stringify(notification));
+      console.log('App onStreamBegin: ' + JSON.stringify(notification));
+      if (GLOBALS.topmostApp === GLOBALS.selfClientName) {
+        this.tag('VoiceMicOverlay').setStreaming(true);
+      }
     });
     voiceApi.registerEvent('onStreamEnd', notification => {
-      console.log('Arun App onStreamEnd: ' + JSON.stringify(notification));
+      console.log('App onStreamEnd: ' + JSON.stringify(notification));
+      if (GLOBALS.topmostApp === GLOBALS.selfClientName) {
+        this.tag('VoiceMicOverlay').setStreaming(false);
+      }
     });
   }
 
