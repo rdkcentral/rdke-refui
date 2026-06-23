@@ -35,7 +35,8 @@ export default class PackageManager {
 
   constructor() {
     this.thunder = ThunderJS(CONFIG.thunderConfig);
-    this.callsign = 'org.rdk.PackageManagerRDKEMS';
+    this.callsign = 'org.rdk.AppPackageManager';
+    this.metricsComponent = 'PackageManager';
     this.INFO = console.info;
     this.LOG = console.log;
     this.ERR = console.error;
@@ -45,7 +46,7 @@ export default class PackageManager {
     const err = new ThunderError(thunderCall, thunderErr);
     const errString = err.toString();
     this.ERR(errString);
-    Metrics.error(Metrics.ErrorType.OTHER, "PackageManagerRDKEMS", errString, false, null)
+    Metrics.error(Metrics.ErrorType.OTHER, this.metricsComponent, errString, false, null)
 
     throw err;
   }
@@ -54,7 +55,7 @@ export default class PackageManager {
     return this.thunder.Controller.activate(
       { callsign: this.callsign }
     ).then(() => {
-      this.INFO("PackageManagerRDKEMS activated");
+      this.INFO(`${this.callsign} activated`);
       return true;
     }).catch(err => {
       this.handleThunderError(`activate(${this.callsign})`, err);
@@ -65,7 +66,7 @@ export default class PackageManager {
     return this.thunder.Controller.deactivate(
       { callsign: this.callsign }
     ).then(() => {
-      this.INFO("PackageManagerRDKEMS deactivated");
+      this.INFO(`${this.callsign} deactivated`);
       return true;
     }).catch(err => {
       this.handleThunderError(`deactivate(${this.callsign})`, err);

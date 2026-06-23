@@ -121,14 +121,17 @@ export default class Warehouse {
     })
   }
 
-  resetDevice(resetType = "USERFACTORY", suppressReboot = "false") {
+  resetDevice(resetType = "WAREHOUSE_CLEAR", suppressReboot = false) {
     return new Promise((resolve, reject) => {
       let params = { resetType: resetType, suppressReboot: suppressReboot}
       this.INFO(this.callsign + " resetDevice params: " + JSON.stringify(params));
       this.thunder.call(this.callsign, 'resetDevice', params).then(result => {
         this.INFO(this.callsign + " resetDevice result: " + JSON.stringify(result))
-        if (result.success)resolve(result.success)
-        reject(false)
+        if (result.success) {
+          resolve(result.success)
+        } else {
+          reject(false)
+        }
       }).catch(err => {
         this.ERR(this.callsign + " resetDevice error: " + JSON.stringify(err))
         Metrics.error(Metrics.ErrorType.OTHER,"WarehouseApiError", "Error while Thunder warehouseApi resetDevice "+JSON.stringify(err), false, null)

@@ -59,7 +59,6 @@ export var CONFIG = {
     port: 9998,
     versions: {
       default: 1,
-      'org.rdk.System': 2,
       ControlSettings: 2,
       'org.rdk.UsbAccess': 2,
       'org.rdk.DisplaySettings': 2,

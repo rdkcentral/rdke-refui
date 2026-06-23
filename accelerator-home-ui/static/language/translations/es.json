@@ -295,5 +295,14 @@
   "Are you sure you want to uninstall this app?":"¿Está seguro de que desea desinstalar esta aplicación?",
   "Press OK to enter Username":"Presione OK para ingresar el nombre de usuario",
   "Username":"Nombre de usuario",
-  "Downloading":"Descargando"
+  "Downloading":"Descargando",
+  "Authentication failed. Please try again.":"Autenticación fallida. Por favor, inténtelo de nuevo.",
+  "Exit":"Salir",
+  "App Catalog URL":"URL del catálogo de aplicaciones",
+  "Loading...":"Cargando...",
+  "Authenticating...":"Autenticando...",
+  "Unknown":"Desconocido",
+  "Unavailable":"No disponible",
+  "App Catalog URL is not set":"La URL del catálogo de aplicaciones no está configurada",
+  "Unable to retrieve App Catalog URL":"No se pudo obtener la URL del catálogo de aplicaciones"
 }
