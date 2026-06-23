@@ -1088,7 +1088,7 @@ export default class AppApi {
 
       if (appInstanceId) {
         this.LOG('Using appInstanceId: ' + appInstanceId + ' for targetAppId: ' + targetAppId);
-        
+
         // Only setFocus when making the app visible
         if (visible) {
           await RDKWindowManager.get().setFocus(appInstanceId).then(() => {
@@ -1604,7 +1604,7 @@ export default class AppApi {
       })
     })
   }
-  
+
   getRFCConfig(rfcParamsList) {
     return new Promise((resolve, reject) => {
       thunder.call('org.rdk.System', 'getRFCConfig',{"rfcList":[rfcParamsList]}).then(result => {
@@ -1696,10 +1696,18 @@ export default class AppApi {
 
   setVolumeLevel(port, volume) {
     return new Promise((resolve) => {
+      const parsedVolume = Number.parseInt(volume, 10)
+      if (Number.isNaN(parsedVolume)) {
+        this.ERR('AppAPI setVolumeLevel invalid volume:', JSON.stringify(volume))
+        resolve(false)
+        return
+      }
+      const clampedVolume = Math.min(100, Math.max(0, parsedVolume))
+
       thunder
         .call('org.rdk.DisplaySettings', 'setVolumeLevel', {
           audioPort: port,
-          volumeLevel: volume,
+          volumeLevel: clampedVolume,
         })
         .then(result => {
           this.LOG("AppAPI setVolumeLevel :", JSON.stringify(result))
@@ -1927,11 +1935,11 @@ export default class AppApi {
         });
     })
   }
-  
+
   setUILanguage(updatedLanguage) {
     return UserSettingsApi.get().setPresentationLanguage(updatedLanguage)
   }
-  
+
   getUILanguage() {
     return UserSettingsApi.get().getPresentationLanguage(updatedLanguage)
   }

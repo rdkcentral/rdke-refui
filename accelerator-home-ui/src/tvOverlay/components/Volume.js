@@ -160,11 +160,17 @@ export default class Volume extends Lightning.Component {
     }
 
     setVolume = async (val) => {
+        const safeVolume = Number.parseInt(val, 10);
+        if (Number.isNaN(safeVolume)) {
+            this.WARN('Volume setVolume called with invalid value:' + JSON.stringify(val));
+            return false;
+        }
+
         let audioport = await this.getAudioPorts()
         for (let i = 0; i < audioport.length; i++) {
             if ((GLOBALS.deviceType == "IpTv" && audioport[i].startsWith("SPEAKER")) ||
                 (GLOBALS.deviceType != "IpTv" && audioport[i].startsWith("HDMI"))) {
-                await this.appApi.setVolumeLevel(audioport[i], val)
+                await this.appApi.setVolumeLevel(audioport[i], safeVolume)
             }
         }
         return true;
@@ -258,15 +264,20 @@ export default class Volume extends Lightning.Component {
                     (GLOBALS.deviceType != "IpTv" && audioport[i].startsWith("HDMI"))) {
                     this.appApi.getVolumeLevel(audioport[i]).then(async res1 => {
                         await this.updateIcon(audioport[i])
-                        if (res1) {
-                            resolve(parseInt(res1.volumeLevel));
+                        if (res1 && res1.success) {
+                            const level = Number.parseInt(res1.volumeLevel, 10);
+                            resolve(Number.isNaN(level) ? 0 : level);
+                        } else {
+                            resolve(0);
                         }
                     }).catch(err => {
                         this.ERR('Volume getVolumeLevel error:' + JSON.stringify(err, 3, null))
-                        reject(false)
+                        resolve(0)
                     })
+                    return;
                 }
             }
+            resolve(0);
         })
     }
 }
