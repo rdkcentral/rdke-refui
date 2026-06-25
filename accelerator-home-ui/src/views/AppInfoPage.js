@@ -19,7 +19,7 @@
 
 import { Lightning, Router, Language, Utils } from "@lightningjs/sdk";
 import { List } from "@lightningjs/ui";
-import { CONFIG, GLOBALS } from "../Config/Config";
+import { CONFIG } from "../Config/Config";
 import AppCard from "../items/AppCard";
 import { getInstalledDACApps, startDACApp, uninstallDACApp } from "../api/DACApi";
 import { filterExcludedApps } from "../helpers/DACAppPresentation";

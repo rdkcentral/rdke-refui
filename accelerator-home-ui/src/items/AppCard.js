@@ -236,11 +236,13 @@ export default class AppCard extends Lightning.Component {
         this._buttonIndex = 0;
         this._buttons = ['LaunchButton', 'UpdateButton', 'UninstallButton'];
         this.tag('AppIcon.IconImage').on('txError', () => {
+            this.tag('AppIcon.IconImage').alpha = 0;
             this.tag('AppIcon.DefaultImage').alpha = 1;
         });
         this.tag('AppIcon.IconImage').on('txLoaded', () => {
             // Only hide offline placeholder if network is connected
             if (GLOBALS.IsConnectedToInternet) {
+                this.tag('AppIcon.IconImage').alpha = 1;
                 this.tag('AppIcon.DefaultImage').alpha = 0;
             }
         });

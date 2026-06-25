@@ -693,8 +693,9 @@ export default class MainView extends Lightning.Component {
   }
 
   /**
-   * Update My Apps row items to show/hide offline placeholder for remote icons.
-   * When offline, DAC apps with remote icon URLs will show the offline.png placeholder.
+   * Update My Apps row items to show/hide offline placeholder for all app icons.
+   * When offline, every app icon is replaced with the offline.png placeholder.
+   * When back online, the original icon src is restored.
    * @param {boolean} isOnline - true to restore images, false to show offline placeholder
    */
   _updateMyAppsNetworkState(isOnline) {
@@ -702,27 +703,18 @@ export default class MainView extends Lightning.Component {
     if (!appList || !appList.items || !appList.items.length) return
     for (let i = 0; i < appList.items.length; i++) {
       const item = appList.items[i]
-      if (item && item.data) {
-        const img = item.tag('Image')
-        const defaultImg = item.tag('DefaultImage')
-        if (!isOnline) {
-          defaultImg.patch({
-            x: img.x,
-            y: img.y,
-            w: img.w,
-            h: img.h,
-            alpha: 1
-          })
-          img.alpha = 0
-        } else if (item.data.url) {
-          // Re-assign src to retrigger the texture load; the item's
-          // txLoaded / txError handlers will toggle the placeholder.
-          const src = item.data.url.startsWith('/images')
-            ? Utils.asset(item.data.url)
-            : item.data.url
-          img.patch({ src })
-          img.alpha = 1
-        }
+      if (!item || !item.data || !item.data.url) continue
+      const img = item.tag('Image')
+      if (!isOnline) {
+        img.patch({ src: Utils.asset('/images/metroApps/offline.png') })
+        img.alpha = 1
+      } else {
+        // Restore original icon URL
+        const src = item.data.url.startsWith('/images')
+          ? Utils.asset(item.data.url)
+          : item.data.url
+        img.patch({ src })
+        img.alpha = 1
       }
     }
   }
