@@ -19,10 +19,9 @@
 import { Lightning, Utils, Language } from '@lightningjs/sdk'
 import SettingsMainItem from '../../items/SettingsMainItem'
 import { COLORS } from "../../colors/Colors";
-import { CONFIG, GLOBALS } from "../../Config/Config";
+import { CONFIG, } from "../../Config/Config";
 import AppApi from "../../api/AppApi";
 import ResolutionOverlay from './ResolutionOverlay';
-import FireBoltApi from '../../api/firebolt/FireBoltApi';
 
 /**
  * Class for Video screen.

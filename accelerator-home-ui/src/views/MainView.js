@@ -436,7 +436,7 @@ export default class MainView extends Lightning.Component {
 
       return listener;
     }
-    NetworkManager.thunder.on('org.rdk.NetworkManager', 'onInternetStatusChange', notification => {
+    this._onInternetStatusChangeCB = NetworkManager.thunder.on('org.rdk.NetworkManager', 'onInternetStatusChange', notification => {
       this.LOG('on InternetStatus Change' + JSON.stringify(notification))
       if (notification.status === "FULLY_CONNECTED") {
         this.$refreshMyAppsRow()
@@ -451,7 +451,7 @@ export default class MainView extends Lightning.Component {
           url: '/images/sidePanel/moreapps.png',
           appIdentifier: 'moreApps'
         }]
-        // Show offline placeholder for My Apps items with remote icons
+        // Show offline placeholder for all My Apps icons
         this._updateMyAppsNetworkState(false)
       }
     })
@@ -479,6 +479,10 @@ export default class MainView extends Lightning.Component {
 
   _detach() {
     // Unsubscribe to avoid stale references to this MainView instance
+    if (this._onInternetStatusChangeCB) {
+      this._onInternetStatusChangeCB.dispose()
+      this._onInternetStatusChangeCB = null
+    }
     AppController.get().removePackageChangedListener(this._onPackageChanged)
     if (this._onCatalogRefreshNeeded) {
       eventTarget.removeEventListener(RefreshNeeded.eventName, this._onCatalogRefreshNeeded)

@@ -196,7 +196,9 @@ export default class AppInfoPage extends Lightning.Component {
     }
 
     /**
-     * Update all AppCard items to show/hide offline placeholder for remote icons.
+     * Update all AppCard items to show/hide the offline placeholder.
+     * When offline, every app icon is replaced with the placeholder;
+     * when back online, the original icon src is restored.
      * @param {boolean} isOnline - true to restore images, false to show offline placeholder
      */
     _updateAppCardsNetworkState(isOnline) {

@@ -19,9 +19,8 @@
 import { Lightning, Utils, Language, Router } from '@lightningjs/sdk'
 import SettingsMainItem from '../../items/SettingsMainItem'
 import { COLORS } from '../../colors/Colors'
-import { CONFIG, GLOBALS } from '../../Config/Config'
+import { CONFIG,  } from '../../Config/Config'
 import AppApi from '../../api/AppApi'
-import FireBoltApi from '../../api/firebolt/FireBoltApi'
 
 /**
  * Class for Video screen.
