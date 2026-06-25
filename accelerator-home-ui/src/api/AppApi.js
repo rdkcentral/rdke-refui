@@ -1941,7 +1941,7 @@ export default class AppApi {
   }
 
   getUILanguage() {
-    return UserSettingsApi.get().getPresentationLanguage(updatedLanguage)
+    return UserSettingsApi.get().getPresentationLanguage()
   }
 
   deeplinkToApp(app = undefined, payload = undefined, launchLocation = "voice", namespace = undefined) {
