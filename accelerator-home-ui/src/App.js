@@ -983,7 +983,7 @@ export default class App extends Router.App {
     });
     thunder.on('org.rdk.RDKShell', 'onLaunched', data => {
       console.warn("[RDKSHELLEVT] onLaunched:", data);
-      if(GLOBALS.Miracastclientdevicedetails.mac !==null && GLOBALS.Miracastclientdevicedetails.name !==null)
+      if(GLOBALS.Miracastclientdevicedetails.mac !=null && GLOBALS.Miracastclientdevicedetails.name !=null)
         {
           miracast.stopRequest(GLOBALS.Miracastclientdevicedetails.mac,GLOBALS.Miracastclientdevicedetails.name,300)
         }
