@@ -699,8 +699,8 @@ export default class MainView extends Lightning.Component {
    */
   _updateMyAppsNetworkState(isOnline) {
     const appList = this.tag('AppList')
-    if (!appList || !appList.length) return
-    for (let i = 0; i < appList.length; i++) {
+    if (!appList || !appList.items || !appList.items.length) return
+    for (let i = 0; i < appList.items.length; i++) {
       const item = appList.items[i]
       if (item && item.data) {
         const img = item.tag('Image')
@@ -714,8 +714,13 @@ export default class MainView extends Lightning.Component {
             alpha: 1
           })
           img.alpha = 0
-        } else {
-          defaultImg.alpha = 0
+        } else if (item.data.url) {
+          // Re-assign src to retrigger the texture load; the item's
+          // txLoaded / txError handlers will toggle the placeholder.
+          const src = item.data.url.startsWith('/images')
+            ? Utils.asset(item.data.url)
+            : item.data.url
+          img.patch({ src })
           img.alpha = 1
         }
       }

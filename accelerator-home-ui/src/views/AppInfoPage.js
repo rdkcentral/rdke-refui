@@ -178,7 +178,7 @@ export default class AppInfoPage extends Lightning.Component {
     _init() {
         this._appList = this.tag('AppList');
         this._scrollThumb = this.tag('ScrollIndicator.ScrollThumb');
-        NetworkManager.thunder.on('org.rdk.NetworkManager', 'onInternetStatusChange', notification => {
+        this._onInternetStatusChangeCB = NetworkManager.thunder.on('org.rdk.NetworkManager', 'onInternetStatusChange', notification => {
             console.log('AppInfoPage onInternetStatusChange: ' + JSON.stringify(notification));
             if (notification.status === 'FULLY_CONNECTED') {
                 this._updateAppCardsNetworkState(true);
@@ -188,22 +188,39 @@ export default class AppInfoPage extends Lightning.Component {
         });
     }
 
+    _detach() {
+        if (this._onInternetStatusChangeCB) {
+            this._onInternetStatusChangeCB.dispose();
+            this._onInternetStatusChangeCB = null;
+        }
+    }
+
     /**
      * Update all AppCard items to show/hide offline placeholder for remote icons.
      * @param {boolean} isOnline - true to restore images, false to show offline placeholder
      */
     _updateAppCardsNetworkState(isOnline) {
-        if (!this._appList || !this._appList.items || !this._appList.items.length) return;
-        for (let i = 0; i < this._appList.items.length; i++) {
-            const card = this._appList.items[i];
-            if (card && card._appInfo) {
+        if (!this._appList) return;
+        const wrappers = this._appList.itemWrappers;
+        if (!wrappers || !wrappers.length) return;
+        for (let i = 0; i < wrappers.length; i++) {
+            const wrapper = wrappers[i];
+            if (!wrapper || !wrapper.component || !wrapper.component.isAlive) continue;
+            const card = wrapper.component;
+            const data = card.appInfo;
+            if (data) {
                 const iconImg = card.tag('AppIcon.IconImage');
                 const defaultImg = card.tag('AppIcon.DefaultImage');
                 if (!isOnline) {
                     defaultImg.alpha = 1;
                     iconImg.alpha = 0;
-                } else {
-                    defaultImg.alpha = 0;
+                } else if (data.icon) {
+                    // Re-assign src to retrigger the texture load; the card's
+                    // txLoaded / txError handlers will toggle the placeholder.
+                    const src = data.icon.startsWith('/images')
+                        ? Utils.asset(data.icon)
+                        : data.icon;
+                    iconImg.patch({ src });
                     iconImg.alpha = 1;
                 }
             }
