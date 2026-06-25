@@ -439,8 +439,9 @@ export default class MainView extends Lightning.Component {
     NetworkManager.thunder.on('org.rdk.NetworkManager', 'onInternetStatusChange', notification => {
       this.LOG('on InternetStatus Change' + JSON.stringify(notification))
       if (notification.status === "FULLY_CONNECTED") {
+        this.$refreshMyAppsRow()
         this.refreshSecondRow()
-      } else if (notification.status === "NO_INTERNET") {
+      } else {
         this._hideDacAppsLoader()
         // Clear stale cached apps (broken/default icons) and show only "More Apps"
         this.dacApps = [{
@@ -450,6 +451,8 @@ export default class MainView extends Lightning.Component {
           url: '/images/sidePanel/moreapps.png',
           appIdentifier: 'moreApps'
         }]
+        // Show offline placeholder for My Apps items with remote icons
+        this._updateMyAppsNetworkState(false)
       }
     })
     // Refresh My Apps row when apps are installed/uninstalled (including sideloaded via curl)
@@ -686,6 +689,36 @@ export default class MainView extends Lightning.Component {
     this.tag('DacApps').visible = false
     if (this.dacAppsLoadingAnimation) {
       this.dacAppsLoadingAnimation.start()
+    }
+  }
+
+  /**
+   * Update My Apps row items to show/hide offline placeholder for remote icons.
+   * When offline, DAC apps with remote icon URLs will show the offline.png placeholder.
+   * @param {boolean} isOnline - true to restore images, false to show offline placeholder
+   */
+  _updateMyAppsNetworkState(isOnline) {
+    const appList = this.tag('AppList')
+    if (!appList || !appList.length) return
+    for (let i = 0; i < appList.length; i++) {
+      const item = appList.items[i]
+      if (item && item.data) {
+        const img = item.tag('Image')
+        const defaultImg = item.tag('DefaultImage')
+        if (!isOnline) {
+          defaultImg.patch({
+            x: img.x,
+            y: img.y,
+            w: img.w,
+            h: img.h,
+            alpha: 1
+          })
+          img.alpha = 0
+        } else {
+          defaultImg.alpha = 0
+          img.alpha = 1
+        }
+      }
     }
   }
 

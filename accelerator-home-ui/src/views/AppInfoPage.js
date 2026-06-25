@@ -24,6 +24,7 @@ import AppCard from "../items/AppCard";
 import { getInstalledDACApps, startDACApp, uninstallDACApp } from "../api/DACApi";
 import { filterExcludedApps } from "../helpers/DACAppPresentation";
 import UninstallConfirmation from "../overlays/UninstallConfirmation";
+import NetworkManager from "../api/NetworkManagerAPI";
 
 export default class AppInfoPage extends Lightning.Component {
 
@@ -177,6 +178,36 @@ export default class AppInfoPage extends Lightning.Component {
     _init() {
         this._appList = this.tag('AppList');
         this._scrollThumb = this.tag('ScrollIndicator.ScrollThumb');
+        NetworkManager.thunder.on('org.rdk.NetworkManager', 'onInternetStatusChange', notification => {
+            console.log('AppInfoPage onInternetStatusChange: ' + JSON.stringify(notification));
+            if (notification.status === 'FULLY_CONNECTED') {
+                this._updateAppCardsNetworkState(true);
+            } else {
+                this._updateAppCardsNetworkState(false);
+            }
+        });
+    }
+
+    /**
+     * Update all AppCard items to show/hide offline placeholder for remote icons.
+     * @param {boolean} isOnline - true to restore images, false to show offline placeholder
+     */
+    _updateAppCardsNetworkState(isOnline) {
+        if (!this._appList || !this._appList.items || !this._appList.items.length) return;
+        for (let i = 0; i < this._appList.items.length; i++) {
+            const card = this._appList.items[i];
+            if (card && card._appInfo) {
+                const iconImg = card.tag('AppIcon.IconImage');
+                const defaultImg = card.tag('AppIcon.DefaultImage');
+                if (!isOnline) {
+                    defaultImg.alpha = 1;
+                    iconImg.alpha = 0;
+                } else {
+                    defaultImg.alpha = 0;
+                    iconImg.alpha = 1;
+                }
+            }
+        }
     }
 
     /**

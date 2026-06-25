@@ -193,32 +193,6 @@ export default class VideoScreen extends Lightning.Component {
   }
 
   _focus() {
-    if ("ResidentApp" !== GLOBALS.selfClientName)
-    {
-      FireBoltApi.get().deviceinfo.getscreenresolution().then(resolution =>{
-        this.tag("Resolution.Title").text.text = Language.translate('Resolution: ') + `${JSON.stringify(resolution[0])} , ${JSON.stringify(resolution[1])}`;
-      })
-      FireBoltApi.get().deviceinfo.gethdcp().then(res=>{
-        let hdcp =""
-        for (let key in res)
-        {
-          hdcp += `\t\t${key} : ${res[key]} `
-          hdcp += ","
-        }
-        this.tag("HDCP.Title").text.text = `${Language.translate('HDCP Status: ')} ${hdcp.substring(0, hdcp.length -1)}`
-      })
-      FireBoltApi.get().deviceinfo.gethdr().then(res=>{
-        let hdr =""
-        for (let key in res)
-        {
-          hdr += `\t\t${key} : ${res[key]}`
-          hdr += ","
-        }
-        this.tag("HDR.Title").text.text = `${Language.translate('High Dynamic Range: ')}${hdr.substring(0,hdr.length -1 )}`
-      })
-      
-    }
-    else{
       this._appApi.getResolution().then(resolution => {
         this.tag("Resolution.Title").text.text = Language.translate('Resolution: ') + resolution;
       }).catch(err => {
@@ -244,7 +218,6 @@ export default class VideoScreen extends Lightning.Component {
       }
       this.tag("HDR.Title").text.text = Language.translate('High Dynamic Range: ') + availableHDROptions[result];
     })
-  }
     this._setState(this.state)
   }
 

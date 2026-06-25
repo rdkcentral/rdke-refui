@@ -18,7 +18,7 @@
  **/
 
 import { Lightning, Utils, Language } from "@lightningjs/sdk";
-import { CONFIG } from "../Config/Config";
+import { CONFIG, GLOBALS } from "../Config/Config";
 
 class ActionButton extends Lightning.Component {
     static _template() {
@@ -135,6 +135,16 @@ export default class AppCard extends Lightning.Component {
                         type: Lightning.shaders.RoundedRectangle,
                         radius: 8
                     }
+                },
+                DefaultImage: {
+                    w: 160,
+                    h: 120,
+                    src: Utils.asset('/images/metroApps/offline.png'),
+                    alpha: 0,
+                    shader: {
+                        type: Lightning.shaders.RoundedRectangle,
+                        radius: 8
+                    }
                 }
             },
 
@@ -225,6 +235,15 @@ export default class AppCard extends Lightning.Component {
     _init() {
         this._buttonIndex = 0;
         this._buttons = ['LaunchButton', 'UpdateButton', 'UninstallButton'];
+        this.tag('AppIcon.IconImage').on('txError', () => {
+            this.tag('AppIcon.DefaultImage').alpha = 1;
+        });
+        this.tag('AppIcon.IconImage').on('txLoaded', () => {
+            // Only hide offline placeholder if network is connected
+            if (GLOBALS.IsConnectedToInternet) {
+                this.tag('AppIcon.DefaultImage').alpha = 0;
+            }
+        });
     }
 
     set appInfo(data) {
@@ -249,6 +268,12 @@ export default class AppCard extends Lightning.Component {
             } else {
                 this.tag('AppIcon.IconImage').patch({ src: data.icon });
             }
+        }
+
+        // If network is disconnected, show offline placeholder immediately
+        if (!GLOBALS.IsConnectedToInternet) {
+            this.tag('AppIcon.DefaultImage').alpha = 1;
+            this.tag('AppIcon.IconImage').alpha = 0;
         }
 
         // Show/hide update button based on update availability
