@@ -944,7 +944,7 @@ export default class App extends Router.App {
       if(data.success)
       {
         if ((GLOBALS.topmostApp === data.client)
-        && (GLOBALS.selfClientName === "ResidentApp"|| GLOBALS.selfClientName === "FireboltMainApp-refui") && GLOBALS.Miracastclientdevicedetails.state != "PLAYING") {
+        && (GLOBALS.selfClientName === "ResidentApp"|| GLOBALS.selfClientName === "FireboltMainApp-refui") && GLOBALS.Miracastclientdevicedetails.state !== "PLAYING") {
         appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName).then(() => {
           AlexaApi.get().reportApplicationState("menu", true);
         });
@@ -975,7 +975,7 @@ export default class App extends Router.App {
 				})
       }
       if ((GLOBALS.topmostApp === data.client)
-        && (GLOBALS.selfClientName === "ResidentApp"|| GLOBALS.selfClientName === "FireboltMainApp-refui") && GLOBALS.Miracastclientdevicedetails.state != "PLAYING") {
+        && (GLOBALS.selfClientName === "ResidentApp"|| GLOBALS.selfClientName === "FireboltMainApp-refui") && GLOBALS.Miracastclientdevicedetails.state !== "PLAYING") {
         appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName).then(() => {
           AlexaApi.get().reportApplicationState("menu", true);
         });
@@ -983,7 +983,7 @@ export default class App extends Router.App {
     });
     thunder.on('org.rdk.RDKShell', 'onLaunched', data => {
       console.warn("[RDKSHELLEVT] onLaunched:", data);
-      if(GLOBALS.Miracastclientdevicedetails.mac !=null && GLOBALS.Miracastclientdevicedetails.name !=null)
+      if(GLOBALS.Miracastclientdevicedetails.mac !==null && GLOBALS.Miracastclientdevicedetails.name !==null)
         {
           miracast.stopRequest(GLOBALS.Miracastclientdevicedetails.mac,GLOBALS.Miracastclientdevicedetails.name,300)
         }
@@ -1023,7 +1023,7 @@ export default class App extends Router.App {
 				})
         }
         if ((GLOBALS.topmostApp === data.client)
-          && (GLOBALS.selfClientName === "ResidentApp") && GLOBALS.Miracastclientdevicedetails.state != "PLAYING") {
+          && (GLOBALS.selfClientName === "ResidentApp") && GLOBALS.Miracastclientdevicedetails.state !== "PLAYING") {
           appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName).then(() => {
             AlexaApi.get().reportApplicationState("menu", true);
           });
@@ -1047,7 +1047,7 @@ export default class App extends Router.App {
 				})
       }
       if ((GLOBALS.topmostApp === data.client)
-        && (GLOBALS.selfClientName === "ResidentApp" || GLOBALS.selfClientName === "FireboltMainApp-refui") && GLOBALS.Miracastclientdevicedetails.state != "PLAYING") {
+        && (GLOBALS.selfClientName === "ResidentApp" || GLOBALS.selfClientName === "FireboltMainApp-refui") && GLOBALS.Miracastclientdevicedetails.state !== "PLAYING") {
         appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName).then(() => {
           AlexaApi.get().reportApplicationState("menu", true);
         });
@@ -1072,7 +1072,7 @@ export default class App extends Router.App {
 				})
       }
       if ((GLOBALS.topmostApp === data.client)
-        && (GLOBALS.selfClientName === "ResidentApp" || GLOBALS.selfClientName === "FireboltMainApp-refui") && GLOBALS.Miracastclientdevicedetails.state != "PLAYING") {
+        && (GLOBALS.selfClientName === "ResidentApp" || GLOBALS.selfClientName === "FireboltMainApp-refui") && GLOBALS.Miracastclientdevicedetails.state !== "PLAYING") {
         appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName).then(() => {
           AlexaApi.get().reportApplicationState("menu", true);
         });
