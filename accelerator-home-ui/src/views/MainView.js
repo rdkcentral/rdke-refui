@@ -439,6 +439,9 @@ export default class MainView extends Lightning.Component {
     this._onInternetStatusChangeCB = NetworkManager.thunder.on('org.rdk.NetworkManager', 'onInternetStatusChange', notification => {
       this.LOG('on InternetStatus Change' + JSON.stringify(notification))
       if (notification.status === "FULLY_CONNECTED") {
+        // Immediately restore icons so they aren't stuck on the offline placeholder
+        // even if the row refresh is slow or fails.
+        this._updateMyAppsNetworkState(true)
         this.$refreshMyAppsRow()
         this.refreshSecondRow()
       } else {
