@@ -1088,7 +1088,7 @@ export default class AppApi {
 
       if (appInstanceId) {
         this.LOG('Using appInstanceId: ' + appInstanceId + ' for targetAppId: ' + targetAppId);
-        
+
         // Only setFocus when making the app visible
         if (visible) {
           await RDKWindowManager.get().setFocus(appInstanceId).then(() => {
@@ -1604,7 +1604,7 @@ export default class AppApi {
       })
     })
   }
-  
+
   getRFCConfig(rfcParamsList) {
     return new Promise((resolve, reject) => {
       thunder.call('org.rdk.System', 'getRFCConfig',{"rfcList":[rfcParamsList]}).then(result => {
@@ -1927,11 +1927,11 @@ export default class AppApi {
         });
     })
   }
-  
+
   setUILanguage(updatedLanguage) {
     return UserSettingsApi.get().setPresentationLanguage(updatedLanguage)
   }
-  
+
   getUILanguage() {
     return UserSettingsApi.get().getPresentationLanguage(updatedLanguage)
   }

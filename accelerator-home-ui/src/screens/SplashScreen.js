@@ -308,11 +308,11 @@ export default class SplashScreen extends Lightning.Component {
             ],
           })
           let connected = false
-          let timer = setTimeout(() => {
+          this.autoPairTimeout = setTimeout(() => {
             if (!connected)
               this.tag('AutoRemotePair.Description').text =
                 Language.translate('Please put the remote in pairing mode') + ", " + Language.translate('No device found')
-            setTimeout(() => {
+            this.autoPairNavigateTimeout = setTimeout(() => {
               if (this.hasInternet == false) this._setState('ConnectivityScreen')
               else Router.navigate('home', { path: 'settings' })
             }, 1000)
@@ -320,23 +320,23 @@ export default class SplashScreen extends Lightning.Component {
           let error = () => {
             this.tag('AutoRemotePair.Description').text =
               Language.translate('Please put the remote in pairing mode') + ", " + Language.translate('No device found')
-            setTimeout(() => {
+            this.autoPairNavigateTimeout = setTimeout(() => {
               if (this.hasInternet == false) this._setState('ConnectivityScreen')
               else Router.navigate('home', { path: 'settings' })
             }, 1000)
           }
           myAnimation.start()
-          setTimeout(() => {
+          this.autoPairScanStartTimeout = setTimeout(() => {
             this.tag('AutoRemotePair.Description').text =
               Language.translate('Please put the remote in pairing mode') + ", " + Language.translate("Scanning") + '...'
-            const rotateAnimation = this.tag('AutoRemotePair.LoadingIcon').animation({
+            this.autoPairRotateAnimation = this.tag('AutoRemotePair.LoadingIcon').animation({
               duration: 1,
               repeat: -1,
               stopMethod: 'immediate',
               stopDelay: 0.2,
               actions: [{ p: 'rotation', v: { sm: 0, 0: 0, 1: Math.PI * 2 } }],
             })
-            rotateAnimation.play()
+            this.autoPairRotateAnimation.play()
             this.tag('AutoRemotePair.LoadingIcon').alpha = 1
             this._bt.startScan()
             this._bt.registerEvent('onDiscoveredDevice', () => {
@@ -371,8 +371,8 @@ export default class SplashScreen extends Lightning.Component {
             if (connectedDevices.length > 0) {
               this.tag('AutoRemotePair.Description').text = Language.translate('Remote is Connected to ') + connectedDevices[0].name
               connected = true
-              clearTimeout(timer)
-              setTimeout(() => {
+              clearTimeout(this.autoPairTimeout)
+              this.autoPairNavigateTimeout = setTimeout(() => {
                 if (this.hasInternet == false) this._setState('ConnectivityScreen')
                 else Router.navigate('home', { path: 'settings' })
               }, 2000)
@@ -385,8 +385,8 @@ export default class SplashScreen extends Lightning.Component {
                       Language.translate('Connected to ') +
                       connectedDevices[0].name
                     connected = true
-                    clearTimeout(timer)
-                    setTimeout(() => {
+                    clearTimeout(this.autoPairTimeout)
+                    this.autoPairNavigateTimeout = setTimeout(() => {
                       if (this.hasInternet == false) this._setState('ConnectivityScreen')
                       else Router.navigate('home', { path: 'settings' })
                     }, 2000)
@@ -406,6 +406,29 @@ export default class SplashScreen extends Lightning.Component {
             actions: [{ p: 'alpha', v: { 0: 1, 1: 0 } }],
           })
           myAnimation.start()
+          if (this.autoPairTimeout) {
+            clearTimeout(this.autoPairTimeout)
+            this.autoPairTimeout = null
+          }
+          if (this.autoPairScanStartTimeout) {
+            clearTimeout(this.autoPairScanStartTimeout)
+            this.autoPairScanStartTimeout = null
+          }
+          if (this.autoPairNavigateTimeout) {
+            clearTimeout(this.autoPairNavigateTimeout)
+            this.autoPairNavigateTimeout = null
+          }
+          if (this.autoPairRotateAnimation) {
+            this.autoPairRotateAnimation.stop()
+            this.autoPairRotateAnimation = null
+          }
+          this.tag('AutoRemotePair.LoadingIcon').alpha = 0
+          this.tag('AutoRemotePair.LoadingIcon').rotation = 0
+          if (this._bt) {
+            this._bt.stopScan().catch(err => {
+              this.ERR('SplashScreen AutoRemotePair stopScan error: ' + JSON.stringify(err))
+            })
+          }
         }
       },
       class UISwitch extends this {

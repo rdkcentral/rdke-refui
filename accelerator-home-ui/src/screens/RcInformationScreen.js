@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-import { Lightning, Language, Registry, Router } from '@lightningjs/sdk'
+import { Lightning, Language, Registry, Router, Utils } from '@lightningjs/sdk'
 import { COLORS } from './../colors/Colors'
 import { CONFIG } from '../Config/Config'
 import ThunderJS from 'ThunderJS'
@@ -32,6 +32,101 @@ export default class RCInformationScreen extends Lightning.Component {
         this.LOG = console.log;
         this.ERR = console.error;
         this.WARN = console.warn;
+        this.scanTrigger = null;
+        this.pairingMessageTimeout = null;
+        this.pairingAttemptTimeout = null;
+        this.loadingAnimation = null;
+        this.hasStartedPairingAttempt = false;
+        this.pairingTimeoutSeconds = 30;
+        this.retryDelayMilliseconds = 2000;
+    }
+
+    setStatusValues(value) {
+        this.tag("Status.Value").text.text = value
+        this.tag("MacAddress.Value").text.text = value
+        this.tag("SwVersion.Value").text.text = value
+        this.tag("BatteryPercent.Value").text.text = value
+        this.tag("RCUName.Value").text.text = value
+    }
+
+    showDeviceInfo(show) {
+        this.tag('DeviceInfoContents').visible = show
+        this.tag('PairingStatus').visible = !show
+    }
+
+    showPairingStatus(description, showLoader = true) {
+        this.showDeviceInfo(false)
+        this.tag('PairingStatus.Description').text.text = description
+        this.tag('PairingStatus.LoadingIcon').alpha = showLoader ? 1 : 0
+
+        if (showLoader) {
+            if (!this.loadingAnimation) {
+                this.loadingAnimation = this.tag('PairingStatus.LoadingIcon').animation({
+                    duration: 1,
+                    repeat: -1,
+                    stopMethod: 'immediate',
+                    stopDelay: 0.2,
+                    actions: [{ p: 'rotation', v: { sm: 0, 0: 0, 1: Math.PI * 2 } }],
+                })
+            }
+            this.loadingAnimation.start()
+        } else if (this.loadingAnimation) {
+            this.loadingAnimation.stop()
+            this.tag('PairingStatus.LoadingIcon').rotation = 0
+        }
+    }
+
+    showScanningStatus() {
+        this.showPairingStatus(
+            Language.translate('Please put the remote in pairing mode') + ', ' + Language.translate('Scanning') + '...',
+            true
+        )
+    }
+
+    showNoDeviceFoundStatus() {
+        this.showPairingStatus(
+            Language.translate('Please put the remote in pairing mode') + ', ' + Language.translate('No device found'),
+            false
+        )
+    }
+
+    clearPairingAttemptTimeout() {
+        console.log("RCInformationScreen clearPairingAttemptTimeout")
+        if (this.pairingAttemptTimeout) {
+            Registry.clearTimeout(this.pairingAttemptTimeout)
+            this.pairingAttemptTimeout = null
+        }
+    }
+
+    startPairingAttemptTimeout() {
+        console.log("RCInformationScreen startPairingAttemptTimeout")
+        this.clearPairingAttemptTimeout()
+        this.pairingAttemptTimeout = Registry.setTimeout(() => {
+            this.pairingAttemptTimeout = null
+            this.showNoDeviceFoundStatus()
+            this.schedulePairingRetry(this.retryDelayMilliseconds)
+        }, this.pairingTimeoutSeconds * 1000)
+    }
+
+    schedulePairingRetry(delay = 2000) {
+        console.log("RCInformationScreen schedulePairingRetry delay: " + delay)
+        if (this.scanTrigger) {
+            console.log("RCInformationScreen schedulePairingRetry scanTrigger already set, returning")
+            return
+        }
+
+        this.scanTrigger = Registry.setTimeout(() => {
+            this.scanTrigger = null
+            this.showScanningStatus()
+            this.hasStartedPairingAttempt = true
+            this.startPairingAttemptTimeout()
+            RCApi.get().startPairing(this.pairingTimeoutSeconds).catch(err => {
+                this.ERR('RCInformationScreen startPairing error: ' + JSON.stringify(err));
+                this.clearPairingAttemptTimeout()
+                this.showNoDeviceFoundStatus()
+                this.schedulePairingRetry()
+            })
+        }, delay)
     }
 
     _onChanged() {
@@ -48,9 +143,53 @@ export default class RCInformationScreen extends Lightning.Component {
             h: 1080,
             w: 1920,
             color: 0xCC000000,
+            PairingStatus: {
+                x: 960,
+                y: 320,
+                mountX: 0.5,
+                visible: false,
+                Title: {
+                    x: 0,
+                    y: 0,
+                    mountX: 0.5,
+                    text: {
+                        text: Language.translate('Pair your remote control'),
+                        textColor: COLORS.titleColor,
+                        fontFace: CONFIG.language.font,
+                        fontSize: 38,
+                        textAlign: 'center',
+                    }
+                },
+                Description: {
+                    x: 0,
+                    y: 85,
+                    mountX: 0.5,
+                    w: 1200,
+                    text: {
+                        text: Language.translate('Please put the remote in pairing mode') + ', ' + Language.translate('Scanning') + '...',
+                        textColor: COLORS.titleColor,
+                        fontFace: CONFIG.language.font,
+                        fontSize: 25,
+                        textAlign: 'center',
+                        maxLines: 2,
+                        wordWrap: true,
+                        wordWrapWidth: 1200,
+                    }
+                },
+                LoadingIcon: {
+                    x: 0,
+                    y: 155,
+                    mountX: 0.5,
+                    w: 45,
+                    h: 45,
+                    alpha: 0,
+                    src: Utils.asset('images/settings/Loading.png'),
+                },
+            },
             DeviceInfoContents: {
                 x: 200,
                 y: 275,
+                visible: false,
                 Line1: {
                     y: 0,
                     mountY: 0.5,
@@ -229,6 +368,7 @@ export default class RCInformationScreen extends Lightning.Component {
 
     async _active() {
         this.scanTrigger = null;
+        this.hasStartedPairingAttempt = false;
         this.findRemoteTrigger = true;
         await RCApi.get().activate().catch(err => { this.ERR("RCInformationScreen error: " + JSON.stringify(err)) });
         await RCApi.get().getNetStatus().then(result => {
@@ -240,32 +380,44 @@ export default class RCInformationScreen extends Lightning.Component {
 
     _inactive() {
         this.WARN("RCInformationScreen _inactive.");
-        if(onStatusCBhandle != null)onStatusCBhandle.dispose();
-        this.tag("Status.Value").text.text = `N/A`
-        this.tag("MacAddress.Value").text.text = `N/A`
-        this.tag("SwVersion.Value").text.text = `N/A`
-        this.tag("BatteryPercent.Value").text.text = `N/A`
-        this.tag("RCUName.Value").text.text = `N/A`
+        if(onStatusCBhandle != null) {
+            onStatusCBhandle.dispose();
+            onStatusCBhandle = null;
+        }
+        this.setStatusValues('N/A')
         if (this.scanTrigger) {
             Registry.clearTimeout(this.scanTrigger);
             this.scanTrigger = null;
         }
+        if (this.pairingMessageTimeout) {
+            Registry.clearTimeout(this.pairingMessageTimeout);
+            this.pairingMessageTimeout = null;
+        }
+        this.clearPairingAttemptTimeout()
+        if (this.loadingAnimation) {
+            this.loadingAnimation.stop();
+            this.tag('PairingStatus.LoadingIcon').rotation = 0
+        }
+        this.tag('PairingStatus.LoadingIcon').alpha = 0
+        this.showDeviceInfo(false)
         this.findRemoteTrigger = false;
+        RCApi.get().stopPairing().catch(err => { this.ERR("RCInformationScreen error: " + JSON.stringify(err)) });
     }
 
     onStatusCB(cbData) {
         // getStatus response has 'success' property; notification payload does not have that.
-        // this.LOG("RCInformationScreen onStatusCB cbData:" + JSON.stringify(cbData));
+        this.LOG("RCInformationScreen onStatusCB cbData:" + JSON.stringify(cbData));
         if ((cbData !== undefined) && ("success" in cbData ? cbData.success : true)) {
-            let cbDatastatus
+            let cbDatastatus = {}
             if (Array.isArray(cbData.status)) {
                 cbDatastatus = cbData.status[0] || {};
-              }
+            }
             else if (cbData.status && typeof cbData.status === 'object') {
                 cbDatastatus = cbData.status;
-              }
-            if (cbDatastatus.remoteData.length) {
-                this.LOG("RCInformationScreen rcPairingApis RemoteData Length " + JSON.stringify(cbDatastatus.remoteData.length))
+            }
+            const remoteData = Array.isArray(cbDatastatus.remoteData) ? cbDatastatus.remoteData : [];
+            if (remoteData.length) {
+                this.LOG("RCInformationScreen rcPairingApis RemoteData Length " + JSON.stringify(remoteData.length))
                 let RemoteName = []; let connectedStatus = []; let MacAddress = [];
                 let swVersion = []; let BatteryPercent = [];
 
@@ -273,20 +425,25 @@ export default class RCInformationScreen extends Lightning.Component {
                     Registry.clearTimeout(this.scanTrigger);
                     this.scanTrigger = null;
                 }
+                this.clearPairingAttemptTimeout()
+                if (this.pairingMessageTimeout) {
+                    Registry.clearTimeout(this.pairingMessageTimeout)
+                    this.pairingMessageTimeout = null
+                }
 
-                cbDatastatus.remoteData.map(item => {
+                remoteData.map(item => {
                     RemoteName.push(item.name)
                 })
-                cbDatastatus.remoteData.map(item => {
+                remoteData.map(item => {
                     MacAddress.push(item.macAddress)
                 })
-                cbDatastatus.remoteData.map(item => {
+                remoteData.map(item => {
                     swVersion.push(item.swVersion)
                 })
-                cbDatastatus.remoteData.map(item => {
+                remoteData.map(item => {
                     BatteryPercent.push(item.batteryPercent)
                 })
-                cbDatastatus.remoteData.map(item => {
+                remoteData.map(item => {
                     connectedStatus.push(item.connected)
                 })
                 this.tag("Status.Value").text.text = connectedStatus
@@ -294,6 +451,12 @@ export default class RCInformationScreen extends Lightning.Component {
                 this.tag("SwVersion.Value").text.text = swVersion
                 this.tag("BatteryPercent.Value").text.text = BatteryPercent
                 this.tag("RCUName.Value").text.text = RemoteName
+                const pairedDeviceLabel = remoteData[0].deviceType || remoteData[0].name || Language.translate('Remote')
+                this.showPairingStatus(pairedDeviceLabel + Language.translate('remote is paired'), false)
+                this.pairingMessageTimeout = Registry.setTimeout(() => {
+                    this.pairingMessageTimeout = null
+                    this.showDeviceInfo(true)
+                }, 1500)
                 if (this.findRemoteTrigger) {
                     this.findRemoteTrigger = false;
                     RCApi.get().findMyRemote().catch(err => {
@@ -301,36 +464,28 @@ export default class RCInformationScreen extends Lightning.Component {
                     });
                 }
             } else {
-                if (cbDatastatus.pairingState === "IDLE" || cbDatastatus.pairingState === "FAILED") {
-                    // after 2 seconds, initiate pairing flow if status is IDLE, as there is no paired device.
-                    if (!this.scanTrigger) {
-                        this.scanTrigger = Registry.setTimeout(() => {
-                            this.scanTrigger = null;
-                            RCApi.get().getNetStatus().then(result => {
-                                let latestStatus = {};
-                                if (Array.isArray(result.status)) {
-                                    latestStatus = result.status[0] || {};
-                                } else if (result.status && typeof result.status === 'object') {
-                                    latestStatus = result.status;
-                                }
-
-                                const latestHasRemoteData = Array.isArray(latestStatus.remoteData) && latestStatus.remoteData.length;
-                                const latestInRetryState = latestStatus.pairingState === "IDLE" || latestStatus.pairingState === "FAILED";
-
-                                if (!latestHasRemoteData && latestInRetryState) {
-                                    RCApi.get().startPairing().catch(err => {
-                                        this.ERR("RCInformationScreen startPairing error: " + JSON.stringify(err));
-                                    });
-                                }
-                            }).catch(err => {
-                                this.ERR("RCInformationScreen getNetStatus before startPairing error: " + JSON.stringify(err));
-                            });
-                        }, 2000);
+                if (cbDatastatus.pairingState === "PAIRING" || cbDatastatus.pairingState === "SEARCHING") {
+                    this.showScanningStatus()
+                    this.hasStartedPairingAttempt = true
+                    if (!this.pairingAttemptTimeout) {
+                        this.startPairingAttemptTimeout()
+                    }
+                } else if (cbDatastatus.pairingState === "IDLE" || cbDatastatus.pairingState === "FAILED") {
+                    if (cbDatastatus.pairingState === 'FAILED') {
+                        this.clearPairingAttemptTimeout()
+                        this.showNoDeviceFoundStatus()
+                        this.schedulePairingRetry(this.retryDelayMilliseconds)
+                    } else {
+                        this.showScanningStatus()
+                        if (!this.hasStartedPairingAttempt) {
+                            this.schedulePairingRetry(0)
+                        }
                     }
                 } else {
-                    if (this.scanTrigger) {
-                        Registry.clearTimeout(this.scanTrigger);
-                        this.scanTrigger = null;
+                    // Unknown pairingState with no remoteData — keep scanning, do not disrupt retry loop
+                    this.showScanningStatus()
+                    if (!this.hasStartedPairingAttempt) {
+                        this.schedulePairingRetry(0)
                     }
                 }
             }
