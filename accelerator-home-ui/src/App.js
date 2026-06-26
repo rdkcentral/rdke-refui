@@ -2805,7 +2805,7 @@ export default class App extends Router.App {
 											}
 										})
 									}).catch(err => {
-										this.ERROR('SetVolume error:', err)
+										this.ERR('SetVolume error:' + JSON.stringify(err))
 									});
 								}
 							}

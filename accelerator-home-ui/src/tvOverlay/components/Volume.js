@@ -175,6 +175,9 @@ export default class Volume extends Lightning.Component {
                     }
                 }
             })
+            .catch(err => {
+                this.ERR('Volume setVolume getConnectedAudioPorts error:' + JSON.stringify(err, 3, null))
+            })
         return true;
     }
 
@@ -259,7 +262,14 @@ export default class Volume extends Lightning.Component {
 
     getVolume() {
         return new Promise(async (resolve, reject) => {
-            let audioport = await this.getAudioPorts()
+            let audioport = []
+            try {
+                audioport = await this.getAudioPorts()
+            } catch (err) {
+                this.ERR('Volume getAudioPorts error:' + JSON.stringify(err, 3, null))
+                resolve(0)
+                return
+            }
             /* Returns an array. */
             for (let i = 0; i < audioport.length; i++) {
                 if ((GLOBALS.deviceType == "IpTv" && audioport[i].startsWith("SPEAKER")) ||
