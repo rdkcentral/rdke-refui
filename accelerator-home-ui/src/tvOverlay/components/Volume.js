@@ -159,20 +159,22 @@ export default class Volume extends Lightning.Component {
         this._updateText(this.volume)
     }
 
-    setVolume = async (val) => {
+    setVolume = (val) => {
         const safeVolume = Number.parseInt(val, 10);
         if (Number.isNaN(safeVolume)) {
             this.WARN('Volume setVolume called with invalid value:' + JSON.stringify(val));
             return false;
         }
 
-        let audioport = await this.getAudioPorts()
-        for (let i = 0; i < audioport.length; i++) {
-            if ((GLOBALS.deviceType == "IpTv" && audioport[i].startsWith("SPEAKER")) ||
-                (GLOBALS.deviceType != "IpTv" && audioport[i].startsWith("HDMI"))) {
-                await this.appApi.setVolumeLevel(audioport[i], safeVolume)
-            }
-        }
+        this.getAudioPorts()
+            .then(audioport => {
+                for (let i = 0; i < audioport.length; i++) {
+                    if ((GLOBALS.deviceType == "IpTv" && audioport[i].startsWith("SPEAKER")) ||
+                        (GLOBALS.deviceType != "IpTv" && audioport[i].startsWith("HDMI"))) {
+                        this.appApi.setVolumeLevel(audioport[i], safeVolume)
+                    }
+                }
+            })
         return true;
     }
 

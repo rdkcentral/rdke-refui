@@ -2751,12 +2751,8 @@ export default class App extends Router.App {
 												this.tag("Volume").onVolumeChanged(volumeIncremented);
 											} else {
 												if (Router.getActiveHash() === "applauncher") {
-													RDKShellApis.moveToFront(GLOBALS.selfClientName)
-													RDKShellApis.setVisibility(GLOBALS.selfClientName, true)
 													this.tag("Volume").onVolumeChanged(volumeIncremented);
 												} else {
-													RDKShellApis.moveToFront(GLOBALS.selfClientName)
-													RDKShellApis.setVisibility(GLOBALS.selfClientName, true)
 													Router.navigate("applauncher");
 													this.tag("Volume").onVolumeChanged(volumeIncremented);
 												}
@@ -2786,29 +2782,30 @@ export default class App extends Router.App {
 							for (let i = 0; i < audioport.connectedAudioPorts.length && !audioport.connectedAudioPorts[i].startsWith("SPDIF"); i++) {
 								if ((GLOBALS.deviceType == "IpTv" && audioport.connectedAudioPorts[i].startsWith("SPEAKER")) ||
 									(GLOBALS.deviceType != "IpTv" && audioport.connectedAudioPorts[i].startsWith("HDMI"))) {
-									let volumeIncremented
 									appApi.getVolumeLevel(audioport.connectedAudioPorts[i]).then(volres => {
 										const currentVolume = Number.parseInt(volres.volumeLevel, 10)
-										volumeIncremented = Number.isNaN(currentVolume) ? false : (currentVolume < VolumePayload.msgPayload.event.payload.volume ? true : false)
+										const volumeIncremented = Number.isNaN(currentVolume) ? false : (currentVolume < VolumePayload.msgPayload.event.payload.volume ? true : false)
 										if (volumeIncremented && VolumePayload.msgPayload.event.payload.muted) {
 											VolumePayload.msgPayload.event.payload.muted = false
 										}
-									})
-									appApi.setVolumeLevel(audioport.connectedAudioPorts[i], VolumePayload.msgPayload.event.payload.volume).then(() => {
-										if (GLOBALS.topmostApp === GLOBALS.selfClientName) {
-											this.tag("Volume").onVolumeChanged(volumeIncremented);
-										} else {
-											if (Router.getActiveHash() === "applauncher") {
-												RDKShellApis.moveToFront(GLOBALS.selfClientName)
-												RDKShellApis.setVisibility(GLOBALS.selfClientName, true)
+										return appApi.setVolumeLevel(audioport.connectedAudioPorts[i], VolumePayload.msgPayload.event.payload.volume).then(() => {
+											if (GLOBALS.topmostApp === GLOBALS.selfClientName) {
 												this.tag("Volume").onVolumeChanged(volumeIncremented);
 											} else {
-												RDKShellApis.moveToFront(GLOBALS.selfClientName)
-												RDKShellApis.setVisibility(GLOBALS.selfClientName, true)
-												Router.navigate("applauncher");
-												this.tag("Volume").onVolumeChanged(volumeIncremented);
+												if (Router.getActiveHash() === "applauncher") {
+													RDKShellApis.moveToFront(GLOBALS.selfClientName)
+													RDKShellApis.setVisibility(GLOBALS.selfClientName, true)
+													this.tag("Volume").onVolumeChanged(volumeIncremented);
+												} else {
+													RDKShellApis.moveToFront(GLOBALS.selfClientName)
+													RDKShellApis.setVisibility(GLOBALS.selfClientName, true)
+													Router.navigate("applauncher");
+													this.tag("Volume").onVolumeChanged(volumeIncremented);
+												}
 											}
-										}
+										})
+									}).catch(err => {
+										this.ERROR('SetVolume error:', err)
 									});
 								}
 							}
