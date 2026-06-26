@@ -185,7 +185,7 @@ export default class VideoScreen extends Lightning.Component {
   }
 
   _focus() {
-    if ("ResidentApp" !== GLOBALS.selfClientName)
+    if ("FireboltMainApp-refui" === GLOBALS.selfclientAppName)
     {
       FireBoltApi.get().deviceinfo.getscreenresolution().then(resolution =>{
         this.tag("Resolution.Title").text.text = Language.translate('Resolution: ') + `${JSON.stringify(resolution[0])} , ${JSON.stringify(resolution[1])}`;
