@@ -176,7 +176,7 @@ export default class Volume extends Lightning.Component {
                 }
             })
             .catch(err => {
-                this.ERR('Volume setVolume getConnectedAudioPorts error:' + JSON.stringify(err, 3, null))
+                this.ERR('Volume setVolume getConnectedAudioPorts error:' + JSON.stringify(err, null, 3))
             })
         return true;
     }
