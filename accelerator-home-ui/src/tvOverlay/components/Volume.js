@@ -241,7 +241,7 @@ export default class Volume extends Lightning.Component {
             this.appApi.getConnectedAudioPorts().then(res => {
                 resolve(res.connectedAudioPorts)
             }).catch(err => {
-                this.ERR('Volume getConnectedAudioPorts error:' + JSON.stringify(err, 3, null))
+                this.ERR('Volume getConnectedAudioPorts error:' + JSON.stringify(err, null, 3))
                 reject(false)
             })
         })
@@ -254,7 +254,7 @@ export default class Volume extends Lightning.Component {
                 this._updateIcon(this.mute);
                 resolve(true)
             }).catch(err => {
-                this.ERR('Volume updateIcon error:' + JSON.stringify(err, 3, null))
+                this.ERR('Volume updateIcon error:' + JSON.stringify(err, null, 3))
                 reject(false)
             });
         })
@@ -266,7 +266,7 @@ export default class Volume extends Lightning.Component {
             try {
                 audioport = await this.getAudioPorts()
             } catch (err) {
-                this.ERR('Volume getAudioPorts error:' + JSON.stringify(err, 3, null))
+                this.ERR('Volume getAudioPorts error:' + JSON.stringify(err, null, 3))
                 resolve(0)
                 return
             }
@@ -283,7 +283,7 @@ export default class Volume extends Lightning.Component {
                             resolve(0);
                         }
                     }).catch(err => {
-                        this.ERR('Volume getVolumeLevel error:' + JSON.stringify(err, 3, null))
+                        this.ERR('Volume getVolumeLevel error:' + JSON.stringify(err, null, 3))
                         resolve(0)
                     })
                     return;
