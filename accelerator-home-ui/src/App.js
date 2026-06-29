@@ -2757,7 +2757,11 @@ export default class App extends Router.App {
 													this.tag("Volume").onVolumeChanged(volumeIncremented);
 												}
 											}
+										}).catch(err => {
+											this.ERR('AdjustVolume setVolumeLevel error:' + JSON.stringify(err))
 										});
+									}).catch(err => {
+										this.ERR('AdjustVolume getVolumeLevel error:' + JSON.stringify(err))
 									});
 								}
 							}
