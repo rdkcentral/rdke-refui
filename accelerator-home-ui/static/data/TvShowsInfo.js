@@ -26,14 +26,9 @@ export var tvShowsInfo = [
     uri: 'https://bitdash-a.akamaihd.net/content/MI201109210084_1/m3u8s/f08e80da-bf1d-4e3d-8899-f0f6155f6efa.m3u8'
   },
   {
-    displayName: 'BigBuckBunny', 
+    displayName: 'BigBuckBunny',
     url: '/images/tvShows/onward.jpg',
     uri: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
-  },
-  {
-    displayName: 'Sintel',
-    url: '/images/tvShows/let-it-snow.jpg',
-    uri: "https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8"
   },
   {
     displayName: 'DAI Test',

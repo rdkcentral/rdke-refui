@@ -52,6 +52,7 @@ import { Localization, Metrics } from '@firebolt-js/sdk';
 import RDKShellApis from './api/RDKShellApis.js';
 import Miracast from './api/Miracast.js';
 import MiracastNotification from './screens/MiracastNotification.js';
+import VoiceMicOverlay from './overlays/VoiceMicOverlay.js';
 
 
 var powerState = 'ON';
@@ -132,6 +133,10 @@ export default class App extends Router.App {
           zIndex: 999,
           type:MiracastNotification
         }
+      },
+      VoiceMicOverlay: {
+        zIndex: 1000,
+        type: VoiceMicOverlay
       },
       VideoScreen: {
         alpha: 0,
@@ -1437,31 +1442,49 @@ export default class App extends Router.App {
     /* Subscribe to Volume status events to report to Alexa. */
     this._subscribeToAlexaNotifications()
   }
-  
+
   async listenToVoiceControl() {
     console.log("App listenToVoiceControl method got called, configuring VoiceControl Plugin")
     await voiceApi.activate().then(() => {
       voiceApi.voiceStatus().then(voiceStatusResp => {
         if(voiceStatusResp.success){
-        if(voiceStatusResp.urlPtt.includes("avs://"))
-        {
-          GLOBALS.AlexaAvsstatus(true)
-        }
-        if (voiceStatusResp.ptt.status != "ready" || !voiceStatusResp.urlPtt.includes("avs://")) {
-          GLOBALS.AlexaAvsstatus(false)
-          console.error("App voiceStatus says PTT/AVS not ready, enabling it.");
-          // TODO: Future -> add option for user to select which Voice service provider.
-          // Then configure VoiceControl plugin for that end point.
-          // TODO: voiceApi.configureVoice()
-          if (AlexaApi.get().checkAlexaAuthStatus() != "AlexaUserDenied") {
-            AlexaApi.get().setAlexaAuthStatus("")
-            voiceApi.configureVoice({ "enable": true }).then(() => {
-              AlexaApi.get().setAlexaAuthStatus("AlexaAuthPending")
-            });
+          GLOBALS._defaultVoiceConfig = voiceStatusResp;
+          if(voiceStatusResp.urlPtt.includes("avs://"))
+          {
+            GLOBALS.AlexaAvsstatus = true
+          }
+          if (!voiceStatusResp.urlPtt.includes("avs://")) {
+            GLOBALS._voiceEnabled = Storage.get("ytAudioSharingConsent");
+            console.log("AVS URL is not present in voiceStatus response. ytAudioSharingConsent:", GLOBALS._voiceEnabled);
+            if (GLOBALS._voiceEnabled === true) {
+              voiceApi.configureCobaltAOWSEndPoint().then((result) => {
+                if (result === false) {
+                  console.error("Cobalt AOWS endpoint configuration failed.");
+                } else {
+                  this.tag('Menu').tag('TopPanel').setVoiceConfigured(true)
+                }
+              });
+            } else if ((GLOBALS._voiceEnabled === false || GLOBALS._voiceEnabled === undefined)
+                        && !Router.isNavigating() && Router.getActiveHash() !== "AlexaLoginScreen" && Router.getActiveHash() === "menu") {
+              console.log("Routing to YouTube Audio Sharing consent page after 300ms");
+              setTimeout(() => Router.navigate("AlexaLoginScreen"), 300);
+            }
+          }
+          if (voiceStatusResp.ptt.status != "ready" && voiceStatusResp.urlPtt.includes("avs://")) {
+            GLOBALS.AlexaAvsstatus = false
+            console.error("App voiceStatus says PTT/AVS not ready, enabling it.");
+            // TODO: Future -> add option for user to select which Voice service provider.
+            // Then configure VoiceControl plugin for that end point.
+            // TODO: voiceApi.configureVoice()
+            if (AlexaApi.get().checkAlexaAuthStatus() != "AlexaUserDenied") {
+              AlexaApi.get().setAlexaAuthStatus("")
+              voiceApi.configureVoice({ "enable": true }).then(() => {
+                AlexaApi.get().setAlexaAuthStatus("AlexaAuthPending")
+                this.tag('Menu').tag('TopPanel').setVoiceConfigured(true)
+              });
+            }
           }
         }
-      }
-
       });
 
       if (AlexaApi.get().checkAlexaAuthStatus() === "AlexaAuthPending") {
@@ -1716,7 +1739,7 @@ export default class App extends Router.App {
       if (this.xcastApps(notification.applicationName)) {
         let applicationName = this.xcastApps(notification.applicationName);
         let baseUrl = Storage.get(notification.applicationName + "DefaultURL");
-        let pairingCode = notification.parameters.payload; 
+        let pairingCode = notification.parameters.payload;
         let additionalDataUrl = notification.parameters.additionalDataUrl;
         let url = `${baseUrl}${pairingCode}&additionalDataUrl=${additionalDataUrl}`;
           let params = {
@@ -2316,14 +2339,38 @@ export default class App extends Router.App {
         }
       }
     });
-    voiceApi.registerEvent('onSessionBegin', () => {
+    voiceApi.registerEvent('onSessionBegin', notification => {
+      console.log('App onSessionBegin: ' + JSON.stringify(notification));
       this.$hideImage(0);
+      if (GLOBALS.topmostApp === GLOBALS.selfClientName) {
+        this.tag('VoiceMicOverlay').showSession();
+      }
     });
     voiceApi.registerEvent('onSessionEnd', notification => {
+      console.log('App onSessionEnd: ' + JSON.stringify(notification));
+      this.tag('VoiceMicOverlay').hide();
       if (notification.result === "success" && notification.success.transcription === "User request to disable Alexa") {
         console.warn("App VoiceControl.onSessionEnd got disable Alexa.")
         AlexaApi.get().resetAVSCredentials() // To avoid Audio Feedback
         AlexaApi.get().setAlexaAuthStatus("AlexaUserDenied") // Reset back to disabled as resetAVSCredentials() sets to ErrorHandling.
+      } else if (notification.result === "abort" && notification.remoteId === 1 && notification.sessionId === "N/A") {
+        console.warn("App VoiceControl.onSessionEnd got abort for remoteId:1 sessionId:N/A, treating it as a signal to force Consent screen.")
+        if (Router.getActiveHash() != "AlexaLoginScreen" && Router.getActiveHash() === "menu" && !Router.isNavigating()) {
+          console.log("Routing to Alexa login page - session abort remoteId:1 sessionId:N/A");
+          Router.navigate("AlexaLoginScreen")
+        }
+      }
+    });
+    voiceApi.registerEvent('onStreamBegin', notification => {
+      console.log('App onStreamBegin: ' + JSON.stringify(notification));
+      if (GLOBALS.topmostApp === GLOBALS.selfClientName) {
+        this.tag('VoiceMicOverlay').setStreaming(true);
+      }
+    });
+    voiceApi.registerEvent('onStreamEnd', notification => {
+      console.log('App onStreamEnd: ' + JSON.stringify(notification));
+      if (GLOBALS.topmostApp === GLOBALS.selfClientName) {
+        this.tag('VoiceMicOverlay').setStreaming(false);
       }
     });
   }

@@ -275,5 +275,18 @@
   "MAC:Default MAC":"MAC: MAC predeterminada",
   "Miracast Status":"Estado de Miracast",
   "Reason Code :":"Código de motivo:",
-  "Reason :":"Razón :"
+  "Reason :":"Razón :",
+  "YouTube Voice Consent":"¿Acepta compartir audio con YouTube? (Consulte la Política de privacidad de YouTube para obtener más detalles)",
+  "I Agree": "Estoy de acuerdo",
+  "I Do Not Agree": "No estoy de acuerdo",
+  "Continue without enabling Voice Sharing with YouTube?": "¿Continuar sin activar la función de compartir voz con YouTube?",
+  "Skip Voice Sharing with YouTube": "Omitir la función de compartir voz con YouTube",
+  "Voice Activity Legend": "Estados de voz de la IU del sistema (YouTube tiene los suyos)",
+  "In a voice session": "Sesión de voz activa",
+  "Voice streaming": "Transmisión de voz",
+  "Error": "Error",
+  "Status": "Estado",
+  "Enable": "Habilitar",
+  "SKIP": "Omitir",
+  "Today": "Hoy"
 }

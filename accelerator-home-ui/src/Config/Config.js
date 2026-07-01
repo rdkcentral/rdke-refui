@@ -73,6 +73,8 @@ export const GLOBALS = {
   _TofocusVOD:false,
   _AlexaAvsstatus:false,
   _RCSkipStatus:false,
+  _defaultVoiceConfig: {},
+  _voiceEnabled: undefined,
   _Miracastclientdevicedetails:{mac: null,name: null,reason_code: null,state:null},
   _previousapp_onActiveSourceStatusUpdated:null,
   _previousapp_onDisplayConnectionChanged:null,

@@ -16,10 +16,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-import { Lightning, Router, Language } from '@lightningjs/sdk'
-import AppApi from '../api/AppApi'
-import { CONFIG } from '../Config/Config'
-import AlexaApi from '../api/AlexaApi'
+import { Lightning, Router, Language, Storage } from '@lightningjs/sdk'
+import { CONFIG, GLOBALS } from '../Config/Config'
+import VoiceApi from '../api/VoiceApi'
+
+const voiceApi = new VoiceApi();
 
 /**
  * Class for Reboot Confirmation Screen.
@@ -44,7 +45,7 @@ export default class AlexaConfirmationScreen extends Lightning.Component {
                     y: 0,
                     mountX: 0.5,
                     text: {
-                        text: Language.translate("Exit Alexa"),
+                        text: Language.translate("Skip Voice Sharing with YouTube"),
                         fontFace: CONFIG.language.font,
                         fontSize: 40,
                         textColor: CONFIG.theme.hex,
@@ -58,7 +59,7 @@ export default class AlexaConfirmationScreen extends Lightning.Component {
                     y: 125,
                     mountX: 0.5,
                     text: {
-                        text: Language.translate("Alexa will be disabled, are you sure to exit?"),
+                        text: Language.translate("Continue without enabling Voice Sharing with YouTube?"),
                         fontFace: CONFIG.language.font,
                         fontSize: 25,
                     },
@@ -117,8 +118,10 @@ export default class AlexaConfirmationScreen extends Lightning.Component {
                 $enter() {
                     this._focus()
                 }
-                _handleEnter() {
-                    AlexaApi.get().setAlexaAuthStatus("AlexaUserDenied")
+                async _handleEnter() {
+                    Storage.set("ytAudioSharingConsent", false)
+                    GLOBALS._voiceEnabled = false
+                    await voiceApi.configureVoice({ "enable": false })
                     Router.navigate("menu")
                 }
                 _handleRight() {
