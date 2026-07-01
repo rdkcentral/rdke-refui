@@ -17,7 +17,7 @@
  * limitations under the License.
  **/
 import { Lightning, Router, Language, Storage } from '@lightningjs/sdk'
-import { CONFIG } from '../Config/Config'
+import { CONFIG, GLOBALS } from '../Config/Config'
 
 /**
  * Class for Reboot Confirmation Screen.
@@ -117,6 +117,7 @@ export default class AlexaConfirmationScreen extends Lightning.Component {
                 }
                 _handleEnter() {
                     Storage.set("ytAudioSharingConsent", false)
+                    GLOBALS._voiceEnabled = false
                     Router.navigate("menu")
                 }
                 _handleRight() {

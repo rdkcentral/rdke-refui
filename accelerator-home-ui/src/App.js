@@ -1457,10 +1457,12 @@ export default class App extends Router.App {
             GLOBALS._voiceEnabled = Storage.get("ytAudioSharingConsent");
             console.log("AVS URL is not present in voiceStatus response. ytAudioSharingConsent:", GLOBALS._voiceEnabled);
             if (GLOBALS._voiceEnabled === true) {
-              voiceApi.configureCobaltAOWSEndPoint().then(() => {
-                this.tag('Menu').tag('TopPanel').setVoiceConfigured(true)
-              }).catch(err => {
-                console.error("Error configuring Cobalt AOWS endpoint: " + JSON.stringify(err));
+              voiceApi.configureCobaltAOWSEndPoint().then((result) => {
+                if (result === false) {
+                  console.error("Cobalt AOWS endpoint configuration failed.");
+                } else {
+                  this.tag('Menu').tag('TopPanel').setVoiceConfigured(true)
+                }
               });
             } else if ((GLOBALS._voiceEnabled === false || GLOBALS._voiceEnabled === undefined)
                         && !Router.isNavigating() && Router.getActiveHash() !== "AlexaLoginScreen" && Router.getActiveHash() === "menu") {

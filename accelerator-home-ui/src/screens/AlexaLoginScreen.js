@@ -17,7 +17,7 @@
  * limitations under the License.
  **/
 import { Language, Lightning, Router, Storage, Utils } from '@lightningjs/sdk'
-import { CONFIG } from '../Config/Config'
+import { CONFIG, GLOBALS } from '../Config/Config'
 import VoiceApi from '../api/VoiceApi'
 
 const voiceApi = new VoiceApi();
@@ -236,10 +236,10 @@ export default class AlexaLoginScreen extends Lightning.Component {
                 async _handleEnter() {
                     console.log("Consent accepted on AlexaLoginScreen. Enabling YT AOWS endpoint.")
                     Storage.set("ytAudioSharingConsent", true)
-                    try {
-                        await voiceApi.configureCobaltAOWSEndPoint()
-                    } catch (err) {
-                        console.error("Error enabling YouTube Audio Sharing endpoint: " + JSON.stringify(err))
+                    GLOBALS._voiceEnabled = true
+                    const endpointResult = await voiceApi.configureCobaltAOWSEndPoint()
+                    if (endpointResult === false) {
+                        console.error("Error enabling YouTube Audio Sharing endpoint: configuration failed.")
                     }
                     await voiceApi.configureVoice({ "enable": true })
                     Router.navigate("menu")
