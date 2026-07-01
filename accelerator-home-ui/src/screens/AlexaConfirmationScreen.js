@@ -18,6 +18,9 @@
  **/
 import { Lightning, Router, Language, Storage } from '@lightningjs/sdk'
 import { CONFIG, GLOBALS } from '../Config/Config'
+import VoiceApi from '../api/VoiceApi'
+
+const voiceApi = new VoiceApi();
 
 /**
  * Class for Reboot Confirmation Screen.
@@ -115,9 +118,10 @@ export default class AlexaConfirmationScreen extends Lightning.Component {
                 $enter() {
                     this._focus()
                 }
-                _handleEnter() {
+                async _handleEnter() {
                     Storage.set("ytAudioSharingConsent", false)
                     GLOBALS._voiceEnabled = false
+                    await voiceApi.configureVoice({ "enable": false })
                     Router.navigate("menu")
                 }
                 _handleRight() {

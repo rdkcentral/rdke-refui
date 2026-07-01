@@ -235,12 +235,13 @@ export default class AlexaLoginScreen extends Lightning.Component {
                 }
                 async _handleEnter() {
                     console.log("Consent accepted on AlexaLoginScreen. Enabling YT AOWS endpoint.")
-                    Storage.set("ytAudioSharingConsent", true)
-                    GLOBALS._voiceEnabled = true
                     const endpointResult = await voiceApi.configureCobaltAOWSEndPoint()
                     if (endpointResult === false) {
-                        console.error("Error enabling YouTube Audio Sharing endpoint: configuration failed.")
+                        console.error("AOWS endpoint configuration failed. Staying on consent screen.")
+                        return
                     }
+                    Storage.set("ytAudioSharingConsent", true)
+                    GLOBALS._voiceEnabled = true
                     await voiceApi.configureVoice({ "enable": true })
                     Router.navigate("menu")
                 }
