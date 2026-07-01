@@ -2727,21 +2727,72 @@ export default class App extends Router.App {
 							for (let i = 0; i < audioport.connectedAudioPorts.length && !audioport.connectedAudioPorts[i].startsWith("SPDIF"); i++) {
 								if ((GLOBALS.deviceType == "IpTv" && audioport.connectedAudioPorts[i].startsWith("SPEAKER")) || (GLOBALS.deviceType != "IpTv" && audioport.connectedAudioPorts[i].startsWith("HDMI"))) {
 									appApi.getVolumeLevel(audioport.connectedAudioPorts[i]).then(volres => {
-										this.LOG("getVolumeLevel[" + JSON.stringify(audioport.connectedAudioPorts[i]) + "] is:" + JSON.stringify(parseInt(volres.volumeLevel)))
-										if ((parseInt(volres.volumeLevel) >= 0) || (parseInt(volres.volumeLevel) <= 100)) {
-											VolumePayload.msgPayload.event.payload.volume = parseInt(volres.volumeLevel) + payload.volume
-											this.LOG("volumepayload" + JSON.stringify(VolumePayload.msgPayload.event.payload.volume))
-											if (VolumePayload.msgPayload.event.payload.volume < 0) {
-												VolumePayload.msgPayload.event.payload.volume = 0
-											} else if (VolumePayload.msgPayload.event.payload.volume > 100) {
-												VolumePayload.msgPayload.event.payload.volume = 100
-											}
+										const currentVolume = Number.parseInt(volres.volumeLevel, 10)
+										const volumeDelta = Number.parseInt(payload.volume, 10)
+										this.LOG("getVolumeLevel[" + JSON.stringify(audioport.connectedAudioPorts[i]) + "] is:" + JSON.stringify(currentVolume))
+										if (Number.isNaN(currentVolume) || Number.isNaN(volumeDelta)) {
+											this.ERR("AdjustVolume invalid volume value current=" + JSON.stringify(volres.volumeLevel) + " delta=" + JSON.stringify(payload.volume))
+											return;
 										}
-										appApi.setVolumeLevel(audioport.connectedAudioPorts[i], VolumePayload.msgPayload.event.payload.volume).then(() => {
-											let volumeIncremented = parseInt(volres.volumeLevel) < VolumePayload.msgPayload.event.payload.volume ? true : false
+										let targetVolume = currentVolume + volumeDelta
+										if (targetVolume < 0) {
+											targetVolume = 0
+										} else if (targetVolume > 100) {
+											targetVolume = 100
+										}
+										VolumePayload.msgPayload.event.payload.volume = targetVolume
+										this.LOG("volumepayload" + JSON.stringify(targetVolume))
+										appApi.setVolumeLevel(audioport.connectedAudioPorts[i], targetVolume).then(() => {
+											let volumeIncremented = currentVolume < targetVolume ? true : false
 											if (volumeIncremented && VolumePayload.msgPayload.event.payload.muted) {
 												VolumePayload.msgPayload.event.payload.muted = false
 											}
+											if (GLOBALS.topmostApp === GLOBALS.selfClientName) {
+												this.tag("Volume").onVolumeChanged(volumeIncremented);
+											} else {
+												if (Router.getActiveHash() === "applauncher") {
+													this.tag("Volume").onVolumeChanged(volumeIncremented);
+												} else {
+													Router.navigate("applauncher");
+													this.tag("Volume").onVolumeChanged(volumeIncremented);
+												}
+											}
+										}).catch(err => {
+											this.ERR('AdjustVolume setVolumeLevel error:' + JSON.stringify(err))
+										});
+									}).catch(err => {
+										this.ERR('AdjustVolume getVolumeLevel error:' + JSON.stringify(err))
+									});
+								}
+							}
+						});
+					}
+					if (header.name === "SetVolume") {
+						VolumePayload.msgPayload.event.header.messageId = header.messageId
+						const requestedVolume = Number.parseInt(payload.volume, 10)
+						if (Number.isNaN(requestedVolume)) {
+							this.ERR("SetVolume invalid payload.volume: " + JSON.stringify(payload.volume))
+							return;
+						}
+						VolumePayload.msgPayload.event.payload.volume = requestedVolume
+						this.LOG("adjust volume" + JSON.stringify(VolumePayload))
+						this.LOG("checkvolume" + JSON.stringify(VolumePayload.msgPayload.event.payload.volume))
+						if (VolumePayload.msgPayload.event.payload.volume > 100) {
+							VolumePayload.msgPayload.event.payload.volume = 100
+						} else if (VolumePayload.msgPayload.event.payload.volume < 0) {
+							VolumePayload.msgPayload.event.payload.volume = 0
+						}
+						appApi.getConnectedAudioPorts().then(audioport => {
+							for (let i = 0; i < audioport.connectedAudioPorts.length && !audioport.connectedAudioPorts[i].startsWith("SPDIF"); i++) {
+								if ((GLOBALS.deviceType == "IpTv" && audioport.connectedAudioPorts[i].startsWith("SPEAKER")) ||
+									(GLOBALS.deviceType != "IpTv" && audioport.connectedAudioPorts[i].startsWith("HDMI"))) {
+									appApi.getVolumeLevel(audioport.connectedAudioPorts[i]).then(volres => {
+										const currentVolume = Number.parseInt(volres.volumeLevel, 10)
+										const volumeIncremented = Number.isNaN(currentVolume) ? false : (currentVolume < VolumePayload.msgPayload.event.payload.volume ? true : false)
+										if (volumeIncremented && VolumePayload.msgPayload.event.payload.muted) {
+											VolumePayload.msgPayload.event.payload.muted = false
+										}
+										return appApi.setVolumeLevel(audioport.connectedAudioPorts[i], VolumePayload.msgPayload.event.payload.volume).then(() => {
 											if (GLOBALS.topmostApp === GLOBALS.selfClientName) {
 												this.tag("Volume").onVolumeChanged(volumeIncremented);
 											} else {
@@ -2756,48 +2807,9 @@ export default class App extends Router.App {
 													this.tag("Volume").onVolumeChanged(volumeIncremented);
 												}
 											}
-										});
-									});
-								}
-							}
-						});
-					}
-					if (header.name === "SetVolume") {
-						VolumePayload.msgPayload.event.header.messageId = header.messageId
-						VolumePayload.msgPayload.event.payload.volume = payload.volume
-						this.LOG("adjust volume" + JSON.stringify(VolumePayload))
-						this.LOG("checkvolume" + JSON.stringify(VolumePayload.msgPayload.event.payload.volume))
-						if (VolumePayload.msgPayload.event.payload.volume > 100) {
-							VolumePayload.msgPayload.event.payload.volume = 100
-						} else if (VolumePayload.msgPayload.event.payload.volume < 0) {
-							VolumePayload.msgPayload.event.payload.volume = 0
-						}
-						appApi.getConnectedAudioPorts().then(audioport => {
-							for (let i = 0; i < audioport.connectedAudioPorts.length && !audioport.connectedAudioPorts[i].startsWith("SPDIF"); i++) {
-								if ((GLOBALS.deviceType == "IpTv" && audioport.connectedAudioPorts[i].startsWith("SPEAKER")) ||
-									(GLOBALS.deviceType != "IpTv" && audioport.connectedAudioPorts[i].startsWith("HDMI"))) {
-									let volumeIncremented
-									appApi.getVolumeLevel(audioport.connectedAudioPorts[i]).then(volres => {
-										volumeIncremented = parseInt(volres.volumeLevel) < VolumePayload.msgPayload.event.payload.volume ? true : false
-										if (volumeIncremented && VolumePayload.msgPayload.event.payload.muted) {
-											VolumePayload.msgPayload.event.payload.muted = false
-										}
-									})
-									appApi.setVolumeLevel(audioport.connectedAudioPorts[i], VolumePayload.msgPayload.event.payload.volume).then(() => {
-										if (GLOBALS.topmostApp === GLOBALS.selfClientName) {
-											this.tag("Volume").onVolumeChanged(volumeIncremented);
-										} else {
-											if (Router.getActiveHash() === "applauncher") {
-												RDKShellApis.moveToFront(GLOBALS.selfClientName)
-												RDKShellApis.setVisibility(GLOBALS.selfClientName, true)
-												this.tag("Volume").onVolumeChanged(volumeIncremented);
-											} else {
-												RDKShellApis.moveToFront(GLOBALS.selfClientName)
-												RDKShellApis.setVisibility(GLOBALS.selfClientName, true)
-												Router.navigate("applauncher");
-												this.tag("Volume").onVolumeChanged(volumeIncremented);
-											}
-										}
+										})
+									}).catch(err => {
+										this.ERR('SetVolume error:' + JSON.stringify(err))
 									});
 								}
 							}
