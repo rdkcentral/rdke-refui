@@ -206,16 +206,16 @@ export default class VoiceApi {
     })
   }
   // POC: YT AOWS integration
-  configureCobatlAOWSEndPoint() {
+  configureCobaltAOWSEndPoint() {
     return new Promise((resolve) => {
-      this.INFO("VoiceApi: configureCobatlAOWSEndPoint");
+      this.INFO("VoiceApi: configureCobaltAOWSEndPoint");
       const params = { urlAll: "aows://localhost:9880/mic", mic: { enable: true }};
       this.thunder.call('org.rdk.VoiceControl', 'configureVoice', params).then(result => {
-        this.INFO("VoiceApi: configureCobatlAOWSEndPoint result: ", JSON.stringify(result))
+        this.INFO("VoiceApi: configureCobaltAOWSEndPoint result: ", JSON.stringify(result))
         resolve(result);
       }).catch(err => {
-        this.ERR("VoiceApi: configureCobatlAOWSEndPoint error:", err);
-        Metrics.error(Metrics.ErrorType.OTHER,"VoiceApiError", "Error configureCobatlAOWSEndPoint "+ JSON.stringify(err), false, null)
+        this.ERR("VoiceApi: configureCobaltAOWSEndPoint error:", err);
+        Metrics.error(Metrics.ErrorType.OTHER,"VoiceApiError", "Error configureCobaltAOWSEndPoint "+ JSON.stringify(err), false, null)
         resolve(false);
       });
     })

@@ -236,14 +236,14 @@ export default class AlexaLoginScreen extends Lightning.Component {
                 async _handleEnter() {
                     console.log("Consent accepted on AlexaLoginScreen. Enabling YT AOWS endpoint.")
                     Storage.set("ytAudioSharingConsent", true)
-					voiceApi.configureCobatlAOWSEndPoint().catch(err => {
-						console.error("Error enabling YouTube Audio Sharing endpoint: " + JSON.stringify(err));
-					}).then(() => {
-						voiceApi.configureVoice({ "enable": true })
-					}).then(() => {
-						Router.navigate("menu")
-					})
-                 }
+                    try {
+                        await voiceApi.configureCobaltAOWSEndPoint()
+                    } catch (err) {
+                        console.error("Error enabling YouTube Audio Sharing endpoint: " + JSON.stringify(err))
+                    }
+                    await voiceApi.configureVoice({ "enable": true })
+                    Router.navigate("menu")
+                }
                 _handleUp(){
                     this._setState("BackButton")
                 }

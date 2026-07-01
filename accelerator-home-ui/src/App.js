@@ -1457,7 +1457,7 @@ export default class App extends Router.App {
             GLOBALS._voiceEnabled = Storage.get("ytAudioSharingConsent");
             console.log("AVS URL is not present in voiceStatus response. ytAudioSharingConsent:", GLOBALS._voiceEnabled);
             if (GLOBALS._voiceEnabled === true) {
-              voiceApi.configureCobatlAOWSEndPoint().then(() => {
+              voiceApi.configureCobaltAOWSEndPoint().then(() => {
                 this.tag('Menu').tag('TopPanel').setVoiceConfigured(true)
               }).catch(err => {
                 console.error("Error configuring Cobalt AOWS endpoint: " + JSON.stringify(err));

@@ -17,9 +17,7 @@
  * limitations under the License.
  **/
 import { Lightning, Router, Language, Storage } from '@lightningjs/sdk'
-import AppApi from '../api/AppApi'
 import { CONFIG } from '../Config/Config'
-import AlexaApi from '../api/AlexaApi'
 
 /**
  * Class for Reboot Confirmation Screen.
