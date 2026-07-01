@@ -18,16 +18,14 @@
 # limitations under the License.
 
 set -e
+set -x
 
 START_DIR="$(pwd -P)"
 
 pushd ../accelerator-home-ui
 
 npm install
-
-npm install -g @lightningjs/cli
-
-lng dist
+npm run build
 
 if [ ! -d "dist" ]; then
   echo "Dist was not created!"
