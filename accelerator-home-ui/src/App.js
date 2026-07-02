@@ -244,7 +244,7 @@ export default class App extends Router.App {
 	static language() {
 		return {
 			file: Utils.asset('language/language-file.json'),
-			language: ("ResidentApp" === GLOBALS.selfClientName ? CONFIG.language : Localization.language()) || 'en'
+			language: ("com.rdkcentral.refui" === GLOBALS.selfclientAppName ? CONFIG.language : Localization.language()) || 'en'
 		}
 	}
 
@@ -2124,12 +2124,7 @@ export default class App extends Router.App {
 	}
 
 	_updateLanguageToDefault() {
-		if ("ResidentApp" === GLOBALS.selfClientName) {
-			if (availableLanguageCodes[Language.get()].length) {
-				appApi.setUILanguage(availableLanguageCodes[Language.get()])
-				localStorage.setItem('Language', Language.get())
-			}
-		} else {
+		if ("FireboltMainApp-refui" === GLOBALS.selfclientAppName) {
 			FireBoltApi.get().localization.language().then(lang => {
 				if (lang) {
 					FireBoltApi.get().localization.language(lang).then(() => {
@@ -2138,6 +2133,11 @@ export default class App extends Router.App {
 					localStorage.setItem('Language', lang)
 				}
 			})
+		} else {
+			if (availableLanguageCodes[Language.get()].length) {
+				appApi.setUILanguage(availableLanguageCodes[Language.get()])
+				localStorage.setItem('Language', Language.get())
+			}
 		}
 	}
 
