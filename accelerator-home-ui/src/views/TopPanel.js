@@ -37,6 +37,7 @@ export default class TopPanel extends Lightning.Component {
           // zIndex: 2,
           y: 87,
           src: Utils.asset('/images/topPanel/microphone.png'),
+          color: 0xffffffff,
           w: 50,
           h: 50,
         },
@@ -139,6 +140,21 @@ export default class TopPanel extends Lightning.Component {
     }
   }
 
+  setVoiceConfigured(configured) {
+    this._voiceConfigured = configured
+    if (configured) {
+      this.tag('Mic').src = Utils.asset('/images/topPanel/mic_focused.png')
+      this.tag('Mic').color = 0xff14b8a6
+    } else {
+      this.tag('Mic').src = Utils.asset('/images/topPanel/microphone.png')
+      this.tag('Mic').color = 0xffffffff
+    }
+  }
+
+  _getMicDefaultColor() {
+    return this._voiceConfigured ? 0xff14b8a6 : 0xffffffff
+  }
+
 
   _build() {
     Registry.setInterval(() => {
@@ -193,14 +209,14 @@ export default class TopPanel extends Lightning.Component {
           this.tag('Mic').color = CONFIG.theme.hex
         }
         $exit() {
-          this.tag('Mic').color = 0xffffffff
+          this.tag('Mic').color = this._getMicDefaultColor()
         }
 
         _handleKey(key) {
           if (key.keyCode == Keymap.ArrowRight) {
             this._setState('Setting')
           } else if (key.keyCode == Keymap.ArrowDown) {
-            this.tag('Mic').color = 0xffffffff
+            this.tag('Mic').color = this._getMicDefaultColor()
             this.fireAncestors('$goToSidePanel', 0)
           }
         }

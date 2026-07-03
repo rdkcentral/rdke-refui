@@ -171,7 +171,7 @@ export default class NetworkScreen extends Lightning.Component {
                                     let eth = res.filter((item) => item.interface == 'ETHERNET')
                                     if (eth[0].interface == 'ETHERNET' && eth[0].enabled == true && eth[0].connected == true) {
                                         Registry.setTimeout(() => {
-                                            Router.navigate('menu')
+                                            Router.navigate('AlexaLoginScreen')
                                         }, (Router.isNavigating() ? 20 : 0));
                                     }
                                     else if (eth[0].interface == 'ETHERNET' && eth[0].connected == false) {
@@ -216,18 +216,10 @@ export default class NetworkScreen extends Lightning.Component {
                     })
                 }
                 _handleEnter() {
-                    if (AlexaApi.get().checkAlexaAuthStatus() !== "AlexaUserDenied" && GLOBALS.AlexaAvsstatus) {
-                        Network.get().isConnectedToInternet().then(result => {
-                            if (result)
-                                Registry.setTimeout(() => { 
-                                Router.navigate('AlexaLoginScreen') 
-                            }, (Router.isNavigating() ? 20 : 0));
-                            else
-                                Registry.setTimeout(() => { Router.navigate('menu') }, (Router.isNavigating() ? 20 : 0));
-                        })
-                    } else {
-                        Registry.setTimeout(() => { Router.navigate('menu') }, (Router.isNavigating() ? 20 : 0));
-                    }
+                    // YouTube PoC - SoftMic - force to consent screen.
+                    Registry.setTimeout(() => {
+                        Router.navigate('AlexaLoginScreen')
+                    }, (Router.isNavigating() ? 20 : 0));
                 }
                 _handleUp() {
                     this._setState('Ethernet')

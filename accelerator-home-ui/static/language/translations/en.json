@@ -122,5 +122,11 @@
   "INVALID_CREDENTIALS - The connection failed due to invalid credentials":"",
   "NO_SSID - The SSID does not exist":"",
   "UNKNOWN - Any other error":"",
-  "Configuring as default":"Configuring as default"
+  "Configuring as default":"Configuring as default",
+  "YouTube Voice Consent":"Do you agree to share voice data with YouTube? (See the YouTube Privacy Policy for more details.)",
+  "I Agree": "I Agree",
+  "I Do Not Agree": "I Do Not Agree",
+  "Voice Activity Legend": "System UI voice states (YouTube has its own)",
+  "In a voice session": "In a voice session",
+  "Voice streaming": "Voice streaming"
 }

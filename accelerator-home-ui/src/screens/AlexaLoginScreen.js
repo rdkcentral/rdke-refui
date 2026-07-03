@@ -16,9 +16,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-import { Language, Lightning, Router, Utils } from '@lightningjs/sdk'
-import { CONFIG } from '../Config/Config'
-import AlexaApi from '../api/AlexaApi'
+import { Language, Lightning, Router, Storage, Utils } from '@lightningjs/sdk'
+import { CONFIG, GLOBALS } from '../Config/Config'
+import VoiceApi from '../api/VoiceApi'
+
+const voiceApi = new VoiceApi();
 
 export default class AlexaLoginScreen extends Lightning.Component {
     static _template() {
@@ -48,22 +50,22 @@ export default class AlexaLoginScreen extends Lightning.Component {
                 x: 1050,
                 y: 250,
                 Logo: {
-                    h: 220,
-                    w: 442,
+                    h: 255,
+                    w: 454,
                     x: 135,
                     mountX: 1,
                     y: 200,
                     mountY: 0.5,
-                    src: Utils.asset('/images/apps/AlexaBadge.png'),
+                    src: Utils.asset('/images/apps/App_YouTube_454x255.png'),
                 },
                 Description: {
                     x: -70,
                     y: 380,
                     mount: 0.5,
                     text: {
-                        text: Language.translate('Alexa welcome message'),
+                        text: Language.translate('YouTube Voice Consent'),
                         fontFace: CONFIG.language.font,
-                        fontSize: 32,
+                        fontSize: 30,
                         textColor: 0xFFF9F9F9,
                         fontStyle: 'normal',
                         wordWrap: true,
@@ -72,20 +74,98 @@ export default class AlexaLoginScreen extends Lightning.Component {
                 },
                 SignInButton:{
                     x: -100,
-                    y: 500, mountX: 0.5, h: 60, w: 350, rect: true, color: 0xFFFFFFFF,
+                    y: 500, mountX: 0.5, h: 60, w: 500, rect: true, color: 0xFFFFFFFF,
                     Title: {
-                        x: 180,
+                        x: 250,
                         y: 30,
                         mount: 0.5,
                         text: {
-                            text: Language.translate('Sign in with')+" Amazon",
+                            text: Language.translate('I Agree'),
                             fontFace: CONFIG.language.font,
-                            fontSize: 28,
+                            fontSize: 26,
                             textColor: 0xFF000000,
                             fontStyle: 'normal'
                         },
                     },
                     visible: true,
+                },
+                Legend: {
+                    x: -100,
+                    y: 620,
+                    mountX: 0.5,
+                    Title: {
+                        x: -165,
+                        y: 0,
+                        text: {
+                            text: Language.translate('Voice Activity Legend'),
+                            fontFace: CONFIG.language.font,
+                            fontSize: 22,
+                            textColor: 0xFFE0E0E0,
+                            fontStyle: 'normal'
+                        },
+                    },
+                    SessionState: {
+                        y: 42,
+                        Icon: {
+                            x: -148,
+                            y: 14,
+                            Ring: {
+                                w: 30,
+                                h: 30,
+                                mount: 0.5,
+                                rect: true,
+                                color: CONFIG.theme.hex,
+                                shader: { type: Lightning.shaders.RoundedRectangle, radius: 15 },
+                            },
+                            Mic: {
+                                w: 17,
+                                h: 17,
+                                mount: 0.5,
+                                src: Utils.asset('images/topPanel/microphone.png'),
+                            },
+                        },
+                        Label: {
+                            x: -130,
+                            text: {
+                                text: Language.translate('In a voice session'),
+                                fontFace: CONFIG.language.font,
+                                fontSize: 20,
+                                textColor: 0xFFF9F9F9,
+                                fontStyle: 'normal'
+                            },
+                        }
+                    },
+                    StreamState: {
+                        y: 78,
+                        Icon: {
+                            x: -148,
+                            y: 14,
+                            Ring: {
+                                w: 30,
+                                h: 30,
+                                mount: 0.5,
+                                rect: true,
+                                color: 0xFF1E90FF,
+                                shader: { type: Lightning.shaders.RoundedRectangle, radius: 15 },
+                            },
+                            Mic: {
+                                w: 17,
+                                h: 17,
+                                mount: 0.5,
+                                src: Utils.asset('images/topPanel/microphone.png'),
+                            },
+                        },
+                        Label: {
+                            x: -130,
+                            text: {
+                                text: Language.translate('Voice streaming'),
+                                fontFace: CONFIG.language.font,
+                                fontSize: 20,
+                                textColor: 0xFFF9F9F9,
+                                fontStyle: 'normal'
+                            },
+                        }
+                    }
                 }
             }
         }
@@ -95,6 +175,28 @@ export default class AlexaLoginScreen extends Lightning.Component {
     }
 
     _init(){
+        this._sessionLegendAnim = this.tag('Legend.SessionState.Icon.Ring').animation({
+            duration: 1.2,
+            repeat: -1,
+            stopMethod: 'immediate',
+            actions: [
+                { p: 'scale', v: { 0: 1, 0.5: 1.14, 1: 1 } },
+                { p: 'alpha', v: { 0: 1, 0.5: 0.72, 1: 1 } },
+            ],
+        })
+
+        this._streamLegendAnim = this.tag('Legend.StreamState.Icon.Ring').animation({
+            duration: 0.55,
+            repeat: -1,
+            stopMethod: 'immediate',
+            actions: [
+                { p: 'scale', v: { 0: 1, 0.45: 1.28, 1: 1 } },
+                { p: 'alpha', v: { 0: 1, 0.45: 0.45, 1: 1 } },
+            ],
+        })
+
+        this._sessionLegendAnim.start()
+        this._streamLegendAnim.start()
     }
     _focus() {
         this._setState('SignInButton')
@@ -132,11 +234,17 @@ export default class AlexaLoginScreen extends Lightning.Component {
                     })
                 }
                 async _handleEnter() {
-                    if(AlexaApi.get().checkAlexaAuthStatus() != "AlexaUserDenied"){
-                        console.log("Code coming from AlexaLoginScreen")
-                        Router.navigate("CodeScreen")
+                    console.log("Consent accepted on AlexaLoginScreen. Enabling YT AOWS endpoint.")
+                    const endpointResult = await voiceApi.configureCobaltAOWSEndPoint()
+                    if (endpointResult === false) {
+                        console.error("AOWS endpoint configuration failed. Staying on consent screen.")
+                        return
                     }
-                 }
+                    Storage.set("ytAudioSharingConsent", true)
+                    GLOBALS._voiceEnabled = true
+                    await voiceApi.configureVoice({ "enable": true })
+                    Router.navigate("menu")
+                }
                 _handleUp(){
                     this._setState("BackButton")
                 }
@@ -186,7 +294,3 @@ export default class AlexaLoginScreen extends Lightning.Component {
         ]
     }
 }
-
-
-
-

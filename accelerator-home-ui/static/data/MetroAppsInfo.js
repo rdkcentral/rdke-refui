@@ -42,13 +42,6 @@ export var metroAppsInfo = [
     appIdentifier: 'm:9'
   },
   {
-    displayName: 'Fireplace',
-    applicationType: 'LightningApp',
-    uri: 'https://widgets.metrological.com/lightning/rdk/d431ce8577be56e82630650bf701c57d#app:com.metrological.app.Fireplace',
-    url: '/images/metroApps/Fireplace.png',
-    appIdentifier: 'm:10'
-  },
-  {
     displayName: 'Sudoku',
     applicationType: 'LightningApp',
     uri: 'https://widgets.metrological.com/lightning/rdk/d431ce8577be56e82630650bf701c57d#app:com.metrological.app.Sudoku',
