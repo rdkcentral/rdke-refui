@@ -84,7 +84,7 @@ export default class AppStore extends Lightning.Component {
         Router.focusWidget('Menu')
     }
     _handleBack() {
-        Router.focusWidget('Menu');
+        Router.back();
     }
 
     pageTransition() {
