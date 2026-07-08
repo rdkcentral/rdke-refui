@@ -31,6 +31,11 @@ const DIAL_APPS = {
     id: "com.rdkcentral.youtube-exp",
     url: "https://www.youtube.com/tv",
     cors: ".youtube.com",
+  },
+  "Netflix": {
+    id: "com.rdkcentral.Netflix",
+    url: "",
+    cors: ".netflix.com",
   }
 };
 
