@@ -39,6 +39,7 @@ export default class BluetoothScreen extends Lightning.Component {
         this.rcStatusListener = null;
         this.bluetoothDiscoveryListener = null;
         this.pairingInitialized = false;
+        this.voiceRcuPluginUsed = null;
     }
 
     static _template() {
@@ -387,7 +388,7 @@ export default class BluetoothScreen extends Lightning.Component {
         }, 1000)
     }
 
-    _inactive() {
+    async _inactive() {
         if (this.timeInterval) {
             Registry.clearInterval(this.timeInterval)
         }
@@ -413,10 +414,18 @@ export default class BluetoothScreen extends Lightning.Component {
         }
         // Reset initialization flag so pairing can be re-setup if user returns to this page
         this.pairingInitialized = false;
-        if (this.voiceRcuPluginUsed) {
-            RCApi.get().stopPairing().catch(err => { this.ERR("SplashBluetoothScreen stopPairing error: " + JSON.stringify(err)) });
-        } else {
-            bluetoothApi.stopScan().catch(err => { this.ERR("SplashBluetoothScreen stopScan error: " + JSON.stringify(err)) });
+        const stopOps = this.voiceRcuPluginUsed ? [
+            RCApi.get().stopPairing()
+        ] : [
+            bluetoothApi.stopScan()
+        ];
+        const [stopResult] = await Promise.allSettled(stopOps);
+        if (stopResult && stopResult.status === 'rejected') {
+            if (this.voiceRcuPluginUsed) {
+                this.ERR("SplashBluetoothScreen stopPairing error: " + JSON.stringify(stopResult.reason));
+            } else {
+                this.ERR("SplashBluetoothScreen stopScan error: " + JSON.stringify(stopResult.reason));
+            }
         }
     }
 

@@ -367,6 +367,9 @@ export default class RCInformationScreen extends Lightning.Component {
     }
 
     async _active() {
+        this.setStatusValues('N/A')
+        this.showDeviceInfo(false)
+        this.clearPairingAttemptTimeout()
         this.scanTrigger = null;
         this.hasStartedPairingAttempt = false;
         this.findRemoteTrigger = true;
@@ -378,8 +381,16 @@ export default class RCInformationScreen extends Lightning.Component {
         }).catch(err => this.ERR("RCInformationScreen error: " + JSON.stringify(err)));
     }
 
-    _inactive() {
+    async _inactive() {
         this.WARN("RCInformationScreen _inactive.");
+        const [stopPairingResult] = await Promise.allSettled([
+            RCApi.get().stopPairing()
+        ]);
+        if (stopPairingResult.status === 'fulfilled') {
+            this.INFO("RCInformationScreen stopPairing success");
+        } else {
+            this.ERR("RCInformationScreen stopPairing error: " + JSON.stringify(stopPairingResult.reason));
+        }
         if(onStatusCBhandle != null) {
             onStatusCBhandle.dispose();
             onStatusCBhandle = null;
@@ -401,12 +412,11 @@ export default class RCInformationScreen extends Lightning.Component {
         this.tag('PairingStatus.LoadingIcon').alpha = 0
         this.showDeviceInfo(false)
         this.findRemoteTrigger = false;
-        RCApi.get().stopPairing().catch(err => { this.ERR("RCInformationScreen error: " + JSON.stringify(err)) });
     }
 
     onStatusCB(cbData) {
         // getStatus response has 'success' property; notification payload does not have that.
-        this.LOG("RCInformationScreen onStatusCB cbData:" + JSON.stringify(cbData));
+        this.INFO("RCInformationScreen onStatusCB cbData:" + JSON.stringify(cbData));
         if ((cbData !== undefined) && ("success" in cbData ? cbData.success : true)) {
             let cbDatastatus = {}
             if (Array.isArray(cbData.status)) {
@@ -417,7 +427,7 @@ export default class RCInformationScreen extends Lightning.Component {
             }
             const remoteData = Array.isArray(cbDatastatus.remoteData) ? cbDatastatus.remoteData : [];
             if (remoteData.length) {
-                this.LOG("RCInformationScreen rcPairingApis RemoteData Length " + JSON.stringify(remoteData.length))
+                this.INFO("RCInformationScreen rcPairingApis RemoteData Length " + JSON.stringify(remoteData.length))
                 let RemoteName = []; let connectedStatus = []; let MacAddress = [];
                 let swVersion = []; let BatteryPercent = [];
 
