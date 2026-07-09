@@ -134,6 +134,12 @@ export default class NetworkScreen extends Lightning.Component {
         return 'left'
     }
 
+    _handleBack() {
+        Registry.setTimeout(() => {
+            Router.navigate('splash/language')
+        }, Router.isNavigating() ? 20 : 0);
+    }
+
     _focus() {
         this._setState('WiFi')
     }
