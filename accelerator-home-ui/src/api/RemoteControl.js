@@ -42,15 +42,21 @@ export default class RCApi {
   activate() {
     return new Promise((resolve, reject) => {
       this.thunder.call('Controller', `status@${this.callsign}`).then(result => {
-        if (result[0].state === "activated") { resolve(true); return; }
-      });
-      this.INFO("RCApi: activate.");
-      this.thunder.Controller.activate({ callsign: this.callsign }).then(() => {
-        resolve(true);
+        if (result[0].state === "activated") {
+          resolve(true);
+          return;
+        }
+        this.INFO("RCApi: activate.");
+        this.thunder.Controller.activate({ callsign: this.callsign }).then(() => {
+          resolve(true);
+        }).catch(err => {
+          this.ERR("RCApi: Error Activation " + JSON.stringify(err));
+          Metrics.error(Metrics.ErrorType.OTHER,"RemoteControlApiError", "Error while Thunder Controller RemoteControl activate "+JSON.stringify(err), false, null)
+          reject(err)
+        })
       }).catch(err => {
-        this.ERR("RCApi: Error Activation " + JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER,"RemoteControlApiError", "Error while Thunder Controller RemoteControl activate "+JSON.stringify(err), false, null)
-        reject(err)
+        this.ERR("RCApi: Error checking activation status " + JSON.stringify(err));
+        reject(err);
       })
     })
   }
@@ -86,8 +92,11 @@ export default class RCApi {
     return new Promise((resolve, reject) => {
       this.thunder.call(this.callsign, 'getNetStatus').then(result => {
         this.INFO("RCApi: getNetStatus result: " + JSON.stringify(result))
-        if (result.success) resolve(result);
-        reject(false);
+        if (result.success) {
+          resolve(result);
+        } else {
+          reject(false);
+        }
       }).catch(err => {
         this.ERR("RCApi: getNetStatus error: " + JSON.stringify(err));
         Metrics.error(Metrics.ErrorType.OTHER,"RemoteControlApiError", "Error in Thunder RemoteControl getNetStatus "+JSON.stringify(err), false, null)

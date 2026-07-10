@@ -1700,8 +1700,6 @@ export default class App extends Router.App {
 	// 			"context": {
 	// 				"source": "device"
 	// 			}
-	// 		}).then(() => {
-	// 			AlexaApi.get().reportApplicationState("menu", true);
 	// 		})
 	// 	})
 	// 	FireBoltApi.get().lifecycle.registerEvent('background', value => {

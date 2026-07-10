@@ -442,19 +442,11 @@ export default class RCInformationScreen extends Lightning.Component {
                     this.pairingMessageTimeout = null
                 }
 
-                remoteData.map(item => {
+                remoteData.forEach(item => {
                     RemoteName.push(item.name)
-                })
-                remoteData.map(item => {
                     MacAddress.push(item.macAddress)
-                })
-                remoteData.map(item => {
                     swVersion.push(item.swVersion)
-                })
-                remoteData.map(item => {
                     BatteryPercent.push(item.batteryPercent)
-                })
-                remoteData.map(item => {
                     connectedStatus.push(item.connected)
                 })
                 this.tag("Status.Value").text.text = connectedStatus
@@ -467,7 +459,7 @@ export default class RCInformationScreen extends Lightning.Component {
                     // When opening this page with an already paired RCU, avoid flashing pairing UI.
                     this.showDeviceInfo(true)
                 } else {
-                    this.showPairingStatus(pairedDeviceLabel + Language.translate('remote is paired'), false)
+                    this.showPairingStatus(pairedDeviceLabel + ' ' + Language.translate('remote is paired'), false)
                     this.pairingMessageTimeout = Registry.setTimeout(() => {
                         this.pairingMessageTimeout = null
                         this.showDeviceInfo(true)
