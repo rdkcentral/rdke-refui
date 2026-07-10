@@ -305,5 +305,6 @@
   "Unavailable":"No disponible",
   "App Catalog URL is not set":"La URL del catálogo de aplicaciones no está configurada",
   "Unable to retrieve App Catalog URL":"No se pudo obtener la URL del catálogo de aplicaciones",
-  "VOD feature is not supported.": "La función VOD no es compatible."
+  "VOD feature is not supported.": "La función VOD no es compatible.",
+  "Enabled": "Habilitado"
 }
