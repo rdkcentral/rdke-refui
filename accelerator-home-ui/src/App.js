@@ -1109,9 +1109,7 @@ export default class App extends Router.App {
 		thunder.on('org.rdk.RDKShell', 'onApplicationTerminated', data => {
 			this.WARN("[RDKSHELLEVT] onApplicationTerminated:" + JSON.stringify(data));
 			if ((data.client != GLOBALS.selfClientName) && (GLOBALS.topmostApp != GLOBALS.selfClientName)) {
-				appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName).then(() => {
-					AlexaApi.get().reportApplicationState("menu", true);
-				});
+				appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName)
 			}
 		});
 		thunder.on('org.rdk.RDKShell', 'onHibernated', data => {
@@ -1149,9 +1147,7 @@ export default class App extends Router.App {
 			if (data.success) {
 				if ((GLOBALS.topmostApp === data.client) &&
 					(GLOBALS.selfClientName === "ResidentApp" || GLOBALS.selfClientName === "FireboltMainApp-refui") && GLOBALS.Miracastclientdevicedetails.state != "PLAYING") {
-					appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName).then(() => {
-						AlexaApi.get().reportApplicationState("menu", true);
-					});
+					appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName)
 				}
 			}
 		});
@@ -1215,9 +1211,7 @@ export default class App extends Router.App {
 			}
 			if ((GLOBALS.topmostApp === data.client) &&
 				(GLOBALS.selfClientName === "ResidentApp" || GLOBALS.selfClientName === "FireboltMainApp-refui") && GLOBALS.Miracastclientdevicedetails.state != "PLAYING") {
-				appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName).then(() => {
-					AlexaApi.get().reportApplicationState("menu", true);
-				});
+				appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName);
 			}
 		});
 		thunder.on('org.rdk.RDKShell', 'onLaunched', data => {
@@ -1261,7 +1255,6 @@ export default class App extends Router.App {
 				}
 				// Assuming launch is followed by moveToFront & setFocus
 				GLOBALS.topmostApp = data.client;
-				AlexaApi.get().reportApplicationState(data.client);
 			} else if (data.launchType === "suspend") {
 				// No need to handle this here when UI is in Firebolt compatible mode.
 				// It will be done at RefUI's 'foreground' event handler.
@@ -1297,9 +1290,7 @@ export default class App extends Router.App {
 				}
 				if ((GLOBALS.topmostApp === data.client) &&
 					(GLOBALS.selfClientName === "ResidentApp") && GLOBALS.Miracastclientdevicedetails.state != "PLAYING") {
-					appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName).then(() => {
-						AlexaApi.get().reportApplicationState("menu", true);
-					});
+					appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName);
 				}
 			}
 		});
@@ -1338,9 +1329,7 @@ export default class App extends Router.App {
 			}
 			if ((GLOBALS.topmostApp === data.client) &&
 				(GLOBALS.selfClientName === "ResidentApp" || GLOBALS.selfClientName === "FireboltMainApp-refui") && GLOBALS.Miracastclientdevicedetails.state != "PLAYING") {
-				appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName).then(() => {
-					AlexaApi.get().reportApplicationState("menu", true);
-				});
+				appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName);
 			}
 		});
 		thunder.on('org.rdk.RDKShell', 'onWillDestroy', data => {
@@ -1380,9 +1369,7 @@ export default class App extends Router.App {
 			}
 			if ((GLOBALS.topmostApp === data.client) &&
 				(GLOBALS.selfClientName === "ResidentApp" || GLOBALS.selfClientName === "FireboltMainApp-refui") && GLOBALS.Miracastclientdevicedetails.state != "PLAYING") {
-				appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName).then(() => {
-					AlexaApi.get().reportApplicationState("menu", true);
-				});
+				appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName);
 			}
 		});
 		thunder.on('org.rdk.RDKShell', 'onBlur', data => {
@@ -1435,9 +1422,7 @@ export default class App extends Router.App {
 				}
 				if (notification.callsign === GLOBALS.topmostApp) { //only launch residentApp iff notification is from currentApp
 					this.LOG(notification.callsign + " is in: " + notification.state + " state, and application type in Storage is still: " + GLOBALS.topmostApp + " calling launchResidentApp")
-					appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName).then(() => {
-						AlexaApi.get().reportApplicationState("menu", true);
-					});
+					appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName);
 				}
 			}
 			if (notification && (notification.callsign === 'org.rdk.HdmiCecSource' && notification.state === 'Activated')) {

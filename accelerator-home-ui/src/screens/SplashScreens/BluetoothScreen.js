@@ -40,6 +40,7 @@ export default class BluetoothScreen extends Lightning.Component {
         this.bluetoothDiscoveryListener = null;
         this.pairingInitialized = false;
         this.voiceRcuPluginUsed = null;
+        this.screenFlowStarted = false;
     }
 
     static _template() {
@@ -147,10 +148,10 @@ export default class BluetoothScreen extends Lightning.Component {
             this.LOG("SplashBluetoothScreen enable result: " + JSON.stringify(res))
             bluetoothApi.startScanBluetooth().then(startScanresult => {
                 this.LOG('SplashBluetoothScreen startScanresult ' + JSON.stringify(startScanresult))
+                this.tag('Info').text.text = Language.translate('Please put the remote in pairing mode') + ': ' + Language.translate('Scanning') + '...';
                 this.bluetoothDiscoveryListener = _thunder.on('org.rdk.Bluetooth', 'onDiscoveredDevice', notification => {
                     bluetoothApi.getDiscoveredDevices().then((getdocoveredInfo) => {
                         this.LOG('SplashBluetoothScreen onDiscoveredDevice ' + JSON.stringify(getdocoveredInfo[0].name))
-                        this.tag('Info').text.text = `pairing this device ${getdocoveredInfo[0].name}`
                         //bluetoothApi.connect(getdocoveredInfo[0].deviceID, getdocoveredInfo[0].deviceType).then(connectresult=>{
                         //  console.log("connectresult",connectresult)
                         bluetoothApi.pair(getdocoveredInfo[0].deviceID).then(Pairresult => {
@@ -210,30 +211,44 @@ export default class BluetoothScreen extends Lightning.Component {
                 cbDatastatus = cbData.status;
             }
             const remoteData = Array.isArray(cbDatastatus.remoteData) ? cbDatastatus.remoteData : [];
+            this.LOG("SplashBluetoothScreen onStatusCB state=" + JSON.stringify(cbDatastatus.pairingState) + " remoteDataCount=" + remoteData.length)
             if (remoteData.length > 0) {
                 //console.log("BluetoothScreen rcPairingApis RemoteData Length ", cbData.status.remoteData.length)
                 if (this.scanTrigger) {
                     Registry.clearTimeout(this.scanTrigger);
                     this.scanTrigger = null;
                 }
-                remoteData.forEach(item => {
-                    this.tag('Info').text.text = `paired with device ${item.name}`
-                })
+                this._voiceRcuName = (remoteData[0] && remoteData[0].name) ? remoteData[0].name : '';
+                if (this._voiceRcuName) {
+                    this.tag('Info').text.text = Language.translate('Connected to ') + this._voiceRcuName
+                } else {
+                    this.tag('Info').text.text = Language.translate('Pairing Successful')
+                }
+                this.LOG("SplashBluetoothScreen onStatusCB updating Info text to Pairing Successful");
                 // To stop the display counter and navigate once.
                 if (Router.getActiveHash() === "splash/bluetooth") {
                     if (this.timeInterval) {
                         Registry.clearInterval(this.timeInterval)
+                        this.timeInterval = null;
                     }
                     if (this.navigateTimeout) {
                         Registry.clearTimeout(this.navigateTimeout);
+                        this.navigateTimeout = null;
                     }
                     this.navigateTimeout = Registry.setTimeout(() => {
                         this.navigateTimeout = null;
                         Router.navigate('splash/language')
-                    }, 2000)
+                    }, 3200)
                 }
             } else {
-                if (cbDatastatus.pairingState === "IDLE" || cbDatastatus.pairingState === "FAILED") {
+                if (cbDatastatus.pairingState === "PAIRING" || cbDatastatus.pairingState === "SEARCHING") {
+                    if (this.scanTrigger) {
+                        Registry.clearTimeout(this.scanTrigger);
+                        this.scanTrigger = null;
+                    }
+                    this.tag('Info').text.text = Language.translate('Please put the remote in pairing mode') + ': ' + Language.translate('Scanning') + '...';
+                    this.LOG("SplashBluetoothScreen onStatusCB updating Info text to Scanning");
+                } else if (cbDatastatus.pairingState === "IDLE" || cbDatastatus.pairingState === "FAILED") {
                     // after 2 seconds, initiate pairing flow if status is IDLE, as there is no paired device.
                     if (!this.scanTrigger) {
                         this.scanTrigger = Registry.setTimeout(() => {
@@ -254,7 +269,10 @@ export default class BluetoothScreen extends Lightning.Component {
                                             this.ERR("SplashBluetoothScreen startPairing returned false, retrying...");
                                             this.scanTrigger = Registry.setTimeout(() => {
                                                 this.scanTrigger = null;
-                                                RCApi.get().startPairing().catch(err => {
+                                                RCApi.get().startPairing().then(() => {
+                                                    this.tag('Info').text.text = Language.translate('Please put the remote in pairing mode') + ': ' + Language.translate('Scanning') + '...';
+                                                    this.LOG("SplashBluetoothScreen startPairing updating Info text to Scanning");
+                                                }).catch(err => {
                                                     this.ERR("SplashBluetoothScreen startPairing retry error: " + JSON.stringify(err));
                                                 });
                                             }, 2000);
@@ -287,6 +305,8 @@ export default class BluetoothScreen extends Lightning.Component {
         }
         this.rcStatusListener = _thunder.on('org.rdk.RemoteControl', 'onStatus', data => { this.onStatusCB(data) });
         this.RCTimeout = Registry.setTimeout(() => {
+            this.RCTimeout = null;
+            this.LOG('SplashBluetoothScreen checking RemoteControl net status')
             RCApi.get().getNetStatus().then(result => {
                 this.onStatusCB(result);
                 // onStatusCB only schedules startPairing on IDLE/FAILED. If the plugin
@@ -302,7 +322,10 @@ export default class BluetoothScreen extends Lightning.Component {
                     if (!hasRemote && inRetryState) {
                         this.scanTrigger = Registry.setTimeout(() => {
                             this.scanTrigger = null;
-                            RCApi.get().startPairing().catch(err => {
+                            RCApi.get().startPairing().then(() => {
+                                this.tag('Info').text.text = Language.translate('Please put the remote in pairing mode') + ': ' + Language.translate('Scanning') + '...';
+                                this.LOG("SplashBluetoothScreen startPairing updating Info text to Scanning");
+                            }).catch(err => {
                                 this.ERR("SplashBluetoothScreen startPairing error: " + JSON.stringify(err));
                             });
                         }, 3000);
@@ -314,18 +337,34 @@ export default class BluetoothScreen extends Lightning.Component {
                 if (!this.scanTrigger) {
                     this.scanTrigger = Registry.setTimeout(() => {
                         this.scanTrigger = null;
-                        RCApi.get().startPairing().catch(pairErr => {
+                        RCApi.get().startPairing().then(() => {
+                            this.tag('Info').text.text = Language.translate('Please put the remote in pairing mode') + ': ' + Language.translate('Scanning') + '...';
+                            this.LOG("SplashBluetoothScreen startPairing updating Info text to Scanning");
+                        }).catch(pairErr => {
                             this.ERR("SplashBluetoothScreen startPairing after getNetStatus failure error: " + JSON.stringify(pairErr));
                         });
                     }, 3000);
                 }
             });
-        }, 5, true);
+        }, 5000);
     }
 
     _init() {
-        // Initialization can happen here, but pairing listeners will be registered in _active()
         this.pairingInitialized = false;
+    }
+
+    _startScreenFlow() {
+        if (this.screenFlowStarted) {
+            return;
+        }
+        this.screenFlowStarted = true;
+        this.timeout = 30;
+        this.initTimer();
+        if (typeof this.scanTrigger === 'undefined') {
+            this.scanTrigger = null;
+        }
+        this.LOG('SplashBluetoothScreen starting pairing flow')
+        this._setupPairing();
     }
 
     _setupPairing() {
@@ -361,13 +400,7 @@ export default class BluetoothScreen extends Lightning.Component {
     }
 
     _active() {
-        this.timeout = 30;
-        this.initTimer()
-        if (typeof this.scanTrigger === 'undefined') {
-            this.scanTrigger = null;
-        }
-        // Setup pairing listeners only when page is active
-        this._setupPairing();
+        this._startScreenFlow();
     }
 
     _handleBack() {
@@ -389,11 +422,14 @@ export default class BluetoothScreen extends Lightning.Component {
     }
 
     async _inactive() {
+        this.screenFlowStarted = false;
         if (this.timeInterval) {
             Registry.clearInterval(this.timeInterval)
+            this.timeInterval = null;
         }
         if (this.RCTimeout) {
             Registry.clearTimeout(this.RCTimeout)
+            this.RCTimeout = null;
         }
         if (this.scanTrigger) {
             Registry.clearTimeout(this.scanTrigger)
@@ -414,19 +450,22 @@ export default class BluetoothScreen extends Lightning.Component {
         }
         // Reset initialization flag so pairing can be re-setup if user returns to this page
         this.pairingInitialized = false;
-        const stopOps = this.voiceRcuPluginUsed ? [
-            RCApi.get().stopPairing()
-        ] : [
-            bluetoothApi.stopScan()
-        ];
-        const [stopResult] = await Promise.allSettled(stopOps);
-        if (stopResult && stopResult.status === 'rejected') {
-            if (this.voiceRcuPluginUsed) {
-                this.ERR("SplashBluetoothScreen stopPairing error: " + JSON.stringify(stopResult.reason));
-            } else {
-                this.ERR("SplashBluetoothScreen stopScan error: " + JSON.stringify(stopResult.reason));
-            }
+        const stopOps = [];
+        if (this.voiceRcuPluginUsed === true || this.voiceRcuPluginUsed === null) {
+            stopOps.push(RCApi.get().stopPairing());
         }
+        if (this.voiceRcuPluginUsed === false || this.voiceRcuPluginUsed === null) {
+            stopOps.push(bluetoothApi.stopScan());
+        }
+        const stopResults = await Promise.allSettled(stopOps);
+        stopResults.forEach((result, index) => {
+            if (result.status === 'rejected') {
+                const op = (this.voiceRcuPluginUsed === false) ? 'stopScan' :
+                    (this.voiceRcuPluginUsed === true) ? 'stopPairing' :
+                        (index === 0 ? 'stopPairing' : 'stopScan');
+                this.ERR(`SplashBluetoothScreen ${op} error: ` + JSON.stringify(result.reason));
+            }
+        });
     }
 
     static _states() {

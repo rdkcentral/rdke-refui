@@ -39,6 +39,7 @@ export default class RCInformationScreen extends Lightning.Component {
         this.hasStartedPairingAttempt = false;
         this.pairingTimeoutSeconds = 30;
         this.retryDelayMilliseconds = 2000;
+        this.initialStatusCheck = true;
     }
 
     setStatusValues(value) {
@@ -78,14 +79,14 @@ export default class RCInformationScreen extends Lightning.Component {
 
     showScanningStatus() {
         this.showPairingStatus(
-            Language.translate('Please put the remote in pairing mode') + ', ' + Language.translate('Scanning') + '...',
+            Language.translate('Please put the remote in pairing mode') + ': ' + Language.translate('Scanning') + '...',
             true
         )
     }
 
     showNoDeviceFoundStatus() {
         this.showPairingStatus(
-            Language.translate('Please put the remote in pairing mode') + ', ' + Language.translate('No device found'),
+            Language.translate('Please put the remote in pairing mode') + ': ' + Language.translate('No device found'),
             false
         )
     }
@@ -166,7 +167,7 @@ export default class RCInformationScreen extends Lightning.Component {
                     mountX: 0.5,
                     w: 1200,
                     text: {
-                        text: Language.translate('Please put the remote in pairing mode') + ', ' + Language.translate('Scanning') + '...',
+                        text: Language.translate('Please put the remote in pairing mode') + ': ' + Language.translate('Scanning') + '...',
                         textColor: COLORS.titleColor,
                         fontFace: CONFIG.language.font,
                         fontSize: 25,
@@ -368,10 +369,12 @@ export default class RCInformationScreen extends Lightning.Component {
 
     async _active() {
         this.setStatusValues('N/A')
-        this.showDeviceInfo(false)
+        this.tag('DeviceInfoContents').visible = false
+        this.tag('PairingStatus').visible = false
         this.clearPairingAttemptTimeout()
         this.scanTrigger = null;
         this.hasStartedPairingAttempt = false;
+        this.initialStatusCheck = true;
         this.findRemoteTrigger = true;
         await RCApi.get().activate().catch(err => { this.ERR("RCInformationScreen error: " + JSON.stringify(err)) });
         await RCApi.get().getNetStatus().then(result => {
@@ -462,11 +465,17 @@ export default class RCInformationScreen extends Lightning.Component {
                 this.tag("BatteryPercent.Value").text.text = BatteryPercent
                 this.tag("RCUName.Value").text.text = RemoteName
                 const pairedDeviceLabel = remoteData[0].deviceType || remoteData[0].name || Language.translate('Remote')
-                this.showPairingStatus(pairedDeviceLabel + Language.translate('remote is paired'), false)
-                this.pairingMessageTimeout = Registry.setTimeout(() => {
-                    this.pairingMessageTimeout = null
+                if (this.initialStatusCheck && !this.hasStartedPairingAttempt) {
+                    // When opening this page with an already paired RCU, avoid flashing pairing UI.
                     this.showDeviceInfo(true)
-                }, 1500)
+                } else {
+                    this.showPairingStatus(pairedDeviceLabel + Language.translate('remote is paired'), false)
+                    this.pairingMessageTimeout = Registry.setTimeout(() => {
+                        this.pairingMessageTimeout = null
+                        this.showDeviceInfo(true)
+                    }, 1500)
+                }
+                this.initialStatusCheck = false;
                 if (this.findRemoteTrigger) {
                     this.findRemoteTrigger = false;
                     RCApi.get().findMyRemote().catch(err => {
@@ -474,6 +483,7 @@ export default class RCInformationScreen extends Lightning.Component {
                     });
                 }
             } else {
+                this.initialStatusCheck = false;
                 if (cbDatastatus.pairingState === "PAIRING" || cbDatastatus.pairingState === "SEARCHING") {
                     this.showScanningStatus()
                     this.hasStartedPairingAttempt = true
