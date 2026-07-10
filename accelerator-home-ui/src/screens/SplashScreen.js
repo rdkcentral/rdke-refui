@@ -312,6 +312,7 @@ export default class SplashScreen extends Lightning.Component {
             if (!connected)
               this.tag('AutoRemotePair.Description').text =
                 Language.translate('Please put the remote in pairing mode') + ", " + Language.translate('No device found')
+            if (this.autoPairNavigateTimeout) clearTimeout(this.autoPairNavigateTimeout)
             this.autoPairNavigateTimeout = setTimeout(() => {
               if (this.hasInternet == false) this._setState('ConnectivityScreen')
               else Router.navigate('home', { path: 'settings' })
@@ -320,6 +321,7 @@ export default class SplashScreen extends Lightning.Component {
           let error = () => {
             this.tag('AutoRemotePair.Description').text =
               Language.translate('Please put the remote in pairing mode') + ", " + Language.translate('No device found')
+            if (this.autoPairNavigateTimeout) clearTimeout(this.autoPairNavigateTimeout)
             this.autoPairNavigateTimeout = setTimeout(() => {
               if (this.hasInternet == false) this._setState('ConnectivityScreen')
               else Router.navigate('home', { path: 'settings' })

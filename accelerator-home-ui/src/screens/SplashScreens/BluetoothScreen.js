@@ -271,7 +271,8 @@ export default class BluetoothScreen extends Lightning.Component {
                                             this.ERR("SplashBluetoothScreen startPairing returned false, retrying...");
                                             this.scanTrigger = Registry.setTimeout(() => {
                                                 this.scanTrigger = null;
-                                                RCApi.get().startPairing().then(() => {
+                                                RCApi.get().startPairing().then(success => {
+                                                    if (success === false) throw new Error('startPairing returned false');
                                                     this.tag('Info').text.text = Language.translate('Please put the remote in pairing mode') + ': ' + Language.translate('Scanning') + '...';
                                                 }).catch(err => {
                                                     this.ERR("SplashBluetoothScreen startPairing retry error: " + JSON.stringify(err));
