@@ -376,6 +376,7 @@ export default class RCInformationScreen extends Lightning.Component {
         this.findRemoteTrigger = true;
         await RCApi.get().activate().catch(err => { this.ERR("RCInformationScreen error: " + JSON.stringify(err)) });
         await RCApi.get().getNetStatus().then(result => {
+            if (!this.findRemoteTrigger) return;
             this.INFO("RCInformationScreen getNetStatus: " + JSON.stringify(result))
             onStatusCBhandle = _thunder.on('org.rdk.RemoteControl', 'onStatus', data => { this.onStatusCB(data) });
             this.onStatusCB(result);
@@ -384,6 +385,7 @@ export default class RCInformationScreen extends Lightning.Component {
 
     async _inactive() {
         this.WARN("RCInformationScreen _inactive.");
+        this.findRemoteTrigger = false;
         const [stopPairingResult] = await Promise.allSettled([
             RCApi.get().stopPairing()
         ]);
@@ -412,7 +414,6 @@ export default class RCInformationScreen extends Lightning.Component {
         }
         this.tag('PairingStatus.LoadingIcon').alpha = 0
         this.showDeviceInfo(false)
-        this.findRemoteTrigger = false;
     }
 
     onStatusCB(cbData) {

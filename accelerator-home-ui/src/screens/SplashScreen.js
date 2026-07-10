@@ -354,7 +354,8 @@ export default class SplashScreen extends Lightning.Component {
               this._bt.connect(pairedDevices[0].deviceID, pairedDevices[0].deviceType)
               this.tag('AutoRemotePair.Description').text = pairedDevices[0].deviceType + Language.translate('remote is paired')
             } else {
-              setTimeout(() => {
+              this.autoPairPairedCheckTimeout = setTimeout(() => {
+                this.autoPairPairedCheckTimeout = null
                 this._bt.getPairedDevices().then(() => {
                   let pairedDevices = this._bt.pairedDevices
                   if (pairedDevices.length > 0) {
@@ -377,7 +378,8 @@ export default class SplashScreen extends Lightning.Component {
                 else Router.navigate('home', { path: 'settings' })
               }, 2000)
             } else {
-              setTimeout(() => {
+              this.autoPairConnectedCheckTimeout = setTimeout(() => {
+                this.autoPairConnectedCheckTimeout = null
                 this._bt.getConnectedDevices().then(() => {
                   let connectedDevices = this._bt.connectedDevices
                   if (connectedDevices.length > 0) {
@@ -417,6 +419,14 @@ export default class SplashScreen extends Lightning.Component {
           if (this.autoPairNavigateTimeout) {
             clearTimeout(this.autoPairNavigateTimeout)
             this.autoPairNavigateTimeout = null
+          }
+          if (this.autoPairPairedCheckTimeout) {
+            clearTimeout(this.autoPairPairedCheckTimeout)
+            this.autoPairPairedCheckTimeout = null
+          }
+          if (this.autoPairConnectedCheckTimeout) {
+            clearTimeout(this.autoPairConnectedCheckTimeout)
+            this.autoPairConnectedCheckTimeout = null
           }
           if (this.autoPairRotateAnimation) {
             this.autoPairRotateAnimation.stop()

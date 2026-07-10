@@ -151,6 +151,10 @@ export default class BluetoothScreen extends Lightning.Component {
                 this.tag('Info').text.text = Language.translate('Please put the remote in pairing mode') + ': ' + Language.translate('Scanning') + '...';
                 this.bluetoothDiscoveryListener = _thunder.on('org.rdk.Bluetooth', 'onDiscoveredDevice', notification => {
                     bluetoothApi.getDiscoveredDevices().then((getdocoveredInfo) => {
+                        if (!getdocoveredInfo || getdocoveredInfo.length === 0) {
+                            this.LOG('SplashBluetoothScreen onDiscoveredDevice: empty list, skipping pair');
+                            return;
+                        }
                         this.LOG('SplashBluetoothScreen onDiscoveredDevice ' + JSON.stringify(getdocoveredInfo[0].name))
                         //bluetoothApi.connect(getdocoveredInfo[0].deviceID, getdocoveredInfo[0].deviceType).then(connectresult=>{
                         //  console.log("connectresult",connectresult)
