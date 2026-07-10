@@ -182,11 +182,11 @@ export default class AdvanceSettingsScreen extends Lightning.Component {
 
     _init() {
         this.cecApi = new CECApi()
-        this.cecApi.activate()
-            .then(() => {
-                this.tag('CECControl.Button').src = Utils.asset('images/settings/ToggleOnOrange.png')
-                this.performOTPAction()
-            })
+        // this.cecApi.activate()
+        //     .then(() => {
+        //         this.tag('CECControl.Button').src = Utils.asset('images/settings/ToggleOnOrange.png')
+        //         this.performOTPAction()
+        //     })
         this._setState('TTSOptions')
     }
     _focus() {
@@ -214,19 +214,17 @@ export default class AdvanceSettingsScreen extends Lightning.Component {
     toggleCEC() {
         this.cecApi.getEnabled()
             .then(res => {
-                this.LOG("cec getenabled result:" + JSON.stringify(res))
-                if (res.enabled) {
-                    this.cecApi.deactivate()
-                        .then(() => {
-                            this.tag('CECControl.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
-                        })
-                }
-                else {
-                    this.cecApi.activate()
-                        .then(() => {
-                            this.tag('CECControl.Button').src = Utils.asset('images/settings/ToggleOnOrange.png')
-                        })
-                }
+               this.LOG("cec getenabled result:" + JSON.stringify(res))
+               // get the current state and toggle it
+               const newEnabledState = !res.enabled
+            this.cecApi.setEnabled({ enabled: newEnabledState })
+                .then(() => {
+                    // Update UI based on new state
+                    const imageSrc = newEnabledState 
+                        ? 'images/settings/ToggleOnOrange.png'
+                        : 'images/settings/ToggleOffWhite.png'
+                    this.tag('CECControl.Button').src = Utils.asset(imageSrc)
+                })
             })
     }
     static _states() {
