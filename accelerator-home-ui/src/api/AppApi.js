@@ -22,7 +22,6 @@ import HDMIApi from './HDMIApi';
 import NetflixIIDs from "../../static/data/NetflixIIDs.json";
 import HomeApi from './HomeApi';
 import { availableLanguageCodes, CONFIG, GLOBALS } from '../Config/Config.js';
-import AlexaApi from './AlexaApi.js';
 import RDKShellApis from './RDKShellApis.js';
 import { Metrics } from '@firebolt-js/sdk';
 import Network from './NetworkApi.js';

@@ -45,11 +45,9 @@ import FailureScreen from '../screens/FailureScreen'
 import AlexaConfirmationScreen from '../screens/AlexaConfirmationScreen'
 import CameraStreamingScreen from '../screens/CameraStreamingScreen'
 import CameraStreamingScreenExitConfirmationScreen from '../screens/CameraStreamingScreenExitConfirmationScreen'
-import AlexaApi from '../api/AlexaApi.js'
 import { Storage } from '@lightningjs/sdk'
 import { Metrics } from '@firebolt-js/sdk'
 import { GLOBALS } from '../Config/Config.js'
-import MiracastNotification from '../screens/MiracastNotification.js'
 import AppInfoPage from '../views/AppInfoPage.js'
 
 let api = null

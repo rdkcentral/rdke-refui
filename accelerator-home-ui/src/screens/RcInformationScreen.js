@@ -119,7 +119,9 @@ export default class RCInformationScreen extends Lightning.Component {
             this.showScanningStatus()
             this.hasStartedPairingAttempt = true
             this.startPairingAttemptTimeout()
-            RCApi.get().startPairing(this.pairingTimeoutSeconds).catch(err => {
+            RCApi.get().startPairing(this.pairingTimeoutSeconds).then(success => {
+                if (success === false) return Promise.reject(new Error('startPairing returned false'))
+            }).catch(err => {
                 this.ERR('RCInformationScreen startPairing error: ' + JSON.stringify(err));
                 this.clearPairingAttemptTimeout()
                 this.showNoDeviceFoundStatus()
@@ -389,8 +391,10 @@ export default class RCInformationScreen extends Lightning.Component {
         const [stopPairingResult] = await Promise.allSettled([
             RCApi.get().stopPairing()
         ]);
-        if (stopPairingResult.status === 'fulfilled') {
+        if (stopPairingResult.status === 'fulfilled' && stopPairingResult.value === true) {
             this.INFO("RCInformationScreen stopPairing success");
+        } else if (stopPairingResult.status === 'fulfilled') {
+            this.ERR("RCInformationScreen stopPairing returned false");
         } else {
             this.ERR("RCInformationScreen stopPairing error: " + JSON.stringify(stopPairingResult.reason));
         }
@@ -476,6 +480,10 @@ export default class RCInformationScreen extends Lightning.Component {
             } else {
                 this.initialStatusCheck = false;
                 if (cbDatastatus.pairingState === "PAIRING" || cbDatastatus.pairingState === "SEARCHING") {
+                    if (this.scanTrigger) {
+                        Registry.clearTimeout(this.scanTrigger)
+                        this.scanTrigger = null
+                    }
                     this.showScanningStatus()
                     this.hasStartedPairingAttempt = true
                     if (!this.pairingAttemptTimeout) {

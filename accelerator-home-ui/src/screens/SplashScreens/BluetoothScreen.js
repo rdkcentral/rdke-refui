@@ -322,7 +322,8 @@ export default class BluetoothScreen extends Lightning.Component {
                     if (!hasRemote && inRetryState) {
                         this.scanTrigger = Registry.setTimeout(() => {
                             this.scanTrigger = null;
-                            RCApi.get().startPairing().then(() => {
+                            RCApi.get().startPairing().then(success => {
+                                if (success === false) return Promise.reject(new Error('startPairing returned false'));
                                 this.tag('Info').text.text = Language.translate('Please put the remote in pairing mode') + ': ' + Language.translate('Scanning') + '...';
                             }).catch(err => {
                                 this.ERR("SplashBluetoothScreen startPairing error: " + JSON.stringify(err));
@@ -336,7 +337,8 @@ export default class BluetoothScreen extends Lightning.Component {
                 if (!this.scanTrigger) {
                     this.scanTrigger = Registry.setTimeout(() => {
                         this.scanTrigger = null;
-                        RCApi.get().startPairing().then(() => {
+                        RCApi.get().startPairing().then(success => {
+                            if (success === false) return Promise.reject(new Error('startPairing returned false'));
                             this.tag('Info').text.text = Language.translate('Please put the remote in pairing mode') + ': ' + Language.translate('Scanning') + '...';
                         }).catch(pairErr => {
                             this.ERR("SplashBluetoothScreen startPairing after getNetStatus failure error: " + JSON.stringify(pairErr));
@@ -356,6 +358,7 @@ export default class BluetoothScreen extends Lightning.Component {
             return;
         }
         this.screenFlowStarted = true;
+        this.voiceRcuPluginUsed = null;
         this.timeout = 30;
         this.initTimer();
         if (typeof this.scanTrigger === 'undefined') {
