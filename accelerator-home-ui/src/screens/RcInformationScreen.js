@@ -92,7 +92,6 @@ export default class RCInformationScreen extends Lightning.Component {
     }
 
     clearPairingAttemptTimeout() {
-        console.log("RCInformationScreen clearPairingAttemptTimeout")
         if (this.pairingAttemptTimeout) {
             Registry.clearTimeout(this.pairingAttemptTimeout)
             this.pairingAttemptTimeout = null
@@ -100,7 +99,6 @@ export default class RCInformationScreen extends Lightning.Component {
     }
 
     startPairingAttemptTimeout() {
-        console.log("RCInformationScreen startPairingAttemptTimeout")
         this.clearPairingAttemptTimeout()
         this.pairingAttemptTimeout = Registry.setTimeout(() => {
             this.pairingAttemptTimeout = null
@@ -110,9 +108,9 @@ export default class RCInformationScreen extends Lightning.Component {
     }
 
     schedulePairingRetry(delay = 2000) {
-        console.log("RCInformationScreen schedulePairingRetry delay: " + delay)
+        this.LOG("RCInformationScreen schedulePairingRetry delay: " + delay)
         if (this.scanTrigger) {
-            console.log("RCInformationScreen schedulePairingRetry scanTrigger already set, returning")
+            this.LOG("RCInformationScreen schedulePairingRetry scanTrigger already set, returning")
             return
         }
 

@@ -224,7 +224,6 @@ export default class BluetoothScreen extends Lightning.Component {
                 } else {
                     this.tag('Info').text.text = Language.translate('Pairing Successful')
                 }
-                this.LOG("SplashBluetoothScreen onStatusCB updating Info text to Pairing Successful");
                 // To stop the display counter and navigate once.
                 if (Router.getActiveHash() === "splash/bluetooth") {
                     if (this.timeInterval) {
@@ -247,7 +246,6 @@ export default class BluetoothScreen extends Lightning.Component {
                         this.scanTrigger = null;
                     }
                     this.tag('Info').text.text = Language.translate('Please put the remote in pairing mode') + ': ' + Language.translate('Scanning') + '...';
-                    this.LOG("SplashBluetoothScreen onStatusCB updating Info text to Scanning");
                 } else if (cbDatastatus.pairingState === "IDLE" || cbDatastatus.pairingState === "FAILED") {
                     // after 2 seconds, initiate pairing flow if status is IDLE, as there is no paired device.
                     if (!this.scanTrigger) {
@@ -271,7 +269,6 @@ export default class BluetoothScreen extends Lightning.Component {
                                                 this.scanTrigger = null;
                                                 RCApi.get().startPairing().then(() => {
                                                     this.tag('Info').text.text = Language.translate('Please put the remote in pairing mode') + ': ' + Language.translate('Scanning') + '...';
-                                                    this.LOG("SplashBluetoothScreen startPairing updating Info text to Scanning");
                                                 }).catch(err => {
                                                     this.ERR("SplashBluetoothScreen startPairing retry error: " + JSON.stringify(err));
                                                 });
@@ -306,7 +303,6 @@ export default class BluetoothScreen extends Lightning.Component {
         this.rcStatusListener = _thunder.on('org.rdk.RemoteControl', 'onStatus', data => { this.onStatusCB(data) });
         this.RCTimeout = Registry.setTimeout(() => {
             this.RCTimeout = null;
-            this.LOG('SplashBluetoothScreen checking RemoteControl net status')
             RCApi.get().getNetStatus().then(result => {
                 this.onStatusCB(result);
                 // onStatusCB only schedules startPairing on IDLE/FAILED. If the plugin
@@ -324,7 +320,6 @@ export default class BluetoothScreen extends Lightning.Component {
                             this.scanTrigger = null;
                             RCApi.get().startPairing().then(() => {
                                 this.tag('Info').text.text = Language.translate('Please put the remote in pairing mode') + ': ' + Language.translate('Scanning') + '...';
-                                this.LOG("SplashBluetoothScreen startPairing updating Info text to Scanning");
                             }).catch(err => {
                                 this.ERR("SplashBluetoothScreen startPairing error: " + JSON.stringify(err));
                             });
@@ -339,7 +334,6 @@ export default class BluetoothScreen extends Lightning.Component {
                         this.scanTrigger = null;
                         RCApi.get().startPairing().then(() => {
                             this.tag('Info').text.text = Language.translate('Please put the remote in pairing mode') + ': ' + Language.translate('Scanning') + '...';
-                            this.LOG("SplashBluetoothScreen startPairing updating Info text to Scanning");
                         }).catch(pairErr => {
                             this.ERR("SplashBluetoothScreen startPairing after getNetStatus failure error: " + JSON.stringify(pairErr));
                         });
@@ -363,7 +357,6 @@ export default class BluetoothScreen extends Lightning.Component {
         if (typeof this.scanTrigger === 'undefined') {
             this.scanTrigger = null;
         }
-        this.LOG('SplashBluetoothScreen starting pairing flow')
         this._setupPairing();
     }
 
@@ -374,10 +367,8 @@ export default class BluetoothScreen extends Lightning.Component {
         this.pairingInitialized = true;
         appApi.getPluginStatus('org.rdk.RemoteControl').then(result => {
             if (result[0].state != "activated") {
-                this.LOG("SplashBluetoothScreen init RemoteControl activate.")
                 this.rcPairingFlow(true);
             } else {
-                this.LOG("SplashBluetoothScreen init RemoteControl already activated.")
                 this.rcPairingFlow();
             }
             this.voiceRcuPluginUsed = true;
@@ -537,7 +528,7 @@ export default class BluetoothScreen extends Lightning.Component {
 
                 }
                 _handleEnter() {
-                    console.log('SplashBluetoothScreen states Start Pairing')
+                    this.LOG('SplashBluetoothScreen states Start Pairing')
                     GLOBALS.RCSkipStatus=true;
                     Router.navigate('splash/language')
                 }
