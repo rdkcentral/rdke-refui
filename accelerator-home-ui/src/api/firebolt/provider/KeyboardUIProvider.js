@@ -61,9 +61,8 @@ export default class KeyboardUIProvider {
     if (!session) return
     this.LOG('Got session ' + JSON.stringify(session), "showKeyboardUi")
     this.LOG("Displaying Keyboard overlay with: " + GLOBALS.selfClientName)
-    let params = { message: session.message, type: session.type, responder }
-    thunder.call('org.rdk.RDKShell', 'setVisibility', { client: GLOBALS.selfClientName, visible: true }).then(() => {
-      Router.navigate("settings/other/KeyboardScreen", params)
-    })
+    // let params = { message: session.message, type: session.type, responder }
+    // FIXME: use AppManager APIs to set visibility and route: Router.navigate("settings/other/KeyboardScreen", params)
+    this.ERR("App : Do we still support this ?");
   }
 }

@@ -21,7 +21,6 @@ import { Lightning, Router, Storage, Language, Registry } from '@lightningjs/sdk
 import { COLORS } from '../../colors/Colors'
 import { CONFIG, GLOBALS } from '../../Config/Config'
 import SettingsMainItem from '../../items/SettingsMainItem'
-import AlexaApi from '../../api/AlexaApi'
 import AppApi from '../../api/AppApi'
 import NetworkManager from '../../api/NetworkManagerAPI'
 
@@ -206,7 +205,7 @@ export default class NetworkScreen extends Lightning.Component {
                                 }
                             })
                         }
-                    });                      
+                    });
                 }
                 _handleDown() {
                     this._setState('Skip')
@@ -240,15 +239,9 @@ export default class NetworkScreen extends Lightning.Component {
                     })
                 }
                 _handleEnter() {
-                    if (AlexaApi.get().checkAlexaAuthStatus() !== "AlexaUserDenied" && GLOBALS.AlexaAvsstatus) {
-                        NetworkManager.IsConnectedToInternet().then(result => {
-                            if (result.connected)
-                                Registry.setTimeout(() => { 
-                                Router.navigate('AlexaLoginScreen') 
-                            }, (Router.isNavigating() ? 20 : 0));
-                            else
-                                Registry.setTimeout(() => { Router.navigate('menu') }, (Router.isNavigating() ? 20 : 0));
-                        })
+                    if (false) {
+                        // TODO: implement when voice integration is done
+                        Router.navigate('AlexaLoginScreen')
                     } else {
                         Registry.setTimeout(() => { Router.navigate('menu') }, (Router.isNavigating() ? 20 : 0));
                     }

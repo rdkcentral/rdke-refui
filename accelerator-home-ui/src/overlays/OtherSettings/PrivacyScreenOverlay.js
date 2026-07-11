@@ -25,7 +25,6 @@ import XcastApi from '../../api/XcastApi'
 import UsbApi from '../../api/UsbApi'
 import PrivacyPolicyScreen from './PrivacyPolicyOverlay'
 import Warehouse from '../../api/WarehouseApis'
-import AlexaApi from '../../api/AlexaApi'
 /**
  * Class for Privacy Screen.
  */
@@ -344,28 +343,6 @@ export default class PrivacyScreen extends Lightning.Component {
                     }
 
                     setTimeout(async () => {
-                        if(GLOBALS.AlexaAvsstatus){
-                        AlexaApi.get().resetAVSCredentials().then((result) => {
-                            this.LOG("Triggering AVS credential reset." + JSON.stringify(result))
-                            if (result.success) {
-                                AlexaApi.get().setAlexaAuthStatus("AlexaAuthPending");
-                                this.tag('ClearCookies.Title').text = Language.translate('Clear Cookies and App Data') + " - " + Language.translate('Finished')
-                                setTimeout(() => {
-                                    this.tag('ClearCookies.Title').text = Language.translate('Clear Cookies and App Data')
-                                    this.tag('ClearCookies.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
-                                    cookieToggle = !cookieToggle
-                                }, 2000)
-                            } else {
-                                //UNSUCCESSFULL API CALL
-                                this.tag('ClearCookies.Title').text = Language.translate('Clear Cookies and App Data')+ " - " + Language.translate("Error!")
-                                setTimeout(() => {
-                                    this.tag('ClearCookies.Title').text = Language.translate('Clear Cookies and App Data')
-                                    this.tag('ClearCookies.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
-                                    cookieToggle = !cookieToggle
-                                }, 2000)
-                            }
-                        }) }
-                        else{
                             try {
                                 await this.Warehouse.activate()
                                 await this.Warehouse.lightReset()
@@ -391,7 +368,7 @@ export default class PrivacyScreen extends Lightning.Component {
                                     cookieToggle = !cookieToggle
                                 }, 2000)
                             })
-                        }}, 2000)
+                        }, 2000)
                 }
             },
             class PrivacyPolicy extends this {

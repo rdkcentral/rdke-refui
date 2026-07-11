@@ -34,7 +34,7 @@ export default class AppInfoPage extends Lightning.Component {
             h: 1080,
             w: 1920,
             color: CONFIG.theme.background,
-            
+
             Header: {
                 x: 200,
                 y: 120,
@@ -59,16 +59,16 @@ export default class AppInfoPage extends Lightning.Component {
             },
 
             ListContainer: {
-                x: 200,  
+                x: 200,
                 y: 280,
-                w: 1680, 
+                w: 1680,
                 h: 680,
                 clipping: true,
                 AppList: {
-                    x: 20,  
+                    x: 20,
                     type: List,
                     direction: 'column',
-                    w: 1640, 
+                    w: 1640,
                     h: 680,
                     scroll: {
                         after: 4
@@ -236,7 +236,7 @@ export default class AppInfoPage extends Lightning.Component {
         try {
             const installedApps = filterExcludedApps(await getInstalledDACApps());
             console.log('Installed DAC Apps:', JSON.stringify(installedApps));
-            
+
             // Transform the data to match AppCard expected format
             const appData = installedApps.map(app => ({
                 id: app.id,
@@ -246,7 +246,7 @@ export default class AppInfoPage extends Lightning.Component {
                 installed: app.installed,
                 hasUpdate: false // Can be updated based on app catalog comparison if needed
             }));
-            
+
             this._loadAppData(appData);
         } catch (error) {
             console.error('Error fetching installed apps:', error);
@@ -429,7 +429,7 @@ export default class AppInfoPage extends Lightning.Component {
     _updateScrollIndicator() {
         const totalItems = this._appData.length;
         const currentIndex = this._appList.index || 0;
-        
+
         if (totalItems > 0) {
             const trackHeight = 680;
             const thumbHeight = Math.max(50, trackHeight / totalItems);
@@ -487,7 +487,7 @@ export default class AppInfoPage extends Lightning.Component {
                 _getFocused() {
                     return this.tag('AppList');
                 }
-                
+
                 _handleUp() {
                     if (this.tag('AppList').index === 0) {
                         this.widgets.menu.notify('TopPanel');

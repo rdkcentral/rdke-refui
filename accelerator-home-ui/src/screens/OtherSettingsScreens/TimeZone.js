@@ -1,6 +1,5 @@
 import { Lightning, Language, Router, Utils } from "@lightningjs/sdk";
 import AppApi from "../../api/AppApi";
-import AlexaApi from "../../api/AlexaApi";
 import { CONFIG, GLOBALS } from "../../Config/Config";
 import TimeZoneItem from "../../items/TimeZoneItem";
 import FireBoltApi from "../../api/firebolt/FireBoltApi";
@@ -101,9 +100,6 @@ export default class TimeZone extends Lightning.Component {
                 if (typeof this.resp[i] === 'object') {
                     data.push([i, this.resp[i], this.zone !== undefined ? this.zone.split('/')[0] === i : false])
                 }
-            }
-            if (AlexaApi.get().checkAlexaAuthStatus() === "AlexaHandleError" && this.zone.length) {
-                AlexaApi.get().updateDeviceTimeZoneInAlexa(this.zone)
             }
         } catch (error) {
             this.ERR('no api present' + JSON.stringify(error))

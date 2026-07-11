@@ -21,7 +21,6 @@ import ListItem from '../items/ListItem.js'
 import DacAppItem from '../items/DacAppItem.js'
 import ThunderJS from 'ThunderJS'
 import AppApi from '../api/AppApi.js'
-import RDKShellApis from '../api/RDKShellApis.js'
 import UsbApi from '../api/UsbApi.js'
 import { CONFIG, GLOBALS } from '../Config/Config.js'
 import XcastApi from '../api/XcastApi'
@@ -374,7 +373,7 @@ export default class MainView extends Lightning.Component {
           this.fireAncestors("$hideImage", 0);
           this.LOG('onSignalChanged ' + JSON.stringify(notification))
           if (notification.signalStatus !== 'stableSignal') {
-            RDKShellApis.setVisibility(GLOBALS.selfClientName, true)
+            // FIXME: make the visibility change when graphics overlay is implemented for input select.
             this.widgets.fail.notify({ title: this.tag('Inputs.Slider').items[this.tag('Inputs.Slider').index].data.displayName, msg: Language.translate("Input disconnected") })
             Router.focusWidget('Fail')
           }
@@ -630,14 +629,14 @@ export default class MainView extends Lightning.Component {
     const safeItems = Array.isArray(items) ? items : []
     this.currentItems = safeItems
     this.myAppsEmpty = safeItems.length === 0
-    
+
     // Hide My Apps row if empty
     this.tag('Text1').visible = !this.myAppsEmpty
     this.tag('AppList').visible = !this.myAppsEmpty
-    
+
     // Update row positions based on My Apps visibility
     this._updateRowPositions()
-    
+
     this.tag('AppList').items = safeItems.map((info, idx) => {
       return {
         w: 325,
@@ -740,7 +739,7 @@ export default class MainView extends Lightning.Component {
   set dacApps(items) {
     // Hide loader and show content
     this._hideDacAppsLoader()
-    
+
     this.tag('DacApps').items = items.map((info, index) => {
       return {
         w: 325,
@@ -924,7 +923,7 @@ export default class MainView extends Lightning.Component {
               GLOBALS.topmostApp = 'HDMI';
               const currentInput = this.tag('Inputs.Slider').items[this.tag('Inputs.Slider').index].data
               Storage.set("_currentInputMode", { id: currentInput.id, locator: currentInput.locator });
-              RDKShellApis.setVisibility(GLOBALS.selfClientName, false)
+              // FIXME: make the visibility change when graphics overlay is implemented for input select.
             })
             .catch(err => {
               this.ERR('failed' + JSON.stringify(err))

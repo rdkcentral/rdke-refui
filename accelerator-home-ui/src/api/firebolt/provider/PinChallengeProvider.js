@@ -46,10 +46,9 @@ export default class PinChallengeProvider {
     this.LOG("Displaying showChallengeUi with: " + JSON.stringify(GLOBALS.selfClientName))
     new Promise(async (resolve) => {
       let message = challenge.requestor.name + ' is requesting that you enter your ' + challenge.pinSpace + ' pin.'
-      let params = { message: message, challenge: challenge, responder }
-      thunder.call('org.rdk.RDKShell', 'setVisibility', { client: GLOBALS.selfClientName, visible: true }).then(() => {
-        Router.navigate('settings/other/SecurityPinScreen', params)
-      }).catch(err => Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Thunder RDKShell set visibility error "+err, true, null))
+      // let params = { message: message, challenge: challenge, responder }
+      // FIXME: use AppManager APIs to set visibility and route: Router.navigate('settings/other/SecurityPinScreen', params)
+      this.ERR("PinChallenge : Do we still support this ?");
       resolve(true)
     })
   }

@@ -3,8 +3,8 @@ import ListItem from "../items/ListItem";
 import { List } from '@lightningjs/ui'
 import HomeApi from "../api/HomeApi";
 import AppApi from "../api/AppApi";
-import RDKShellApis from "../api/RDKShellApis.js";
 import { GLOBALS } from "../Config/Config.js";
+import AppManager from "../api/AppManagerApi.js";
 
 export default class AppCarousel extends Lightning.Component {
   constructor(...args) {
@@ -156,11 +156,14 @@ export default class AppCarousel extends Lightning.Component {
   }
 
   _handleBack() {
-    let self = this;
     if (GLOBALS.topmostApp !== GLOBALS.selfClientName) { // if a non-resident app is on focus
-      RDKShellApis.moveToFront(GLOBALS.topmostApp)
-      RDKShellApis.setFocus(GLOBALS.topmostApp)
-      RDKShellApis.setVisibility(GLOBALS.topmostApp, true)
+        AppManager.get().closeApp(GLOBALS.topmostApp).then(() => {
+            AppManager.get().launchApp(GLOBALS.selfClientName).catch(err => {
+                this.ERR("Error while launching This app: " + JSON.stringify(err));
+            });
+        }).catch(err => {
+            this.ERR("Error while closing app: " + JSON.stringify(err));
+        });
     }
     Router.focusPage();
   }
@@ -184,16 +187,8 @@ export default class AppCarousel extends Lightning.Component {
           let applicationType = this.tag('AppList').items[this.tag('AppList').index].data.applicationType;
           let uri = this.tag('AppList').items[this.tag('AppList').index].data.uri;
           let appIdentifier = this.tag('AppList').items[this.tag('AppList').index].data.appIdentifier;
-          let params = {
-            url: uri,
-            launchLocation: "mainView",
-            appIdentifier: appIdentifier
-          }
-          this.appApi.launchApp(applicationType, params).then(() => {
-            Router.focusPage();
-          }).catch(err => {
-            this.ERR("ApplaunchError: " + JSON.stringify(err))
-          });
+          // FIXME: Implement app launch logic from carousel here.
+          this.WARN("App launch from carousel not implemented.");
         }
       },
     ]

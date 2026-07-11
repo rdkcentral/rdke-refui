@@ -17,16 +17,13 @@
  * limitations under the License.
  **/
 
-import { Lightning, Storage, Router, Registry } from "@lightningjs/sdk";
+import { Lightning, Router, Registry } from "@lightningjs/sdk";
 import AppApi from "../api/AppApi";
-import RDKShellApis from "../api/RDKShellApis";
 import ThunderJS from "ThunderJS";
 import TvOverlaySettingsScreen from "./components/TvOverlaySettingsScreen";
 import TvOverlayInputScreen from "./components/TvOverlayInputScreen";
 import { CONFIG, GLOBALS } from '../Config/Config';
 import { Metrics } from "@firebolt-js/sdk";
-
-var thunder = ThunderJS(CONFIG.thunderConfig);
 
 export default class TvOverlayScreen extends Lightning.Component {
   constructor(...args) {
@@ -112,13 +109,8 @@ export default class TvOverlayScreen extends Lightning.Component {
     this.LOG("currentApp: " + JSON.stringify(GLOBALS.topmostApp));
     setTimeout(() => {
       if (GLOBALS.topmostApp !== GLOBALS.selfClientName) {
-        RDKShellApis.setVisibility(GLOBALS.selfClientName, false);
-        RDKShellApis.moveToFront(GLOBALS.topmostApp).then(() => {
-          RDKShellApis.setFocus(GLOBALS.topmostApp).catch((err) => {
-            this.ERR("Error" + JSON.stringify(err));
-            Metrics.error(Metrics.ErrorType.OTHER, 'pluginError', `Thunder RDKShell setfocus error ${JSON.stringify(err)}`, false, null)
-          });
-        });
+        // FIXME: use new AppManager APIs.
+        this.WARN("App : Are we missing any logic here when using AppManager APIs?");
       } else {
         if (Router.getActiveHash() === "dtvplayer") { //don't navigate to menu if route is dtvplayer
           Router.focusPage();

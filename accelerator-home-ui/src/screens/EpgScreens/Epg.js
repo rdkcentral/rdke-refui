@@ -278,7 +278,8 @@ export default class Epg extends Lightning.Component {
       if(appIdentifier){
         params.appIdentifier = appIdentifier
       }
-      this.appApi.launchApp(channel.callsign,params)
+      // FIXME: Implement OTT channel launch logic here.
+      this.WARN("OTT channel launch not implemented.");
     } else if(channel.dvburi.startsWith("C_") && eventUri != null){
       if (!Router.isNavigating()) {
         let playerParams = {
@@ -311,14 +312,10 @@ export default class Epg extends Lightning.Component {
     return currentChannel
   }
 
-
-
   setShows4Channels(channels, headStart = 0) {
     this.strtindexesofrows = []
     let ltp = this.ltp
     let rtp = new Date(this.ltp.getTime() + 3 * 60 * 60 * 1000)
-
-
     let cells = []
     let self = this
     function filterShowsBasedOnTimeWindow(shows, index) {
@@ -326,7 +323,6 @@ export default class Epg extends Lightning.Component {
       let i = Math.abs(headStart)
       while (i >= 0) {
         // binary search can optimize this loop.
-
         shows[i].endtime = shows[i].duration + shows[i].starttime
         if (i >= shows.length) {
           self.WARN("Reached the end of data , can't traverse shows any further!")

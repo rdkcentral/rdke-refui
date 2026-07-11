@@ -89,8 +89,8 @@ export default class AppManager {
                     this.ERR("Error getLoadedApps: " + JSON.stringify(err))
                     Metrics.error(Metrics.ErrorType.OTHER, "getLoadedAppsError", `Error while Thunder call ${this.callsign} ListPackages ${JSON.stringify(err)}`, false, null)
                     reject(err)
-                })    
-        })  
+                })
+        })
     }
     isInstalled(appId){
         return new Promise((resolve, reject) => {
@@ -98,13 +98,13 @@ export default class AppManager {
                 .then(response => {
                     resolve(response)
                     this.INFO("isInstalled response: " + JSON.stringify(response));
-                })  
+                })
                 .catch(err => {
                     this.ERR("Error in isInstalled: " + JSON.stringify(err))
                     Metrics.error(Metrics.ErrorType.OTHER, "AppManager", `Error while calling isInstalled on ${this.callsign} ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
-        })  
+        })
     }
     closeApp(appId) {
         return new Promise((resolve, reject) => {
@@ -136,7 +136,7 @@ export default class AppManager {
                 })
         })
     }
-    killApp(appId) {    
+    killApp(appId) {
         return new Promise((resolve, reject) => {
         this.INFO("killApp called with appId: " + appId );
             this.thunder.call(this.callsign, 'killApp', { "appId":appId })
@@ -163,9 +163,9 @@ export default class AppManager {
                     Metrics.error(Metrics.ErrorType.OTHER, "getInstalledAppsError", `Error while Thunder call ${this.callsign} ListPackages ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
-        })  
+        })
     }
-    preloadApp(appId) { 
+    preloadApp(appId) {
         return new Promise((resolve, reject) => {
         this.INFO("preloadApp called with appId: " + appId );
             this.thunder.call(this.callsign, 'preloadApp', { "appId":appId })
@@ -302,7 +302,7 @@ export default class AppManager {
     }
     setAppProperty(appId,key,value) {
         return new Promise((resolve, reject) => {
-        this.INFO("setAppProperty called with appId: " + appId + " key: " + key + " and value: " + value ); 
+        this.INFO("setAppProperty called with appId: " + appId + " key: " + key + " and value: " + value );
             this.thunder.call(this.callsign, 'setAppProperty', { "appId":appId, "key":key, "value":value })
                 .then(response => {
                     resolve(response)

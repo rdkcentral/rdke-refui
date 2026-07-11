@@ -17,7 +17,6 @@
  * limitations under the License.
  **/
 import AppApi from '../../api/AppApi'
-import AlexaApi from '../../api/AlexaApi'
 import { Lightning, Utils, Storage, Language, Router } from '@lightningjs/sdk'
 import SettingsMainItem from '../../items/SettingsMainItem'
 import { COLORS } from '../../colors/Colors'
@@ -353,32 +352,10 @@ export default class PrivacyScreen extends Lightning.Component {
                     }
 
                     setTimeout(async () => {
-                        if(GLOBALS.AlexaAvsstatus){
-                        AlexaApi.get().resetAVSCredentials().then((result) => {
-                            this.LOG("Triggering AVS credential reset." + JSON.stringify(result))
-                            if (result.success) {
-                                AlexaApi.get().setAlexaAuthStatus("AlexaAuthPending");
-                                this.tag('ClearCookies.Title').text = Language.translate('Clear Cookies and App Data') + " - " + Language.translate('Finished')
-                                setTimeout(() => {
-                                    this.tag('ClearCookies.Title').text = Language.translate('Clear Cookies and App Data')
-                                    this.tag('ClearCookies.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
-                                    cookieToggle = !cookieToggle
-                                }, 2000)
-                            } else {
-                                //UNSUCCESSFULL API CALL
-                                this.tag('ClearCookies.Title').text = Language.translate('Clear Cookies and App Data')+ " - " + Language.translate("Error!")
-                                setTimeout(() => {
-                                    this.tag('ClearCookies.Title').text = Language.translate('Clear Cookies and App Data')
-                                    this.tag('ClearCookies.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
-                                    cookieToggle = !cookieToggle
-                                }, 2000)
-                            }
-                        })}
-                        else{
                             try {
-                            await this.Warehouse.activate()
-                            await this.Warehouse.lightReset()}
-                            catch (err) {
+                                await this.Warehouse.activate()
+                                await this.Warehouse.lightReset()
+                            } catch (err) {
                                 this.ERR("FactoryReset: warehouse plugin activation failed; feature may not work." + JSON.stringify(err));
                             }
                             this.AppApi.clearCache()
@@ -391,15 +368,15 @@ export default class PrivacyScreen extends Lightning.Component {
                                 }, 2000)
                             })
                             .catch((err) => {
-                                    this.ERR("Error clearing cache: " + JSON.stringify(err));
-                                    this.tag('ClearCookies.Title').text = Language.translate('Clear Cookies and App Data') + " - " + Language.translate("Error!")
-                                    setTimeout(() => {
-                                        this.tag('ClearCookies.Title').text = Language.translate('Clear Cookies and App Data')
-                                        this.tag('ClearCookies.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
-                                        cookieToggle = !cookieToggle
-                                    }, 2000)
-                                })
-                    }}, 2000)
+                                this.ERR("Error clearing cache: " + JSON.stringify(err));
+                                this.tag('ClearCookies.Title').text = Language.translate('Clear Cookies and App Data') + " - " + Language.translate("Error!")
+                                setTimeout(() => {
+                                    this.tag('ClearCookies.Title').text = Language.translate('Clear Cookies and App Data')
+                                    this.tag('ClearCookies.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
+                                    cookieToggle = !cookieToggle
+                                }, 2000)
+                            })
+                    }, 2000)
                 }
             },
             class PrivacyPolicy extends this {

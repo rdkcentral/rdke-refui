@@ -19,7 +19,6 @@
 import { Lightning, Router, Utils, Language, Storage } from '@lightningjs/sdk'
 import { CONFIG, GLOBALS } from '../Config/Config'
 import ThunderJS from 'ThunderJS'
-import AlexaApi from '../api/AlexaApi'
 import { Metrics } from '@firebolt-js/sdk'
 
 var thunder = ThunderJS(CONFIG.thunderConfig);
@@ -106,46 +105,7 @@ export default class CodeScreen extends Lightning.Component {
         this._setState('Description')
     }
     _focus() {
-        if (AlexaApi.get().checkAlexaAuthStatus() !== "AlexaUserDenied") {
-            thunder.Controller.activate({ callsign: "org.rdk.VoiceControl" }).then(res => {
-                if (Storage.get("alexaOTPReset")) {
-                    if(GLOBALS.AlexaAvsstatus){AlexaApi.get().resetAVSCredentials();}
-                    Storage.remove("alexaOTPReset");
-                }
-                thunder.on("org.rdk.VoiceControl", 'onServerMessage', notification => {
-                    this.LOG("VoiceControl.onServerMessage Notification: " + JSON.stringify(notification))
-                    this.VoiceControlData = notification
-                    if (notification.xr_speech_avs.url != undefined) {
-                        this.tag('Description').text.text = Language.translate('Enter the code at') + ` ${notification.xr_speech_avs.url}`
-                    } else {
-                        this.tag('Description').text.text = Language.translate('Fetching authorization code')
-                    }
-                    this.tag("Description2").visible = true
-                    if (notification.xr_speech_avs.code != undefined) {
-                        this.tag("Description2").text.text = `${notification.xr_speech_avs.code}`
-                    } else {
-                        this.tag("Description2").text.text = Language.translate('Please wait')
-                    }
-                    if (notification.xr_speech_avs.state === "refreshed") {
-                        // DAB Demo Work Around - show Alexa Error screens only after Auth is succeeded.
-                        AlexaApi.get().setAlexaAuthStatus("AlexaHandleError");
-                        AlexaApi.get().enableSmartScreen();
-                        Router.navigate("SuccessScreen");
-                    }
-                    else if ((notification.xr_speech_avs.state === "uninitialized") || (notification.xr_speech_avs.state === "authorizing")) {
-                        this.LOG("notification state is uninitialised")
-                        AlexaApi.get().setAlexaAuthStatus("AlexaAuthPending")
-                    } else if (notification.xr_speech_avs.state === "unrecoverable error") {
-                        this.LOG("notification state is unrecoverable error")
-                        Router.navigate("FailureScreen")
-                    }
-                })
-            }).catch(err => {
-                this.ERR("VoiceControl Plugin Activation ERROR!: " + JSON.stringify(err))
-                Metrics.error(Metrics.ErrorType.OTHER, 'PluginError', "Thunder Controller.activate Voice Error"+JSON.stringify(err), false, null)
-            })
-            this._setState('Description')
-        }
+        // TODO: implment focus logic when voice integration is done
     }
 
     _active() {

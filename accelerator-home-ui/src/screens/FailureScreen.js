@@ -18,13 +18,7 @@
  **/
 import { Lightning, Router, Utils, Language, Storage } from '@lightningjs/sdk'
 import { CONFIG, GLOBALS } from '../Config/Config'
-import AlexaApi from '../api/AlexaApi'
 import AppApi from '../api/AppApi';
-import RDKShellApis from '../api/RDKShellApis';
-import ThunderJS from "ThunderJS";
-import { Metrics } from '@firebolt-js/sdk';
-
-var thunder = ThunderJS(CONFIG.thunderConfig);
 
 export default class FailureScreen extends Lightning.Component {
     constructor(...args) {
@@ -116,23 +110,10 @@ export default class FailureScreen extends Lightning.Component {
                     this.tag('RetryButton.Title').text.textColor = CONFIG.theme.hex
                 }
                 _handleEnter() {
+                    // Nothing to do here. TODO: Implement retry logic when voice integration is done.
                     if (GLOBALS.topmostApp !== GLOBALS.selfClientName) {
-                        if(GLOBALS.AlexaAvsstatus){
-                        AlexaApi.get().resetAVSCredentials().then(() => {
-                            this.LOG("avs credentials reseted")
-                        })}
-                        this.LOG("Current app: " + JSON.stringify(GLOBALS.topmostApp) + ", moving the app to front")
-                        RDKShellApis.moveToFront(GLOBALS.topmostApp)
-                        RDKShellApis.setFocus(GLOBALS.topmostApp).catch((err) => {
-                            Metrics.error(Metrics.ErrorType.OTHER, 'PluginError', "Thunder RDKshell set focus error" + JSON.stringify(err), false, null)
-                        });
-                    }
-                    else {
-                        if(GLOBALS.AlexaAvsstatus){
-                        AlexaApi.get().resetAVSCredentials().then(async () => {
-                            await Router.navigate('AlexaLoginScreen');
-                        })
-                    }
+                        this.LOG("Dismiss button pressed")
+                        Router.back()
                     }
                 }
                 _focus() {

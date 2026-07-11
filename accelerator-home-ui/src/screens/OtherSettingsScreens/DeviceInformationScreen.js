@@ -243,50 +243,8 @@ export default class DeviceInformationScreen extends Lightning.Component {
             this.tag('SupportedDRM.Value').text.text = `${drms.substring(0, drms.length - 1)}`
         })
 
-        let self = this;
-        if (Storage.get('Netflix_ESN')) {
-            self.tag('AppVersions.Value').text.text = `Youtube: NA\nAmazon Prime: NA\nNetflix ESN: ${Storage.get('Netflix_ESN')}`
-        }
-        else {
-            self.appApi.getPluginStatus('Netflix')
-                .then(result => {
-                    let sel = self;
-                    sel.LOG("Netflix : plugin status : " + JSON.stringify(result));
-                    if (result[0].state === 'deactivated' || result[0].state === 'deactivation') {
-                        sel.appApi.launchPremiumAppInSuspendMode("Netflix").then(res => {
-                            sel.LOG("Netflix : netflix launch for esn value in suspend mode returns : " + JSON.stringify(res));
-                            let se = sel;
-                            se.appApi.getNetflixESN()
-                                .then(res => {
-                                    Storage.set('Netflix_ESN', res)
-                                    se.LOG("Netflix : netflix esn call returns : " + JSON.stringify(res));
-                                    se.netflixESN = `Youtube: NA \nAmazon Prime: NA \nNetflix ESN: ${res}`
-                                })
-                                .catch(err => {
-                                    se.ERR("Netflix : error while getting netflix esn : " + JSON.stringify(err))
-                                })
-                        }).catch(err => {
-                            sel.ERR("Netflix : error while launching netflix in suspendMode : " + JSON.stringify(err))
-                        })
-                    }
-                    else {
-                        self.appApi.getNetflixESN()
-                            .then(res => {
-                                Storage.set('Netflix_ESN', res)
-                                self.LOG("Netflix : netflix esn call returns : " + JSON.stringify(res));
-                                self.netflixESN = `Youtube: NA \nAmazon Prime: NA \nNetflix ESN: ${res}`;
-                            })
-                            .catch(err => {
-                                self.ERR("Netflix : error while getting netflix esn : " + JSON.stringify(err))
-                            })
-                    }
-                }).catch(err => {
-                    self.ERR("Netflix : error while getting netflix plugin status ie. " + JSON.stringify(err))
-                    self.netflixESN = `Youtube: NA \nAmazon Prime: NA \nNetflix ESN: "Not Detected"`;
-                })
-        }
-
-
+        // FIXME: Implement logic to fetch and display YouTube, Amazon Prime, and Netflix ESN versions here.
+        this.tag('AppVersions.Value').text.text = `Youtube: NA\nAmazon Prime: NA\nNetflix ESN: ${Storage.get('Netflix_ESN')}`
     }
 
     set netflixESN(v) {

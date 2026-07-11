@@ -22,7 +22,6 @@ import SettingsMainItem from "../items/SettingsMainItem";
 import { CONFIG, GLOBALS } from "../Config/Config";
 import DTVApi from "../api/DTVApi";
 import AppApi from "../api/AppApi";
-import RDKShellApis from "../api/RDKShellApis";
 import AudioScreenOverlay from './AudioScreens/AudioScreenOverlay'
 import VideoScreenOverlay from './AudioScreens/VideoScreenOverlay';
 import NetworkConfigurationOverlay from "./NetworkScreens/NetworkConfigurationOverlay";
@@ -305,8 +304,6 @@ export default class SettingsOverlay extends Lightning.Component {
       }
     } else {
       Router.focusPage();
-      RDKShellApis.setVisibility(GLOBALS.selfClientName, false);
-      RDKShellApis.setFocus(GLOBALS.topmostApp);
     }
   }
 
