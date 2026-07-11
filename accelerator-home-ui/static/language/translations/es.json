@@ -304,5 +304,6 @@
   "Unknown":"Desconocido",
   "Unavailable":"No disponible",
   "App Catalog URL is not set":"La URL del catálogo de aplicaciones no está configurada",
-  "Unable to retrieve App Catalog URL":"No se pudo obtener la URL del catálogo de aplicaciones"
+  "Unable to retrieve App Catalog URL":"No se pudo obtener la URL del catálogo de aplicaciones",
+  "Ensure to manually reset the remote control referring to its user manual.":"Asegúrese de restablecer manualmente el control remoto consultando su manual de usuario."
 }

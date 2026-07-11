@@ -74,6 +74,21 @@ export default class RebootConfirmationScreen extends Lightning.Component {
                         fontSize: 25,
                     },
                 },
+                Note: {
+                    x: 0,
+                    y: 175,
+                    mountX: 0.5,
+                    w: 1400,
+                    text: {
+                        text: Language.translate("Ensure to manually reset the remote control referring to its user manual."),
+                        fontFace: CONFIG.language.font,
+                        fontSize: 20,
+                        textColor: 0xFFFFCC00,
+                        maxLines: 2,
+                        wordWrap: true,
+                        wordWrapWidth: 1400,
+                    },
+                },
                 Buttons: {
                     x: 100, y: 200, w: 440, mountX: 0.5, h: 50,
                     Confirm: {
