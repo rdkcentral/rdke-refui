@@ -34,7 +34,6 @@ export default class RCInformationScreen extends Lightning.Component {
         this.pairingAttemptTimeout = null;
         this.loadingAnimation = null;
         this.pairingWatchdogSeconds = 35;
-        this.retryDelayMilliseconds = 2000;
         this.queryStatusTimeout = null;
     }
 
@@ -87,7 +86,7 @@ export default class RCInformationScreen extends Lightning.Component {
         }
     }
 
-    // Timeout trigger should be longer than RCApi.get().startPairing() timeout to avoid race.
+    // Schedules a pairing attempt after a delay; use a longer delay when acting as a watchdog for a startPairing() call.
     startPairingAttemptTimeout(timeOutSeconds = this.pairingWatchdogSeconds, showNoDeviceFoundStatus = false) {
         this.clearPairingAttemptTimeout()
         this.pairingAttemptTimeout = Registry.setTimeout(() => {
@@ -399,7 +398,7 @@ export default class RCInformationScreen extends Lightning.Component {
 
     onStatusCB(cbData) {
         // getStatus response has 'success' property; notification payload does not have that.
-        this.WARN("RCInformationScreen onStatusCB cbData:" + JSON.stringify(cbData));
+        //this.WARN("RCInformationScreen onStatusCB cbData:" + JSON.stringify(cbData));
         if (cbData !== undefined) {
             let cbDatastatus = {}
             if ("success" in cbData ? cbData.success : true) {
