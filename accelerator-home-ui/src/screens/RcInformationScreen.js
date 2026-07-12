@@ -34,8 +34,8 @@ export default class RCInformationScreen extends Lightning.Component {
         this.pairingAttemptTimeout = null;
         this.loadingAnimation = null;
         this.pairingWatchdogSeconds = 35;
-		this.retryDelayMilliseconds = 2000;
-		this.queryStatusTimeout = null;
+        this.retryDelayMilliseconds = 2000;
+        this.queryStatusTimeout = null;
     }
 
     setStatusValues(value) {
@@ -87,32 +87,30 @@ export default class RCInformationScreen extends Lightning.Component {
         }
     }
 
-	// Timeout trigger should be longer than RCApi.get().startPairing() timeout to avoid race.
-	startPairingAttemptTimeout(timeOutSeconds = this.pairingWatchdogSeconds, showNoDeviceFoundStatus = false) {
-		this.WARN("RCInformationScreen startPairingAttemptTimeout: " + timeOutSeconds + " seconds, showNoDeviceFoundStatus: " + showNoDeviceFoundStatus);
+    // Timeout trigger should be longer than RCApi.get().startPairing() timeout to avoid race.
+    startPairingAttemptTimeout(timeOutSeconds = this.pairingWatchdogSeconds, showNoDeviceFoundStatus = false) {
         this.clearPairingAttemptTimeout()
         this.pairingAttemptTimeout = Registry.setTimeout(() => {
             this.pairingAttemptTimeout = null
             if (showNoDeviceFoundStatus) {
                 this.showNoDeviceFoundStatus()
-			}
-			// RCApi.get().startPairing() will stop automatically after 30s
-			RCApi.get().startPairing(30).then(success => {
-				if (success === false) this.startPairingAttemptTimeout(3, true)
-				else {
-					// Fail-safe: we cannot rely on event if No RCU is found.
-					this.WARN("RCInformationScreen startPairingAttemptTimeout: RCApi.get().startPairing() success, scheduling queryStatusTimeout in 33 seconds.");
-					if (this.queryStatusTimeout) {
-						Registry.clearTimeout(this.queryStatusTimeout)
-						this.queryStatusTimeout = null
-					}
-					this.queryStatusTimeout = Registry.setTimeout(() => {
-						this.queryStatusTimeout = null
-						RCApi.get().getNetStatus().then(result => {
-							this.onStatusCB(result);
-						}).catch(err => this.ERR("RCInformationScreen error: " + JSON.stringify(err)));
-					}, 33000);
-				}
+            }
+            RCApi.get().startPairing(30).then(success => {
+                if (success === false) this.startPairingAttemptTimeout(3, true)
+                else {
+                    // Fail-safe: we cannot rely on event if No RCU is found.
+                    this.LOG("RCInformationScreen startPairingAttemptTimeout: RCApi.get().startPairing() success, scheduling queryStatusTimeout in 33 seconds.");
+                    if (this.queryStatusTimeout) {
+                        Registry.clearTimeout(this.queryStatusTimeout)
+                        this.queryStatusTimeout = null
+                    }
+                    this.queryStatusTimeout = Registry.setTimeout(() => {
+                        this.queryStatusTimeout = null
+                        RCApi.get().getNetStatus().then(result => {
+                            this.onStatusCB(result);
+                        }).catch(err => this.ERR("RCInformationScreen error: " + JSON.stringify(err)));
+                    }, 33000);
+                }
             }).catch(err => {
                 this.ERR('RCInformationScreen startPairing error: ' + JSON.stringify(err));
                 this.startPairingAttemptTimeout(3, true)
@@ -362,8 +360,8 @@ export default class RCInformationScreen extends Lightning.Component {
         this.tag('DeviceInfoContents').visible = false
         this.tag('PairingStatus').visible = false
         this.clearPairingAttemptTimeout()
-		await RCApi.get().activate().catch(err => { this.ERR("RCInformationScreen error: " + JSON.stringify(err)) });
-		this.onStatusCBhandle = _thunder.on('org.rdk.RemoteControl', 'onStatus', data => { this.onStatusCB(data) });
+        await RCApi.get().activate().catch(err => { this.ERR("RCInformationScreen error: " + JSON.stringify(err)) });
+        this.onStatusCBhandle = _thunder.on('org.rdk.RemoteControl', 'onStatus', data => { this.onStatusCB(data) });
         await RCApi.get().getNetStatus().then(result => {
             this.onStatusCB(result);
         }).catch(err => this.ERR("RCInformationScreen error: " + JSON.stringify(err)));
@@ -374,11 +372,11 @@ export default class RCInformationScreen extends Lightning.Component {
         if(this.onStatusCBhandle != null) {
             this.onStatusCBhandle.dispose();
             this.onStatusCBhandle = null;
-		}
-		if (this.queryStatusTimeout) {
-			Registry.clearTimeout(this.queryStatusTimeout)
-			this.queryStatusTimeout = null
-		}
+        }
+        if (this.queryStatusTimeout) {
+            Registry.clearTimeout(this.queryStatusTimeout)
+            this.queryStatusTimeout = null
+        }
         const [stopPairingResult] = await Promise.allSettled([
             RCApi.get().stopPairing()
         ]);
@@ -401,53 +399,49 @@ export default class RCInformationScreen extends Lightning.Component {
 
     onStatusCB(cbData) {
         // getStatus response has 'success' property; notification payload does not have that.
-		this.WARN("RCInformationScreen onStatusCB cbData:" + JSON.stringify(cbData));
-		if (cbData !== undefined) {
-			let cbDatastatus = {}
-			if ("success" in cbData ? cbData.success : true) {
-				// getNetStatus wraps the event payload in a 'status' property, extract it.
-				// {"success":true,"status":{"netType":1,"pairingState":"SEARCHING","irProgState":"IDLE","netTypesSupported":[1],"remoteData":[]}}
-				cbDatastatus = Array.isArray(cbData.status) ? cbData.status[0] || {} : (cbData.status && typeof cbData.status === 'object' ? cbData.status : {});
-			}
-			// Process the event payload.
-			//const pairingNotTriggerableStates = ["INITIALIZING", "SEARCHING", "PAIRING", "COMPLETE", "UNKNOWN"];
-			const pairingTriggerableStates = ["IDLE", "FAILED"];
-			const doNotDisturbStates = ["SEARCHING", "PAIRING", "COMPLETE"];
-			if (cbDatastatus.pairingState && doNotDisturbStates.includes(cbDatastatus.pairingState)) {
-				if ("COMPLETE" === cbDatastatus.pairingState && cbDatastatus.remoteData && Array.isArray(cbDatastatus.remoteData)) {
-					if (cbDatastatus.remoteData.length > 0) {
-						// Show the details and finish the process. Let user interact and navigate away from this screen.
-						cbDatastatus.remoteData.forEach(item => {
-							this.tag("Status.Value").text.text = item.connected ? Language.translate('Connected') : Language.translate('Disconnected')
-							this.tag("MacAddress.Value").text.text = item.macAddress
-							this.tag("SwVersion.Value").text.text = item.swVersion
-							this.tag("BatteryPercent.Value").text.text = item.batteryPercent
-							this.tag("RCUName.Value").text.text = item.name
-						})
-						this.showDeviceInfo(true)
-					}
-					this.clearPairingAttemptTimeout()
-					if (this.queryStatusTimeout) {
-						Registry.clearTimeout(this.queryStatusTimeout)
-						this.queryStatusTimeout = null
-					}
-				} else if ("PAIRING" === cbDatastatus.pairingState || "SEARCHING" === cbDatastatus.pairingState) {
-					// if PAIRING or SEARCHING - backend is actively scanning and trying to establish a connection and pair automatically. No need to trigger backend startPairing API.
-					if ("SEARCHING" === cbDatastatus.pairingState) {
-						this.showPairingStatus(
-							Language.translate('Please put the remote in pairing mode') + ': ' + Language.translate('Scanning') + '...',
-							true
-						)
-					} else if ("PAIRING" === cbDatastatus.pairingState) {
-						this.showPairingStatus(Language.translate('Pairing') + '...', true);
-					}
-				}
-			} else if (cbDatastatus.pairingState && pairingTriggerableStates.includes(cbDatastatus.pairingState)) {
-				this.showDeviceInfo(false)
-				// trigger pairing call with a delay to avoid chocking.
-				this.startPairingAttemptTimeout(3)
-			}
-		}
+        this.WARN("RCInformationScreen onStatusCB cbData:" + JSON.stringify(cbData));
+        if (cbData !== undefined) {
+            let cbDatastatus = {}
+            if ("success" in cbData ? cbData.success : true) {
+                cbDatastatus = Array.isArray(cbData.status) ? cbData.status[0] || {} : (cbData.status && typeof cbData.status === 'object' ? cbData.status : {});
+            }
+            const pairingTriggerableStates = ["IDLE", "FAILED"];
+            const doNotDisturbStates = ["SEARCHING", "PAIRING", "COMPLETE"];
+            if (cbDatastatus.pairingState && doNotDisturbStates.includes(cbDatastatus.pairingState)) {
+                if ("COMPLETE" === cbDatastatus.pairingState && cbDatastatus.remoteData && Array.isArray(cbDatastatus.remoteData)) {
+                    if (cbDatastatus.remoteData.length > 0) {
+                        // Show the details and finish the process. Let user interact and navigate away from this screen.
+                        cbDatastatus.remoteData.forEach(item => {
+                            this.tag("Status.Value").text.text = item.connected ? Language.translate('Connected') : Language.translate('Disconnected')
+                            this.tag("MacAddress.Value").text.text = item.macAddress
+                            this.tag("SwVersion.Value").text.text = item.swVersion
+                            this.tag("BatteryPercent.Value").text.text = item.batteryPercent
+                            this.tag("RCUName.Value").text.text = item.name
+                        })
+                        this.showDeviceInfo(true)
+                    }
+                    this.clearPairingAttemptTimeout()
+                    if (this.queryStatusTimeout) {
+                        Registry.clearTimeout(this.queryStatusTimeout)
+                        this.queryStatusTimeout = null
+                    }
+                } else if ("PAIRING" === cbDatastatus.pairingState || "SEARCHING" === cbDatastatus.pairingState) {
+                    // if PAIRING or SEARCHING - backend is actively scanning and trying to establish a connection and pair automatically. No need to trigger backend startPairing API.
+                    if ("SEARCHING" === cbDatastatus.pairingState) {
+                        this.showPairingStatus(
+                            Language.translate('Please put the remote in pairing mode') + ': ' + Language.translate('Scanning') + '...',
+                            true
+                        )
+                    } else if ("PAIRING" === cbDatastatus.pairingState) {
+                        this.showPairingStatus(Language.translate('Pairing') + '...', true);
+                    }
+                }
+            } else if (cbDatastatus.pairingState && pairingTriggerableStates.includes(cbDatastatus.pairingState)) {
+                this.showDeviceInfo(false)
+                // trigger pairing call with a delay to avoid chocking.
+                this.startPairingAttemptTimeout(3)
+            }
+        }
     }
 
     _focus() {
