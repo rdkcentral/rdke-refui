@@ -393,7 +393,8 @@ export default class RCInformationScreen extends Lightning.Component {
             this.tag('PairingStatus.LoadingIcon').rotation = 0
         }
         this.tag('PairingStatus.LoadingIcon').alpha = 0
-        this.showDeviceInfo(false)
+        this.tag('DeviceInfoContents').visible = false
+        this.tag('PairingStatus').visible = false
     }
 
     onStatusCB(cbData) {
@@ -410,13 +411,12 @@ export default class RCInformationScreen extends Lightning.Component {
                 if ("COMPLETE" === cbDatastatus.pairingState && cbDatastatus.remoteData && Array.isArray(cbDatastatus.remoteData)) {
                     if (cbDatastatus.remoteData.length > 0) {
                         // Show the details and finish the process. Let user interact and navigate away from this screen.
-                        cbDatastatus.remoteData.forEach(item => {
-                            this.tag("Status.Value").text.text = item.connected ? Language.translate('Connected') : Language.translate('Disconnected')
-                            this.tag("MacAddress.Value").text.text = item.macAddress
-                            this.tag("SwVersion.Value").text.text = item.swVersion
-                            this.tag("BatteryPercent.Value").text.text = item.batteryPercent
-                            this.tag("RCUName.Value").text.text = item.name
-                        })
+                        const item = cbDatastatus.remoteData[0]
+                        this.tag("Status.Value").text.text = item.connected ? Language.translate('Connected') : Language.translate('Disconnected')
+                        this.tag("MacAddress.Value").text.text = item.macAddress
+                        this.tag("SwVersion.Value").text.text = item.swVersion
+                        this.tag("BatteryPercent.Value").text.text = item.batteryPercent
+                        this.tag("RCUName.Value").text.text = item.name
                         this.showDeviceInfo(true)
                     }
                     this.clearPairingAttemptTimeout()
@@ -437,7 +437,7 @@ export default class RCInformationScreen extends Lightning.Component {
                 }
             } else if (cbDatastatus.pairingState && pairingTriggerableStates.includes(cbDatastatus.pairingState)) {
                 this.showDeviceInfo(false)
-                // trigger pairing call with a delay to avoid chocking.
+                // trigger pairing call with a delay to avoid choking.
                 this.startPairingAttemptTimeout(3)
             }
         }
