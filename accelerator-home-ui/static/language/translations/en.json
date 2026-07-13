@@ -78,7 +78,7 @@
   "Password":"Password",
   "Show Password":"Show Password",
   "Privacy Policy":"Privacy Policy",
-  "Not supported":"Not supported",
+  "Not Supported":"Not supported",
   "Pairing Successful":"Pairing Successful",
   "Pairing Failed":"Pairing Failed",
   "Connect":"Connect",
@@ -135,6 +135,8 @@
   "Connect to the Application Catalog":"Connect to the Application Catalog",
   "App Catalog URL":"App Catalog URL",
   "Press OK to enter Username":"Press OK to enter Username",
-  "Please manually reset the remote control by following the instructions in its user manual.":"Please manually reset the remote control by following the instructions in its user manual.",
-  "Exit":"Exit"
+  "Exit":"Exit",
+  "VOD feature is not supported.": "VOD feature is not supported.",
+  "Enabled": "Enabled",
+  "Please manually reset the remote control by following the instructions in its user manual.":"Please manually reset the remote control by following the instructions in its user manual."
 }

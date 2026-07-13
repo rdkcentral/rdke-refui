@@ -210,7 +210,7 @@
   "Password": "Contraseña",
   "Show Password": "Mostrar contraseña",
   "Privacy Policy": "Política de privacidad",
-  "Not supported": "No soportado",
+  "Not Supported": "No soportado",
   "Pairing Successful": "Emparejamiento exitoso",
   "Pairing Failed": "Emparejamiento fallido",
   "Connect": "Conectar",
@@ -305,6 +305,8 @@
   "Unavailable":"No disponible",
   "App Catalog URL is not set":"La URL del catálogo de aplicaciones no está configurada",
   "Unable to retrieve App Catalog URL":"No se pudo obtener la URL del catálogo de aplicaciones",
+  "VOD feature is not supported.": "La función VOD no es compatible.",
+  "Enabled": "Habilitado",
   "Please manually reset the remote control by following the instructions in its user manual.":"Por favor, restablezca manualmente el control remoto siguiendo las instrucciones de su manual de usuario.",
   "Pairing":"Emparejando"
 }
