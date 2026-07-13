@@ -42,7 +42,7 @@ export default class RCApi {
   activate() {
     return new Promise((resolve, reject) => {
       this.thunder.call('Controller', `status@${this.callsign}`).then(result => {
-        if (result[0].state === "activated") {
+        if (Array.isArray(result) && result[0] && result[0].state === "activated") {
           resolve(true);
           return;
         }

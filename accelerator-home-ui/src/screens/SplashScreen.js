@@ -375,6 +375,10 @@ export default class SplashScreen extends Lightning.Component {
               this.tag('AutoRemotePair.Description').text = Language.translate('Remote is Connected to ') + connectedDevices[0].name
               connected = true
               clearTimeout(this.autoPairTimeout)
+              if (this.autoPairNavigateTimeout) {
+                clearTimeout(this.autoPairNavigateTimeout)
+                this.autoPairNavigateTimeout = null
+              }
               this.autoPairNavigateTimeout = setTimeout(() => {
                 if (this.hasInternet == false) this._setState('ConnectivityScreen')
                 else Router.navigate('home', { path: 'settings' })
@@ -390,6 +394,10 @@ export default class SplashScreen extends Lightning.Component {
                       connectedDevices[0].name
                     connected = true
                     clearTimeout(this.autoPairTimeout)
+                    if (this.autoPairNavigateTimeout) {
+                      clearTimeout(this.autoPairNavigateTimeout)
+                      this.autoPairNavigateTimeout = null
+                    }
                     this.autoPairNavigateTimeout = setTimeout(() => {
                       if (this.hasInternet == false) this._setState('ConnectivityScreen')
                       else Router.navigate('home', { path: 'settings' })

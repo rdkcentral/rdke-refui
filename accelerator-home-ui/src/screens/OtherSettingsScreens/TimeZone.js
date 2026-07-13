@@ -58,7 +58,7 @@ export default class TimeZone extends Lightning.Component {
                     mountX: 0.5,
                     MSG: {
                         text: {
-                            text: Language.translate('Not supported'),
+                            text: Language.translate('Not Supported'),
                             fontFace: CONFIG.language.font,
                             fontSize: 40,
                             textColor: 0xffffffff
