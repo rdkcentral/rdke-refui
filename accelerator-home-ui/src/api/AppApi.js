@@ -22,7 +22,6 @@ import HDMIApi from './HDMIApi';
 import NetflixIIDs from "../../static/data/NetflixIIDs.json";
 import HomeApi from './HomeApi';
 import { availableLanguageCodes, CONFIG, GLOBALS } from '../Config/Config.js';
-import AlexaApi from './AlexaApi.js';
 import RDKShellApis from './RDKShellApis.js';
 import { Metrics } from '@firebolt-js/sdk';
 import Network from './NetworkApi.js';
@@ -618,7 +617,6 @@ export default class AppApi {
         RDKShellApis.launchApplication(params).then(res => {
           this.LOG(`AppAPI ${callsign} : Launch results in ${JSON.stringify(res)}`)
           if (res.success) {
-            AlexaApi.get().reportApplicationState(callsign);
             if (args.appIdentifier) {
               let order = Storage.get("appCarouselOrder")
               if (!order) {
@@ -656,11 +654,6 @@ export default class AppApi {
         RDKShellApis.launch(params).then(res => {
           this.LOG("AppAPI " + callsign + " : Launch results in " + JSON.stringify(res))
           if (res.success) {
-            if ((callsign === "HtmlApp") || (callsign === "LightningApp")) {
-              AlexaApi.get().reportApplicationState(url);
-            } else {
-              AlexaApi.get().reportApplicationState(callsign);
-            }
             if (args.appIdentifier) {
               let order = Storage.get("appCarouselOrder")
               if (!order) {
@@ -764,9 +757,7 @@ export default class AppApi {
       new HDMIApi().stopHDMIInput()
       Storage.set("_currentInputMode", {});
       if (!exitInBackground) { //means resident App needs to be launched
-        this.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName).then(() => {
-          AlexaApi.get().reportApplicationState("menu", true);
-        });
+        this.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName);
       }
       return Promise.resolve(true);
       //check for hdmi scenario
@@ -793,9 +784,7 @@ export default class AppApi {
     }
 
     if (!exitInBackground && GLOBALS.Miracastclientdevicedetails.state != "PLAYING") { //means resident App needs to be launched
-      this.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName).then(() => {
-        AlexaApi.get().reportApplicationState("menu", true);
-      });
+      this.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName);
     }
 
     //to hide the current app
