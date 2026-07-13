@@ -182,6 +182,9 @@
                         ? 'images/settings/ToggleOnOrange.png'
                         : 'images/settings/ToggleOffWhite.png'
                 )
+                if (isEnabled) {
+                    this.performOTPAction()
+                }
             })
         this._setState('CECControl')
     }
@@ -206,11 +209,19 @@
                 this.LOG("toggleCEC getEnabled result: " + JSON.stringify(res))
                 const newEnabledState = !(res && res.enabled)
                 this.cecApi.setEnabled(newEnabledState)
-                    .then(() => {
+                    .then(setRes => {
+                         if (!(setRes && setRes.success)) {
+                             this.WARN('CEC setEnabled failed: ' + JSON.stringify(setRes))
+                             return
+                         }
                         const imageSrc = newEnabledState
                             ? 'images/settings/ToggleOnOrange.png'
                             : 'images/settings/ToggleOffWhite.png'
                         this.tag('CECControl.Button').src = Utils.asset(imageSrc)
+
+                        if (newEnabledState) {
+                            this.performOTPAction()
+                        }
                     })
             })
     }

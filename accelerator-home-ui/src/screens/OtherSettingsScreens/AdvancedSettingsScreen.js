@@ -191,6 +191,9 @@ export default class AdvanceSettingsScreen extends Lightning.Component {
                         ? 'images/settings/ToggleOnOrange.png'
                         : 'images/settings/ToggleOffWhite.png'
                 )
+                if (isEnabled) {
+                    this.performOTPAction()
+                }
             })
         this._setState('TTSOptions')
     }
@@ -229,6 +232,9 @@ export default class AdvanceSettingsScreen extends Lightning.Component {
                             ? 'images/settings/ToggleOnOrange.png'
                             : 'images/settings/ToggleOffWhite.png'
                         this.tag('CECControl.Button').src = Utils.asset(imageSrc)
+                        if (newEnabledState) {
+                            this.performOTPAction()
+                        }
                     })
             })
     }
