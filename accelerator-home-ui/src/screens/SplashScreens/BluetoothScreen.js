@@ -310,11 +310,6 @@ export default class BluetoothScreen extends Lightning.Component {
             this.RCTimeout = null;
             RCApi.get().getNetStatus().then(result => {
                 this.onStatusCB(result);
-                // onStatusCB only schedules startPairing on IDLE/FAILED. If the plugin
-                // auto-started a PAIRING session (state="PAIRING"), onStatusCB clears
-                // scanTrigger without scheduling anything, causing a ~30s delay until
-                // the session expires. If no device is paired and no scanTrigger was set,
-                // ensure startPairing is called within 5 seconds of page load.
                 if (!this.scanTrigger) {
                     let status = Array.isArray(result.status) ? (result.status[0] || {}) :
                         (result.status && typeof result.status === 'object' ? result.status : {});
