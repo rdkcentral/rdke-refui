@@ -305,6 +305,6 @@
   "Unavailable":"No disponible",
   "App Catalog URL is not set":"La URL del catálogo de aplicaciones no está configurada",
   "Unable to retrieve App Catalog URL":"No se pudo obtener la URL del catálogo de aplicaciones",
-  "Ensure to manually reset the remote control referring to its user manual.":"Asegúrese de restablecer manualmente el control remoto consultando su manual de usuario.",
+  "Please manually reset the remote control by following the instructions in its user manual.":"Por favor, restablezca manualmente el control remoto siguiendo las instrucciones de su manual de usuario.",
   "Pairing":"Emparejando"
 }

@@ -80,7 +80,7 @@ export default class RebootConfirmationScreen extends Lightning.Component {
                     mountX: 0.5,
                     w: 1400,
                     text: {
-                        text: Language.translate("Ensure to manually reset the remote control referring to its user manual."),
+                        text: Language.translate("Please manually reset the remote control by following the instructions in its user manual."),
                         fontFace: CONFIG.language.font,
                         fontSize: 20,
                         textColor: 0xFFFFCC00,

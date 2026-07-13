@@ -147,7 +147,7 @@ export default class DeviceScreen extends Lightning.Component {
                     y: 420,
                     w: 1600,
                     text: {
-                        text: Language.translate("Ensure to manually reset the remote control referring to its user manual."),
+                        text: Language.translate("Please manually reset the remote control by following the instructions in its user manual."),
                         textColor: COLORS.titleColor,
                         fontFace: CONFIG.language.font,
                         fontSize: 18,
