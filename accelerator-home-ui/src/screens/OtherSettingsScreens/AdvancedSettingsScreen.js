@@ -182,11 +182,16 @@ export default class AdvanceSettingsScreen extends Lightning.Component {
 
     _init() {
         this.cecApi = new CECApi()
-        // this.cecApi.activate()
-        //     .then(() => {
-        //         this.tag('CECControl.Button').src = Utils.asset('images/settings/ToggleOnOrange.png')
-        //         this.performOTPAction()
-        //     })
+        this.cecApi.getEnabled()
+            .then(res => {
+                // get the current state of CEC and set the toogle button based on status.
+                const isEnabled = !!(res && res.enabled)
+                this.tag('CECControl.Button').src = Utils.asset(
+                    isEnabled
+                        ? 'images/settings/ToggleOnOrange.png'
+                        : 'images/settings/ToggleOffWhite.png'
+                )
+            })
         this._setState('TTSOptions')
     }
     _focus() {
@@ -200,7 +205,7 @@ export default class AdvanceSettingsScreen extends Lightning.Component {
     }
 
     performOTPAction() {
-        this.cecApi.setEnabled().then(res => {
+        this.cecApi.setEnabled(true).then(res => {
             if (res.success) {
                 this.cecApi.performOTP().then(otpRes => {
                     if (otpRes.success) {
@@ -214,17 +219,17 @@ export default class AdvanceSettingsScreen extends Lightning.Component {
     toggleCEC() {
         this.cecApi.getEnabled()
             .then(res => {
-               this.LOG("cec getenabled result:" + JSON.stringify(res))
-               // get the current state and toggle it
-               const newEnabledState = !res.enabled
-            this.cecApi.setEnabled({ enabled: newEnabledState })
-                .then(() => {
+                this.LOG("cec getenabled result:" + JSON.stringify(res))
+                // get the current state and toggle it.
+                const newEnabledState = !(res && res.enabled)
+                this.cecApi.setEnabled(newEnabledState)
+                    .then(() => {
                     // Update UI based on new state
-                    const imageSrc = newEnabledState 
-                        ? 'images/settings/ToggleOnOrange.png'
-                        : 'images/settings/ToggleOffWhite.png'
-                    this.tag('CECControl.Button').src = Utils.asset(imageSrc)
-                })
+                        const imageSrc = newEnabledState
+                            ? 'images/settings/ToggleOnOrange.png'
+                            : 'images/settings/ToggleOffWhite.png'
+                        this.tag('CECControl.Button').src = Utils.asset(imageSrc)
+                    })
             })
     }
     static _states() {

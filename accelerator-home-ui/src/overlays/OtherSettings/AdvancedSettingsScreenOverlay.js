@@ -174,10 +174,14 @@
 
     _init() {
         this.cecApi = new CECApi()
-        this.cecApi.activate()
-            .then(() => {
-                this.tag('CECControl.Button').src = Utils.asset('images/settings/ToggleOnOrange.png')
-                this.performOTPAction()
+        this.cecApi.getEnabled()
+            .then(res => {
+                const isEnabled = !!(res && res.enabled)
+                this.tag('CECControl.Button').src = Utils.asset(
+                    isEnabled
+                        ? 'images/settings/ToggleOnOrange.png'
+                        : 'images/settings/ToggleOffWhite.png'
+                )
             })
         this._setState('CECControl')
     }
@@ -185,7 +189,7 @@
         this._setState('CECControl')
     }
     performOTPAction() {
-        this.cecApi.setEnabled().then(res => {
+        this.cecApi.setEnabled(true).then(res => {
             if (res.success) {
                 this.cecApi.performOTP().then(otpRes => {
                     if (otpRes.success) {
@@ -200,18 +204,14 @@
         this.cecApi.getEnabled()
             .then(res => {
                 this.LOG("toggleCEC getEnabled result: " + JSON.stringify(res))
-                if (res.enabled) {
-                    this.cecApi.deactivate()
-                        .then(() => {
-                            this.tag('CECControl.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
-                        })
-                }
-                else {
-                    this.cecApi.activate()
-                        .then(() => {
-                            this.tag('CECControl.Button').src = Utils.asset('images/settings/ToggleOnOrange.png')
-                        })
-                }
+                const newEnabledState = !(res && res.enabled)
+                this.cecApi.setEnabled(newEnabledState)
+                    .then(() => {
+                        const imageSrc = newEnabledState
+                            ? 'images/settings/ToggleOnOrange.png'
+                            : 'images/settings/ToggleOffWhite.png'
+                        this.tag('CECControl.Button').src = Utils.asset(imageSrc)
+                    })
             })
     }
 

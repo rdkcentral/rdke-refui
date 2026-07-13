@@ -69,9 +69,9 @@ export default class CECApi {
         })
     }
 
-    setEnabled() {
+    setEnabled(enabled = true) {
         return new Promise((resolve) => {
-            thunder.call('org.rdk.HdmiCecSource', 'setEnabled', { enabled: true })
+            thunder.call('org.rdk.HdmiCecSource', 'setEnabled', { enabled })
                 .then(result => {
                     resolve(result)
                 })
