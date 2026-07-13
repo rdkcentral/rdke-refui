@@ -246,7 +246,6 @@ export default class WiFiScreen extends Lightning.Component {
       this.LOG("check - not calling stopScan since this.wifiStatus is FALSE.")
     }
     if (this.onWIFIStateChangedHandler) this.onWIFIStateChangedHandler.dispose();
-    if (this.onErrorHandler) this.onErrorHandler.dispose();
     if (this.onAvailableSSIDsCB) this.onAvailableSSIDsCB.dispose();
   }
 

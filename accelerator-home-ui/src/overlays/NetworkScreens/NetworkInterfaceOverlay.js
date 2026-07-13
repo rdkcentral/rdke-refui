@@ -104,7 +104,7 @@
     }
 
     _active() {
-        this.onDefaultInterfaceChangedCB = NetworkManager.thunder.on(NetworkManager.callsign, 'onActiveInterfaceChange', (notification) => {
+        this.onActiveInterfaceChangeCB = NetworkManager.thunder.on(NetworkManager.callsign, 'onActiveInterfaceChange', (notification) => {
             this.LOG('onActiveInterfaceChange notification from networkInterfaceScreen: ' + JSON.stringify(notification))
             if (notification.currentActiveInterface === "eth0") {
                 this.loadingAnimation.stop()
@@ -121,7 +121,7 @@
             }
             Metrics.action("user", "The user changed the network interface", null)
         });
-        this.onConnectionStatusChangedCB = NetworkManager.thunder.on(NetworkManager.callsign, 'onInterfaceStateChange', (notification) => {
+        this.onInterfaceStateChange = NetworkManager.thunder.on(NetworkManager.callsign, 'onInterfaceStateChange', (notification) => {
             this.LOG('onInterfaceStateChange notification from networkInterfaceScreen: ' + JSON.stringify(notification))
             if (notification.interface === "eth0") {
                 this.tag('Ethernet.Title').text.text = 'Ethernet: ' + Language.translate(notification.state.toLowerCase())
@@ -138,8 +138,8 @@
     }
 
     _inactive() {
-        this.onDefaultInterfaceChangedCB.dispose()
-        this.onConnectionStatusChangedCB.dispose()
+        this.onActiveInterfaceChangeCB.dispose()
+        this.onInterfaceStateChange.dispose()
     }
 
     _firstActive() {

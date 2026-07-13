@@ -903,15 +903,6 @@ export default class App extends Router.App {
 	}
 
 	SubscribeToNetworkManager() {
-		thunder.on('org.rdk.NetworkManager', 'onInterfaceStateChange', data => {
-			console.warn("onInterfaceStateChange:", data);
-		});
-		thunder.on('org.rdk.NetworkManager', 'onAddressChange', data => {
-			console.warn(" onAddressChange:", data);
-		});
-		thunder.on('org.rdk.NetworkManager', 'onActiveInterfaceChange', data => {
-			console.warn("onActiveInterfaceChange:", data);
-		});
 		thunder.on('org.rdk.NetworkManager', 'onInternetStatusChange', data => {
 			if (data.status === "FULLY_CONNECTED") {
 				GLOBALS.IsConnectedToInternet = true
@@ -921,16 +912,6 @@ export default class App extends Router.App {
 			}
 			console.warn("onInternetStatusChange:", data);
 		});
-		thunder.on('org.rdk.NetworkManager', 'onAvailableSSIDs', data => {
-			console.warn(" onAvailableSSIDs:", data);
-		});
-		thunder.on('org.rdk.NetworkManager', 'onWiFiStateChange', data => {
-			console.warn("onWiFiStateChange:", data);
-		});
-		thunder.on('org.rdk.NetworkManager', 'onWiFiSignalStrengthChange', data => {
-			console.warn("onWiFiSignalStrengthChange:", data);
-		});
-
 	}
 	SubscribeToMiracastService() {
 		thunder.on('org.rdk.MiracastService.1', 'onClientConnectionRequest', data => {
