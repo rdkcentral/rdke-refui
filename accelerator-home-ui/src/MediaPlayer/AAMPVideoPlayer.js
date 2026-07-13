@@ -20,7 +20,6 @@ import { Lightning, Router } from '@lightningjs/sdk'
 import LightningPlayerControls from './LightningPlayerControl';
 import { CONFIG } from '../Config/Config';
 import ChannelOverlay from './ChannelOverlay';
-import {Metrics} from'@firebolt-js/sdk'
 
 let player = null
 let position = null
@@ -65,7 +64,6 @@ export default class AAMPVideoPlayer extends Lightning.Component {
       this.setVideoRect(0, 0, 1920, 1080)
     } catch (error) {
       this.ERR('Playback Failed ' + JSON.stringify(error))
-      Metrics.error(Metrics.ErrorType.MEDIA,"PlaybackError", "Playback Failed"+JSON.stringify(error), false, null)
     }
   }
 
@@ -288,7 +286,6 @@ export default class AAMPVideoPlayer extends Lightning.Component {
       this.playerState = this.playerStatesEnum.idle
     } catch (error) {
       this.ERR('AAMPMediaPlayer is not defined ' + JSON.stringify(error))
-      Metrics.error(Metrics.ErrorType.MEDIA,"PlaybackError", "AAMPMediaPlayer is not defined" +JSON.stringify(error), false, null)
     }
   }
 
@@ -348,7 +345,6 @@ export default class AAMPVideoPlayer extends Lightning.Component {
       this.setVideoRect(0, 0, 1920, 1080)
     } catch (error) {
       this.ERR('Playback Failed ' + JSON.stringify(error))
-      Metrics.error(Metrics.ErrorType.MEDIA,"PlaybackError", "Playback Failed "+JSON.stringify(error), false, null)
     }
   }
 
@@ -379,7 +375,6 @@ export default class AAMPVideoPlayer extends Lightning.Component {
         this.setVideoRect(0, 0, 1920, 1080)
       } catch (error) {
         this.ERR('Playback Failed ' + JSON.stringify(error))
-        Metrics.error(Metrics.ErrorType.MEDIA,"PlaybackError", 'Playback Failed ' + JSON.stringify(error), false, null)
       }
     }
   }
@@ -399,7 +394,6 @@ export default class AAMPVideoPlayer extends Lightning.Component {
         this.setVideoRect(0, 0, 1920, 1080)
       } catch (error) {
         this.ERR('Playback Failed ' + JSON.stringify(error))
-        Metrics.error(Metrics.ErrorType.MEDIA,"PlaybackError", 'Playback Failed '+JSON.stringify(error), false, null)
       }
     }
   }

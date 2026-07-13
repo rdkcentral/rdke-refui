@@ -18,7 +18,6 @@
  **/
 import ThunderJS from 'ThunderJS';
 import { CONFIG } from '../Config/Config'
-import { Metrics } from "@firebolt-js/sdk"
 
 let instance = null
 export default class AppManager {
@@ -45,7 +44,6 @@ export default class AppManager {
                   })
                   .catch(err => {
                       this.ERR("Error Activation AppManager" + JSON.stringify(err))
-                      Metrics.error(Metrics.ErrorType.OTHER, "AppManager", `Error while Thunder Controller ${this.callsign} activate ${JSON.stringify(err)}`, false, null)
                       reject(err)
                   })
           })
@@ -59,7 +57,6 @@ export default class AppManager {
                 })
                 .catch(err => {
                     this.ERR("Error Deactivation AppManager" + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, "AppManager", `Error while Thunder Controller ${this.callsign} deactivate ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
         })
@@ -74,7 +71,6 @@ export default class AppManager {
                 })
                 .catch(err => {
                     this.ERR("Error launchApp: " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, "launchAppError", `Error while Thunder call ${this.callsign} ListPackages ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
         })
@@ -87,7 +83,6 @@ export default class AppManager {
                 })
                 .catch(err => {
                     this.ERR("Error getLoadedApps: " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, "getLoadedAppsError", `Error while Thunder call ${this.callsign} ListPackages ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
         })
@@ -101,7 +96,6 @@ export default class AppManager {
                 })
                 .catch(err => {
                     this.ERR("Error in isInstalled: " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, "AppManager", `Error while calling isInstalled on ${this.callsign} ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
         })
@@ -116,7 +110,6 @@ export default class AppManager {
                 })
                 .catch(err => {
                     this.ERR("Error closeApp: " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, "closeAppError", `Error while Thunder call ${this.callsign} ListPackages ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
         })
@@ -131,7 +124,6 @@ export default class AppManager {
                 })
                 .catch(err => {
                     this.ERR("Error terminateApp: " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, "terminateAppError", `Error while Thunder call ${this.callsign} ListPackages ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
         })
@@ -146,7 +138,6 @@ export default class AppManager {
                 })
                 .catch(err => {
                     this.ERR("Error killApp: " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, "killAppError", `Error while Thunder call ${this.callsign} ListPackages ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
         })
@@ -160,7 +151,6 @@ export default class AppManager {
                 })
                 .catch(err => {
                     this.ERR("Error getInstalledApps: " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, "getInstalledAppsError", `Error while Thunder call ${this.callsign} ListPackages ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
         })
@@ -175,7 +165,6 @@ export default class AppManager {
                 })
                 .catch(err => {
                     this.ERR("Error preloadApp: " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, "preloadAppError", `Error while Thunder call ${this.callsign} ListPackages ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
         })
@@ -190,7 +179,6 @@ export default class AppManager {
                 })
                 .catch(err => {
                     this.ERR("Error startSystemApp: " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, "startSystemAppError", `Error while Thunder call ${this.callsign} ListPackages ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
         })
@@ -205,7 +193,6 @@ export default class AppManager {
                 })
                 .catch(err => {
                     this.ERR("Error stopSystemApp: " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, "stopSystemAppError", `Error while Thunder call ${this.callsign} ListPackages ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
         })
@@ -220,7 +207,6 @@ export default class AppManager {
                 })
                 .catch(err => {
                     this.ERR("Error activateSystemApp: " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, "activateSystemAppError", `Error while Thunder call ${this.callsign} ListPackages ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
         })
@@ -235,7 +221,6 @@ export default class AppManager {
                 })
                 .catch(err => {
                     this.ERR("Error deactivateSystemApp: " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, "deactivateSystemAppError", `Error while Thunder call ${this.callsign} ListPackages ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
         })
@@ -250,7 +235,6 @@ export default class AppManager {
                 })
                 .catch(err => {
                     this.ERR("Error hibernateSystemApp: " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, "hibernateSystemAppError", `Error while Thunder call ${this.callsign} ListPackages ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
         })
@@ -265,7 +249,6 @@ export default class AppManager {
                 })
                 .catch(err => {
                     this.ERR("Error sendIntent: " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, "sendIntentError", `Error while Thunder call ${this.callsign} ListPackages ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
         })
@@ -280,7 +263,6 @@ export default class AppManager {
                 })
                 .catch(err => {
                     this.ERR("Error clearAppData: " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, "clearAppDataError", `Error while Thunder call ${this.callsign} ListPackages ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
         })
@@ -295,7 +277,6 @@ export default class AppManager {
                 })
                 .catch(err => {
                     this.ERR("Error getAppProperty: " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, "getAppPropertyError", `Error while Thunder call ${this.callsign} ListPackages ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
         })
@@ -310,7 +291,6 @@ export default class AppManager {
                 })
                 .catch(err => {
                     this.ERR("Error setAppProperty: " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, "setAppPropertyError", `Error while Thunder call ${this.callsign} ListPackages ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
         })

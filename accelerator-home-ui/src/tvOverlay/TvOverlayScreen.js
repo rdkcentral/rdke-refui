@@ -19,11 +19,9 @@
 
 import { Lightning, Router, Registry } from "@lightningjs/sdk";
 import AppApi from "../api/AppApi";
-import ThunderJS from "ThunderJS";
 import TvOverlaySettingsScreen from "./components/TvOverlaySettingsScreen";
 import TvOverlayInputScreen from "./components/TvOverlayInputScreen";
-import { CONFIG, GLOBALS } from '../Config/Config';
-import { Metrics } from "@firebolt-js/sdk";
+import { GLOBALS } from '../Config/Config';
 
 export default class TvOverlayScreen extends Lightning.Component {
   constructor(...args) {

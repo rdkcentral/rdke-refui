@@ -18,7 +18,6 @@
  **/
 import ThunderJS from 'ThunderJS';
 import { CONFIG } from '../Config/Config'
-import { Metrics } from '@firebolt-js/sdk';
 
 const thunder = ThunderJS(CONFIG.thunderConfig)
 
@@ -37,7 +36,6 @@ export default class CECApi {
                 })
                 .catch(err => {
                     this.ERR("CEC Error Activation: " + err)
-                    Metrics.error(Metrics.ErrorType.OTHER, "HdmiCecSourceError", "Error while Thunder Controller HdmiCecSource activate "+JSON.stringify(err), false, null)
                     reject(err)
                 })
         })
@@ -50,7 +48,6 @@ export default class CECApi {
                 })
                 .catch(err => {
                     this.ERR("CEC Error Deactivation: " + err)
-                    Metrics.error(Metrics.ErrorType.OTHER, "HdmiCecSourceError", "Error while Thunder Controller HdmiCecSource deactivate "+JSON.stringify(err), false, null)
                     reject(err)
                 })
         })
@@ -63,7 +60,6 @@ export default class CECApi {
                 })
                 .catch(err => {
                     this.ERR("CEC Get Enabled: " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, "HdmiCecSourceError", "Error in Thunder HdmiCecSource getEnabled "+JSON.stringify(err), false, null)
                     resolve({ enabled: false })
                 })
         })
@@ -77,7 +73,6 @@ export default class CECApi {
                 })
                 .catch(err => {
                     this.ERR("CEC Set Enabled: " + err)
-                    Metrics.error(Metrics.ErrorType.OTHER, "HdmiCecSourceError", "Error in Thunder HdmiCecSource setEnabled "+JSON.stringify(err), false, null)
                     resolve({ success: false })
                 })
         })
@@ -90,7 +85,6 @@ export default class CECApi {
                 })
                 .catch(err => {
                     this.ERR("getOSDName: " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, "HdmiCecSourceError", "Error in Thunder HdmiCecSource getOSDName "+JSON.stringify(err), false, null)
                     resolve({ enabled: false })
                 })
         })
@@ -103,7 +97,6 @@ export default class CECApi {
                 })
                 .catch(err => {
                     this.ERR("setOSDName: " + err);
-                    Metrics.error(Metrics.ErrorType.OTHER, "HdmiCecSourceError", "Error in Thunder HdmiCecSource setOSDName "+JSON.stringify(err), false, null)
                     resolve({ success: false })
                 })
         })
@@ -117,7 +110,6 @@ export default class CECApi {
                 })
                 .catch(err => {
                     this.ERR("CEC Otp Error: " + err)
-                    Metrics.error(Metrics.ErrorType.OTHER, "HdmiCecSourceError", "Error in Thunder HdmiCecSource performOTPAction "+JSON.stringify(err), false, null)
                     resolve({ success: false })
                 })
         })
@@ -131,7 +123,6 @@ export default class CECApi {
                 })
                 .catch(err => {
                     this.ERR("CECApi HdmiCecSource getActiveSourceStatus failed: " + err);
-                    Metrics.error(Metrics.ErrorType.OTHER, "HdmiCecSourceError", "Error in Thunder HdmiCecSource getActiveSourceStatus "+JSON.stringify(err), false, null)
                     reject(err)
                 })
         })

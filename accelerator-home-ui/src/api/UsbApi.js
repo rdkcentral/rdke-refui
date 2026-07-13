@@ -22,7 +22,6 @@ import { musicListInfo } from '../../static/data/MusicListInfo'
 import { videoListInfo } from '../../static/data/VideoListInfo'
 import { UsbInnerFolderListInfo } from '../../static/data/UsbInnerFolderListInfo'
 import { CONFIG } from '../Config/Config'
-import { Metrics } from '@firebolt-js/sdk'
 
 let thunder = ThunderJS(CONFIG.thunderConfig)
 
@@ -49,7 +48,6 @@ export default class UsbApi {
                     resolve(res)
                 }).catch(err => {
                     this.ERR('UsbAccess Plugin Activation Failed: ' + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER,"UsbApiError", "Error while Thunder Controller usbAccess activate "+JSON.stringify(err), false, null)
                     reject(err)
                 })
         })
@@ -66,7 +64,6 @@ export default class UsbApi {
                     resolve(res)
                 }).catch(err => {
                     this.ERR('UsbAccess Plugin Deactivation Failed: ' + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER,"UsbApiError",  "Error while Thunder Controller usbAccess deactivate "+JSON.stringify(err), false, null)
                     reject(err)
                 })
         })
@@ -84,7 +81,6 @@ export default class UsbApi {
                     resolve(result)
                 }).catch(err => {
                     this.ERR('UsbAccess Plugin ClearLink Failed: ' + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER,"UsbApiError",  "Error in Thunder usbAccess clearLink "+JSON.stringify(err), false, null)
                     resolve(false)
                 })
         })
@@ -102,7 +98,6 @@ export default class UsbApi {
                     resolve(result)
                 }).catch(err => {
                     this.ERR('UsbAccess Plugin CreateLink Failed: ' + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER,"UsbApiError", "Error in Thunder usbAccess createLink "+JSON.stringify(err), false, null)
                     resolve(false)
                 })
         })
@@ -121,7 +116,6 @@ export default class UsbApi {
                         resolve(result.contents)
                     }).catch(err => {
                         this.ERR('UsbAccess Plugin getFileList Failed: ' + JSON.stringify(err))
-                        Metrics.error(Metrics.ErrorType.OTHER,"UsbApiError", "Error in Thunder usbAccess getFileList "+JSON.stringify(err), false, null)
                         resolve(false)
                     })
             })
@@ -135,7 +129,6 @@ export default class UsbApi {
                         resolve(result.contents)
                     }).catch(err => {
                         this.ERR('UsbAccess Plugin getFileList Failed: ' + JSON.stringify(err))
-                        Metrics.error(Metrics.ErrorType.OTHER,"UsbApiError", "Error in Thunder usbAccess getFileList "+JSON.stringify(err), false, null)
                         resolve(false)
                     })
             })
@@ -200,7 +193,6 @@ export default class UsbApi {
                 .catch(err => {
                     reject(err)
                     this.ERR("Error while getting the mounted device " + JSON.stringify(err));
-                    Metrics.error(Metrics.ErrorType.OTHER,"UsbApiError", "Error in Thunder usbAccess getMounted "+JSON.stringify(err), false, null)
                 });
         });
     }

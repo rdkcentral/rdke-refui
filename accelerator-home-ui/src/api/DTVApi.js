@@ -18,7 +18,6 @@
  **/
 import ThunderJS from "ThunderJS";
 import { CONFIG } from '../Config/Config'
-import { Metrics } from "@firebolt-js/sdk";
 
 const thunder = ThunderJS(CONFIG.thunderConfig)
 let playerID = -1; //set to -1 to indicate nothing is currently playing
@@ -36,7 +35,6 @@ const getCustomServiceList = async () => {
     console.log("customServiceList: ", customServiceList);
     console.log("customEventList: ", customEventList);
   } catch (err) {
-    Metrics.error(Metrics.ErrorType.OTHER,"DTVApiError", JSON.stringify(err), false, null)
     console.log("Failed to read Custom Channel Data: ", err);
   }
 };
@@ -59,7 +57,6 @@ export default class DTVApi {
         })
         .catch((err) => {
           this.ERR("DTV Error Activation: " + JSON.stringify(err));
-          Metrics.error(Metrics.ErrorType.OTHER,"DTVApiError", "Error while Thunder Controller DTV activate "+JSON.stringify(err), false, null)
           reject(err);
         });
     });
@@ -72,7 +69,6 @@ export default class DTVApi {
         })
         .catch((err) => {
           this.ERR("DTV Error Deactivation: " + JSON.stringify(err));
-          Metrics.error(Metrics.ErrorType.OTHER,"DTVApiError", "Error while Thunder Controller DTV deactivate "+JSON.stringify(err), false, null)
           reject(err);
         });
     });
@@ -87,7 +83,6 @@ export default class DTVApi {
         })
         .catch((err) => {
           this.ERR("Error: noOfCountries: " + JSON.stringify(err));
-          Metrics.error(Metrics.ErrorType.OTHER,"DTVApiError", "Error in Thunder DTV numberOfCountries "+JSON.stringify(err), false, null)
           reject(err);
         });
     });
@@ -102,7 +97,6 @@ export default class DTVApi {
         })
         .catch((err) => {
           this.ERR("Error: countryList: " + JSON.stringify(err));
-          Metrics.error(Metrics.ErrorType.OTHER,"DTVApiError", "Error in Thunder DTV countryList "+JSON.stringify(err), false, null)
           reject(err);
         });
     });
@@ -130,7 +124,6 @@ export default class DTVApi {
         })
         .catch((err) => {
           this.ERR("Error: serviceList: " + JSON.stringify(err));
-          Metrics.error(Metrics.ErrorType.OTHER,"DTVApiError", "Error in Thunder DTV serviceList@dvbs "+JSON.stringify(err), false, null)
           resolve(arr);
         });
     });
@@ -156,7 +149,6 @@ export default class DTVApi {
           resolve(data);
         } else {
           this.ERR("Error: getting schedule from custom channels");
-          Metrics.error(Metrics.ErrorType.OTHER,"DTVApiError", "Error: getting schedule from custom channels", false, null)
           resolve([]);
         }
       } else {
@@ -172,7 +164,6 @@ export default class DTVApi {
           })
           .catch((err) => {
             this.ERR("Error: scheduleEvents: " + JSON.stringify(err));
-            Metrics.error(Metrics.ErrorType.OTHER,"DTVApiError", "Error in Thunder DTV scheduleEvents@dvbs "+JSON.stringify(err), false, null)
             reject(err);
           });
       }
@@ -193,7 +184,6 @@ export default class DTVApi {
         })
         .catch((err) => {
           this.ERR("Error: satelliteList: " + JSON.stringify(err));
-          Metrics.error(Metrics.ErrorType.OTHER,"DTVApiError", "Error in Thunder DTV satelliteList "+JSON.stringify(err), false, null)
           reject(err);
         });
     });
@@ -254,7 +244,6 @@ export default class DTVApi {
         })
         .catch((err) => {
           this.ERR("serviceSearchError: " + JSON.stringify(err));
-          Metrics.error(Metrics.ErrorType.OTHER,"DTVApiError", "Error in Thunder DTV startServiceSearch "+JSON.stringify(err), false, null)
           reject(err);
         });
     });
@@ -270,7 +259,6 @@ export default class DTVApi {
         })
         .catch((err) => {
           this.ERR("Error: numberOfServices: " + JSON.stringify(err));
-          Metrics.error(Metrics.ErrorType.OTHER,"DTVApiError", "Error in Thunder DTV numberOfServices "+JSON.stringify(err), false, null)
           reject(err);
         });
     });
@@ -288,7 +276,6 @@ export default class DTVApi {
         })
         .catch((err) => {
           this.ERR("Error: nowNextEvents: " + JSON.stringify(err));
-          Metrics.error(Metrics.ErrorType.OTHER,"DTVApiError", "Error in Thunder DTV nowNextEvents@dvbs "+JSON.stringify(err), false, null)
           reject(err);
         });
     });
@@ -316,7 +303,6 @@ export default class DTVApi {
         })
         .catch((err) => {
           this.ERR("ERROR: startPlaying: " + JSON.stringify(err));
-          Metrics.error(Metrics.ErrorType.OTHER,"DTVApiError", "Error in Thunder DTV startPlaying "+JSON.stringify(err), false, null)
           reject(err);
         });
     });
@@ -334,7 +320,6 @@ export default class DTVApi {
         })
         .catch((err) => {
           this.ERR("ERROR: stopPlaying: " + JSON.stringify(err));
-          Metrics.error(Metrics.ErrorType.OTHER,"DTVApiError", "Error in Thunder DTV stopPlaying "+JSON.stringify(err), false, null)
           reject(err);
         });
     });
@@ -375,7 +360,6 @@ export default class DTVApi {
         resolve(result)
       }).catch(err => {
         this.ERR("launchChannel: FAILED: " + JSON.stringify(err))
-        Metrics.error(Metrics.ErrorType.OTHER,"DTVApiError", JSON.stringify(err), false, null)
         reject(err)
       })
     });
@@ -399,7 +383,6 @@ export default class DTVApi {
         resolve(result)
       }).catch(err => {
         this.ERR("exitChannel: FAILED: " + JSON.stringify(err))
-        Metrics.error(Metrics.ErrorType.OTHER,"DTVApiError", JSON.stringify(err), false, null)
         reject(err)
       })
     });

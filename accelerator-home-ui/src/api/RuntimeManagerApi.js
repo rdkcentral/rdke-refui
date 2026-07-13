@@ -18,7 +18,6 @@
  **/
 import ThunderJS from 'ThunderJS';
 import { CONFIG } from '../Config/Config'
-import { Metrics } from "@firebolt-js/sdk"
 
 let instance = null
 export default class RuntimeManager {
@@ -45,7 +44,6 @@ export default class RuntimeManager {
                   })
                   .catch(err => {
                       this.ERR("Error Activation RuntimeManager" + JSON.stringify(err))
-                      Metrics.error(Metrics.ErrorType.OTHER, "Runtime", `Error while Thunder Controller ${this.callsign} activate ${JSON.stringify(err)}`, false, null)
                       reject(err)
                   })
           })
@@ -59,7 +57,6 @@ export default class RuntimeManager {
                 })
                 .catch(err => {
                     this.ERR("Error Deactivation RuntimeManager" + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, "Runtime", `Error while Thunder Controller ${this.callsign} deactivate ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
         })

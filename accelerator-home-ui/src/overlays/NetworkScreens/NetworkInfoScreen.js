@@ -267,12 +267,6 @@ export default class NetworkInfo extends Lightning.Component {
         this.onActiveInterfaceChangeCB = NetworkManager.thunder.on(NetworkManager.callsign,'onActiveInterfaceChange', data => {
             this.refreshDetails();
         })
-        if ("ResidentApp" !== GLOBALS.selfClientName)
-        {
-            this.OnNetworkChangedfirebolt = FireBoltApi.get().deviceinfo.listen("networkChanged",value =>{
-                this.refreshDetails();
-            })
-        }
     }
 
     _inactive() {

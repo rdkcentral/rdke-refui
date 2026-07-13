@@ -23,7 +23,6 @@
  import { Language } from '@lightningjs/sdk';
  import WifiScreen from './NetworkWifiOverlay'
  import NetworkManager from '../../api/NetworkManagerAPI';
- import { Metrics } from '@firebolt-js/sdk'
 
  export default class NetworkInterfaceScreen extends Lightning.Component {
 
@@ -119,14 +118,12 @@
                 this.tag('Ethernet.Loader').visible = false
                 this.tag('Ethernet.Title').text.text = 'Ethernet'
             }
-            Metrics.action("user", "The user changed the network interface", null)
         });
         this.onInterfaceStateChange = NetworkManager.thunder.on(NetworkManager.callsign, 'onInterfaceStateChange', (notification) => {
             this.LOG('onInterfaceStateChange notification from networkInterfaceScreen: ' + JSON.stringify(notification))
             if (notification.interface === "eth0") {
                 this.tag('Ethernet.Title').text.text = 'Ethernet: ' + Language.translate(notification.state.toLowerCase())
             }
-            Metrics.action("App", "network connection of app changed", null)
         });
 
         this.loadingAnimation = this.tag('Ethernet.Loader').animation({

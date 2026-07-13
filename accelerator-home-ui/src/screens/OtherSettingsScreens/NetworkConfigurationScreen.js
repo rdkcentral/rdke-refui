@@ -20,7 +20,6 @@ import { Lightning, Utils, Language, Router } from '@lightningjs/sdk'
 import SettingsMainItem from '../../items/SettingsMainItem'
 import { COLORS } from '../../colors/Colors'
 import { CONFIG } from '../../Config/Config'
-import { Metrics } from '@firebolt-js/sdk'
 import NetworkManager from '../../api/NetworkManagerAPI'
 
 export default class NetworkConfigurationScreen extends Lightning.Component {
@@ -153,7 +152,6 @@ export default class NetworkConfigurationScreen extends Lightning.Component {
             if(data.currentActiveInterface === "eth0"){this.$NetworkInterfaceText("ETHERNET")}
             else{this.$NetworkInterfaceText("WIFI")}
             this.tag('TestInternetAccess.Title').text.text = Language.translate('Test Internet Access: ')
-            Metrics.action("user", "User changed the network interface", null)
         });
 
         this.onInternetStatusChangeCB = NetworkManager.thunder.on(NetworkManager.callsign, 'onInternetStatusChange', data => {

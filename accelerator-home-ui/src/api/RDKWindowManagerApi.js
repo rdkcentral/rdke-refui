@@ -18,7 +18,6 @@
  **/
 import ThunderJS from 'ThunderJS';
 import { CONFIG } from '../Config/Config'
-import { Metrics } from "@firebolt-js/sdk"
 
 let instance = null
 export default class RDKWindowManager {
@@ -45,7 +44,6 @@ export default class RDKWindowManager {
                   })
                   .catch(err => {
                       this.ERR("Error Activation RDKWindowManager" + JSON.stringify(err))
-                      Metrics.error(Metrics.ErrorType.OTHER, "RDKWindowManager", `Error while Thunder Controller ${this.callsign} activate ${JSON.stringify(err)}`, false, null)
                       reject(err)
                   })
           })
@@ -59,7 +57,6 @@ export default class RDKWindowManager {
                 })
                 .catch(err => {
                     this.ERR("Error Deactivation RDKWindowManager" + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, "RDKWindowManager", `Error while Thunder Controller ${this.callsign} deactivate ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
         })
@@ -73,21 +70,19 @@ export default class RDKWindowManager {
                 })
                 .catch(err => {
                     this.ERR("Error in setFocus: " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, "RDKWindowManager", `Error while calling setFocus on ${this.callsign} ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
         })
     }
     setVisible(client, visible)    {
         return new Promise((resolve, reject) => {
-            this.thunder.call(this.callsign, 'setVisible', { "client":client, "visible":visible })  
+            this.thunder.call(this.callsign, 'setVisible', { "client":client, "visible":visible })
                 .then(response => {
                     resolve(response)
                     this.INFO("setVisible response: " + JSON.stringify(response));
                 })
                 .catch(err => {
                     this.ERR("Error in setVisible: " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, "RDKWindowManager", `Error while calling setVisible on ${this.callsign} ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
         })
@@ -95,7 +90,7 @@ export default class RDKWindowManager {
     getApps()
     {
         return new Promise((resolve, reject) => {
-            this.thunder.call(this.callsign, 'getApps', {})     
+            this.thunder.call(this.callsign, 'getApps', {})
                 .then(response => {
                     if (typeof response === "string") {
                         resolve(JSON.parse(response));
@@ -106,7 +101,6 @@ export default class RDKWindowManager {
                 })
                 .catch(err => {
                     this.ERR("Error in getApps: " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, "RDKWindowManager", `Error while calling getApps on ${this.callsign} ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
         })
@@ -120,7 +114,6 @@ export default class RDKWindowManager {
                 })
                 .catch(err => {
                     this.ERR("Error in setZOrder: " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, "RDKWindowManager", `Error while calling setZOrder on ${this.callsign} ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
         })
@@ -134,23 +127,21 @@ export default class RDKWindowManager {
                 })
                 .catch(err => {
                     this.ERR("Error in getZOrder: " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, "RDKWindowManager", `Error while calling getZOrder on ${this.callsign} ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
         })
     }
     enableInactivityReporting(enable)    {
         return new Promise((resolve, reject) => {
-            this.thunder.call(this.callsign, 'enableInactivityReporting', { "enable":enable })  
+            this.thunder.call(this.callsign, 'enableInactivityReporting', { "enable":enable })
                 .then(response => {
                     this.INFO("enableInactivityReporting response: " + JSON.stringify(response));
                     resolve(response == null ? true : response)
                 })
                 .catch(err => {
                     this.ERR("Error in enableInactivityReporting: " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, "Runtime", `Error while calling enableInactivityReporting on ${this.callsign} ${JSON.stringify(err)}`, false, null)
                     reject(err)
-                })  
+                })
         })
     }
     setInactivityInterval(interval)    {
@@ -162,12 +153,11 @@ export default class RDKWindowManager {
                 })
                 .catch(err => {
                     this.ERR("Error in setInactivityInterval: " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, "RDKWindowManager", `Error while calling setInactivityInterval on ${this.callsign} ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
         })
     }
-    resetInactivityTime()    {  
+    resetInactivityTime()    {
         return new Promise((resolve, reject) => {
             this.thunder.call(this.callsign, 'resetInactivityTime', {})
                 .then(response => {
@@ -176,7 +166,6 @@ export default class RDKWindowManager {
                 })
                 .catch(err => {
                     this.ERR("Error in resetInactivityTimeout: " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, "RDKWindowManager", `Error while calling resetInactivityTimeout on ${this.callsign} ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
         })
@@ -190,7 +179,6 @@ export default class RDKWindowManager {
                 })
                 .catch(err => {
                     this.ERR("Error in renderReady: " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, "RDKWindowManager", `Error while calling renderReady on ${this.callsign} ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
         })
@@ -204,7 +192,6 @@ export default class RDKWindowManager {
                 })
                 .catch(err => {
                     this.ERR("Error in enableDisplayRender: " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, "RDKWindowManager", `Error while calling enableDisplayRender on ${this.callsign} ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
         })
@@ -218,7 +205,6 @@ export default class RDKWindowManager {
                 })
                 .catch(err => {
                     this.ERR("Error in generateKey: " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, "RDKWindowManager", `Error while calling generateKey on ${this.callsign} ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
         })
@@ -235,12 +221,11 @@ export default class RDKWindowManager {
                 })
                 .catch(err => {
                     this.ERR("Error in removeKeyIntercept: " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, "RDKWindowManager", `Error while calling removeKeyIntercept on ${this.callsign} ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
         })
     }
-    addKeyIntercepts (params)    {   
+    addKeyIntercepts (params)    {
         return new Promise((resolve, reject) => {
             this.thunder.call(this.callsign, 'addKeyIntercepts', params)
                 .then(response => {
@@ -249,11 +234,10 @@ export default class RDKWindowManager {
                 })
                 .catch(err => {
                     this.ERR("Error in addKeyIntercepts: " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, "RDKWindowManager", `Error while calling addKeyIntercepts on ${this.callsign} ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
         })
-    } 
+    }
     createDisplay(client,displayName,displayWidth,virtualWidth,virtualHeight,ownerId)    {
         return new Promise((resolve, reject) => {
             this.thunder.call(this.callsign, 'createDisplay', { "client":client, "displayName":displayName, "displayWidth":displayWidth, "virtualWidth":virtualWidth, "virtualHeight":virtualHeight, "ownerId":ownerId })
@@ -263,7 +247,6 @@ export default class RDKWindowManager {
                 })
                 .catch(err => {
                     this.ERR("Error in createDisplay: " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, "RDKWindowManager", `Error while calling createDisplay on ${this.callsign} ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
         })

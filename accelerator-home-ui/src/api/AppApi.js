@@ -22,7 +22,6 @@ import HDMIApi from './HDMIApi';
 import NetflixIIDs from "../../static/data/NetflixIIDs.json";
 import HomeApi from './HomeApi';
 import { availableLanguageCodes, CONFIG, GLOBALS } from '../Config/Config.js';
-import { Metrics } from '@firebolt-js/sdk';
 import UserSettingsApi from './UserSettingsApi.js';
 import PowerManagerApi from './PowerManagerApi.js';
 import RDKWindowManager from './RDKWindowManagerApi.js';
@@ -61,7 +60,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR('AppAPI Cannot fetch time zone', err)
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder system getTimeZones" + err, false, null)
           resolve({})
         })
     })
@@ -83,7 +81,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR('AppAPI System plugin getTimeZoneDST failed.' + JSON.stringify(err));
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder system getTimeZoneDST" + JSON.stringify(err), false, null)
           resolve(undefined)
         })
     })
@@ -98,11 +95,9 @@ export default class AppApi {
           resolve(result.success)
         }).catch(err => {
           this.ERR("AppAPI System plugin setTimeZoneDST failed." + JSON.stringify(err));
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder system setTimeZoneDSt" + JSON.stringify(err), false, null)
           resolve(false)
         })
     }).catch(err => {
-      Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder system setTimeZoneDST " + JSON.stringify(err), false, null)
       this.ERR("AppAPI activate System failed." + JSON.stringify(err));
     })
   }
@@ -116,7 +111,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR("AppAPI Controller plugin '" + plugin + "' status check failed.");
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder system status " + JSON.stringify(err), false, null)
           reject(err)
         })
     })
@@ -137,7 +131,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR("AppAPI DisplaySettings plugin getCurrentResolution failed." + JSON.stringify(err));
-          Metrics.error(Metrics.ErrorType.OTHER, "ApiError", "Error in Thunder displaySettings getCurrentResolution " + JSON.stringify(err), false, null)
           resolve('NA')
         });
     })
@@ -153,7 +146,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR('AppAPI activate DisplaySettings failed.' + JSON.stringify(err))
-          Metrics.error(Metrics.ErrorType.OTHER, "ApiError", 'Error while Thunder Controller displaysettings activate ' + JSON.stringify(err), false, null) // change from here on monday
         })
     });
   }
@@ -169,13 +161,11 @@ export default class AppApi {
             })
             .catch(err => {
               this.ERR("AppAPI DisplaySettings getSupportedResolutions failed." + JSON.stringify(err));
-              Metrics.error(Metrics.ErrorType.OTHER, "ApiError", "Error in Thunder displaySettings getSupportedResolutions " + JSON.stringify(err), false, null)
               resolve(false)
             })
         })
         .catch(err => {
           this.ERR('AppAPI activate DisplaySettings Error', JSON.stringify(err));
-          Metrics.error(Metrics.ErrorType.OTHER, "ApiError", 'Error while Thunder Controller displaysettings activate ' + JSON.stringify(err), false, null)
         })
     })
   }
@@ -198,13 +188,11 @@ export default class AppApi {
             })
             .catch(err => {
               this.ERR("AppAPI DisplaySettings setCurrentResolution failed." + JSON.stringify(err));
-              Metrics.error(Metrics.ErrorType.OTHER, "ApiError", 'Error in Thunder displaysettings setCurrentResolution ' + JSON.stringify(err), false, null)
               resolve(false)
             })
         })
         .catch(err => {
           this.ERR('AppAPI activate DisplaySettings Error', JSON.stringify(err));
-          Metrics.error(Metrics.ErrorType.OTHER, "ApiError", 'Error while Thunder Controller displaysettings activate ' + JSON.stringify(err), false, null)
         })
     })
   }
@@ -224,13 +212,11 @@ export default class AppApi {
             })
             .catch(err => {
               this.ERR("AppAPI HdcpProfile getHDCPStatus failed." + JSON.stringify(err));
-              Metrics.error(Metrics.ErrorType.OTHER, "HDCPError", 'Error in Thunder HdcpProfile getHDCPStatus ' + JSON.stringify(err), false, null)
               resolve(false)
             })
         })
         .catch(err => {
           this.ERR('AppAPI activate HdcpProfile ', JSON.stringify(err))
-          Metrics.error(Metrics.ErrorType.OTHER, "HDCPError", 'Error while Thunder Controller HdcpProfile activate ' + JSON.stringify(err), false, null)
         })
     })
   }
@@ -250,13 +236,11 @@ export default class AppApi {
             })
             .catch(err => {
               this.ERR("AppAPI DisplaySettings getTvHDRSupport failed." + JSON.stringify(err));
-              Metrics.error(Metrics.ErrorType.OTHER, "ApiError", 'Error in Thunder DisplaySettings getTvHDRSupport ' + JSON.stringify(err), false, null)
               resolve(false)
             })
         })
         .catch(err => {
           this.ERR('AppAPI activate DisplaySettings Error', JSON.stringify(err));
-          Metrics.error(Metrics.ErrorType.OTHER, "ApiError", 'Error while Thunder Controller DisplaySettings activate ' + JSON.stringify(err), false, null)
         })
     })
   }
@@ -276,13 +260,11 @@ export default class AppApi {
             })
             .catch(err => {
               this.ERR('AppAPI DisplaySettings getSettopHDRSupport failed ', JSON.stringify(err));
-              Metrics.error(Metrics.ErrorType.OTHER, "PluginError", 'Error in Thunder DisplaySettings getSettopHDRSupport ' + JSON.stringify(err), false, null)
               resolve(false)
             })
         })
         .catch(err => {
           this.ERR('AppAPI activate DisplaySettings Error', JSON.stringify(err))
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", 'Error while Thunder Controller DisplaySettings activate ' + JSON.stringify(err), false, null)
         })
     })
   }
@@ -302,13 +284,11 @@ export default class AppApi {
             })
             .catch(err => {
               this.ERR("AppAPI DisplayInfo hdrsetting failed : " + JSON.stringify(err));
-              Metrics.error(Metrics.ErrorType.OTHER, "PluginError", 'Error in fetching Thunder DisplayInfo hdrsetting ' + JSON.stringify(err), false, null)
               resolve(false)
             })
         })
         .catch(err => {
           this.LOG('AppAPI activate DisplayInfo Error', JSON.stringify(err))
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", 'Error while Thunder Controller DisplayInfo activate ' + JSON.stringify(err), false, null)
         })
     })
   }
@@ -328,13 +308,11 @@ export default class AppApi {
             })
             .catch(err => {
               this.ERR("AppAPI OCDM drms failed." + JSON.stringify(err));
-              Metrics.error(Metrics.ErrorType.OTHER, "OCDMError", 'Error in fetching Thunder OCDM drms ' + JSON.stringify(err), false, null)
               resolve(false)
             })
         })
         .catch(err => {
           this.ERR('AppAPI activate OCDM error:', JSON.stringify(err))
-          Metrics.error(Metrics.ErrorType.OTHER, "OCDMError", 'Error while Thunder Controller OCDM activate ' + JSON.stringify(err), false, null)
         })
     })
   }
@@ -351,7 +329,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR("AppAPI ResidentApp delete cache failed.");
-          Metrics.error(Metrics.ErrorType.OTHER, "Cache failure", JSON.stringify(err), false, null)
           resolve(err)
         })
     })
@@ -425,7 +402,6 @@ export default class AppApi {
       }
     } catch (err) {
       this.ERR("AppAPI Error in fetching iid data from specified path, returning defaultIIDs | Error:", err);
-      Metrics.error(Metrics.ErrorType.OTHER, "Apperror", "AppAPI Error in fetching iid data from specified path" + JSON.stringify(err), false, null)
       return defaultIIDs;
     }
   }
@@ -444,7 +420,6 @@ export default class AppApi {
     //     resolve(res)
     //   }).catch(err => {
     //     this.ERR("AppAPI launchOverlay : error ", JSON.stringify(err))
-    //     Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder RDKShell launch " + JSON.stringify(err), false, null)
     //     reject(err)
     //   })
     // })
@@ -515,11 +490,9 @@ export default class AppApi {
           this.LOG(`AppAPI ${appName} : updating configuration with object ${res} results in ${resp}`)
           resolve(true);
         }).catch((err) => {
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", `Error in Thunder ${plugin} ${method} ${JSON.stringify(err)}`, false, null)
           reject(err); //resolve(true)
         });
       }).catch((err) => {
-        Metrics.error(Metrics.ErrorType.OTHER, "PluginError", `Error in Thunder ${plugin} ${method} ${JSON.stringify(err)}`, false, null)
         reject(err);
       });
     })
@@ -539,7 +512,6 @@ export default class AppApi {
         resolve(result);
       }).catch(err => {
         this.ERR("AppAPI System getPowerStateIsManagedByDevice failed: ", JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER, "PowerStateFailure", "Error in Thunder System getPowerStateIsManagedByDevice " + JSON.stringify(err), false, null);
         reject(err);
       });
     });
@@ -564,7 +536,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR("org.rdk.System: getWakeupReason: Error in getting wake up reason: " + JSON.stringify(err))
-          Metrics.error(Metrics.ErrorType.OTHER, "PowerStateFailure", "Error in Thunder System getWakeupReason " + JSON.stringify(err), false, null)
           reject(err)
         })
     })
@@ -579,7 +550,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR('AppAPI activate DisplaySettings error: ', JSON.stringify(err))
-          Metrics.error(Metrics.ErrorType.OTHER, "AppError", "Error while Thunder Controller displaySettings activate " + JSON.stringify(err), false, null)
           reject(err)
         })
     })
@@ -596,7 +566,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR("AppAPI DisplaySettings getSoundMode error:", JSON.stringify(err, 3, null))
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder DisplaySettings getSoundMode " + JSON.stringify(err), false, null)
           resolve(false)
         })
     })
@@ -617,7 +586,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR("AppAPI DisplaySettings setSoundMode error:", JSON.stringify(err, 3, null))
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder DisplaySettings setSoundMode " + JSON.stringify(err), false, null)
           resolve(false)
         })
     })
@@ -634,7 +602,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR("AppAPI DisplaySettings getSupportedAudioModes error:", JSON.stringify(err, 3, null))
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder DisplaySettings getSupportedAudioModes " + JSON.stringify(err), false, null)
           reject(false)
         })
     })
@@ -652,7 +619,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR("AppAPI DisplaySettings setEnableAudioPort error:", JSON.stringify(err, 3, null))
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder DisplaySettings setEnableAudioPort " + JSON.stringify(err), false, null)
           resolve(false)
         })
     })
@@ -667,7 +633,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR("AppAPI DisplaySettings getDRCMode error:", JSON.stringify(err))
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder DisplaySettings getDRCMode " + JSON.stringify(err), false, null)
           resolve(false)
         })
     })
@@ -684,7 +649,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR("AppAPI DisplaySettings setDRCMode error:", JSON.stringify(err))
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder DisplaySettings setDRCMode " + JSON.stringify(err), false, null)
           resolve(false)
         })
     })
@@ -699,7 +663,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR("AppAPI DisplaySettings getZoomSetting error:", JSON.stringify(err))
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder DisplaySettings getZoomSetting " + JSON.stringify(err), false, null)
           resolve(false)
         })
     })
@@ -714,7 +677,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR("AppAPI DisplaySettings setZoomSetting error:", JSON.stringify(err))
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder DisplaySettings setZoomSetting " + JSON.stringify(err), false, null)
           resolve(false)
         })
     })
@@ -729,7 +691,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR("AppAPI DisplaySettings getEnableAudioPort error:", JSON.stringify(err))
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder DisplaySettings getEnableAudioPort " + JSON.stringify(err), false, null)
           resolve(false)
         })
     })
@@ -744,7 +705,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR("AppAPI DisplaySettings getSupportedAudioPorts error:", JSON.stringify(err))
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder DisplaySettings getSupportedAudioPorts " + JSON.stringify(err), false, null)
           resolve(false)
         })
     })
@@ -768,7 +728,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR("AppAPI System getFirmwareUpdateInfo error:", JSON.stringify(err, 3, null))
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder system getFirmwareUpdateInfo " + JSON.stringify(err), false, null)
           resolve(false)
         })
     })
@@ -784,7 +743,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR(" AppAPI System getFirmwareUpdateState error:", JSON.stringify(err, 3, null))
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder system getFirmwareUpdateState " + JSON.stringify(err), false, null)
           resolve(false)
         })
     })
@@ -800,7 +758,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR("AppAPI System getDownloadedFirmwareInfo error:", JSON.stringify(err, 3, null))
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder system getDownloadedFirmwareInfo " + JSON.stringify(err), false, null)
           resolve(false)
         })
     })
@@ -812,7 +769,6 @@ export default class AppApi {
         resolve(result.model)
       }).catch(err => {
         this.ERR("AppAPI DeviceInfo modelname failed:" + JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder DeviceInfo modelname " + JSON.stringify(err), false, null)
         resolve("RDK-VA")
       })
     })
@@ -824,7 +780,6 @@ export default class AppApi {
         resolve(result.serialnumber)
       }).catch(err => {
         this.ERR("AppAPI DeviceInfo serialnumber error:", JSON.stringify(err, 3, null));
-        Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder DeviceInfo serialnumber " + JSON.stringify(err), false, null)
         resolve('0123456789')
       })
     })
@@ -841,7 +796,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR("AppAPI System getSystemVersions error:" + JSON.stringify(err, 3, null))
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder system getSystemVersions " + JSON.stringify(err), false, null)
           resolve(false)
         })
     })
@@ -857,7 +811,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR("AppAPI System updateFirmware error:", JSON.stringify(err, 3, null))
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder system updateFirmware " + JSON.stringify(err), false, null)
           resolve(false)
         })
     })
@@ -873,7 +826,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR("AppAPI getFirmwareDownloadPercent error:", JSON.stringify(err, 3, null))
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder system getFirmwareDownloadPercent " + JSON.stringify(err), false, null)
           resolve(false)
         })
     })
@@ -890,7 +842,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR("AppAPI systeminfo error:", JSON.stringify(err, 3, null))
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder DeviceInfo systeminfo " + JSON.stringify(err), false, null)
           resolve(false)
         })
     })
@@ -905,7 +856,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR("AppAPI devicetype error:", JSON.stringify(err, 3, null))
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder DeviceInfo devicetype " + JSON.stringify(err), false, null)
           resolve(false)
         })
     })
@@ -934,7 +884,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR("AppAPI getPreferredStandbyMode error:", JSON.stringify(err, 3, null))
-          Metrics.error(Metrics.ErrorType.NETWORK, "PluginError", "Error in Thunder system getPreferredStandbyMode " + JSON.stringify(err), false, null)
           resolve(false)
         })
     })
@@ -946,7 +895,6 @@ export default class AppApi {
         resolve(result)
       }).catch(err => {
         this.ERR("AppAPI getNetworkStandbyMode error:", JSON.stringify(err, 3, null))
-        Metrics.error(Metrics.ErrorType.NETWORK, "PluginError", "Error in Thunder system getNetworkStandbyMode " + JSON.stringify(err), false, null)
         reject(err)
       })
     })
@@ -964,7 +912,6 @@ export default class AppApi {
         }
       }).catch(err => {
         this.ERR("AppAPI getFriendlyName error:", JSON.stringify(err, 3, null))
-        Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder system getFriendlyName " + JSON.stringify(err), false, null)
         reject(err)
       })
     })
@@ -982,7 +929,6 @@ export default class AppApi {
         }
       }).catch(err => {
         this.ERR("AppAPI setFriendlyName error:", JSON.stringify(err, 3, null))
-        Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder system setFriendlyName " + JSON.stringify(err), false, null)
         reject(err)
       })
     })
@@ -1000,7 +946,6 @@ export default class AppApi {
         }
       }).catch(err => {
         this.ERR("AppAPI getRFCConfig error:", JSON.stringify(err, 3, null))
-        Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder system getRFCConfig " + JSON.stringify(err), false, null)
         reject(err)
       })
     })
@@ -1020,7 +965,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR('AppAPI getConnectedAudioPorts error:', JSON.stringify(err, 3, null))
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder getConnectedAudioPorts of DisplaySettings " + JSON.stringify(err), false, null)
           reject(false)
         })
     })
@@ -1032,7 +976,6 @@ export default class AppApi {
         resolve(result)
       }).catch(err => {
         this.ERR('AppAPI getVolumeLevel error:', JSON.stringify(err, 3, null))
-        Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder getVolumeLevel of DisplaySettings " + JSON.stringify(err), false, null)
         reject(false)
       })
     })
@@ -1049,7 +992,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR('AppAPI getMuted error:', JSON.stringify(err, 3, null))
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder getMuted of DisplaySettings " + JSON.stringify(err), false, null)
           reject(false)
         })
     })
@@ -1076,7 +1018,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR('AppAPI setVolumeLevel error:', JSON.stringify(err))
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder setVolumeLevel of DisplaySettings " + JSON.stringify(err), false, null)
           resolve(false)
         })
     })
@@ -1094,7 +1035,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR('AppAPI audio_mute setMuted error:', JSON.stringify(err, 3, null))
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder setMuted of DisplaySettings " + JSON.stringify(err), false, null)
           resolve(false)
         })
     })
@@ -1110,7 +1050,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR("AppAPI getPluginStatusParams error: ", err)
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", `Error in fetching Thunder status@${plugin} of Thunder Controller ${JSON.stringify(err)}`, false, null)
           reject(err)
         })
     })
@@ -1129,7 +1068,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR('AppAPI activateAutoPairing error:', JSON.stringify(err, 3, null))
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in fetching Thunder startPairing of RemoteControl " + JSON.stringify(err), false, null)
           resolve(false)
         })
     })
@@ -1146,7 +1084,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR("AppAPI resetBassEnhancer error: ", err)
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in fetching Thunder resetBassEnhancer of DisplaySettings " + JSON.stringify(err), false, null)
           resolve(false)
         });
     })
@@ -1163,7 +1100,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR("AppAPI resetDialogEnhancement error:", err)
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in fetching Thunder resetDialogEnhancement of DisplaySettings " + JSON.stringify(err), false, null)
           resolve(false)
         });
     })
@@ -1180,7 +1116,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR("AppAPI resetSoundVitualizer error:", err)
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in fetching Thunder resetSurroundVirtualizer of DisplaySettings " + JSON.stringify(err), false, null)
           resolve(false)
         });
     })
@@ -1197,7 +1132,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR("AppAPI resetvolumeLevel error:", err)
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in fetching Thunder resetVolumeLeveller of DisplaySettings " + JSON.stringify(err), false, null)
           resolve(false)
         });
     })
@@ -1218,7 +1152,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR("AppAPI monitorStatus error:", err)
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder fetching resetstats of Monitor " + JSON.stringify(err), false, null)
           resolve(false)
         });
     })
@@ -1233,7 +1166,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR("AppAPI deletecache error:", err)
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", `Error in Thunder delete of ${systemcCallsign} ${JSON.stringify(err)}`, false, null)
           resolve(false)
         });
     })
@@ -1249,7 +1181,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR("AppAPI activateController error:", err)
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", `Error while Thunder Controller activate ${callsign} ${JSON.stringify(err)}`, false, null)
           resolve(false)
         });
     })
@@ -1262,7 +1193,6 @@ export default class AppApi {
         resolve(res)
       }).catch(err => {
         this.ERR("AppAPI checkStatus error:", err)
-        Metrics.error(Metrics.ErrorType.OTHER, "PluginError", `Error while Thunder Controller fetching status@${plugin} ${JSON.stringify(err)}`, false, null)
         resolve(false)
       });
     })
@@ -1276,7 +1206,6 @@ export default class AppApi {
         resolve(res)
       }).catch(err => {
         this.ERR("AppAPI configStatus error:", err)
-        Metrics.error(Metrics.ErrorType.OTHER, "PluginError", `Error while Thunder Controller fetching status ${JSON.stringify(err)}`, false, null)
         resolve(false)
       });
     })
@@ -1291,7 +1220,6 @@ export default class AppApi {
         })
         .catch(err => {
           this.ERR("AppAPI getAvCodeStatus error:", err)
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", 'Error in Thunder fetching getAVDecoderStatus of DeviceDiagnostics' + JSON.stringify(err), false, null)
           resolve(false)
         });
     })
@@ -1309,7 +1237,6 @@ export default class AppApi {
     return new Promise((resolve, reject) => {
       if (app === undefined || app === "" || payload == undefined) {
         this.ERR("AppApi: deeplinkToApp '" + app + "' not possible with payload '" + payload + "'.");
-        Metrics.error(Metrics.ErrorType.OTHER, "AppError", `AppApi: deeplinkToApp ${app} not possible with payload ${payload}`, false, null)
         resolve(false);
       } else if (app.startsWith("YouTube")) {
         let url = Storage.get(app + "DefaultURL").toString();
@@ -1350,16 +1277,13 @@ export default class AppApi {
       } else if (app === "Amazon") {
         // TODO: no deeplink format support.
         this.ERR("AppApi: deeplinkToApp '" + app + "' not supported.");
-        Metrics.error(Metrics.ErrorType.OTHER, "AppDeeplinkError", JSON.stringify(err), false, null)
         reject(false);
       } else if (app === "Netflix") {
         // TODO: no deeplink format support.
         this.ERR("AppApi: deeplinkToApp '" + app + "' not supported.");
-        Metrics.error(Metrics.ErrorType.OTHER, "AppDeeplinkError", JSON.stringify(err), false, null)
         reject(false);
       } else {
         this.ERR("AppApi: deeplinkToApp '" + app + "' not supported.");
-        Metrics.error(Metrics.ErrorType.OTHER, "AppDeeplinkError", JSON.stringify(err), false, null)
         reject(false);
       }
     });

@@ -20,7 +20,6 @@ import { Lightning, Language, Router } from '@lightningjs/sdk'
 import SettingsMainItem from '../../items/SettingsMainItem'
 import { COLORS } from '../../colors/Colors'
 import { CONFIG, GLOBALS } from '../../Config/Config'
-import FireBoltApi from '../../api/firebolt/FireBoltApi'
 import NetworkManager from '../../api/NetworkManagerAPI'
 
 var defaultInterface = "";
@@ -289,12 +288,6 @@ export default class NetworkInfo extends Lightning.Component {
             this.WARN("OnActiveInterfaceChange" + JSON.stringify(data))
             this.refreshDetails();
         })
-        if ("ResidentApp" !== GLOBALS.selfClientName)
-        {
-            this.OnNetworkChangedfirebolt = FireBoltApi.get().deviceinfo.listen("networkChanged",value =>{
-                this.refreshDetails();
-            })
-        }
     }
 
     _inactive() {

@@ -17,8 +17,7 @@
  * limitations under the License.
  **/
 import ThunderJS from 'ThunderJS';
-import { CONFIG } from '../Config/Config'
-import { Metrics } from '@firebolt-js/sdk';
+import { CONFIG } from '../Config/Config';
 
 export default class PersistentStoreApi {
   constructor() {
@@ -67,7 +66,6 @@ export default class PersistentStoreApi {
         resolve(true);
       }).catch(err => {
         this.ERR('PersistentStoreApi: Error Activation ' + JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER,"PersistentStoreApiError", "Error while Thunder Controller PersistentStore activate "+JSON.stringify(err), false, null)
         reject(err);
       })
     })
@@ -79,7 +77,6 @@ export default class PersistentStoreApi {
         resolve(true)
       }).catch(err => {
         this.ERR('PersistentStoreApi: Error deactivation ' + JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER,"PersistentStoreApiError", "Error while Thunder Controller PersistentStore deactivate "+JSON.stringify(err), false, null)
         reject(err);
       })
     })
@@ -95,7 +92,6 @@ export default class PersistentStoreApi {
         resolve(result);
       }).catch(err => {
         this.ERR("PersistentStoreApi: deleteKey error:" + JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER,"PersistentStoreApiError", "Error in Thunder PersistentStore deleteKey "+JSON.stringify(err), false, null)
         reject(err);
       });
     })
@@ -108,7 +104,6 @@ export default class PersistentStoreApi {
         resolve(result);
       }).catch(err => {
         this.ERR("PersistentStoreApi: deleteNamespace error:" + JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER,"PersistentStoreApiError", "Error in Thunder PersistentStore deleteNamespace "+JSON.stringify(err), false, null)
         reject(err);
       });
     })
@@ -120,7 +115,6 @@ export default class PersistentStoreApi {
         resolve(result);
       }).catch(err => {
         this.ERR("PersistentStoreApi: flushCache error:" + JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER,"PersistentStoreApiError", "Error in Thunder PersistentStore flushCache "+JSON.stringify(err), false, null)
         reject(err);
       });
     })
@@ -133,7 +127,6 @@ export default class PersistentStoreApi {
         resolve(result);
       }).catch(err => {
         this.ERR("PersistentStoreApi: getKeys error:" + JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER,"PersistentStoreApiError", "Error in Thunder PersistentStore getKeys "+JSON.stringify(err), false, null)
         reject(err);
       });
     })
@@ -145,7 +138,6 @@ export default class PersistentStoreApi {
         resolve(result);
       }).catch(err => {
         this.ERR("PersistentStoreApi: getNamespaces error:" + JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER,"PersistentStoreApiError", "Error in Thunder PersistentStore getNamespaces "+JSON.stringify(err), false, null)
         reject(err);
       });
     })
@@ -157,7 +149,6 @@ export default class PersistentStoreApi {
         resolve(result);
       }).catch(err => {
         this.ERR("PersistentStoreApi: getStorageSize error:" + JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER,"PersistentStoreApiError", "Error in Thunder PersistentStore getStorageSize "+JSON.stringify(err), false, null)
         reject(err);
       });
     })
@@ -170,7 +161,6 @@ export default class PersistentStoreApi {
         resolve(result);
       }).catch(err => {
         this.ERR("PersistentStoreApi: getValue error:" + JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER,"PersistentStoreApiError", "Error in Thunder PersistentStore getValue "+JSON.stringify(err), false, null)
         reject(err);
       });
     })
@@ -183,7 +173,6 @@ export default class PersistentStoreApi {
         resolve(result);
       }).catch(err => {
         this.ERR("PersistentStoreApi: setValue error:" + JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER,"PersistentStoreApiError", "Error in Thunder PersistentStore setValue "+JSON.stringify(err), false, null)
         reject(err);
       });
     })

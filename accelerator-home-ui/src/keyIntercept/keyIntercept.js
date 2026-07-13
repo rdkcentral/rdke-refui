@@ -19,7 +19,6 @@
 import ThunderJS from "ThunderJS";
 import Keymap from "../Config/Keymap";
 import { CONFIG, GLOBALS } from "../Config/Config";
-import {Metrics} from '@firebolt-js/sdk'
 import RDKWindowManager from "../api/RDKWindowManagerApi";
 
 const thunder = ThunderJS(CONFIG.thunderConfig);
@@ -54,7 +53,6 @@ export function keyIntercept(clientName = GLOBALS.selfClientId) {
                 reject(result);
             }
         }).catch(err => {
-            Metrics.error(Metrics.ErrorType.OTHER,"KeyInterceptError", "Thunder RDKWindowManager addKeyIntercepts error "+JSON.stringify(err), false, null)
             reject(err);
         });
     });

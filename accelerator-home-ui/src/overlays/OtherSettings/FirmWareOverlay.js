@@ -21,7 +21,6 @@ import { COLORS } from '../../colors/Colors'
 import { CONFIG } from '../../Config/Config'
 import AppApi from '../../api/AppApi';
 import ThunderJS from 'ThunderJS';
-import { Metrics } from '@firebolt-js/sdk';
 
 /**
  * Class for Firmware screen.
@@ -131,12 +130,10 @@ export default class FirmwareScreen extends Lightning.Component {
                     }
                 }, err => {
                     this.ERR("FirmwareOverlay: error while fetching notification ie. " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER,"PluginError", "Thunder system error while fetching onFirmwareUpdateStateChange notification "+JSON.stringify(err), false, null)
                 })
             })
             .catch(err => {
                 this.ERR("FirmwareOverlay: error while activating the system plugin" + JSON.stringify(err))
-                Metrics.error(Metrics.ErrorType.OTHER,"PluginError", "Thunder Controller.activate system error "+JSON.stringify(err), false, null)
             })
 
     }

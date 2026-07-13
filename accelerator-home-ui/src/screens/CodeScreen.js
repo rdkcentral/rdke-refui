@@ -16,10 +16,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-import { Lightning, Router, Utils, Language, Storage } from '@lightningjs/sdk'
-import { CONFIG, GLOBALS } from '../Config/Config'
+import { Lightning, Router, Utils, Language } from '@lightningjs/sdk'
+import { CONFIG } from '../Config/Config'
 import ThunderJS from 'ThunderJS'
-import { Metrics } from '@firebolt-js/sdk'
 
 var thunder = ThunderJS(CONFIG.thunderConfig);
 

@@ -20,7 +20,6 @@ import { Lightning, Language, Router, Settings, Storage } from '@lightningjs/sdk
 import { COLORS } from '../../colors/Colors'
 import { CONFIG, GLOBALS } from '../../Config/Config'
 import AppApi from '../../api/AppApi.js';
-import FireBoltApi from '../../api/firebolt/FireBoltApi';
 
 /**
  * Class for Video and Audio screen.
@@ -203,27 +202,16 @@ export default class DeviceInformationScreen extends Lightning.Component {
     }
 
     _focus() {
-
         this._setState('DeviceInformationScreen')
         this.appApi.getSerialNumber().then(result => {
             this.tag("SerialNumber.Value").text.text = `${result}`;
         })
 
-        if ("ResidentApp" === GLOBALS.selfClientName) {
-            this.appApi.getSystemVersions().then(res => {
-                this.tag('FirmwareVersions.Value').text.text = `UI Version - ${Settings.get('platform', 'version')} \nBuild Version - ${res.stbVersion} \nTime Stamp - ${res.stbTimestamp} `
-            }).catch(err => {
-                this.ERR("error while getting the system versions" + JSON.stringify(err))
-            })
-        } else {
-            // Firebolt mode
-            FireBoltApi.get().deviceinfo.getversion().then(res => {
-                this.LOG("build verion" + JSON.stringify(res.firmware.readable) + " Firebolt API Version - " + JSON.stringify(res.api.readable))
-                this.tag('FirmwareVersions.Value').text.text = `UI Version - ${Settings.get('platform', 'version')} \nBuild Version - ${res.firmware.readable} \nFirebolt API Version - ${res.api.readable} `
-            }).catch(err => {
-                this.ERR("error while getting the system versions from Firebolt.getversion API" + JSON.stringify(err))
-            })
-        }
+        this.appApi.getSystemVersions().then(res => {
+            this.tag('FirmwareVersions.Value').text.text = `UI Version - ${Settings.get('platform', 'version')} \nBuild Version - ${res.stbVersion} \nTime Stamp - ${res.stbTimestamp} `
+        }).catch(err => {
+            this.ERR("error while getting the system versions" + JSON.stringify(err))
+        })
 
         this.appApi.getDRMS().then(result => {
             this.LOG("from device info supported drms " + JSON.stringify(result))

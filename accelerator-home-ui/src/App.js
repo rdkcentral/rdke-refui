@@ -45,11 +45,6 @@ import DTVApi from './api/DTVApi';
 import TvOverlayScreen from './tvOverlay/TvOverlayScreen';
 import ChannelOverlay from './MediaPlayer/ChannelOverlay';
 import SettingsOverlay from './overlays/SettingsOverlay';
-import {
-	AlexaLauncherKeyMap,
-	PlaybackStateReport,
-	VolumePayload
-} from './Config/AlexaConfig';
 import AppCarousel from './overlays/AppCarousel';
 import VideoScreen from './screens/Video';
 import VideoInfoChange from './overlays/VideoInfoChange/VideoInfoChange.js';
@@ -60,19 +55,6 @@ import {
 } from "./../static/data/AppListInfo.js";
 import VoiceApi from './api/VoiceApi.js';
 import AAMPVideoPlayer from './MediaPlayer/AAMPVideoPlayer';
-import FireBoltApi from './api/firebolt/FireBoltApi';
-import PinChallengeProvider from './api/firebolt/provider/PinChallengeProvider';
-import AckChallengeProvider from './api/firebolt/provider/AckChallengeProvider';
-import KeyboardUIProvider from './api/firebolt/provider/KeyboardUIProvider';
-import {
-	AcknowledgeChallenge,
-	Keyboard,
-	PinChallenge
-} from '@firebolt-js/manage-sdk'
-import {
-	Localization,
-	Metrics
-} from '@firebolt-js/sdk';
 import Miracast from './api/Miracast.js';
 import MiracastNotification from './screens/MiracastNotification.js';
 import NetworkManager from './api/NetworkManagerAPI.js';
@@ -242,7 +224,7 @@ export default class App extends Router.App {
 	static language() {
 		return {
 			file: Utils.asset('language/language-file.json'),
-			language: ("com.rdkcentral.refui" === GLOBALS.selfclientAppName ? CONFIG.language : Localization.language()) || 'en'
+			language: ("com.rdkcentral.refui" === GLOBALS.selfclientAppName) ? CONFIG.language : 'en'
 		}
 	}
 
@@ -487,14 +469,6 @@ export default class App extends Router.App {
 			"Amazon": "n:2",
 			"Prime": "n:2"
 		}
-		// this._registerFireboltListeners()
-
-		Keyboard.provide('xrn:firebolt:capability:input:keyboard', new KeyboardUIProvider(this))
-		this.LOG("Keyboard provider registered")
-		PinChallenge.provide('xrn:firebolt:capability:usergrant:pinchallenge', new PinChallengeProvider(this))
-		this.LOG("PinChallenge provider registered")
-		AcknowledgeChallenge.provide('xrn:firebolt:capability:usergrant:acknowledgechallenge', new AckChallengeProvider(this))
-		this.LOG("Acknowledge challenge provider registered")
 
 		appApi.deviceType().then(result => {
 			this.LOG("App detected deviceType as:" + JSON.stringify(((result.devicetype != null) ? result.devicetype : "IpTv")));
@@ -621,7 +595,6 @@ export default class App extends Router.App {
 						this.LOG("App Controller.clone Cobalt as " + JSON.stringify(appInfo.applicationType) + " done." + JSON.stringify(result));
 					}).catch(err => {
 						this.ERR("App Controller clone Cobalt for " + JSON.stringify(appInfo.applicationType) + " failed: " + JSON.stringify(err));
-						Metrics.error(Metrics.ErrorType.OTHER, "PluginError", `Controller clone Cobalt for ${appInfo.applicationType} failed: ${err}`, false, null)
 						// TODO: hide YouTube Icon and listing from Menu, AppCarousel, Channel overlay and EPG page.
 					})
 
@@ -631,7 +604,6 @@ export default class App extends Router.App {
 								callsign: appInfo.applicationType
 							}).catch(err => {
 								this.ERR("App Controller.deactivate " + JSON.stringify(appInfo.applicationType) + " failed. It may not work." + JSON.stringify(err));
-								Metrics.error(Metrics.ErrorType.OTHER, "pluginError", `App Controller.deactivate failed for ${appInfo.applicationType} with ${err}`, false, null)
 							})
 						}
 						/* Do not change YouTube's configuration as Page-visibility test runs on that. */
@@ -643,11 +615,9 @@ export default class App extends Router.App {
 									Storage.set(appInfo.applicationType + "DefaultURL", appInfo.uri + "?"); // Make sure that appListInfo.js has only base url.
 								}).catch(err => {
 									this.ERR("App Controller.configuration@" + JSON.stringify(appInfo.applicationType) + " set failed. It may not work." + JSON.stringify(err));
-									Metrics.error(Metrics.ErrorType.OTHER, "pluginError", `App Controller.configuration for ${appInfo.applicationType} set failed. It may not work. ${JSON.stringify(err)}`, false, null)
 								})
 							}).catch(err => {
 								this.ERR("App Controller.configuration@" + JSON.stringify(appInfo.applicationType) + " get failed. It may not work." + JSON.stringify(err));
-								Metrics.error(Metrics.ErrorType.OTHER, "pluginError", `App Controller.configuration@ for ${appInfo.applicationType} failed with ${JSON.stringify(err)}`, false, null)
 							})
 						} else {
 							/* Just store the plugin configured url as default url and ensure '?' is appended. */
@@ -1211,30 +1181,6 @@ export default class App extends Router.App {
 			this._getPowerStateWhileReboot();
 		});
 	}
-	// _registerFireboltListeners() {
-	// 	FireBoltApi.get().deviceinfo.gettype()
-	// 	FireBoltApi.get().lifecycle.ready()
-
-	// 	FireBoltApi.get().lifecycle.registerEvent('foreground', value => {
-	// 		this.LOG("FireBoltApi[foreground] value:" + JSON.stringify(value) + ", launchResidentApp with:" + JSON.stringify(GLOBALS.selfClientName));
-	// 		// Ripple launches refui with this rdkshell client name.
-	// 		GLOBALS.topmostApp = GLOBALS.selfClientName;
-	// 		FireBoltApi.get().discovery.launch("refui", {
-	// 			"action": "home",
-	// 			"context": {
-	// 				"source": "device"
-	// 			}
-	// 		})
-	// 	})
-	// 	FireBoltApi.get().lifecycle.registerEvent('background', value => {
-	// 		// Ripple changed app states; it will be a 'FireboltApp'
-	// 		GLOBALS.topmostApp = "FireboltApp";
-	// 		this.LOG("FireBoltApi[foreground] value:" + JSON.stringify(value) + ", Updating top app as:" + JSON.stringify(GLOBALS.topmostApp));
-	// 	})
-	// 	FireBoltApi.get().lifecycle.state().then(res => {
-	// 		this.LOG("Lifecycle.state result:" + JSON.stringify(res))
-	// 	});
-	// }
 
 	_firstEnable() {
 		this.LOG("App Calling listenToVoiceControl method to activate VoiceControl Plugin")
@@ -1459,20 +1405,9 @@ export default class App extends Router.App {
 	}
 
 	_updateLanguageToDefault() {
-		if ("FireboltMainApp-refui" === GLOBALS.selfclientAppName) {
-			FireBoltApi.get().localization.language().then(lang => {
-				if (lang) {
-					FireBoltApi.get().localization.language(lang).then(() => {
-						this.LOG("language " + JSON.stringify(lang) + " set succesfully")
-					})
-					localStorage.setItem('Language', lang)
-				}
-			})
-		} else {
-			if (availableLanguageCodes[Language.get()].length) {
-				appApi.setUILanguage(availableLanguageCodes[Language.get()])
-				localStorage.setItem('Language', Language.get())
-			}
+		if (availableLanguageCodes[Language.get()].length) {
+			appApi.setUILanguage(availableLanguageCodes[Language.get()])
+			localStorage.setItem('Language', Language.get())
 		}
 	}
 

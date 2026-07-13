@@ -29,7 +29,6 @@ import BluetoothScreenOverlay from './NetworkScreens/BluetoothScreenOverlay'
 import LiveTvSettings from './LiveTvSettings/LiveTvSettingsOverlay'
 import ThunderJS from 'ThunderJS';
 import OtherSettingsScreen from "./OtherSettings/OtherSettingsOverlay";
-import { Metrics } from "@firebolt-js/sdk";
 
 var thunder = ThunderJS(CONFIG.thunderConfig);
 /**
@@ -458,7 +457,6 @@ export default class SettingsOverlay extends Lightning.Component {
               self.LOG("Netflix : nfr disable updation results in " + JSON.stringify(nr))
             }).catch(nerr => {
               self.ERR("Netflix : error while updating nfrstatus")
-              Metrics.error(Metrics.ErrorType.OTHER,"PluginError", "Thunder Netflix.1 error disabling nfrstatus "+JSON.stringify(nerr), false, null)
               self.ERR(JSON.stringify(nerr))
             })
 
@@ -471,7 +469,6 @@ export default class SettingsOverlay extends Lightning.Component {
               self.LOG("Netflix : nfr enable results in " + JSON.stringify(nr))
             }).catch(nerr => {
               self.ERR("Netflix : error while updating nfrstatus ")
-              Metrics.error(Metrics.ErrorType.OTHER,"PluginError", "Thunder Netflix.1 error enabling nfrstatus "+JSON.stringify(nerr), false, null)
               self.ERR("Netflix : nfr enable results in error:" + JSON.stringify(nerr))
             })
 
