@@ -186,6 +186,8 @@ export default class AdvanceSettingsScreen extends Lightning.Component {
             .then(res => {
                 // get the current state of CEC and set the toogle button based on status.
                 const isEnabled = !!(res && res.enabled)
+                  console.log(`CEC initial status: ${isEnabled}`)
+                
                 this.tag('CECControl.Button').src = Utils.asset(
                     isEnabled
                         ? 'images/settings/ToggleOnOrange.png'
