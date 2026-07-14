@@ -184,7 +184,7 @@ export default class AdvanceSettingsScreen extends Lightning.Component {
         this.cecApi = new CECApi()
         this.cecApi.getEnabled()
             .then(res => {
-                // get the current state of CEC and set the toogle button based on status.
+                // get the current state of CEC and set the toggle button based on status.
                 const isEnabled = !!(res && res.enabled)
                   console.log(`CEC initial status: ${isEnabled}`)
                 
