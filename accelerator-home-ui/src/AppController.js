@@ -66,6 +66,7 @@ export default class AppController {
 
   async init() {
     const mainAppId = GLOBALS.selfclientAppName;
+    this.LOG('Initializing AppController for mainAppId:', mainAppId);
     let mainClientId;
 
     try {

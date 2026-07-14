@@ -16,14 +16,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-import ThunderJS from "ThunderJS";
 import Keymap from "../Config/Keymap";
-import { CONFIG, GLOBALS } from "../Config/Config";
+import { GLOBALS } from "../Config/Config";
 import RDKWindowManager from "../api/RDKWindowManagerApi";
 
-const thunder = ThunderJS(CONFIG.thunderConfig);
-
-export function keyIntercept(clientName = GLOBALS.selfClientId) {
+export function keyIntercept(clientName = GLOBALS.selfclientAppName) {
     return new Promise((resolve, reject) => {
         const intercepts = [
             { "keyCode": Keymap.Home, "modifiers": [] },
