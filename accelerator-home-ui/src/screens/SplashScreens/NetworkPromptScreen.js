@@ -100,7 +100,7 @@ export default class NetworkPromptScreen extends Lightning.Component {
 
     _handleBack() {
         Registry.setTimeout(() => {
-            Router.navigate('splash/networkPrompt')
+            Router.navigate('splash/network')
         }, Router.isNavigating() ? 20 : 0);
     }
 
