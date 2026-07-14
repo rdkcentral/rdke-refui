@@ -67,7 +67,6 @@ import RDKWindowManager from './api/RDKWindowManagerApi.js';
 import RuntimeManager from './api/RuntimeManagerApi.js';
 import AppController from './AppController.js';
 
-var AlexaAudioplayerActive = false;
 var thunder = ThunderJS(CONFIG.thunderConfig);
 var appApi = new AppApi();
 var dtvApi = new DTVApi();
@@ -81,7 +80,6 @@ var powermanagerapi = new PowerManagerApi();
 var packageManager = new PackageManager();
 
 export default class App extends Router.App {
-
 	constructor(...args) {
 		super(...args);
 		this.INFO = console.info;
@@ -233,8 +231,7 @@ export default class App extends Router.App {
 	}
 
 	_captureKey(key) {
-		this.LOG("Got keycode : " + JSON.stringify(key.keyCode))
-		this.LOG("powerState ===>" + JSON.stringify(GLOBALS.powerState))
+		this.LOG("PowerState: " + JSON.stringify(GLOBALS.powerState) + " and got keycode: " + JSON.stringify(key.keyCode))
 		if (GLOBALS.powerState === PowerState.POWER_STATE_DEEP_SLEEP || GLOBALS.powerState === PowerState.POWER_STATE_LIGHT_SLEEP) {
 			if (key.keyCode !== Keymap.Power) {
 				this.LOG("Ignoring non-power key press while device is in sleep state")
@@ -250,8 +247,8 @@ export default class App extends Router.App {
 				this.initializeInactivityEngine();
 			})
 			.catch(err => {
-                this.ERR("Error waking device: " + JSON.stringify(err));
-            })
+				this.ERR("Error waking device: " + JSON.stringify(err));
+			})
 			return true
 		}
 		this.$hideImage(0);
@@ -340,7 +337,8 @@ export default class App extends Router.App {
 			this.jumpToRoute("epg"); //method to exit the current app(if any) and route to home screen
 			return true
 		} else if (key.keyCode == Keymap.Amazon && !Router.isNavigating()) {
-			return this.launchFeaturedApp("Amazon")
+			this.launchFeaturedApp("Amazon")
+			return true
 		} else if (key.keyCode == Keymap.Youtube && !Router.isNavigating()) {
 			console.log("YouTube key pressed, calling launchFeaturedApp");
 			this.launchFeaturedApp("YouTube")
@@ -1457,10 +1455,31 @@ export default class App extends Router.App {
 		});
 	}
 
-	launchFeaturedApp = (appName) => {
+	launchFeaturedApp = async (appName) => {
 		console.log("Launching Featured App from AI 2.0: " + appName);
-		// FIXME: remove hardcoded app name.
-		AppManager.get().launchApp("com.rdk.app.cobalt2025")
+		let installedApps;
+		try {
+			installedApps = await AppManager.get().getInstalledApps();
+		} catch (err) {
+			this.ERR("Error fetching installed apps: " + JSON.stringify(err));
+			return;
+		}
+
+		const matchedApp = installedApps && installedApps.find(app =>
+			app.appId.toLowerCase().includes(appName.toLowerCase())
+		);
+		const launchAppId = matchedApp ? matchedApp.appId : "";
+
+		if (launchAppId === "") {
+			this.ERR("Featured App not found in getInstalledApps: " + appName);
+			return;
+		}
+
+		try {
+			await AppManager.get().launchApp(launchAppId)
+		} catch (err) {
+			this.ERR("Error launching featured app: " + JSON.stringify(err));
+		}
 	}
 
 	/**
