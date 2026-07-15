@@ -155,7 +155,7 @@ export default class NetworkConfigurationScreen extends Lightning.Component {
         });
 
         this.onInternetStatusChangeCB = NetworkManager.thunder.on(NetworkManager.callsign, 'onInternetStatusChange', data => {
-            if (data.prevStatus && data.prevStatus === "FULLY_CONNECTED") {
+            if (data.status && data.status === "FULLY_CONNECTED") {
                 this.tag('TestInternetAccess.Title').text.text = Language.translate('Test Internet Access: ') + Language.translate("Connected")
             } else {
                 this.tag('TestInternetAccess.Title').text.text = Language.translate('Test Internet Access: ') + Language.translate("Disconnected")

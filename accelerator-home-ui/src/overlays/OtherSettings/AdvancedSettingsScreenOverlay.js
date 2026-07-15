@@ -210,12 +210,13 @@
         this.cecApi.getEnabled()
             .then(res => {
                 this.LOG("toggleCEC getEnabled result: " + JSON.stringify(res))
-                if (res.enabled) {
-                    this.tag('CECControl.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
-                }
-                else {
-                    this.tag('CECControl.Button').src = Utils.asset('images/settings/ToggleOnOrange.png')
-                }
+                this.cecApi.setEnabled(!res.enabled).then(() => {
+                    if (res.enabled) {
+                        this.tag('CECControl.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
+                    } else {
+                        this.tag('CECControl.Button').src = Utils.asset('images/settings/ToggleOnOrange.png')
+                    }
+                })
             })
     }
 

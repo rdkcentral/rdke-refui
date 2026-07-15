@@ -81,6 +81,7 @@ export const GLOBALS = {
   _LocalDeviceDiscoveryStatus:false,
   _EnergySaverMode:false,
   _selfclientAppName: 'com.rdkcentral.refui',
+  _selfClientId: null,
   set selfclientAppName(name)
   {
     this._selfclientAppName = name
@@ -96,10 +97,10 @@ export const GLOBALS = {
     this._selfclientAppName = value;
   },
   get selfClientId() {
-    return this._selfclientAppName;
+    return this._selfClientId;
   },
   set selfClientId(value) {
-   this._selfclientAppName = value;
+    this._selfClientId = value;
   },
   _currentTopMostApp: localStorage.getItem('topmostApp') || 'com.rdkcentral.refui',
   get topmostApp() {
