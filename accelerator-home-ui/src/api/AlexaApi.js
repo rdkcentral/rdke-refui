@@ -87,38 +87,6 @@ export default class AlexaApi extends VoiceApi {
     if (focused) { RDKShellApis.setFocus("SmartScreen") }
   }
 
-  reportApplicationState(app = "menu", isRoute = false) {
-    if ((this.checkAlexaAuthStatus() != "AlexaUserDenied") && (this.checkAlexaAuthStatus() != "AlexaAuthPending")) {
-      /* retrieve 'app' matching from AlexaLauncherKeyMap. */
-      let appStateReportPayload = ApplicationStateReporter;
-      let isListedApp = false;
-      for (let [key, value] of Object.entries(AlexaLauncherKeyMap)) {
-        if (isRoute && Object.prototype.hasOwnProperty.call(value, "route") && (value.route === app.toLowerCase())) {
-          appStateReportPayload.msgPayload.event.header.value.foregroundApplication.id = key;
-          if (app.toLowerCase() === "menu")
-            appStateReportPayload.msgPayload.event.header.value.foregroundApplication.metadata.isHome = true;
-          isListedApp = true;
-          break;
-        } else if (!isRoute && (value.callsign === app || value.url === app)) {
-          appStateReportPayload.msgPayload.event.header.value.foregroundApplication.id = key;
-          appStateReportPayload.msgPayload.event.header.value.foregroundApplication.metadata.isHome = false;
-          isListedApp = true;
-          break;
-        }
-      }
-      /* Send the new app state object if its a known app. */
-      if (isListedApp) {
-        this.WARN("Sending app statereport to Alexa:" + JSON.stringify(appStateReportPayload));
-        this.sendVoiceMessage(appStateReportPayload);
-      } else {
-        this.ERR("Alexa reportApplicationState; no match found, won't send state report.");
-        Metrics.error(Metrics.ErrorType.OTHER, "AlexaAPIError", "Alexa reportApplicationState; no match found, wont send state report.", false, null)
-      }
-    } else {
-      this.LOG("Alexa reportApplicationState: AlexaUserDenied/AlexaAuthPending, skip state reporting.");
-    }
-  }
-
   reportVolumeState(volumeLevel = undefined, muteStatus = undefined, messageId = undefined) {
     if (volumeLevel != undefined)
       VolumePayload.msgPayload.event.payload.volume = volumeLevel
