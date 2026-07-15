@@ -135,8 +135,8 @@
     }
 
     _inactive() {
-        this.onActiveInterfaceChangeCB.dispose()
-        this.onInterfaceStateChange.dispose()
+        if (this.onActiveInterfaceChangeCB) this.onActiveInterfaceChangeCB.dispose()
+        if (this.onInterfaceStateChange) this.onInterfaceStateChange.dispose()
     }
 
     _firstActive() {

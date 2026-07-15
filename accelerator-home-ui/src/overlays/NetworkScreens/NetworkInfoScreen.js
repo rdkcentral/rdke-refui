@@ -270,9 +270,9 @@ export default class NetworkInfo extends Lightning.Component {
     }
 
     _inactive() {
-        this.onInterfaceStateChangeCB.dispose()
-        this.onAddressChangeCB.dispose()
-        this.onActiveInterfaceChangeCB.dispose()
+        if (this.onInterfaceStateChangeCB) this.onInterfaceStateChangeCB.dispose()
+        if (this.onAddressChangeCB) this.onAddressChangeCB.dispose()
+        if (this.onActiveInterfaceChangeCB) this.onActiveInterfaceChangeCB.dispose()
     }
 
     _disable() {

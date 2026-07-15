@@ -291,9 +291,9 @@ export default class NetworkInfo extends Lightning.Component {
     }
 
     _inactive() {
-        this.onInterfaceStatusChangeCB.dispose();
-        this.onAddressChangeCB.dispose();
-        this.onActiveInterfaceChangeCB.dispose();
+        if (this.onInterfaceStatusChangeCB) this.onInterfaceStatusChangeCB.dispose();
+        if (this.onAddressChangeCB) this.onAddressChangeCB.dispose();
+        if (this.onActiveInterfaceChangeCB) this.onActiveInterfaceChangeCB.dispose();
     }
 
     setConnectedRowsVisibility(isConnected) {
