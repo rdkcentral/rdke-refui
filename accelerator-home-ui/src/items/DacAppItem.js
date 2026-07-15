@@ -66,6 +66,20 @@ export default class DacAppItem extends DACAppMixin(Lightning.Component) {
             alpha: 1,
             zIndex: 10,
           },
+          TickOverlay: {
+            alpha: 0,
+            zIndex: 11,
+            rect: true,
+            color: 0xFF000000,
+          },
+          TickMark: {
+            alpha: 0,
+            zIndex: 12,
+            mount: 0.5,
+            w: 100,
+            h: 100,
+            src: Utils.asset('/images/tick.png'),
+          },
         },
         Info: {},
       },
@@ -152,6 +166,19 @@ export default class DacAppItem extends DACAppMixin(Lightning.Component) {
       y: -80,
       w: this.w,
       h: this.h,
+    })
+
+    // TickOverlay covers entire tile as dark backdrop
+    this.tag('ImageWrapper.TickOverlay').patch({
+      x: 0,
+      y: 0,
+      w: this.w,
+      h: this.h,
+    })
+    // TickMark centered on tile
+    this.tag('ImageWrapper.TickMark').patch({
+      x: this.w / 2,
+      y: this.h / 2,
     })
 
     this.tag('Info').patch({
