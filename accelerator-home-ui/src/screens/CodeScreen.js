@@ -104,7 +104,7 @@ export default class CodeScreen extends Lightning.Component {
         this._setState('Description')
     }
     _focus() {
-        // TODO: implment focus logic when voice integration is done
+        // TODO: Implement focus logic when voice integration is done
     }
 
     _active() {

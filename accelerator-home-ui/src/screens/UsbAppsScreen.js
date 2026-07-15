@@ -233,12 +233,7 @@ export default class UsbAppsScreen extends Lightning.Component {
       let clone = [...this.cwd]
       clone.pop();
       let cwdname = clone.join("/");
-      usbApi.cd(cwdname).then(() => {
-        this.cwd.pop();
-        this.loadData();
-      }).catch(err => {
-        this.ERR("error while getting the usb contents; error = " + JSON.stringify(err));
-      });
+      // TODO: Integrate when USB drive support is available.
     } else {
       Router.navigate('menu');
     }
@@ -426,24 +421,9 @@ export default class UsbAppsScreen extends Lightning.Component {
         _handleEnter() {
           //do something after folder click.
           let dname = this.cwd.join("/") + "/" + this.tag('Row4').element.data.displayName;
-          usbApi.cd(dname).then(() => {
-
-            this.cwd.push(this.tag('Row4').element.data.displayName);
-            // console.log(`loading the data from the directory ${this.cwd}
-
-            // and its data = music:${JSON.stringify(musicListInfo)}
-
-            // Pictures : ${JSON.stringify(imageListInfo)}
-
-            // videos : ${JSON.stringify(videoListInfo)}
-
-            // folders : ${JSON.stringify(UsbInnerFolderListInfo)}
-
-            // `);
-            this.loadData();
-          }).catch(err => {
-            this.ERR("error while getting the usb contents; error = " + JSON.stringify(err));
-          });
+          // TODO: Integrate when USB drive support is available.
+          this.cwd.push(this.tag('Row4').element.data.displayName);
+          this.loadData();
 
         }
 
@@ -624,13 +604,7 @@ export default class UsbAppsScreen extends Lightning.Component {
     if (this.thisDir) {
       if (this.thisDir.length > 0) {
         this.cwd = [...this.thisDir];
-        let dname = this.cwd.join("/")
-        usbApi.cd(dname).then(() => {
-          this.loadData();
-          this._setState(this.traversableRows[this.index] + `.${this.currentIndex}`)//focus on first element
-        }).catch(err => {
-          this.ERR("error while getting the usb contents; error = " + JSON.stringify(err));
-        });
+        // TODO: Integrate when USB drive support is available.
       }
     } else {
       this.index = 0;
