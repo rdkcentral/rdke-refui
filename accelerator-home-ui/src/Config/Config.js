@@ -101,7 +101,7 @@ export const GLOBALS = {
   set selfClientId(value) {
    this._selfclientAppName = value;
   },
-  _currentTopMostApp: localStorage.getItem('topmostApp') || GLOBALS._selfclientAppName,
+  _currentTopMostApp: localStorage.getItem('topmostApp') || 'com.rdkcentral.refui',
   get topmostApp() {
     return this._currentTopMostApp;
   },
