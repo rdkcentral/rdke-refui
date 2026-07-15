@@ -276,7 +276,6 @@ export default class NetworkInfo extends Lightning.Component {
     }
 
     _disable() {
-        if (this.NetworkManagerActivated) {NetworkManager.deactivate()}
     }
 
     setConnectedRowsVisibility(isConnected) {

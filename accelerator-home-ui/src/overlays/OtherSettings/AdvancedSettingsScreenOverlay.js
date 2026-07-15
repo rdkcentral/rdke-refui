@@ -22,11 +22,11 @@
  import { CONFIG } from '../../Config/Config'
  import CECApi from '../../api/CECApi'
  import DeviceScreen from './DeviceScreenOverlay'
- 
+
   /**
   * Class for AdvancedSettings screen.
   */
- 
+
  export default class AdvanceSettingsScreen extends Lightning.Component {
     constructor(...args) {
         super(...args);
@@ -174,25 +174,35 @@
 
     _init() {
         this.cecApi = new CECApi()
-        this.cecApi.activate()
-            .then(() => {
-                this.tag('CECControl.Button').src = Utils.asset('images/settings/ToggleOnOrange.png')
-                this.performOTPAction()
-            })
+        this.performOTPAction()
         this._setState('CECControl')
     }
+
+    _active() {
+        this.cecApi.getEnabled().then(res => {
+            if (res.enabled !== undefined) {
+                if (res.enabled) {
+                    this.tag('CECControl.Button').src = Utils.asset('images/settings/ToggleOnOrange.png')
+                } else {
+                    this.tag('CECControl.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
+                }
+            }
+        });
+    }
+
     _focus() {
         this._setState('CECControl')
     }
     performOTPAction() {
-        this.cecApi.setEnabled().then(res => {
+        return this.cecApi.setEnabled().then(res => {
             if (res.success) {
-                this.cecApi.performOTP().then(otpRes => {
+                return this.cecApi.performOTP().then(otpRes => {
                     if (otpRes.success) {
                         this.LOG('Otp Action success full')
                     }
                 })
             }
+            return null;
         })
     }
 
@@ -201,16 +211,10 @@
             .then(res => {
                 this.LOG("toggleCEC getEnabled result: " + JSON.stringify(res))
                 if (res.enabled) {
-                    this.cecApi.deactivate()
-                        .then(() => {
-                            this.tag('CECControl.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
-                        })
+                    this.tag('CECControl.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
                 }
                 else {
-                    this.cecApi.activate()
-                        .then(() => {
-                            this.tag('CECControl.Button').src = Utils.asset('images/settings/ToggleOnOrange.png')
-                        })
+                    this.tag('CECControl.Button').src = Utils.asset('images/settings/ToggleOnOrange.png')
                 }
             })
     }
