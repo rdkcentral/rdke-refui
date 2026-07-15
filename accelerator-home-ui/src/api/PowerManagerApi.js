@@ -97,7 +97,7 @@ export default class PowerManagerApi {
 
   setPowerState(value) {
     return new Promise((resolve) => {
-      this.thunder.call(this.callsign, 'setPowerState', { "powerState": value, "standbyReason": "ResidentApp User Requested" })
+      this.thunder.call(this.callsign, 'setPowerState', { "powerState": value, "standbyReason": "SystemUI User Requested" })
         .then(result => {
           this.LOG("PowerManager setPowerState result:", JSON.stringify(result))
           if(result === null){

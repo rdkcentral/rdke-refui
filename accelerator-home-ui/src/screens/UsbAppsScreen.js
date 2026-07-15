@@ -17,7 +17,6 @@
  * limitations under the License.
  **/
 import { Language, Lightning, Router } from "@lightningjs/sdk"
-import UsbApi from '../api/UsbApi'
 import { CONFIG } from '../Config/Config.js'
 import { imageListInfo } from '../../static/data/ImageListInfo'
 import { musicListInfo } from '../../static/data/MusicListInfo'
@@ -26,10 +25,7 @@ import { UsbInnerFolderListInfo } from "../../static/data/UsbInnerFolderListInfo
 import UsbListItem from '../items/UsbListItem.js'
 import LightningPlayerControls from "../MediaPlayer/LightningPlayerControl"
 
-var usbApi = new UsbApi();
-
 export default class UsbAppsScreen extends Lightning.Component {
-
   constructor(...args) {
     super(...args);
     this.INFO = console.info;

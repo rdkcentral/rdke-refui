@@ -60,7 +60,6 @@ export var CONFIG = {
     versions: {
       default: 1,
       ControlSettings: 2,
-      'org.rdk.UsbAccess': 2,
       'org.rdk.DisplaySettings': 2,
     }
   }
@@ -79,23 +78,30 @@ export const GLOBALS = {
   _Miracastclientdevicedetails:{mac: null,name: null,reason_code: null,state:null},
   _previousapp_onActiveSourceStatusUpdated:null,
   _previousapp_onDisplayConnectionChanged:null,
-  _constantselfClientName: window.__firebolt && window.__firebolt.endpoint !== undefined ? "FireboltMainApp-refui" : "ResidentApp",
-  _selfclientId: window.__firebolt && window.__firebolt.endpoint !== undefined ? "FireboltMainApp-refui" : null,
   _LocalDeviceDiscoveryStatus:false,
   _EnergySaverMode:false,
+  _selfclientAppName: 'com.rdkcentral.refui',
+  set selfclientAppName(name)
+  {
+    this._selfclientAppName = name
+  },
+  get selfclientAppName()
+  {
+    return this._selfclientAppName
+  },
   get selfClientName() {
-    return this._constantselfClientName;
+    return this._selfclientAppName;
   },
   set selfClientName(value) {
-    this._constantselfClientName = value;
+    this._selfclientAppName = value;
   },
   get selfClientId() {
-    return this._selfclientId;
+    return this._selfclientAppName;
   },
   set selfClientId(value) {
-   this._selfclientId = value;
+   this._selfclientAppName = value;
   },
-  _currentTopMostApp: localStorage.getItem('topmostApp') || (window.__firebolt && window.__firebolt.endpoint !== undefined ? "FireboltMainApp-refui" : "ResidentApp"),
+  _currentTopMostApp: localStorage.getItem('topmostApp') || GLOBALS._selfclientAppName,
   get topmostApp() {
     return this._currentTopMostApp;
   },
@@ -221,14 +227,5 @@ export const GLOBALS = {
   get refreshMyApps()
   {
     return this._refreshMyApps
-  },
-  _selfclientAppName: 'com.rdkcentral.refui',
-  set selfclientAppName(name)
-  {
-    this._selfclientAppName = name
-  },
-  get selfclientAppName()
-  {
-    return this._selfclientAppName
   }
 }

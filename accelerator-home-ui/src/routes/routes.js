@@ -201,8 +201,6 @@ export default {
   ],
   afterEachRoute: (request) => {
     console.log("Routed to:" + JSON.stringify(request.hash));
-    if ("ResidentApp" !== GLOBALS.selfClientName) {
-    }
     if (request.hash === "menu") {
       /* To prevent the onboarding screen appearing next time. */
       GLOBALS.RCSkipStatus=true;

@@ -17,12 +17,11 @@
  * limitations under the License.
  **/
 import AppApi from '../../api/AppApi'
-import { Lightning, Utils, Storage, Language } from '@lightningjs/sdk'
+import { Lightning, Utils, Language } from '@lightningjs/sdk'
 import SettingsMainItem from '../../items/SettingsMainItem'
 import { COLORS } from '../../colors/Colors'
 import { CONFIG, GLOBALS } from '../../Config/Config'
 import XcastApi from '../../api/XcastApi'
-import UsbApi from '../../api/UsbApi'
 import PrivacyPolicyScreen from './PrivacyPolicyOverlay'
 import Warehouse from '../../api/WarehouseApis'
 /**
@@ -69,33 +68,8 @@ export default class PrivacyScreen extends Lightning.Component {
                         src: Utils.asset('images/settings/ToggleOffWhite.png'),
                     },
                 },
-                UsbMediaDevices: {
-                    alpha:0.3,
-                    y: 90,
-                    type: SettingsMainItem,
-                    Title: {
-                        x: 10,
-                        y: 45,
-                        mountY: 0.5,
-                        text: {
-                            text: Language.translate('USB Media Devices'),
-                            textColor: COLORS.titleColor,
-                            fontFace: CONFIG.language.font,
-                            fontSize: 25,
-                        }
-                    },
-                    Button: {
-                        h: 45,
-                        w: 67,
-                        x: 1600,
-                        mountX: 1,
-                        y: 45,
-                        mountY: 0.5,
-                        src: Utils.asset('images/settings/ToggleOffWhite.png'),
-                    },
-                },
                 AudioInput: {
-                    y: 180,
+                    y: 90,
                     type: SettingsMainItem,
                     Title: {
                         x: 10,
@@ -119,7 +93,7 @@ export default class PrivacyScreen extends Lightning.Component {
                     },
                 },
                 ClearCookies: {
-                    y: 270,
+                    y: 180,
                     type: SettingsMainItem,
                     Title: {
                         x: 10,
@@ -143,7 +117,7 @@ export default class PrivacyScreen extends Lightning.Component {
                     },
                 },
                 PrivacyPolicy: {
-                    y: 360,
+                    y: 270,
                     type: SettingsMainItem,
                     Title: {
                         x: 10,
@@ -179,7 +153,6 @@ export default class PrivacyScreen extends Lightning.Component {
     _firstEnable() {
         this._setState('LocalDeviceDiscovery')
         this.checkLocalDeviceStatus()
-        this.USBApi = new UsbApi()
         this.AppApi = new AppApi()
         this.Warehouse= new Warehouse()
     }
@@ -187,18 +160,6 @@ export default class PrivacyScreen extends Lightning.Component {
     _focus() {
         this._setState(this.state)
         this.checkLocalDeviceStatus()
-        // this.checkUSBDeviceStatus()
-    }
-
-    checkUSBDeviceStatus() {
-        if (!Storage.get('UsbMedia')) {
-            this.tag('UsbMediaDevices.Button').src = Utils.asset('images/settings/ToggleOnOrange.png')
-            Storage.set('UsbMedia', 'ON')
-        } else if (Storage.get('UsbMedia') === 'ON') {
-            this.tag('UsbMediaDevices.Button').src = Utils.asset('images/settings/ToggleOnOrange.png')
-        } else if (Storage.get('UsbMedia') === 'OFF') {
-            this.tag('UsbMediaDevices.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
-        }
     }
 
     checkLocalDeviceStatus() {
@@ -262,41 +223,6 @@ export default class PrivacyScreen extends Lightning.Component {
                 }
                 _handleEnter() {
                     this.toggleLocalDeviceDiscovery()
-                }
-            },
-            class UsbMediaDevices extends this {
-                $enter() {
-                    this.tag('UsbMediaDevices')._focus()
-                }
-                $exit() {
-                    this.tag('UsbMediaDevices')._unfocus()
-                }
-                _handleUp() {
-                    this._setState('LocalDeviceDiscovery')
-                }
-                _handleDown() {
-                    this._setState('AudioInput')
-                }
-                _handleEnter() {
-                    let _UsbMedia = Storage.get('UsbMedia')
-                    if (_UsbMedia === 'ON') {
-                        this.fireAncestors('$deRegisterUsbMount')
-                        this.USBApi.deactivate().then(() => {
-                            Storage.set('UsbMedia', 'OFF')
-                            this.tag('UsbMediaDevices.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
-                            this.widgets.menu.refreshMainView()
-                        }).catch(err => {
-                            this.ERR("error while disabling the usb plugin = " + JSON.stringify(err))
-                            this.fireAncestors('$registerUsbMount')
-                        })
-                    } else if (_UsbMedia === 'OFF') {
-                        this.USBApi.activate().then(() => {
-                            Storage.set('UsbMedia', 'ON')
-                            this.tag('UsbMediaDevices.Button').src = Utils.asset('images/settings/ToggleOnOrange.png')
-                            this.fireAncestors('$registerUsbMount')
-                            this.widgets.menu.refreshMainView()
-                        })
-                    }
                 }
             },
             class AudioInput extends this {

@@ -36,9 +36,6 @@ import Keymap from './Config/Keymap';
 import Menu from './views/Menu'
 import Failscreen from './screens/FailScreen';
 import FailAndOkScreen from './screens/FailAndOkScreen';
-import {
-	keyIntercept
-} from './keyIntercept/keyIntercept';
 import HDMIApi from './api/HDMIApi';
 import Volume from './tvOverlay/components/Volume';
 import DTVApi from './api/DTVApi';
@@ -71,12 +68,10 @@ var thunder = ThunderJS(CONFIG.thunderConfig);
 var appApi = new AppApi();
 var dtvApi = new DTVApi();
 var cecApi = new CECApi();
-var xcastApi = new XcastApi();
 var voiceApi = new VoiceApi();
 var miracast = new Miracast();
 var inactivityHelper = new InactivityHelper();
 const SLEEP_STATE = 'SLEEPING';
-var powermanagerapi = new PowerManagerApi();
 var packageManager = new PackageManager();
 
 export default class App extends Router.App {
@@ -131,7 +126,6 @@ export default class App extends Router.App {
 
 	async _setup() {
 		this.LOG("accelerator-home-ui version: " + JSON.stringify(Settings.get("platform", "version")));
-		this.LOG("UI setup selfClientName:" + JSON.stringify(GLOBALS.selfClientName) + ", current topmostApp:" + JSON.stringify(GLOBALS.topmostApp));
 		Storage.set("ResolutionChangeInProgress", false);
 		Router.startRouter(routes, this);
 		document.onkeydown = e => {
@@ -514,43 +508,6 @@ export default class App extends Router.App {
 
 		thunder.on('Controller.1', 'all', noti => {
 			this.LOG("App controller notification:" + JSON.stringify(noti))
-			// FIXME: use new Firebolt DIAL logic.
-			if (Object.prototype.hasOwnProperty.call(noti, "callsign") && (noti.callsign.startsWith("YouTube") || noti.callsign.startsWith("Amazon") || noti.callsign.startsWith("Netflix"))) {
-				let params = {
-					applicationName: noti.callsign,
-					state: 'stopped'
-				};
-				switch (noti.data.state) {
-					case "activated":
-					case "resumed":
-						params.state = 'running';
-						break;
-					case "Activation":
-					case "deactivated":
-					case "Deactivation":
-						params.state = 'stopped';
-						break;
-					case "hibernated":
-					case "suspended":
-						params.state = 'suspended';
-						break;
-					case "Precondition":
-						break;
-				}
-				if (noti.callsign.startsWith("Amazon")) {
-					params.applicationName = "AmazonInstantVideo";
-				}
-				this.LOG("App Controller state change to xcast: " + JSON.stringify(params));
-				this.xcastApi.setApplicationState(params).then(status => {
-					if (status == false) {
-						this.ERR("App xcast setApplicationState failed, trying fallback. error: ");
-						this.xcastApi.onApplicationStateChanged(params).catch(err => {
-							this.ERR("App xcast onApplicationStateChanged failed: " + JSON.stringify(err));
-						});
-					}
-				});
-				params = null;
-			}
 			if (noti.callsign === "org.rdk.HdmiCecSource") {
 				this.SubscribeToHdmiCecSourcevent(noti.data.state, self.appIdentifiers)
 			}
@@ -582,53 +539,7 @@ export default class App extends Router.App {
 				}
 			}
 		})
-		appApi.getPluginStatus("Cobalt").then(() => {
-			/* Loop through YouTube variants and set respective urls. */
-			JSON.parse(JSON.stringify(appListInfo)).forEach(appInfo => {
-				if (Object.prototype.hasOwnProperty.call(appInfo, "applicationType") && appInfo.applicationType.startsWith("YouTube") && Object.prototype.hasOwnProperty.call(appInfo, "uri") && appInfo.uri.length) {
-					thunder.Controller.clone({
-						callsign: "Cobalt",
-						newcallsign: appInfo.applicationType
-					}).then(result => {
-						this.LOG("App Controller.clone Cobalt as " + JSON.stringify(appInfo.applicationType) + " done." + JSON.stringify(result));
-					}).catch(err => {
-						this.ERR("App Controller clone Cobalt for " + JSON.stringify(appInfo.applicationType) + " failed: " + JSON.stringify(err));
-						// TODO: hide YouTube Icon and listing from Menu, AppCarousel, Channel overlay and EPG page.
-					})
 
-					appApi.getPluginStatus(appInfo.applicationType).then(res => {
-						if (res[0].state !== "deactivated") {
-							thunder.Controller.deactivate({
-								callsign: appInfo.applicationType
-							}).catch(err => {
-								this.ERR("App Controller.deactivate " + JSON.stringify(appInfo.applicationType) + " failed. It may not work." + JSON.stringify(err));
-							})
-						}
-						/* Do not change YouTube's configuration as Page-visibility test runs on that. */
-						if (res[0].callsign !== "YouTube") {
-							thunder.call('Controller', `configuration@${appInfo.applicationType}`).then(result => {
-								/* Ensure appending '?' so that later params can be directly appended. */
-								result.url = appInfo.uri + "?"; // Make sure that appListInfo.js has only base url.
-								thunder.call('Controller', `configuration@${appInfo.applicationType}`, result).then(() => {
-									Storage.set(appInfo.applicationType + "DefaultURL", appInfo.uri + "?"); // Make sure that appListInfo.js has only base url.
-								}).catch(err => {
-									this.ERR("App Controller.configuration@" + JSON.stringify(appInfo.applicationType) + " set failed. It may not work." + JSON.stringify(err));
-								})
-							}).catch(err => {
-								this.ERR("App Controller.configuration@" + JSON.stringify(appInfo.applicationType) + " get failed. It may not work." + JSON.stringify(err));
-							})
-						} else {
-							/* Just store the plugin configured url as default url and ensure '?' is appended. */
-							Storage.set(appInfo.applicationType + "DefaultURL", (res[0].configuration.url.includes('?') ? res[0].configuration.url : res[0].configuration.url + "?"));
-						}
-					}).catch(err => {
-						this.ERR("App getPluginStatus " + JSON.stringify(appInfo.applicationType) + " Error: " + JSON.stringify(err));
-					})
-				}
-			});
-		}).catch(err => {
-			this.ERR("App getPluginStatus Cobalt error: " + JSON.stringify(err));
-		})
 		//video info change events begin here---------------------
 		/********************   RDKUI-341 CHANGES - DEEP SLEEP/LIGHT SLEEP **************************/
 		this._subscribeToControlNotifications()
@@ -1061,7 +972,7 @@ export default class App extends Router.App {
 					if (GLOBALS.previousapp_onDisplayConnectionChanged !== null) {
 						currentApp = GLOBALS.previousapp_onDisplayConnectionChanged
 					}
-					if (currentApp === "ResidentApp" && GLOBALS.Setup) {
+					if (currentApp === GLOBALS._selfclientAppName && GLOBALS.Setup) {
 						Router.navigate(GLOBALS.LastvisitedRoute);
 					}
 				} else {
@@ -1087,7 +998,7 @@ export default class App extends Router.App {
 							if (GLOBALS.previousapp_onActiveSourceStatusUpdated !== null) {
 								currentApp = GLOBALS.previousapp_onActiveSourceStatusUpdated
 							}
-							if (currentApp === "ResidentApp" && GLOBALS.Setup) {
+							if (currentApp === GLOBALS._selfclientAppName && GLOBALS.Setup) {
 								Router.navigate(GLOBALS.LastvisitedRoute);
 							}
 							this.LOG("current app is " + JSON.stringify(currentApp))
@@ -1344,35 +1255,6 @@ export default class App extends Router.App {
 		})
 	}
 
-	deactivateChildApp(plugin) { //#needToBeRemoved
-		switch (plugin) {
-			case 'WebApp':
-				// FIXME: use new AppManager APIs.
-				this.WARN("App : deactivate request not implemented yet for plugin: " + plugin);
-				break;
-			case 'YouTube':
-			case 'YouTubeTV':
-			case 'Amazon':
-			case "Netflix":
-				// FIXME: use new AppManager APIs.
-				this.WARN("App : deactivate request not implemented yet for plugin: " + plugin);
-				break;
-			case 'Lightning':
-				// FIXME: use new AppManager APIs.
-				this.WARN("App : deactivate request not implemented yet for plugin: " + plugin);
-				break;
-			case 'Native':
-				appApi.killNative();
-				break;
-			case 'HDMI':
-				new HDMIApi().stopHDMIInput()
-				Storage.set("_currentInputMode", {});
-				break;
-			default:
-				break;
-		}
-	}
-
 	_powerKeyPressed() {
 		appApi.getPowerState().then(res => {
 			this.LOG("getPowerState: " + JSON.stringify(res));
@@ -1541,40 +1423,8 @@ export default class App extends Router.App {
 		this.xcastApi.registerEvent('onApplicationStateRequest', notification => {
 			console.log("App onApplicationStateRequest: " + JSON.stringify(notification));
 			if (this.xcastApps(notification.applicationName)) {
-				let applicationName = this.xcastApps(notification.applicationName);
-				let appState = {
-					"applicationName": notification.applicationName,
-					"state": "stopped"
-				};
-				appApi.checkStatus(applicationName).then(result => {
-					this.LOG("result of xcast app status" + JSON.stringify(result[0].state))
-					switch (result[0].state) {
-						case "activated":
-						case "resumed":
-							appState.state = "running";
-							break;
-						case "Activation":
-						case "deactivated":
-						case "Deactivation":
-						case "Precondition":
-							appState.state = "stopped";
-							break;
-						case "hibernated":
-						case "suspended":
-							appState.state = "suspended";
-							break;
-					}
-					this.xcastApi.setApplicationState(appState).then(status => {
-						if (status == false) {
-							this.ERR("App xcast setApplicationState failed, trying fallback. error: ");
-							this.xcastApi.onApplicationStateChanged(appState).catch(err => {
-								this.ERR("App xcast onApplicationStateChanged failed: " + JSON.stringify(err));
-							});
-						}
-					});
-				}).catch(error => {
-					this.ERR("App onApplicationStateRequest: checkStatus error " + JSON.stringify(error));
-				})
+				// FIXME: Implement DIAL state functionality.
+				this.WARN("App onApplicationStateRequest: not implemented.");
 			} else {
 				this.LOG("App onApplicationStateRequest: " + JSON.stringify(notification.applicationName) + " is not supported.")
 			}
@@ -1589,12 +1439,6 @@ export default class App extends Router.App {
 		if (Object.keys(XcastApi.supportedApps()).includes(app)) {
 			return XcastApi.supportedApps()[app];
 		} else return false;
-	}
-
-	$mountEventConstructor(fun) {
-		this.ListenerConstructor = fun;
-		this.LOG("MountEventConstructor was initialized")
-		// console.log(`listener constructor was set t0 = ${this.ListenerConstructor}`);
 	}
 
 	$registerUsbMount() {

@@ -17,10 +17,9 @@
  * limitations under the License.
  **/
 import Keymap from "../Config/Keymap";
-import { GLOBALS } from "../Config/Config";
 import RDKWindowManager from "../api/RDKWindowManagerApi";
 
-export function keyIntercept(clientName = GLOBALS.selfclientAppName) {
+export function keyIntercept(clientId) {
     return new Promise((resolve, reject) => {
         const intercepts = [
             { "keyCode": Keymap.Home, "modifiers": [] },
@@ -40,7 +39,7 @@ export function keyIntercept(clientName = GLOBALS.selfclientAppName) {
         ];
         RDKWindowManager.get().addKeyIntercepts(
             {
-                "clientId": clientName,
+                "clientId": clientId,
                 "intercepts": JSON.stringify(intercepts)
             }
         ).then(result => {

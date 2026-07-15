@@ -38,39 +38,6 @@ export default class RCApi {
     return instance
   }
 
-  activate() {
-    return new Promise((resolve, reject) => {
-      this.thunder.call('Controller', `status@${this.callsign}`).then(result => {
-        if (Array.isArray(result) && result[0] && result[0].state === "activated") {
-          resolve(true);
-          return;
-        }
-        this.INFO("RCApi: activate.");
-        this.thunder.Controller.activate({ callsign: this.callsign }).then(() => {
-          resolve(true);
-        }).catch(err => {
-          this.ERR("RCApi: Error Activation " + JSON.stringify(err));
-          reject(err)
-        })
-      }).catch(err => {
-        this.ERR("RCApi: Error checking activation status " + JSON.stringify(err));
-        reject(err);
-      })
-    })
-  }
-
-  deactivate() {
-    return new Promise((resolve, reject) => {
-      this.thunder.Controller.deactivate({ callsign: this.callsign }).then(() => {
-        this.INFO("RCApi: deactivated " + this.callsign)
-        resolve(true)
-      }).catch(err => {
-        this.ERR("RCApi: Error deactivation " + JSON.stringify(err))
-        reject(err)
-      })
-    })
-  }
-
   getApiVersionNumber() {
     return new Promise((resolve, reject) => {
       this.INFO("RCApi: getApiVersionNumber");

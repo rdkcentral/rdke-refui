@@ -21,7 +21,6 @@ import ListItem from '../items/ListItem.js'
 import DacAppItem from '../items/DacAppItem.js'
 import ThunderJS from 'ThunderJS'
 import AppApi from '../api/AppApi.js'
-import UsbApi from '../api/UsbApi.js'
 import { CONFIG, GLOBALS } from '../Config/Config.js'
 import XcastApi from '../api/XcastApi'
 import HomeApi from '../api/HomeApi.js'
@@ -281,7 +280,6 @@ export default class MainView extends Lightning.Component {
     this.settingsScreen = false
     this.myAppsEmpty = true // Will be updated when appItems is set
     this.indexVal = 0
-    this.usbApi = new UsbApi();
     this.homeApi = new HomeApi();
     this.xcastApi = new XcastApi();
     this.hdmiApi = new HDMIApi()
@@ -295,8 +293,6 @@ export default class MainView extends Lightning.Component {
     });
     // Start loading animation
     this._showDacAppsLoader()
-
-    // for initially showing/hiding usb icon
 
     let appItems = []
     try {
@@ -325,7 +321,6 @@ export default class MainView extends Lightning.Component {
     let prop_apptype = 'applicationType'
     let appdetails = []
     let appdetails_format = []
-    let usbAppsArr = [];
     try {
       if (data != null && Object.prototype.hasOwnProperty.call(JSON.parse(data), prop_apps)) {
         appdetails = JSON.parse(data).applications
@@ -335,11 +330,8 @@ export default class MainView extends Lightning.Component {
             Object.prototype.hasOwnProperty.call(appdetails[i], prop_uri) &&
             Object.prototype.hasOwnProperty.call(appdetails[i], prop_apptype)
           ) {
-            usbAppsArr.push(appdetails[i])
+            appdetails_format.push(appdetails[i])
           }
-        }
-        for (let i = 0; i < usbAppsArr.length; i++) {
-          appdetails_format.push(usbAppsArr[i])
         }
         for (let i = 0; i < appItems.length; i++) {
           appdetails_format.push(appItems[i])
@@ -352,11 +344,8 @@ export default class MainView extends Lightning.Component {
       appdetails_format = appItems
       this.LOG('Query data is not proper: ' + JSON.stringify(e))
     }
-    this.firstRowItems = appdetails_format
+    this.firstRowItems = appdetails_format.filter(item => item.uri !== 'USB')
     this.tempRow = JSON.parse(JSON.stringify(this.firstRowItems));
-    if (this.firstRowItems.length > 0 && this.firstRowItems[0].uri === 'USB') {
-      this.tempRow.shift()
-    }
     this.appItems = this.tempRow
 
     this.hdmiApi.activate()
@@ -398,43 +387,6 @@ export default class MainView extends Lightning.Component {
       })
     //get the available input methods from the api
 
-
-    // for USB event
-    const registerListener = () => {
-      let listener;
-
-      listener = thunder.on('org.rdk.UsbAccess', 'onUSBMountChanged', (notification) => {
-        this.LOG('onUsbMountChanged notification: ' + JSON.stringify(notification))
-        Storage.set('UsbMountedStatus', notification.mounted ? 'mounted' : 'unmounted')
-        const currentPage = window.location.href.split('#').slice(-1)[0]
-        if (Storage.get('UsbMedia') === 'ON') {
-
-          if (notification.mounted) {
-            this.appItems = this.firstRowItems
-            this._setState('AppList.0')
-          } else if (!notification.mounted) {
-            this.appItems = this.tempRow
-            this._setState('AppList.0')
-          }
-          this.LOG('app items = ' + JSON.stringify(this.appItems));
-
-          if (currentPage === 'menu') { //refresh page to hide or show usb icon
-            this.LOG('page refreshed on unplug/plug')
-
-          }
-
-          if (!notification.mounted) { //if mounted is false
-            if (currentPage === 'usb' || currentPage === 'usb/image' || currentPage === 'usb/player') { // hot exit if we are on usb screen or sub screens
-              // this.$changeHomeText('Home')
-              Router.navigate('menu');
-            }
-          }
-        }
-        this.LOG('usb event successfully registered');
-      })
-
-      return listener;
-    }
     this._onInternetStatusChangeCB = NetworkManager.thunder.on('org.rdk.NetworkManager', 'onInternetStatusChange', notification => {
       this.LOG('on InternetStatus Change' + JSON.stringify(notification))
       if (notification.status === "FULLY_CONNECTED") {
@@ -473,8 +425,6 @@ export default class MainView extends Lightning.Component {
 
     this.dacApps = dacCatalog
 
-    this.fireAncestors("$mountEventConstructor", registerListener.bind(this))
-
     this.refreshFirstRow()
     // this._setState('AppList.0')
   }
@@ -492,24 +442,6 @@ export default class MainView extends Lightning.Component {
   }
 
   _firstActive() {
-    if (!Storage.get('UsbMedia')) {
-      this.usbApi.activate().then(() => {
-        Storage.set('UsbMedia', 'ON')
-        this.fireAncestors('$registerUsbMount')
-      })
-    } else if (Storage.get('UsbMedia') === 'ON') {
-      this.usbApi.activate().then(() => {
-        this.fireAncestors('$registerUsbMount')
-      })
-    } else if (Storage.get('UsbMedia') === 'OFF') {
-      // deactivate usb Plugin here
-      this.usbApi.deactivate().then(() => {
-        this.LOG(`disabled the Usb Plugin`);
-      }).catch(err => {
-        this.ERR(`error while disabling the usb plugin = ${err}`)
-      })
-    }
-
     if (this.gracenote) {
       this._setState("Gracenote")
     } else if (this.inputSelect) {
@@ -558,30 +490,7 @@ export default class MainView extends Lightning.Component {
     }
   }
   refreshFirstRow() {
-    if (Storage.get('UsbMedia') === 'ON') {
-      this.usbApi.activate().then(() => {
-        this.usbApi.getMountedDevices().then(result => {
-          if (result.mounted.length === 1) {
-            this.appItems = this.firstRowItems
-          } else {
-            this.appItems = this.tempRow
-          }
-        })
-      })
-    } else if (Storage.get('UsbMedia') === 'OFF') {
-      this.appItems = this.tempRow
-    } else {
-      Storage.set('UsbMedia', 'ON')
-      this.usbApi.activate().then(() => {
-        this.usbApi.getMountedDevices().then(result => {
-          if (result.mounted.length === 1) {
-            this.appItems = this.firstRowItems
-          } else {
-            this.appItems = this.tempRow
-          }
-        })
-      })
-    }
+    this.appItems = this.tempRow
   }
 
   /**
@@ -991,13 +900,7 @@ export default class MainView extends Lightning.Component {
           let applicationType = appData.applicationType;
           let uri = appData.uri;
           let appIdentifier = appData.appIdentifier;
-          if (uri === 'USB') {
-            this.usbApi.getMountedDevices().then(result => {
-              if (result.mounted.length === 1) {
-                Router.navigate('usb');
-              }
-            })
-          } else if (applicationType === 'DAC') {
+          if (applicationType === 'DAC') {
             // Launch DAC app using startDACApp
             if (!GLOBALS.IsConnectedToInternet) {
               console.log('No internet connection. Cannot launch DAC app.')
