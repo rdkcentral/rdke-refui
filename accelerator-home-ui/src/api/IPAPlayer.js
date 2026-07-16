@@ -181,6 +181,34 @@ class IPAPlayerRPC {
 		return this.pendingOpenSessionPromise;
 	}
 
+	configureSession(sessionId, config) {
+		return new Promise(async (resolve, reject) => {
+			if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+				reject(new Error("WebSocket is not connected"));
+				return;
+			}
+			if (!sessionId || !config) {
+				reject(new Error("Invalid parameters for configureSession method"));
+				return;
+			}
+			await this.sendRpc("org.rdk.player.configureSession", {
+				sessionId: sessionId.trim(),
+				config: config
+			}).then((response) => {
+				this.LOG(`configureSession response: ${JSON.stringify(response)}`);
+				const result = this._normalizeResponse(response);
+				if (result && result.status) {
+					resolve(result);
+				} else {
+					reject(new Error((result && result.message) || "Invalid response from server"));
+				}
+			}).catch((error) => {
+				reject(error);
+			});
+		});
+	}
+
+
 	play(sessionId, url) {
 		return new Promise(async (resolve, reject) => {
 			if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {

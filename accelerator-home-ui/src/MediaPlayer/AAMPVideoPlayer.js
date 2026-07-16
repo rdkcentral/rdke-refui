@@ -195,15 +195,21 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 				if (response && response.sessionId) {
 					this._sessionId = response.sessionId;
 					this.LOG('Session opened successfully, sessionId: ' + this._sessionId);
-					this._ipaPlayer.play(this._sessionId, this.videoInfo.url).then((playResponse) => {
-						this.LOG('play response: ' + JSON.stringify(playResponse));
-						if (playResponse && playResponse.status) {
-							this.LOG('Playback started successfully for sessionId: ' + this._sessionId);
-						} else {
-							this.ERR('Invalid response from play: ' + JSON.stringify(playResponse));
-						}
+					const aampcfg = { forceHttp: true, enableVideoEndEvent: false };
+					this._ipaPlayer.configureSession(this._sessionId, aampcfg).then((configResponse) => {
+						this.LOG('configureSession response: ' + JSON.stringify(configResponse));
+						this._ipaPlayer.play(this._sessionId, this.videoInfo.url).then((playResponse) => {
+							this.LOG('play response: ' + JSON.stringify(playResponse));
+							if (playResponse && playResponse.status) {
+								this.LOG('Playback started successfully for sessionId: ' + this._sessionId);
+							} else {
+								this.ERR('Invalid response from play: ' + JSON.stringify(playResponse));
+							}
+						}).catch((error) => {
+							this.ERR('Error starting playback: ' + JSON.stringify(error));
+						});
 					}).catch((error) => {
-						this.ERR('Error starting playback: ' + JSON.stringify(error));
+						this.ERR('Error configuring session: ' + JSON.stringify(error));
 					});
 				} else {
 					this.ERR('Invalid response from openSession: ' + JSON.stringify(response));
