@@ -97,7 +97,7 @@ export default class TopPanel extends Lightning.Component {
 
     this.appApi.getZone().then((res) => {
       this.updateZone(res)
-    })
+    }).catch(err => console.warn('TopPanel.getZone failed:' + JSON.stringify(err)))
     this.zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   }
 
