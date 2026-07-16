@@ -18,10 +18,12 @@
  **/
 import { Lightning, Router } from '@lightningjs/sdk'
 import LightningPlayerControls from './LightningPlayerControl';
-import { CONFIG } from '../Config/Config';
+import { CONFIG, GLOBALS } from '../Config/Config';
 import ChannelOverlay from './ChannelOverlay';
+import { Metrics } from '@firebolt-js/sdk'
+import AppManager from '../api/AppManagerApi.js';
+import IPAPlayerRPC from '../api/IPAPlayer.js';
 
-let player = null
 let position = null
 /**
  * Class to render AAMP video player.
@@ -64,6 +66,7 @@ export default class AAMPVideoPlayer extends Lightning.Component {
       this.setVideoRect(0, 0, 1920, 1080)
     } catch (error) {
       this.ERR('Playback Failed ' + JSON.stringify(error))
+      Metrics.error(Metrics.ErrorType.MEDIA,"PlaybackError", "Playback Failed"+JSON.stringify(error), false, null)
     }
   }
 
@@ -162,16 +165,50 @@ export default class AAMPVideoPlayer extends Lightning.Component {
     document.body.appendChild(this.videoEl)
     this.playbackSpeeds = [-16, -8, -4, -2, 1, 2, 4, 8, 16]
     this.playerStatesEnum = { idle: 0, initializing: 1, playing: 8, paused: 6, seeking: 7 }
-    player = null
     this.playbackRateIndex = this.playbackSpeeds.indexOf(1)
-    this.defaultInitConfig = {
-      initialBitrate: 2500000,
-      offset: 0,
-      networkTimeout: 10,
-      preferredAudioLanguage: 'en',
-      liveOffset: 15,
-      drmConfig: null,
-    }
+
+    this._instanceId = GLOBALS.selfclientAppName;
+  }
+
+  async _active() {
+    this._selfAppInstanceId = null;
+    this._sessionId = null;
+    this._ipaPlayer = new IPAPlayerRPC();
+    await AppManager.get().getLoadedApps().then((apps) => {
+	  if (apps && apps.length > 0) {
+		// extract the appInstanceId matching to this._instanceId
+		const appInstance = apps.find(app => app.appId === this._instanceId);
+		if (appInstance) {
+			this._selfAppInstanceId = "wst-" + appInstance.appInstanceId;
+			this.LOG('Found app instance with matching instanceId: ' + this._instanceId + ', appInstanceId: ' + this._selfAppInstanceId);
+			this._ipaPlayer.openSession(this._instanceId, this._selfAppInstanceId).then((response) => {
+				this.LOG('openSession response: ' + JSON.stringify(response));
+				if (response && response.sessionId) {
+					this._sessionId = response.sessionId;
+					this.LOG('Session opened successfully, sessionId: ' + this._sessionId);
+					this._ipaPlayer.play(this._sessionId, this.videoInfo.url).then((playResponse) => {
+						this.LOG('play response: ' + JSON.stringify(playResponse));
+						if (playResponse && playResponse.status) {
+							this.LOG('Playback started successfully for sessionId: ' + this._sessionId);
+						} else {
+							this.ERR('Invalid response from play: ' + JSON.stringify(playResponse));
+						}
+					}).catch((error) => {
+						this.ERR('Error starting playback: ' + JSON.stringify(error));
+					});
+				} else {
+					this.ERR('Invalid response from openSession: ' + JSON.stringify(response));
+				}
+			}).catch((error) => {
+				this.ERR('Error opening session: ' + JSON.stringify(error));
+			});
+		} else {
+			this.WARN('No app instance found with matching instanceId: ' + this._instanceId);
+		}
+	  }
+	}).catch((error) => {
+	  this.ERR('Error getting loaded apps: ' + JSON.stringify(error))
+	})
   }
 
   /**
@@ -194,20 +231,20 @@ export default class AAMPVideoPlayer extends Lightning.Component {
    */
   _playbackStateChanged(event) {
     switch (event.state) {
-      case player.playerStatesEnum.idle:
-        this.playerState = player.playerStatesEnum.idle
+      case this.playerStatesEnum.idle:
+        this.playerState = this.playerStatesEnum.idle
         break
-      case player.playerStatesEnum.initializing:
-        this.playerState = player.playerStatesEnum.initializing
+      case this.playerStatesEnum.initializing:
+        this.playerState = this.playerStatesEnum.initializing
         break
-      case player.playerStatesEnum.playing:
-        this.playerState = player.playerStatesEnum.playing
+      case this.playerStatesEnum.playing:
+        this.playerState = this.playerStatesEnum.playing
         break
-      case player.playerStatesEnum.paused:
-        this.playerState = player.playerStatesEnum.paused
+      case this.playerStatesEnum.paused:
+        this.playerState = this.playerStatesEnum.paused
         break
-      case player.playerStatesEnum.seeking:
-        this.playerState = player.playerStatesEnum.seeking
+      case this.playerStatesEnum.seeking:
+        this.playerState = this.playerStatesEnum.seeking
         break
       default:
         break
@@ -262,30 +299,9 @@ export default class AAMPVideoPlayer extends Lightning.Component {
   /**
    * Function to handle the event of change in the duration of the playback content.
    */
-  _mediaDurationChanged() { }
-
-  /**
-   * Function to create the video player instance for video playback and its initial settings.
-   */
-  createPlayer() {
-    if (player !== null) {
-      this.destroy()
-      player = null
-    }
-
-    try {
-      player = new AAMPMediaPlayer()
-      player.addEventListener('playbackStateChanged', this._playbackStateChanged)
-      player.addEventListener('playbackCompleted', this._mediaEndReached.bind(this))
-      player.addEventListener('playbackSpeedChanged', this._mediaSpeedChanged)
-      player.addEventListener('bitrateChanged', this._bitrateChanged)
-      player.addEventListener('playbackFailed', this._mediaPlaybackFailed.bind(this))
-      player.addEventListener('playbackProgressUpdate', this._mediaProgressUpdate.bind(this))
-      player.addEventListener('playbackStarted', this._mediaPlaybackStarted.bind(this))
-      player.addEventListener('durationChanged', this._mediaDurationChanged)
-      this.playerState = this.playerStatesEnum.idle
-    } catch (error) {
-      this.ERR('AAMPMediaPlayer is not defined ' + JSON.stringify(error))
+  _mediaDurationChanged(event) {
+    if (event && event.duration !== undefined) {
+      this.tag('PlayerControls').duration = event.duration
     }
   }
 
@@ -294,46 +310,52 @@ export default class AAMPVideoPlayer extends Lightning.Component {
    * @param videoInfo the url and the info regarding the video like title.
    */
   load(videoInfo) {
-    this.createPlayer()
     this.videoInfo = videoInfo
-    this.configObj = this.defaultInitConfig
-    this.configObj.drmConfig = this.videoInfo.drmConfig
-    player.initConfig(this.configObj)
-    player.load(videoInfo.url)
-
     this.tag('PlayerControls').title = videoInfo.title
-    this.tag('PlayerControls').duration = player.getDurationSec()
-    this.LOG('Duration of video: ' + JSON.stringify(player.getDurationSec()))
     this.tag('PlayerControls').currentTime = 0
-    this.play()
+    this.play(videoInfo.url)
   }
 
   /**
    * Starts playback when enough data is buffered at play head.
    */
-  play() {
-    player.play()
+  play(url) {
+    if (url && this._ipaPlayer) {
+      this._ipaPlayer.play(this._sessionId, url).then((response) => {
+		  this.LOG('play response: ' + JSON.stringify(response));
+		  if (response && response.status) {
+			  this.LOG('Playback started successfully for sessionId: ' + this._sessionId);
+		  } else {
+			  this.ERR('Invalid response from play: ' + JSON.stringify(response));
+		  }
+	  }).catch((error) => {
+		  this.ERR('Error starting playback: ' + JSON.stringify(error));
+	  });
+    }
     this.playbackRateIndex = this.playbackSpeeds.indexOf(1)
-  }
-
-  /**
-   * Pauses playback.
-   */
-  pause() {
-    player.pause()
   }
 
   /**
    * Stop playback and free resources.
    */
-  stop() {
-    player.stop()
+  async stop() {
+    if (this._ipaPlayer) {
+      await this._ipaPlayer.stop(this._sessionId).then((response) => {
+		  this.LOG('stop response: ' + JSON.stringify(response));
+		  if (response && response.status) {
+			  this.LOG('Playback stopped successfully for sessionId: ' + this._sessionId);
+		  } else {
+			  this.ERR('Invalid response from stop: ' + JSON.stringify(response));
+		  }
+	  }).catch((error) => {
+		  this.ERR('Error stopping playback: ' + JSON.stringify(error));
+	  });
+    }
     this.hidePlayerControls()
   }
 
-  $changeChannel(url, showName, channelName) {
-    this.stop()
-    this.destroy()
+  async $changeChannel(url, showName, channelName) {
+    await this.stop()
     try {
       this.load({
         title: showName,
@@ -345,29 +367,17 @@ export default class AAMPVideoPlayer extends Lightning.Component {
       this.setVideoRect(0, 0, 1920, 1080)
     } catch (error) {
       this.ERR('Playback Failed ' + JSON.stringify(error))
+      Metrics.error(Metrics.ErrorType.MEDIA,"PlaybackError", "Playback Failed "+JSON.stringify(error), false, null)
     }
   }
 
-  seekFwd() {
-    player.seek(position + 10)
-  }
-
-  seekRwd() {
-    player.seek(position - 10)
-  }
-
-  voiceSeek(time) {
-    player.seek(position + time)
-  }
-
-  nextTrack() {
+  async nextTrack() {
     if (this.data[this.currentIndex + 1]) {
       this.currentIndex += 1
-      this.stop()
-      this.destroy()
+      await this.stop()
       try {
         this.load({
-          title: 'Parkour event',
+          title: this.data[this.currentIndex].data.displayName,
           url: this.data[this.currentIndex].data.uri,
           drmConfig: null,
         })
@@ -375,18 +385,18 @@ export default class AAMPVideoPlayer extends Lightning.Component {
         this.setVideoRect(0, 0, 1920, 1080)
       } catch (error) {
         this.ERR('Playback Failed ' + JSON.stringify(error))
+        Metrics.error(Metrics.ErrorType.MEDIA,"PlaybackError", 'Playback Failed ' + JSON.stringify(error), false, null)
       }
     }
   }
 
-  prevTrack() {
+  async prevTrack() {
     if (this.data[this.currentIndex - 1]) {
       this.currentIndex -= 1
-      this.stop()
-      this.destroy()
+      await this.stop()
       try {
         this.load({
-          title: 'Parkour event',
+          title: this.data[this.currentIndex].data.displayName,
           url: this.data[this.currentIndex].data.uri,
           drmConfig: null,
         })
@@ -394,58 +404,9 @@ export default class AAMPVideoPlayer extends Lightning.Component {
         this.setVideoRect(0, 0, 1920, 1080)
       } catch (error) {
         this.ERR('Playback Failed ' + JSON.stringify(error))
+        Metrics.error(Metrics.ErrorType.MEDIA,"PlaybackError", 'Playback Failed '+JSON.stringify(error), false, null)
       }
     }
-  }
-
-  /**
-   * Function to perform fast forward of the video content.
-   */
-  fastfwd() {
-    if (this.playbackRateIndex < this.playbackSpeeds.length - 1) {
-      this.playbackRateIndex++
-    }
-    this.rate = this.playbackSpeeds[this.playbackRateIndex]
-    player.setPlaybackRate(this.rate)
-  }
-
-  /**
-   * Function to perform fast rewind of the video content.
-   */
-  fastrwd() {
-    if (this.playbackRateIndex > 0) {
-      this.playbackRateIndex--
-    }
-    this.rate = this.playbackSpeeds[this.playbackRateIndex]
-    player.setPlaybackRate(this.rate)
-  }
-
-  /**
-   * Function that returns player instance.
-   * @returns player instance.
-   */
-  getPlayer() {
-    return player
-  }
-
-  /**
-   * Function to release the video player instance when not in use.
-   */
-  destroy() {
-    if (player.getCurrentState() !== this.playerStatesEnum.idle) {
-      player.stop()
-    }
-    player.removeEventListener('playbackStateChanged', this._playbackStateChanged)
-    player.removeEventListener('playbackCompleted', this._mediaEndReached)
-    player.removeEventListener('playbackSpeedChanged', this._mediaSpeedChanged)
-    player.removeEventListener('bitrateChanged', this._bitrateChanged)
-    player.removeEventListener('playbackFailed', this._mediaPlaybackFailed.bind(this))
-    player.removeEventListener('playbackProgressUpdate', this._mediaProgressUpdate.bind(this))
-    player.removeEventListener('playbackStarted', this._mediaPlaybackStarted.bind(this))
-    player.removeEventListener('durationChanged', this._mediaDurationChanged)
-    player.release()
-    player = null
-    this.hidePlayerControls()
   }
 
   /**
@@ -503,14 +464,30 @@ export default class AAMPVideoPlayer extends Lightning.Component {
     Router.back()
   }
 
-  _inactive() {
+  async _inactive() {
     this.tag('Image').alpha = 0
     this.tag('InfoOverlay').alpha = 0
     this.isUSB = false
     this.isChannel = false
     this.tag('PlayerControls').reset()
-    this.stop()
-    this.destroy()
+	this.hidePlayerControls()
+    if (!this._ipaPlayer) {
+      this._sessionId = null
+      return
+    }
+
+    try {
+      if (this._sessionId && this._sessionId.length > 0) {
+        const response = await this._ipaPlayer.closeSession(this._sessionId)
+        this.LOG('closeSession response: ' + JSON.stringify(response))
+      }
+    } catch (error) {
+      this.ERR('Error closing session: ' + JSON.stringify(error))
+    } finally {
+      this._ipaPlayer.destroy()
+      this._ipaPlayer = null
+      this._sessionId = null
+    }
   }
 
   _focus() {
