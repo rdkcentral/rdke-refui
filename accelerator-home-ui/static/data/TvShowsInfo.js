@@ -23,26 +23,26 @@ export var tvShowsInfo = [
   {
     displayName: 'BiPBop',
     url: '/images/tvShows/fantasy-island.jpg',
-    uri: 'https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8'
+    uri: 'http://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8'
   },
   {
-    displayName: 'BigBuckBunny', 
+    displayName: 'BigBuckBunny',
     url: '/images/tvShows/onward.jpg',
-    uri: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
+    uri: "http://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
   },
   {
     displayName: 'Sintel',
     url: '/images/tvShows/let-it-snow.jpg',
-    uri: "https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8"
+    uri: "http://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8"
   },
   {
     displayName: 'DAI Test',
     url: '/images/tvShows/do-little.jpg',
-    uri: "https://test-streams.mux.dev/dai-discontinuity-deltatre/manifest.m3u8",
+    uri: "http://test-streams.mux.dev/dai-discontinuity-deltatre/manifest.m3u8",
   },
   {
     displayName: 'Tears of Steel',
     url: '/images/tvShows/summerland.jpg',
-    uri: "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8"
+    uri: "http://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8"
   },
 ]

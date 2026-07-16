@@ -26,6 +26,8 @@ class IPAPlayerRPC {
 		this.INFO = console.info;
 		this.LOG = console.log;
 		this.ERR = console.error;
+		this.WARN = console.warn;
+		this.WARN("IPAPlayerRPC initialized. Connecting to IPAPlayer backend at " + wsUrl);
 		this.activeSessionId = null;
 		this.pendingOpenSessionPromise = null;
 		this.socket = new WebSocket(wsUrl);

@@ -20,7 +20,6 @@ import { Lightning, Router } from '@lightningjs/sdk'
 import LightningPlayerControls from './LightningPlayerControl';
 import { CONFIG, GLOBALS } from '../Config/Config';
 import ChannelOverlay from './ChannelOverlay';
-import { Metrics } from '@firebolt-js/sdk'
 import AppManager from '../api/AppManagerApi.js';
 import IPAPlayerRPC from '../api/IPAPlayer.js';
 
@@ -53,7 +52,7 @@ export default class AAMPVideoPlayer extends Lightning.Component {
       this.showDescription = args.description
       this.channelIndex = args.channelIndex
     }
-    let url = args.url ? args.url : 'https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8'
+    let url = args.url ? args.url : 'http://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8'
     if (args.isAudio) {
       this.tag('Image').alpha = 1
     }
@@ -66,7 +65,6 @@ export default class AAMPVideoPlayer extends Lightning.Component {
       this.setVideoRect(0, 0, 1920, 1080)
     } catch (error) {
       this.ERR('Playback Failed ' + JSON.stringify(error))
-      Metrics.error(Metrics.ErrorType.MEDIA,"PlaybackError", "Playback Failed"+JSON.stringify(error), false, null)
     }
   }
 
@@ -150,7 +148,7 @@ export default class AAMPVideoPlayer extends Lightning.Component {
     }
   }
 
-  _init() {
+  async _init() {
     this.x = 0
     this.y = 0
     this.w = 0
@@ -168,6 +166,17 @@ export default class AAMPVideoPlayer extends Lightning.Component {
     this.playbackRateIndex = this.playbackSpeeds.indexOf(1)
 
     this._instanceId = GLOBALS.selfclientAppName;
+
+    try {
+        const isInstalled = await AppManager.get().isInstalled('com.rdkcentral.aamp-cli-sh')
+        if (!isInstalled) {
+          throw new Error('AAMP CLI is not installed on the device')
+        }
+        const response = await AppManager.get().launchApp('com.rdkcentral.aamp-cli-sh')
+        this.LOG('launchApp response: ' + JSON.stringify(response))
+    } catch (error) {
+        this.ERR('Error launching AAMP CLI: ' + JSON.stringify(error))
+    }
   }
 
   async _active() {
@@ -321,6 +330,7 @@ export default class AAMPVideoPlayer extends Lightning.Component {
    */
   play(url) {
     if (url && this._ipaPlayer) {
+      this.LOG('Starting playback for sessionId: ' + this._sessionId + ', url: ' + url);
       this._ipaPlayer.play(this._sessionId, url).then((response) => {
 		  this.LOG('play response: ' + JSON.stringify(response));
 		  if (response && response.status) {
@@ -367,7 +377,6 @@ export default class AAMPVideoPlayer extends Lightning.Component {
       this.setVideoRect(0, 0, 1920, 1080)
     } catch (error) {
       this.ERR('Playback Failed ' + JSON.stringify(error))
-      Metrics.error(Metrics.ErrorType.MEDIA,"PlaybackError", "Playback Failed "+JSON.stringify(error), false, null)
     }
   }
 
@@ -385,7 +394,6 @@ export default class AAMPVideoPlayer extends Lightning.Component {
         this.setVideoRect(0, 0, 1920, 1080)
       } catch (error) {
         this.ERR('Playback Failed ' + JSON.stringify(error))
-        Metrics.error(Metrics.ErrorType.MEDIA,"PlaybackError", 'Playback Failed ' + JSON.stringify(error), false, null)
       }
     }
   }
@@ -404,7 +412,6 @@ export default class AAMPVideoPlayer extends Lightning.Component {
         this.setVideoRect(0, 0, 1920, 1080)
       } catch (error) {
         this.ERR('Playback Failed ' + JSON.stringify(error))
-        Metrics.error(Metrics.ErrorType.MEDIA,"PlaybackError", 'Playback Failed '+JSON.stringify(error), false, null)
       }
     }
   }

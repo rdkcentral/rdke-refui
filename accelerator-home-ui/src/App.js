@@ -200,9 +200,6 @@ export default class App extends Router.App {
 				alpha: 0,
 				type: Failscreen1
 			},
-			AAMPVideoPlayer: {
-				type: AAMPVideoPlayer
-			},
 			ScreenSaver: {
 				alpha: 0,
 				w: 2000,
