@@ -168,7 +168,7 @@ export default class RebootConfirmationScreen extends Lightning.Component {
     }
 
     async _performFactoryReset() {
-        await RCApi.get().activate().then(()=> RCApi.get().factoryReset()).catch(err => this.ERR("error while resetting remote control" + JSON.stringify(err)));
+        await RCApi.get().factoryReset().catch(err => this.ERR("error while resetting remote control" + JSON.stringify(err)));
         let rsactivitytime = await appApi.resetInactivityTime().catch(err => { this.ERR("resetInactivityTime" + JSON.stringify(err)) });
         if (rsactivitytime != null) { this.LOG("rsactivitytime" + JSON.stringify(rsactivitytime)) }
         try {
