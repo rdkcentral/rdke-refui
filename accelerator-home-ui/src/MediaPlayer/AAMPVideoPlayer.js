@@ -233,7 +233,8 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 			this._sessionId = sessionResponse.sessionId;
 			this.LOG('Session opened successfully, sessionId: ' + this._sessionId);
 
-			const aampcfg = { forceHttp: true, enableVideoEndEvent: false };
+			// TODO: remove forceHttp once the bolt bundles have access to ca certs.
+			const aampcfg = { forceHttp: true };
 			this.LOG(LOGTAG + 'configureSession request: ' + JSON.stringify(aampcfg));
 			const configResponse = await this._ipaPlayer.configureSession(this._sessionId, aampcfg);
 			this.LOG('configureSession response: ' + JSON.stringify(configResponse));
