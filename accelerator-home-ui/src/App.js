@@ -949,7 +949,7 @@ export default class App extends Router.App {
 			this.WARN("Controller statechange Notification : " + JSON.stringify(notification))
 			if (notification && (notification.callsign === 'org.rdk.HdmiCecSource' && notification.state === 'Activated')) {
 				this.advanceScreen = Router.activePage()
-				if (typeof this.advanceScreen.performOTPAction === 'function') {
+				if (this.advanceScreen && typeof this.advanceScreen.performOTPAction === 'function') {
 					this.LOG('otp action')
 					this.advanceScreen.performOTPAction()
 				}

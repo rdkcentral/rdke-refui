@@ -23,7 +23,7 @@ let instance = null
 export default class AppManager {
   constructor() {
     this.thunder = ThunderJS(CONFIG.thunderConfig);
-    this.callsign = 'org.rdk.AppManager.1';
+    this.callsign = 'org.rdk.AppManager';
     this.INFO = console.info;
     this.LOG = console.log;
     this.ERR = console.error;
@@ -77,7 +77,7 @@ export default class AppManager {
     }
     getLoadedApps() {
         return new Promise((resolve, reject) => {
-        this.thunder.call(this.callsign, 'getLoadedApps', {})   .then(response => {
+        this.thunder.call(this.callsign, 'getLoadedApps', {}).then(response => {
                     resolve(response)
                     this.INFO("getLoadedApps response: " + JSON.stringify(response));
                 })
