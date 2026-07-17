@@ -780,30 +780,7 @@ export default class App extends Router.App {
 					this.LOG("App getActiveSourceStatus: " + JSON.stringify(res) + " UICacheCECActiveSourceStatus:" + JSON.stringify(Storage.get("UICacheCECActiveSourceStatus")));
 				});
 			} else {
-				cecApi.activate().then(() => {
-					let getfriendlyname, getosdname;
-					setTimeout(() => {
-						appApi.getFriendlyName().then(res => {
-							getfriendlyname = res.friendlyName;
-							this.LOG("AppApi getFriendlyName :" + JSON.stringify(getfriendlyname));
-						}).catch(err => {
-							this.ERR("AppApi getFriendlyName Error: " + JSON.stringify(err));
-						})
-						cecApi.getOSDName().then(result => {
-							getosdname = result.name;
-							this.LOG("CECApi getOSDName :" + JSON.stringify(getosdname));
-							if (getfriendlyname !== getosdname) {
-								cecApi.setOSDName(getfriendlyname);
-							}
-						}).catch(err => {
-							this.ERR("CECApi getOSDName Error :" + JSON.stringify(err));
-						})
-					}, 5000);
-					cecApi.getActiveSourceStatus().then((res) => {
-						Storage.set("UICacheCECActiveSourceStatus", res);
-						this.LOG("App getActiveSourceStatus: " + JSON.stringify(res) + " UICacheCECActiveSourceStatus:" + JSON.stringify(Storage.get("UICacheCECActiveSourceStatus")));
-			});
-				}).catch((err) => this.ERR(JSON.stringify(err)))
+				this.LOG('HdmiCecSource is inactive during boot; leaving it disabled until the user enables it from the UI')
 			}
 		})
 		this._subscribeToIOPortNotifications()
