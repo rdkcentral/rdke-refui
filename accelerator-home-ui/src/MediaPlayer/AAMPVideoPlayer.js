@@ -200,7 +200,7 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 				throw new Error('Missing self client id. Could not resolve in _active for instanceId: ' + GLOBALS.selfclientAppName);
 			}
 			await this._ipaPlayer.ready;
-			await this._initializePlaybackSession(GLOBALS._selfClientId, this._pendingDrmConfig || null).then(() => {
+			await this._initializePlaybackSession(GLOBALS._selfClientId, this._pendingUrl, this._pendingDrmConfig).then(() => {
 				this.LOG(LOGTAG + 'active: playback session initialized successfully');
 				this._playPendingUrl();
 			}).catch((error) => {
@@ -211,7 +211,7 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 		}
 	}
 
-	async _initializePlaybackSession(selfAppInstanceId = GLOBALS._selfClientId, drmConfig = null) {
+	async _initializePlaybackSession(selfAppInstanceId = GLOBALS._selfClientId, url = null, drmConfig = null) {
 		try {
 			this.LOG(LOGTAG + 'initialize session start');
 			if (!selfAppInstanceId) {
@@ -234,9 +234,10 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 			this._sessionId = sessionResponse.sessionId;
 			this.LOG('Session opened successfully, sessionId: ' + this._sessionId);
 
-			// TODO: remove forceHttp once the bolt bundles have access to ca certs.
-			const aampcfg = { forceHttp: true };
+			const aampcfg = { };
 			if (drmConfig) {
+				// TODO: remove forceHttp once the bolt bundles have access to ca certs.
+				if (url && url.startsWith('http://')) aampcfg.forceHttp = false;
 				if (drmConfig.licenseServerUrl) aampcfg.licenseServerUrl = drmConfig.licenseServerUrl;
 				if (drmConfig.preferredDrm) { aampcfg.preferredDrm = drmConfig.preferredDrm; aampcfg.isPreferredDRMConfigured = true; }
 			}
@@ -251,13 +252,6 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 			this.ERR('Error initializing playback session: ' + (error && error.message ? error.message : JSON.stringify(error)));
 			throw error;
 		}
-	}
-
-	async _ensureSessionReady() {
-		if (this._sessionId) {
-			return;
-		}
-		await this._initializePlaybackSession();
 	}
 
 	async _playPendingUrl() {
