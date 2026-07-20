@@ -45,4 +45,21 @@ export var tvShowsInfo = [
     url: '/images/tvShows/summerland.jpg',
     uri: "http://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8"
   },
+  {
+    displayName: 'WideVine Test',
+    url: '/images/tvShows/summerland.jpg',
+    uri: "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel-dash-widevine.ism/.mpd",
+    drmConfig: {
+      licenseServerUrl: "https://proxy.uat.widevine.com/proxy?provider=widevine_test",
+      preferredDrm: 1
+    }
+  },
+  {
+    displayName: 'Playready Test',
+    url: '/images/tvShows/summerland.jpg',
+    uri: "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel-dash-playready.ism/.mpd",
+    drmConfig: {
+      preferredDrm: 2
+    }
+  }
 ]

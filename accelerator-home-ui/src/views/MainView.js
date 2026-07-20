@@ -1024,7 +1024,10 @@ export default class MainView extends Lightning.Component {
           }
           const currentIndex = this.tag('TVShows').index
           const currentItem = this.tag('TVShows').items[currentIndex] && this.tag('TVShows').items[currentIndex].data
-          Router.navigate('player', { url: currentItem.uri })
+            Router.navigate('player', {
+              url: currentItem.uri,
+              drmConfig: currentItem.drmConfig || null,
+            })
         }
         $exit() {
           this.tag('Text3').text.fontStyle = 'normal'

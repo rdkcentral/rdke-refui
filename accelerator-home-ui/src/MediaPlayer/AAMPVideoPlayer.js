@@ -37,6 +37,7 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 		this.WARN = console.warn;
 		this._sessionReadyPromise = null;
 		this._pendingUrl = null;
+		this._pendingDrmConfig = null;
 		this._playInFlight = false;
 		this._lastState = null;
 		this._lastDuration = null;
@@ -71,7 +72,7 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 			this.load({
 				title: 'Parkour event',
 				url: url,
-				drmConfig: null,
+				drmConfig: args.drmConfig || null,
 			})
 			this.setVideoRect(0, 0, 1920, 1080)
 		} catch (error) {
@@ -199,7 +200,7 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 				throw new Error('Missing self client id. Could not resolve in _active for instanceId: ' + GLOBALS.selfclientAppName);
 			}
 			await this._ipaPlayer.ready;
-			await this._initializePlaybackSession().then(() => {
+			await this._initializePlaybackSession(GLOBALS._selfClientId, this._pendingDrmConfig || null).then(() => {
 				this.LOG(LOGTAG + 'active: playback session initialized successfully');
 				this._playPendingUrl();
 			}).catch((error) => {
@@ -210,7 +211,7 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 		}
 	}
 
-	async _initializePlaybackSession(selfAppInstanceId = GLOBALS._selfClientId) {
+	async _initializePlaybackSession(selfAppInstanceId = GLOBALS._selfClientId, drmConfig = null) {
 		try {
 			this.LOG(LOGTAG + 'initialize session start');
 			if (!selfAppInstanceId) {
@@ -235,6 +236,10 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 
 			// TODO: remove forceHttp once the bolt bundles have access to ca certs.
 			const aampcfg = { forceHttp: true };
+			if (drmConfig) {
+				if (drmConfig.licenseServerUrl) aampcfg.licenseServerUrl = drmConfig.licenseServerUrl;
+				if (drmConfig.preferredDrm) { aampcfg.preferredDrm = drmConfig.preferredDrm; aampcfg.isPreferredDRMConfigured = true; }
+			}
 			this.LOG(LOGTAG + 'configureSession request: ' + JSON.stringify(aampcfg));
 			const configResponse = await this._ipaPlayer.configureSession(this._sessionId, aampcfg);
 			this.LOG('configureSession response: ' + JSON.stringify(configResponse));
@@ -516,15 +521,16 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 		this.videoInfo = videoInfo
 		this.tag('PlayerControls').title = videoInfo.title
 		this.tag('PlayerControls').currentTime = 0
-		this.play(videoInfo.url)
+		this.play(videoInfo.url, videoInfo.drmConfig)
 	}
 
 	/**
 	 * Starts playback with a URL, or resumes from pause if no URL provided.
 	 */
-	async play(url) {
+	async play(url, drmConfig = null) {
 		if (url) {
 			this._pendingUrl = url;
+			this._pendingDrmConfig = drmConfig;
 			this._playPendingUrl();
 			this.playbackRateIndex = this.playbackSpeeds.indexOf(1);
 			return;
@@ -544,6 +550,7 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 	 */
 	async stop() {
 		this._pendingUrl = null;
+		this._pendingDrmConfig = null;
 		this._lastState = null;
 		this._lastDuration = null;
 		this._lastRate = null;
@@ -590,7 +597,7 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 				this.load({
 					title: this.data[this.currentIndex].data.displayName,
 					url: this.data[this.currentIndex].data.uri,
-					drmConfig: null,
+					drmConfig: this.data[this.currentIndex].data.drmConfig || null,
 				})
 				this.updateInfo()
 				this.setVideoRect(0, 0, 1920, 1080)
@@ -608,7 +615,7 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 				this.load({
 					title: this.data[this.currentIndex].data.displayName,
 					url: this.data[this.currentIndex].data.uri,
-					drmConfig: null,
+					drmConfig: this.data[this.currentIndex].data.drmConfig || null,
 				})
 				this.updateInfo()
 				this.setVideoRect(0, 0, 1920, 1080)
@@ -681,6 +688,7 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 		this.tag('PlayerControls').reset()
 		this.hidePlayerControls()
 		this._pendingUrl = null
+		this._pendingDrmConfig = null
 		this._playInFlight = false
 		this._lastState = null
 		this._lastDuration = null
