@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-import { Lightning, Utils, Language, Router } from '@lightningjs/sdk'
+import { Lightning, Utils, Language, Router, Storage } from '@lightningjs/sdk'
 import SettingsMainItem from '../../items/SettingsMainItem'
 import { COLORS } from '../../colors/Colors'
 import { CONFIG } from '../../Config/Config'
@@ -179,20 +179,36 @@ export default class AdvanceSettingsScreen extends Lightning.Component {
         }
 
     }
+    // function which handles changes on and off toggle image.
+    updateCECButtonState(isEnabled) {
+        this.tag('CECControl.Button').src = Utils.asset(
+            isEnabled
+                ? 'images/settings/ToggleOnOrange.png'
+                : 'images/settings/ToggleOffWhite.png'
+        )
+    }
 
     _init() {
         this.cecApi = new CECApi()
+        const storedPreference = Storage.get('CECEnabledPreference')
+        // get current state from store preference for CEC status
+        if (storedPreference !== undefined && storedPreference !== null) {
+            const isEnabled = storedPreference === true || storedPreference === 'true'
+            // if the state is true,then update the CEC toggle.
+            this.updateCECButtonState(isEnabled)
+            if (isEnabled) {
+                this.performOTPAction()
+            }
+            this._setState('TTSOptions')
+            return
+        }
+
         this.cecApi.getEnabled()
             .then(res => {
-                // get the current state of CEC and set the toggle button based on status.
                 const isEnabled = !!(res && res.enabled)
-                  console.log(`CEC initial status: ${isEnabled}`)
-                
-                this.tag('CECControl.Button').src = Utils.asset(
-                    isEnabled
-                        ? 'images/settings/ToggleOnOrange.png'
-                        : 'images/settings/ToggleOffWhite.png'
-                )
+                this.updateCECButtonState(isEnabled)
+                // update the store preference for CEC state.
+                Storage.set('CECEnabledPreference', isEnabled)
                 if (isEnabled) {
                     this.performOTPAction()
                 }
@@ -224,19 +240,26 @@ export default class AdvanceSettingsScreen extends Lightning.Component {
     toggleCEC() {
         this.cecApi.getEnabled()
             .then(res => {
-                this.LOG("cec getenabled result:" + JSON.stringify(res))
-                // get the current state and toggle it.
+                this.LOG('toggleCEC getEnabled result: ' + JSON.stringify(res))
                 const newEnabledState = !(res && res.enabled)
-                this.cecApi.setEnabled(newEnabledState)
+                // if newEnabledState is true,then first activate CEC and then setEnabled to true, 
+                // else just setEnabled to false
+                const togglePromise = newEnabledState
+                    ? this.cecApi.activate().then(() => this.cecApi.setEnabled(true))
+                    : this.cecApi.setEnabled(false)
+                
+                togglePromise
                     .then(() => {
-                    // Update UI based on new state
-                        const imageSrc = newEnabledState
-                            ? 'images/settings/ToggleOnOrange.png'
-                            : 'images/settings/ToggleOffWhite.png'
-                        this.tag('CECControl.Button').src = Utils.asset(imageSrc)
+                        // update the stored preference and button state after toggle
+                        Storage.set('CECEnabledPreference', newEnabledState)
+                        this.updateCECButtonState(newEnabledState)
+
                         if (newEnabledState) {
                             this.performOTPAction()
                         }
+                    })
+                    .catch(err => {
+                        this.ERR('CEC toggle failed: ' + JSON.stringify(err))
                     })
             })
     }

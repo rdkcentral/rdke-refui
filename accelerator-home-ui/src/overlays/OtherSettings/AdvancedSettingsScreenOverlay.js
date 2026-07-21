@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
- import { Lightning, Utils, Language } from '@lightningjs/sdk'
+ import { Lightning, Utils, Language, Storage } from '@lightningjs/sdk'
  import SettingsMainItem from '../../items/SettingsMainItem'
  import { COLORS } from '../../colors/Colors'
  import { CONFIG } from '../../Config/Config'
@@ -171,17 +171,36 @@
         }
 
     }
+    
+    // function which handles changes on and off toggle image.
+    updateCECButtonState(isEnabled) {
+        this.tag('CECControl.Button').src = Utils.asset(
+            isEnabled
+                ? 'images/settings/ToggleOnOrange.png'
+                : 'images/settings/ToggleOffWhite.png'
+        )
+    }
 
     _init() {
         this.cecApi = new CECApi()
+        // get current state from store preference for CEC status
+        const storedPreference = Storage.get('CECEnabledPreference')
+        if (storedPreference !== undefined && storedPreference !== null) {
+            const isEnabled = storedPreference === true || storedPreference === 'true'
+            // if the state is true,then update the CEC toggle.
+            this.updateCECButtonState(isEnabled)
+            if (isEnabled) {
+                this.performOTPAction()
+            }
+            this._setState('CECControl')
+            return
+        }
         this.cecApi.getEnabled()
             .then(res => {
                 const isEnabled = !!(res && res.enabled)
-                this.tag('CECControl.Button').src = Utils.asset(
-                    isEnabled
-                        ? 'images/settings/ToggleOnOrange.png'
-                        : 'images/settings/ToggleOffWhite.png'
-                )
+                this.updateCECButtonState(isEnabled)
+                // update the store preference for CEC state.
+                Storage.set('CECEnabledPreference', isEnabled)
                 if (isEnabled) {
                     this.performOTPAction()
                 }
@@ -206,22 +225,26 @@
     toggleCEC() {
         this.cecApi.getEnabled()
             .then(res => {
-                this.LOG("toggleCEC getEnabled result: " + JSON.stringify(res))
+                this.LOG('toggleCEC getEnabled result: ' + JSON.stringify(res))
                 const newEnabledState = !(res && res.enabled)
-                this.cecApi.setEnabled(newEnabledState)
-                    .then(setRes => {
-                         if (!(setRes && setRes.success)) {
-                             this.WARN('CEC setEnabled failed: ' + JSON.stringify(setRes))
-                             return
-                         }
-                        const imageSrc = newEnabledState
-                            ? 'images/settings/ToggleOnOrange.png'
-                            : 'images/settings/ToggleOffWhite.png'
-                        this.tag('CECControl.Button').src = Utils.asset(imageSrc)
+                // if newEnabledState is true,then first activate CEC and then setEnabled to true, 
+                // else just setEnabled to false
+                const togglePromise = newEnabledState
+                    ? this.cecApi.activate().then(() => this.cecApi.setEnabled(true))
+                    : this.cecApi.setEnabled(false)
+                
+                togglePromise
+                    .then(() => {
+                        // update the stored preference and button state after toggle
+                        Storage.set('CECEnabledPreference', newEnabledState)
+                        this.updateCECButtonState(newEnabledState)
 
                         if (newEnabledState) {
                             this.performOTPAction()
                         }
+                    })
+                    .catch(err => {
+                        this.ERR('CEC toggle failed: ' + JSON.stringify(err))
                     })
             })
     }
