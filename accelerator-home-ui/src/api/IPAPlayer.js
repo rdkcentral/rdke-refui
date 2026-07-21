@@ -74,19 +74,17 @@ const METHODS = {
 	GET_PREFERRED_LANGUAGES: METHOD_BASE + 'getPreferredLanguages'
 }
 
-// IntegratedPlayer PR#22 emits only these RPC event names via m_wsRpcServer->onEvent(...)
-const EVENT_BASE = 'org.rdk.player.'
 const EVENT_SUBSCRIPTION_ID = 'events.1'
 const EVENTS = {
-	ON_TUNED: EVENT_BASE + 'onTuned',
-	ON_TUNE_FAILED: EVENT_BASE + 'onTuneFailed',
-	ON_STATE_CHANGED: EVENT_BASE + 'onStateChanged',
-	ON_PROGRESS: EVENT_BASE + 'onProgress',
-	ON_EOS: EVENT_BASE + 'onEOS',
-	ON_SPEED_CHANGED: EVENT_BASE + 'onSpeedChanged',
-	ON_BUFFERING_CHANGED: EVENT_BASE + 'onBufferingChanged',
-	ON_SEEKED: EVENT_BASE + 'onSeeked',
-	ON_BITRATE_CHANGED: EVENT_BASE + 'onBitrateChanged'
+	ON_TUNED: 'onTuned',
+	ON_TUNE_FAILED: 'onTuneFailed',
+	ON_STATE_CHANGED: 'onStateChanged',
+	ON_PROGRESS: 'onProgress',
+	ON_EOS: 'onEOS',
+	ON_SPEED_CHANGED: 'onSpeedChanged',
+	ON_BUFFERING_CHANGED: 'onBufferingChanged',
+	ON_SEEKED: 'onSeeked',
+	ON_BITRATE_CHANGED: 'onBitrateChanged'
 }
 
 class IPAPlayerRPC {
