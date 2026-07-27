@@ -56,13 +56,13 @@ import Miracast from './api/Miracast.js';
 import MiracastNotification from './screens/MiracastNotification.js';
 import NetworkManager from './api/NetworkManagerAPI.js';
 import PowerManagerApi, {PowerState} from './api/PowerManagerApi.js';
-import UserSettingsApi from './api/UserSettingsApi';
 import InactivityHelper from './helpers/InactivityHelper.js';
 import AppManager from './api/AppManagerApi.js';
 import PackageManager from './api/PackageManagerApi.js';
 import RDKWindowManager from './api/RDKWindowManagerApi.js';
 import RuntimeManager from './api/RuntimeManagerApi.js';
 import AppController from './AppController.js';
+import userSettingsApi from './api/UserSettingsApi.js';
 
 var thunder = ThunderJS(CONFIG.thunderConfig);
 var appApi = new AppApi();
@@ -467,7 +467,6 @@ export default class App extends Router.App {
 			GLOBALS.deviceType = ((result.devicetype != null) ? result.devicetype : "IpTv");
 			Storage.set("deviceType", ((result.devicetype != null) ? result.devicetype : "IpTv"));
 		});
-		UserSettingsApi.get().activate();
 		appApi.getPluginStatus("org.rdk.DeviceDiagnostics").then(res => {
 			this.LOG("App DeviceDiagnostics state:" + JSON.stringify(res[0].state))
 			if (res[0].state === "deactivated") {
@@ -1286,7 +1285,7 @@ export default class App extends Router.App {
 
 	_updateLanguageToDefault() {
 		if (availableLanguageCodes[Language.get()].length) {
-			appApi.setUILanguage(availableLanguageCodes[Language.get()])
+			userSettingsApi.setPresentationLanguage(availableLanguageCodes[Language.get()])
 			localStorage.setItem('Language', Language.get())
 		}
 	}

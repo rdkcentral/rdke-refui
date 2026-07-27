@@ -22,7 +22,6 @@ import HDMIApi from './HDMIApi';
 import NetflixIIDs from "../../static/data/NetflixIIDs.json";
 import HomeApi from './HomeApi';
 import { availableLanguageCodes, CONFIG, GLOBALS } from '../Config/Config.js';
-import UserSettingsApi from './UserSettingsApi.js';
 import PowerManagerApi from './PowerManagerApi.js';
 import RDKWindowManager from './RDKWindowManagerApi.js';
 import AppManager from './AppManagerApi.js';
@@ -1223,13 +1222,5 @@ export default class AppApi {
           resolve(false)
         });
     })
-  }
-
-  setUILanguage(updatedLanguage) {
-    return UserSettingsApi.get().setPresentationLanguage(updatedLanguage)
-  }
-
-  getUILanguage() {
-    return UserSettingsApi.get().getPresentationLanguage()
   }
 }

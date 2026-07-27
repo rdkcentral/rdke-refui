@@ -20,10 +20,7 @@ import { Language, Lightning } from '@lightningjs/sdk'
 import LanguageItem from '../../items/LanguageItem'
 import { availableLanguages, availableLanguageCodes } from '../../Config/Config'
 import AppApi from '../../api/AppApi';
-
-
-
-const appApi = new AppApi()
+import UserSettingsApi from '../../api/UserSettingsApi';
 
 export default class LanguageScreen extends Lightning.Component {
   constructor(...args) {
@@ -93,7 +90,7 @@ export default class LanguageScreen extends Lightning.Component {
           //need to verify
           if (Language.get() !== availableLanguages[this._Languages.tag('List').index]) {
             let updatedLanguage = availableLanguageCodes[availableLanguages[this._Languages.tag('List').index]]
-            appApi.setUILanguage(updatedLanguage)
+            UserSettingsApi.setPresentationLanguage(updatedLanguage)
             localStorage.setItem('Language',availableLanguages[this._Languages.tag('List').index])
             location.reload();
           }

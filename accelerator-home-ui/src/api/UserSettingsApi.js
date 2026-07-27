@@ -21,48 +21,13 @@ import { CONFIG } from '../Config/Config'
 
 const thunder = ThunderJS(CONFIG.thunderConfig)
 const callsign = 'org.rdk.UserSettings'
-const errorName = 'UserSettingsError'
 
-let instance = null
-
-export default class UserSettingsApi {
+class UserSettingsApi {
     constructor() {
         this.INFO = console.info;
         this.LOG = console.log;
         this.ERR = console.error;
         this.WARN = console.warn;
-    }
-
-  static get() {
-    if (instance === null) {
-      instance = new UserSettingsApi()
-    }
-    return instance;
-  }
-
-    activate() {
-        return new Promise((resolve, reject) => {
-            thunder.Controller.activate({ callsign: callsign })
-                .then(() => {
-                    resolve(true)
-                })
-                .catch(err => {
-                    this.ERR("Error Activation " + JSON.stringify(err))
-                    reject(err)
-                })
-        })
-    }
-    deactivate() {
-        return new Promise((resolve, reject) => {
-            thunder.Controller.deactivate({ callsign: callsign })
-                .then(() => {
-                    resolve(true)
-                })
-                .catch(err => {
-                    this.ERR("Error Deactivation " + JSON.stringify(err))
-                    reject(err)
-                })
-        })
     }
 
     setVoiceGuidance(enable) {
@@ -79,7 +44,7 @@ export default class UserSettingsApi {
               resolve(false)
             })
         })
-      }
+    }
 
     getVoiceGuidance() {
         return new Promise((resolve) => {
@@ -117,3 +82,6 @@ export default class UserSettingsApi {
       })
     }
 }
+
+const userSettingsApi = new UserSettingsApi()
+export default userSettingsApi
