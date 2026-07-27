@@ -35,32 +35,6 @@ export default class AppManager {
     return instance;
   }
 
-   activate() {
-          return new Promise((resolve, reject) => {
-              this.thunder.Controller.activate({ callsign: this.callsign })
-                  .then(() => {
-                      resolve(true)
-                      this.INFO("AppManager activated successfully");
-                  })
-                  .catch(err => {
-                      this.ERR("Error Activation AppManager" + JSON.stringify(err))
-                      reject(err)
-                  })
-          })
-      }
-    deactivate() {
-        return new Promise((resolve, reject) => {
-            this.thunder.Controller.deactivate({ callsign: this.callsign })
-                .then(() => {
-                    resolve(true)
-                    this.INFO("AppManager deactivated successfully");
-                })
-                .catch(err => {
-                    this.ERR("Error Deactivation AppManager" + JSON.stringify(err))
-                    reject(err)
-                })
-        })
-      }
     launchApp(appId) {
         return new Promise((resolve, reject) => {
         this.INFO("launchApp called with appId: " + appId );

@@ -641,17 +641,9 @@ export default class App extends Router.App {
 				}).catch((err) => this.ERR(JSON.stringify(err)))
 			}
 		})
-		this._subscribeToIOPortNotifications()
-
-		this._updateLanguageToDefault()
-		// Initialize plugins using the abstraction
-		this._activatePlugin(
-			"org.rdk.AppManager",
-			"AppManager",
-			() => AppManager.get().activate(),
-			() => this._SubscribeToAppManagerNotifications()
-		);
-
+		this._subscribeToIOPortNotifications();
+		this._updateLanguageToDefault();
+		this._SubscribeToAppManagerNotifications();
 		this._SubscribeToRDKWindowManagerNotifications();
 		this._SubscribeToRuntimeManagerNotifications();
 
