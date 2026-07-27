@@ -686,13 +686,7 @@ export default class App extends Router.App {
 			() => this._SubscribeToAppManagerNotifications()
 		);
 
-		this._activatePlugin(
-			"org.rdk.RDKWindowManager",
-			"RDKWindowManager",
-			() => RDKWindowManager.get().activate(),
-			() => this._SubscribeToRDKWindowManagerNotifications()
-		);
-
+		this._SubscribeToRDKWindowManagerNotifications();
 		this._SubscribeToRuntimeManagerNotifications();
 
 		this.xcastApi = new XcastApi()
@@ -1131,8 +1125,6 @@ export default class App extends Router.App {
 
 	async registerOnUserInactivityListener() {
 		try {
-			const res = await thunder.Controller.activate({ callsign: 'org.rdk.RDKWindowManager' });
-			this.LOG("RDKWindowManager activated, trying to set the inactivity listener; res = " + JSON.stringify(res));
 			thunder.on("org.rdk.RDKWindowManager", "onUserInactivity", async notification => {
 				const { energySaver, screenSaver, sleepTimer } = inactivityHelper.getInactivityConfig();
 				const minutes = Math.floor(Number(notification.minutes));

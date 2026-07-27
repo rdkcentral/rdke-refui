@@ -35,32 +35,6 @@ export default class RDKWindowManager {
     return instance;
   }
 
-   activate() {
-          return new Promise((resolve, reject) => {
-              this.thunder.Controller.activate({ callsign: this.callsign })
-                  .then(() => {
-                      resolve(true)
-                      this.INFO("RDKWindowManager activated successfully");
-                  })
-                  .catch(err => {
-                      this.ERR("Error Activation RDKWindowManager" + JSON.stringify(err))
-                      reject(err)
-                  })
-          })
-      }
-    deactivate() {
-        return new Promise((resolve, reject) => {
-            this.thunder.Controller.deactivate({ callsign: this.callsign })
-                .then(() => {
-                    resolve(true)
-                    this.INFO("RDKWindowManager deactivated successfully");
-                })
-                .catch(err => {
-                    this.ERR("Error Deactivation RDKWindowManager" + JSON.stringify(err))
-                    reject(err)
-                })
-        })
-      }
     setFocus(client)    {
         return new Promise((resolve, reject) => {
             this.thunder.call(this.callsign, 'setFocus', { "client":client })
