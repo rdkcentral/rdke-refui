@@ -560,14 +560,9 @@ export default class App extends Router.App {
 		appApi.getPluginStatus('org.rdk.PowerManager').then(result => {
 			if (result && result.length > 0 && result[0].state === "activated") {
 				console.log("org.rdk.PowerManager is already activated");
+				this.subscribeToPowerChangeNotifications()
 				this._getPowerStatebeforeReboot();
 				this._setWakeupSourceConfig();
-			} else {
-				 PowerManagerApi.get().activate().then((res) => {
-					this.LOG("activating the powermanager from app.js " + JSON.stringify(res))
-					this._getPowerStatebeforeReboot();
-					this._setWakeupSourceConfig();
-				}).catch((err) => this.ERR(JSON.stringify(err)))
 			}
 		})
 		appApi.getPluginStatus('org.rdk.NetworkManager').then(result => {
@@ -583,15 +578,6 @@ export default class App extends Router.App {
 			} else {
 				miracast.activatePlayer().then((res) => {
 					this.LOG("activating the miracst player from app.js " + JSON.stringify(res))
-				}).catch((err) => this.ERR(JSON.stringify(err)))
-			}
-		})
-		appApi.getPluginStatus('org.rdk.PowerManager').then(result => {
-			if (result[0].state === "activated") {
-				this.subscribeToPowerChangeNotifications()
-			} else {
-				PowerManagerApi.get().activate().then((res) => {
-					this.LOG("activating the power manager from app.js " + JSON.stringify(res))
 				}).catch((err) => this.ERR(JSON.stringify(err)))
 			}
 		})
@@ -1279,6 +1265,11 @@ export default class App extends Router.App {
 	}
 
 	subscribeToPowerChangeNotifications() {
+		if (this.PowerChangeNotificationsSubscribed) {
+			this.LOG("PowerChangeNotifications already subscribed, skipping...");
+			return;
+		}
+		this.PowerChangeNotificationsSubscribed = true;
 		thunder.on("org.rdk.PowerManager", "onPowerModeChanged", notification => {
 			this.LOG(new Date().toISOString() + " onPowerModeChanged Notification: " + JSON.stringify(notification));
 			appApi.getPowerState().then(res => {
