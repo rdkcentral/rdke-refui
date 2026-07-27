@@ -264,21 +264,12 @@ export default class AppApi {
    */
   getHDRSetting() {
     return new Promise((resolve) => {
-      thunder.Controller.activate({ callsign: 'DisplayInfo' })
-        .then(() => {
-          thunder
-            .call('DisplayInfo', 'hdrsetting')
-            .then(result => {
-              this.LOG("AppAPI DisplayInfo hdrsetting : " + JSON.stringify(result));
-              resolve(result)
-            })
-            .catch(err => {
-              this.ERR("AppAPI DisplayInfo hdrsetting failed : " + JSON.stringify(err));
-              resolve(false)
-            })
-        })
-        .catch(err => {
-          this.LOG('AppAPI activate DisplayInfo Error', JSON.stringify(err))
+        thunder.call('DisplayInfo', 'hdrsetting').then(result => {
+            this.LOG("AppAPI DisplayInfo hdrsetting : " + JSON.stringify(result));
+            resolve(result)
+        }).catch(err => {
+            this.ERR("AppAPI DisplayInfo hdrsetting failed : " + JSON.stringify(err));
+            resolve(false)
         })
     })
   }
