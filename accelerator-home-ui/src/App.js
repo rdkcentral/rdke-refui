@@ -465,15 +465,7 @@ export default class App extends Router.App {
 		});
 		appApi.getPluginStatus("org.rdk.DeviceDiagnostics").then(res => {
 			this.LOG("App DeviceDiagnostics state:" + JSON.stringify(res[0].state))
-			if (res[0].state === "deactivated") {
-				thunder.Controller.activate({
-					callsign: 'org.rdk.DeviceDiagnostics'
-				}).then(() => {
-					this.AvDecodernotificationcall();
-				}).catch(err => {
-					this.ERR("App DeviceDiagnostics plugin activation error: " + JSON.stringify(err));
-				})
-			} else {
+			if (res[0].state === "activated") {
 				this.AvDecodernotificationcall();
 			}
 		})
