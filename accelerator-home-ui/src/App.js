@@ -693,12 +693,8 @@ export default class App extends Router.App {
 			() => this._SubscribeToRDKWindowManagerNotifications()
 		);
 
-		this._activatePlugin(
-			"org.rdk.RuntimeManager",
-			"RuntimeManager",
-			() => RuntimeManager.get().activate(),
-			() => this._SubscribeToRuntimeManagerNotifications()
-		);
+		this._SubscribeToRuntimeManagerNotifications();
+
 		this.xcastApi = new XcastApi()
 		this.xcastApi.activate().then(async result => {
 			console.warn("Xcast plugin activate");
@@ -899,16 +895,16 @@ export default class App extends Router.App {
 		});
 	}
 	_SubscribeToRuntimeManagerNotifications() {
-		thunder.on('org.rdk.RuntimeManager', 'onStarted', data => {
+		thunder.on(RuntimeManager.callsign, 'onStarted', data => {
 			this.LOG('onStarted ' + JSON.stringify(data));
 		});
-		thunder.on('org.rdk.RuntimeManager', 'onTerminated', data => {
+		thunder.on(RuntimeManager.callsign, 'onTerminated', data => {
 			this.LOG('onTerminated ' + JSON.stringify(data));
 		});
-		thunder.on('org.rdk.RuntimeManager', 'onFailure', data => {
+		thunder.on(RuntimeManager.callsign, 'onFailure', data => {
 			this.LOG('onFailure ' + JSON.stringify(data));
 		});
-		thunder.on('org.rdk.RuntimeManager', 'onStateChanged', data => {
+		thunder.on(RuntimeManager.callsign, 'onStateChanged', data => {
 			this.LOG('onStateChanged ' + JSON.stringify(data));
 		});
 	}
