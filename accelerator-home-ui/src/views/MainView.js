@@ -436,11 +436,15 @@ export default class MainView extends Lightning.Component {
 
       return listener;
     }
-    NetworkManager.thunder.on('org.rdk.NetworkManager', 'onInternetStatusChange', notification => {
+    this._onInternetStatusChangeCB = NetworkManager.thunder.on('org.rdk.NetworkManager', 'onInternetStatusChange', notification => {
       this.LOG('on InternetStatus Change' + JSON.stringify(notification))
       if (notification.status === "FULLY_CONNECTED") {
+        // Immediately restore icons so they aren't stuck on the offline placeholder
+        // even if the row refresh is slow or fails.
+        this._updateMyAppsNetworkState(true)
+        this.$refreshMyAppsRow()
         this.refreshSecondRow()
-      } else if (notification.status === "NO_INTERNET") {
+      } else {
         this._hideDacAppsLoader()
         // Clear stale cached apps (broken/default icons) and show only "More Apps"
         this.dacApps = [{
@@ -450,6 +454,8 @@ export default class MainView extends Lightning.Component {
           url: '/images/sidePanel/moreapps.png',
           appIdentifier: 'moreApps'
         }]
+        // Show offline placeholder for all My Apps icons
+        this._updateMyAppsNetworkState(false)
       }
     })
     // Refresh My Apps row when apps are installed/uninstalled (including sideloaded via curl)
@@ -476,6 +482,10 @@ export default class MainView extends Lightning.Component {
 
   _detach() {
     // Unsubscribe to avoid stale references to this MainView instance
+    if (this._onInternetStatusChangeCB) {
+      this._onInternetStatusChangeCB.dispose()
+      this._onInternetStatusChangeCB = null
+    }
     AppController.get().removePackageChangedListener(this._onPackageChanged)
     if (this._onCatalogRefreshNeeded) {
       eventTarget.removeEventListener(RefreshNeeded.eventName, this._onCatalogRefreshNeeded)
@@ -686,6 +696,33 @@ export default class MainView extends Lightning.Component {
     this.tag('DacApps').visible = false
     if (this.dacAppsLoadingAnimation) {
       this.dacAppsLoadingAnimation.start()
+    }
+  }
+
+  /**
+   * Update My Apps row items to show/hide offline placeholder for all app icons.
+   * When offline, every app icon is replaced with the offline.png placeholder.
+   * When back online, the original icon src is restored.
+   * @param {boolean} isOnline - true to restore images, false to show offline placeholder
+   */
+  _updateMyAppsNetworkState(isOnline) {
+    const appList = this.tag('AppList')
+    if (!appList || !appList.items || !appList.items.length) return
+    for (let i = 0; i < appList.items.length; i++) {
+      const item = appList.items[i]
+      if (!item || !item.data || !item.data.url) continue
+      const img = item.tag('Image')
+      if (!isOnline) {
+        img.patch({ src: Utils.asset('/images/metroApps/offline.png') })
+        img.alpha = 1
+      } else {
+        // Restore original icon URL
+        const src = item.data.url.startsWith('/images')
+          ? Utils.asset(item.data.url)
+          : item.data.url
+        img.patch({ src })
+        img.alpha = 1
+      }
     }
   }
 

@@ -49,7 +49,9 @@ export const DACAppMixin = (Base) => class extends Base {
             const errorCode = this._app.errorCode ?? -1;
             if (Object.prototype.hasOwnProperty.call(this._app, "errorCode")) delete this._app.errorCode;
             this.updateDACStatus(statusProgressTag, overlayTag)
-            if (!success) {
+            if (success) {
+                this._showGreenTick(statusProgressTag)
+            } else {
                 this.tag(statusProgressTag).setProgress(1.0, 'Error: ' + msg)
                 this.fireAncestors('$showInstallError', { name: this._app.name, errorCode: errorCode })
             }
@@ -83,6 +85,21 @@ export const DACAppMixin = (Base) => class extends Base {
             this.tag(overlayTag + '.OverlayText').text.text = Language.translate('Error') + ':' + this._app.errorCode;
             this.tag(overlayTag).alpha = 0.7
             this.tag(overlayTag + '.OverlayText').alpha = 1
+        }
+    }
+
+    _showGreenTick(statusProgressTag) {
+        const tickMarkTag = statusProgressTag.replace('StatusProgress', 'TickMark')
+        const tickOverlayTag = statusProgressTag.replace('StatusProgress', 'TickOverlay')
+        const tickMark = this.tag(tickMarkTag)
+        const tickOverlay = this.tag(tickOverlayTag)
+        if (tickMark) {
+            if (tickOverlay) tickOverlay.alpha = 0.7
+            tickMark.alpha = 1
+            setTimeout(() => {
+                tickMark.setSmooth('alpha', 0, { duration: 0.5 })
+                if (tickOverlay) tickOverlay.setSmooth('alpha', 0, { duration: 0.5 })
+            }, 2000)
         }
     }
 
@@ -186,6 +203,26 @@ export default class AppCatalogItem extends DACAppMixin(Lightning.Component) {
             StatusProgress: {
                 type: StatusProgress, x: 50, y: 80, w: 200,
                 alpha: 1,
+            },
+            TickOverlay: {
+                alpha: 0,
+                zIndex: 11,
+                rect: true,
+                color: 0xFF000000,
+                x: 0,
+                y: 0,
+                w: this.width,
+                h: this.height,
+            },
+            TickMark: {
+                alpha: 0,
+                zIndex: 12,
+                mount: 0.5,
+                x: this.width / 2,
+                y: this.height / 2,
+                w: 100,
+                h: 100,
+                src: Utils.asset('/images/tick.png'),
             },
         }
     }

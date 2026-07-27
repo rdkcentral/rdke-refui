@@ -22,7 +22,6 @@ import HDMIApi from './HDMIApi';
 import NetflixIIDs from "../../static/data/NetflixIIDs.json";
 import HomeApi from './HomeApi';
 import { availableLanguageCodes, CONFIG, GLOBALS } from '../Config/Config.js';
-import AlexaApi from './AlexaApi.js';
 import RDKShellApis from './RDKShellApis.js';
 import { Metrics } from '@firebolt-js/sdk';
 import Network from './NetworkApi.js';
@@ -618,7 +617,6 @@ export default class AppApi {
         RDKShellApis.launchApplication(params).then(res => {
           this.LOG(`AppAPI ${callsign} : Launch results in ${JSON.stringify(res)}`)
           if (res.success) {
-            AlexaApi.get().reportApplicationState(callsign);
             if (args.appIdentifier) {
               let order = Storage.get("appCarouselOrder")
               if (!order) {
@@ -656,11 +654,6 @@ export default class AppApi {
         RDKShellApis.launch(params).then(res => {
           this.LOG("AppAPI " + callsign + " : Launch results in " + JSON.stringify(res))
           if (res.success) {
-            if ((callsign === "HtmlApp") || (callsign === "LightningApp")) {
-              AlexaApi.get().reportApplicationState(url);
-            } else {
-              AlexaApi.get().reportApplicationState(callsign);
-            }
             if (args.appIdentifier) {
               let order = Storage.get("appCarouselOrder")
               if (!order) {
@@ -764,9 +757,7 @@ export default class AppApi {
       new HDMIApi().stopHDMIInput()
       Storage.set("_currentInputMode", {});
       if (!exitInBackground) { //means resident App needs to be launched
-        this.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName).then(() => {
-          AlexaApi.get().reportApplicationState("menu", true);
-        });
+        this.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName);
       }
       return Promise.resolve(true);
       //check for hdmi scenario
@@ -793,9 +784,7 @@ export default class AppApi {
     }
 
     if (!exitInBackground && GLOBALS.Miracastclientdevicedetails.state != "PLAYING") { //means resident App needs to be launched
-      this.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName).then(() => {
-        AlexaApi.get().reportApplicationState("menu", true);
-      });
+      this.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName);
     }
 
     //to hide the current app
@@ -1088,7 +1077,7 @@ export default class AppApi {
 
       if (appInstanceId) {
         this.LOG('Using appInstanceId: ' + appInstanceId + ' for targetAppId: ' + targetAppId);
-        
+
         // Only setFocus when making the app visible
         if (visible) {
           await RDKWindowManager.get().setFocus(appInstanceId).then(() => {
@@ -1604,7 +1593,7 @@ export default class AppApi {
       })
     })
   }
-  
+
   getRFCConfig(rfcParamsList) {
     return new Promise((resolve, reject) => {
       thunder.call('org.rdk.System', 'getRFCConfig',{"rfcList":[rfcParamsList]}).then(result => {
@@ -1696,10 +1685,18 @@ export default class AppApi {
 
   setVolumeLevel(port, volume) {
     return new Promise((resolve) => {
+      const parsedVolume = Number.parseInt(volume, 10)
+      if (Number.isNaN(parsedVolume)) {
+        this.ERR('AppAPI setVolumeLevel invalid volume:', JSON.stringify(volume))
+        resolve(false)
+        return
+      }
+      const clampedVolume = Math.min(100, Math.max(0, parsedVolume))
+
       thunder
         .call('org.rdk.DisplaySettings', 'setVolumeLevel', {
           audioPort: port,
-          volumeLevel: volume,
+          volumeLevel: clampedVolume,
         })
         .then(result => {
           this.LOG("AppAPI setVolumeLevel :", JSON.stringify(result))
@@ -1927,13 +1924,13 @@ export default class AppApi {
         });
     })
   }
-  
+
   setUILanguage(updatedLanguage) {
     return UserSettingsApi.get().setPresentationLanguage(updatedLanguage)
   }
-  
+
   getUILanguage() {
-    return UserSettingsApi.get().getPresentationLanguage(updatedLanguage)
+    return UserSettingsApi.get().getPresentationLanguage()
   }
 
   deeplinkToApp(app = undefined, payload = undefined, launchLocation = "voice", namespace = undefined) {

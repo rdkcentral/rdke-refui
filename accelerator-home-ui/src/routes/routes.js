@@ -45,11 +45,9 @@ import FailureScreen from '../screens/FailureScreen'
 import AlexaConfirmationScreen from '../screens/AlexaConfirmationScreen'
 import CameraStreamingScreen from '../screens/CameraStreamingScreen'
 import CameraStreamingScreenExitConfirmationScreen from '../screens/CameraStreamingScreenExitConfirmationScreen'
-import AlexaApi from '../api/AlexaApi.js'
 import { Storage } from '@lightningjs/sdk'
 import { Metrics } from '@firebolt-js/sdk'
 import { GLOBALS } from '../Config/Config.js'
-import MiracastNotification from '../screens/MiracastNotification.js'
 import AppInfoPage from '../views/AppInfoPage.js'
 
 let api = null
@@ -205,13 +203,8 @@ export default {
   afterEachRoute: (request) => {
     console.log("Routed to:" + JSON.stringify(request.hash));
     if ("ResidentApp" !== GLOBALS.selfClientName) {
-      Metrics.page(request.hash)
-      .then(success => {
-        console.log("successfully routed to page  ==>" + JSON.stringify(request.hash))
-      })
-      .catch(err => console.log("error in metrics.page", err))
+      Metrics.page(request.hash).catch(err => { console.log("error in metrics.page" + JSON.stringify(err)) });
     }
-    AlexaApi.get().reportApplicationState(request.hash, true);
     if (request.hash === "menu") {
       /* To prevent the onboarding screen appearing next time. */
       GLOBALS.RCSkipStatus=true;

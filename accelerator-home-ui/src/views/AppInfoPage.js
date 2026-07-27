@@ -19,11 +19,12 @@
 
 import { Lightning, Router, Language, Utils } from "@lightningjs/sdk";
 import { List } from "@lightningjs/ui";
-import { CONFIG, GLOBALS } from "../Config/Config";
+import { CONFIG } from "../Config/Config";
 import AppCard from "../items/AppCard";
 import { getInstalledDACApps, startDACApp, uninstallDACApp } from "../api/DACApi";
 import { filterExcludedApps } from "../helpers/DACAppPresentation";
 import UninstallConfirmation from "../overlays/UninstallConfirmation";
+import NetworkManager from "../api/NetworkManagerAPI";
 
 export default class AppInfoPage extends Lightning.Component {
 
@@ -177,6 +178,55 @@ export default class AppInfoPage extends Lightning.Component {
     _init() {
         this._appList = this.tag('AppList');
         this._scrollThumb = this.tag('ScrollIndicator.ScrollThumb');
+        this._onInternetStatusChangeCB = NetworkManager.thunder.on('org.rdk.NetworkManager', 'onInternetStatusChange', notification => {
+            console.log('AppInfoPage onInternetStatusChange: ' + JSON.stringify(notification));
+            if (notification.status === 'FULLY_CONNECTED') {
+                this._updateAppCardsNetworkState(true);
+            } else {
+                this._updateAppCardsNetworkState(false);
+            }
+        });
+    }
+
+    _detach() {
+        if (this._onInternetStatusChangeCB) {
+            this._onInternetStatusChangeCB.dispose();
+            this._onInternetStatusChangeCB = null;
+        }
+    }
+
+    /**
+     * Update all AppCard items to show/hide the offline placeholder.
+     * When offline, every app icon is replaced with the placeholder;
+     * when back online, the original icon src is restored.
+     * @param {boolean} isOnline - true to restore images, false to show offline placeholder
+     */
+    _updateAppCardsNetworkState(isOnline) {
+        if (!this._appList) return;
+        const wrappers = this._appList.itemWrappers;
+        if (!wrappers || !wrappers.length) return;
+        for (let i = 0; i < wrappers.length; i++) {
+            const wrapper = wrappers[i];
+            if (!wrapper || !wrapper.component || !wrapper.component.isAlive) continue;
+            const card = wrapper.component;
+            const data = card.appInfo;
+            if (data) {
+                const iconImg = card.tag('AppIcon.IconImage');
+                const defaultImg = card.tag('AppIcon.DefaultImage');
+                if (!isOnline) {
+                    defaultImg.alpha = 1;
+                    iconImg.alpha = 0;
+                } else if (data.icon) {
+                    // Re-assign src to retrigger the texture load; the card's
+                    // txLoaded / txError handlers will toggle the placeholder.
+                    const src = data.icon.startsWith('/images')
+                        ? Utils.asset(data.icon)
+                        : data.icon;
+                    iconImg.patch({ src });
+                    iconImg.alpha = 1;
+                }
+            }
+        }
     }
 
     /**

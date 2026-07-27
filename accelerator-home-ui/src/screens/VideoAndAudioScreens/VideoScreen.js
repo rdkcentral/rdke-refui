@@ -193,7 +193,7 @@ export default class VideoScreen extends Lightning.Component {
   }
 
   _focus() {
-    if ("ResidentApp" !== GLOBALS.selfClientName)
+    if ("FireboltMainApp-refui" === GLOBALS.selfclientAppName)
     {
       FireBoltApi.get().deviceinfo.getscreenresolution().then(resolution =>{
         this.tag("Resolution.Title").text.text = Language.translate('Resolution: ') + `${JSON.stringify(resolution[0])} , ${JSON.stringify(resolution[1])}`;
@@ -226,9 +226,9 @@ export default class VideoScreen extends Lightning.Component {
       })
     this._appApi.getHDCPStatus().then(result => {
       if (result.isHDCPCompliant && result.isHDCPEnabled) {
-        this.tag("HDCP.Title").text.text = `${Language.translate('HDCP Status: ')}Enabled, Version: ${result.currentHDCPVersion}`;
+        this.tag("HDCP.Title").text.text = `${Language.translate('HDCP Status: ')}${Language.translate('Enabled')}, Version: ${result.currentHDCPVersion}`;
       } else {
-        this.tag("HDCP.Title").text.text = `${Language.translate('HDCP Status: ')}Not Supported `;
+        this.tag("HDCP.Title").text.text = `${Language.translate('HDCP Status: ')}${Language.translate('Not Supported')}`;
       }
 
     })

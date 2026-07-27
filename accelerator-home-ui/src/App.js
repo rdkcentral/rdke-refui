@@ -244,7 +244,7 @@ export default class App extends Router.App {
 	static language() {
 		return {
 			file: Utils.asset('language/language-file.json'),
-			language: ("ResidentApp" === GLOBALS.selfClientName ? CONFIG.language : Localization.language()) || 'en'
+			language: ("com.rdkcentral.refui" === GLOBALS.selfclientAppName ? CONFIG.language : Localization.language()) || 'en'
 		}
 	}
 
@@ -1109,9 +1109,7 @@ export default class App extends Router.App {
 		thunder.on('org.rdk.RDKShell', 'onApplicationTerminated', data => {
 			this.WARN("[RDKSHELLEVT] onApplicationTerminated:" + JSON.stringify(data));
 			if ((data.client != GLOBALS.selfClientName) && (GLOBALS.topmostApp != GLOBALS.selfClientName)) {
-				appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName).then(() => {
-					AlexaApi.get().reportApplicationState("menu", true);
-				});
+				appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName)
 			}
 		});
 		thunder.on('org.rdk.RDKShell', 'onHibernated', data => {
@@ -1149,9 +1147,7 @@ export default class App extends Router.App {
 			if (data.success) {
 				if ((GLOBALS.topmostApp === data.client) &&
 					(GLOBALS.selfClientName === "ResidentApp" || GLOBALS.selfClientName === "FireboltMainApp-refui") && GLOBALS.Miracastclientdevicedetails.state != "PLAYING") {
-					appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName).then(() => {
-						AlexaApi.get().reportApplicationState("menu", true);
-					});
+					appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName)
 				}
 			}
 		});
@@ -1215,9 +1211,7 @@ export default class App extends Router.App {
 			}
 			if ((GLOBALS.topmostApp === data.client) &&
 				(GLOBALS.selfClientName === "ResidentApp" || GLOBALS.selfClientName === "FireboltMainApp-refui") && GLOBALS.Miracastclientdevicedetails.state != "PLAYING") {
-				appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName).then(() => {
-					AlexaApi.get().reportApplicationState("menu", true);
-				});
+				appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName);
 			}
 		});
 		thunder.on('org.rdk.RDKShell', 'onLaunched', data => {
@@ -1261,7 +1255,6 @@ export default class App extends Router.App {
 				}
 				// Assuming launch is followed by moveToFront & setFocus
 				GLOBALS.topmostApp = data.client;
-				AlexaApi.get().reportApplicationState(data.client);
 			} else if (data.launchType === "suspend") {
 				// No need to handle this here when UI is in Firebolt compatible mode.
 				// It will be done at RefUI's 'foreground' event handler.
@@ -1297,9 +1290,7 @@ export default class App extends Router.App {
 				}
 				if ((GLOBALS.topmostApp === data.client) &&
 					(GLOBALS.selfClientName === "ResidentApp") && GLOBALS.Miracastclientdevicedetails.state != "PLAYING") {
-					appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName).then(() => {
-						AlexaApi.get().reportApplicationState("menu", true);
-					});
+					appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName);
 				}
 			}
 		});
@@ -1338,9 +1329,7 @@ export default class App extends Router.App {
 			}
 			if ((GLOBALS.topmostApp === data.client) &&
 				(GLOBALS.selfClientName === "ResidentApp" || GLOBALS.selfClientName === "FireboltMainApp-refui") && GLOBALS.Miracastclientdevicedetails.state != "PLAYING") {
-				appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName).then(() => {
-					AlexaApi.get().reportApplicationState("menu", true);
-				});
+				appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName);
 			}
 		});
 		thunder.on('org.rdk.RDKShell', 'onWillDestroy', data => {
@@ -1380,9 +1369,7 @@ export default class App extends Router.App {
 			}
 			if ((GLOBALS.topmostApp === data.client) &&
 				(GLOBALS.selfClientName === "ResidentApp" || GLOBALS.selfClientName === "FireboltMainApp-refui") && GLOBALS.Miracastclientdevicedetails.state != "PLAYING") {
-				appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName).then(() => {
-					AlexaApi.get().reportApplicationState("menu", true);
-				});
+				appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName);
 			}
 		});
 		thunder.on('org.rdk.RDKShell', 'onBlur', data => {
@@ -1435,9 +1422,7 @@ export default class App extends Router.App {
 				}
 				if (notification.callsign === GLOBALS.topmostApp) { //only launch residentApp iff notification is from currentApp
 					this.LOG(notification.callsign + " is in: " + notification.state + " state, and application type in Storage is still: " + GLOBALS.topmostApp + " calling launchResidentApp")
-					appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName).then(() => {
-						AlexaApi.get().reportApplicationState("menu", true);
-					});
+					appApi.launchResidentApp(GLOBALS.selfClientName, GLOBALS.selfClientName);
 				}
 			}
 			if (notification && (notification.callsign === 'org.rdk.HdmiCecSource' && notification.state === 'Activated')) {
@@ -1715,8 +1700,6 @@ export default class App extends Router.App {
 	// 			"context": {
 	// 				"source": "device"
 	// 			}
-	// 		}).then(() => {
-	// 			AlexaApi.get().reportApplicationState("menu", true);
 	// 		})
 	// 	})
 	// 	FireBoltApi.get().lifecycle.registerEvent('background', value => {
@@ -2124,12 +2107,7 @@ export default class App extends Router.App {
 	}
 
 	_updateLanguageToDefault() {
-		if ("ResidentApp" === GLOBALS.selfClientName) {
-			if (availableLanguageCodes[Language.get()].length) {
-				appApi.setUILanguage(availableLanguageCodes[Language.get()])
-				localStorage.setItem('Language', Language.get())
-			}
-		} else {
+		if ("FireboltMainApp-refui" === GLOBALS.selfclientAppName) {
 			FireBoltApi.get().localization.language().then(lang => {
 				if (lang) {
 					FireBoltApi.get().localization.language(lang).then(() => {
@@ -2138,6 +2116,11 @@ export default class App extends Router.App {
 					localStorage.setItem('Language', lang)
 				}
 			})
+		} else {
+			if (availableLanguageCodes[Language.get()].length) {
+				appApi.setUILanguage(availableLanguageCodes[Language.get()])
+				localStorage.setItem('Language', Language.get())
+			}
 		}
 	}
 
@@ -2727,21 +2710,72 @@ export default class App extends Router.App {
 							for (let i = 0; i < audioport.connectedAudioPorts.length && !audioport.connectedAudioPorts[i].startsWith("SPDIF"); i++) {
 								if ((GLOBALS.deviceType == "IpTv" && audioport.connectedAudioPorts[i].startsWith("SPEAKER")) || (GLOBALS.deviceType != "IpTv" && audioport.connectedAudioPorts[i].startsWith("HDMI"))) {
 									appApi.getVolumeLevel(audioport.connectedAudioPorts[i]).then(volres => {
-										this.LOG("getVolumeLevel[" + JSON.stringify(audioport.connectedAudioPorts[i]) + "] is:" + JSON.stringify(parseInt(volres.volumeLevel)))
-										if ((parseInt(volres.volumeLevel) >= 0) || (parseInt(volres.volumeLevel) <= 100)) {
-											VolumePayload.msgPayload.event.payload.volume = parseInt(volres.volumeLevel) + payload.volume
-											this.LOG("volumepayload" + JSON.stringify(VolumePayload.msgPayload.event.payload.volume))
-											if (VolumePayload.msgPayload.event.payload.volume < 0) {
-												VolumePayload.msgPayload.event.payload.volume = 0
-											} else if (VolumePayload.msgPayload.event.payload.volume > 100) {
-												VolumePayload.msgPayload.event.payload.volume = 100
-											}
+										const currentVolume = Number.parseInt(volres.volumeLevel, 10)
+										const volumeDelta = Number.parseInt(payload.volume, 10)
+										this.LOG("getVolumeLevel[" + JSON.stringify(audioport.connectedAudioPorts[i]) + "] is:" + JSON.stringify(currentVolume))
+										if (Number.isNaN(currentVolume) || Number.isNaN(volumeDelta)) {
+											this.ERR("AdjustVolume invalid volume value current=" + JSON.stringify(volres.volumeLevel) + " delta=" + JSON.stringify(payload.volume))
+											return;
 										}
-										appApi.setVolumeLevel(audioport.connectedAudioPorts[i], VolumePayload.msgPayload.event.payload.volume).then(() => {
-											let volumeIncremented = parseInt(volres.volumeLevel) < VolumePayload.msgPayload.event.payload.volume ? true : false
+										let targetVolume = currentVolume + volumeDelta
+										if (targetVolume < 0) {
+											targetVolume = 0
+										} else if (targetVolume > 100) {
+											targetVolume = 100
+										}
+										VolumePayload.msgPayload.event.payload.volume = targetVolume
+										this.LOG("volumepayload" + JSON.stringify(targetVolume))
+										appApi.setVolumeLevel(audioport.connectedAudioPorts[i], targetVolume).then(() => {
+											let volumeIncremented = currentVolume < targetVolume ? true : false
 											if (volumeIncremented && VolumePayload.msgPayload.event.payload.muted) {
 												VolumePayload.msgPayload.event.payload.muted = false
 											}
+											if (GLOBALS.topmostApp === GLOBALS.selfClientName) {
+												this.tag("Volume").onVolumeChanged(volumeIncremented);
+											} else {
+												if (Router.getActiveHash() === "applauncher") {
+													this.tag("Volume").onVolumeChanged(volumeIncremented);
+												} else {
+													Router.navigate("applauncher");
+													this.tag("Volume").onVolumeChanged(volumeIncremented);
+												}
+											}
+										}).catch(err => {
+											this.ERR('AdjustVolume setVolumeLevel error:' + JSON.stringify(err))
+										});
+									}).catch(err => {
+										this.ERR('AdjustVolume getVolumeLevel error:' + JSON.stringify(err))
+									});
+								}
+							}
+						});
+					}
+					if (header.name === "SetVolume") {
+						VolumePayload.msgPayload.event.header.messageId = header.messageId
+						const requestedVolume = Number.parseInt(payload.volume, 10)
+						if (Number.isNaN(requestedVolume)) {
+							this.ERR("SetVolume invalid payload.volume: " + JSON.stringify(payload.volume))
+							return;
+						}
+						VolumePayload.msgPayload.event.payload.volume = requestedVolume
+						this.LOG("adjust volume" + JSON.stringify(VolumePayload))
+						this.LOG("checkvolume" + JSON.stringify(VolumePayload.msgPayload.event.payload.volume))
+						if (VolumePayload.msgPayload.event.payload.volume > 100) {
+							VolumePayload.msgPayload.event.payload.volume = 100
+						} else if (VolumePayload.msgPayload.event.payload.volume < 0) {
+							VolumePayload.msgPayload.event.payload.volume = 0
+						}
+						appApi.getConnectedAudioPorts().then(audioport => {
+							for (let i = 0; i < audioport.connectedAudioPorts.length && !audioport.connectedAudioPorts[i].startsWith("SPDIF"); i++) {
+								if ((GLOBALS.deviceType == "IpTv" && audioport.connectedAudioPorts[i].startsWith("SPEAKER")) ||
+									(GLOBALS.deviceType != "IpTv" && audioport.connectedAudioPorts[i].startsWith("HDMI"))) {
+									appApi.getVolumeLevel(audioport.connectedAudioPorts[i]).then(volres => {
+										const currentVolume = Number.parseInt(volres.volumeLevel, 10)
+										const volumeIncremented = Number.isNaN(currentVolume) ? false : (currentVolume < VolumePayload.msgPayload.event.payload.volume ? true : false)
+										if (volumeIncremented && VolumePayload.msgPayload.event.payload.muted) {
+											VolumePayload.msgPayload.event.payload.muted = false
+										}
+										return appApi.setVolumeLevel(audioport.connectedAudioPorts[i], VolumePayload.msgPayload.event.payload.volume).then(() => {
 											if (GLOBALS.topmostApp === GLOBALS.selfClientName) {
 												this.tag("Volume").onVolumeChanged(volumeIncremented);
 											} else {
@@ -2756,48 +2790,9 @@ export default class App extends Router.App {
 													this.tag("Volume").onVolumeChanged(volumeIncremented);
 												}
 											}
-										});
-									});
-								}
-							}
-						});
-					}
-					if (header.name === "SetVolume") {
-						VolumePayload.msgPayload.event.header.messageId = header.messageId
-						VolumePayload.msgPayload.event.payload.volume = payload.volume
-						this.LOG("adjust volume" + JSON.stringify(VolumePayload))
-						this.LOG("checkvolume" + JSON.stringify(VolumePayload.msgPayload.event.payload.volume))
-						if (VolumePayload.msgPayload.event.payload.volume > 100) {
-							VolumePayload.msgPayload.event.payload.volume = 100
-						} else if (VolumePayload.msgPayload.event.payload.volume < 0) {
-							VolumePayload.msgPayload.event.payload.volume = 0
-						}
-						appApi.getConnectedAudioPorts().then(audioport => {
-							for (let i = 0; i < audioport.connectedAudioPorts.length && !audioport.connectedAudioPorts[i].startsWith("SPDIF"); i++) {
-								if ((GLOBALS.deviceType == "IpTv" && audioport.connectedAudioPorts[i].startsWith("SPEAKER")) ||
-									(GLOBALS.deviceType != "IpTv" && audioport.connectedAudioPorts[i].startsWith("HDMI"))) {
-									let volumeIncremented
-									appApi.getVolumeLevel(audioport.connectedAudioPorts[i]).then(volres => {
-										volumeIncremented = parseInt(volres.volumeLevel) < VolumePayload.msgPayload.event.payload.volume ? true : false
-										if (volumeIncremented && VolumePayload.msgPayload.event.payload.muted) {
-											VolumePayload.msgPayload.event.payload.muted = false
-										}
-									})
-									appApi.setVolumeLevel(audioport.connectedAudioPorts[i], VolumePayload.msgPayload.event.payload.volume).then(() => {
-										if (GLOBALS.topmostApp === GLOBALS.selfClientName) {
-											this.tag("Volume").onVolumeChanged(volumeIncremented);
-										} else {
-											if (Router.getActiveHash() === "applauncher") {
-												RDKShellApis.moveToFront(GLOBALS.selfClientName)
-												RDKShellApis.setVisibility(GLOBALS.selfClientName, true)
-												this.tag("Volume").onVolumeChanged(volumeIncremented);
-											} else {
-												RDKShellApis.moveToFront(GLOBALS.selfClientName)
-												RDKShellApis.setVisibility(GLOBALS.selfClientName, true)
-												Router.navigate("applauncher");
-												this.tag("Volume").onVolumeChanged(volumeIncremented);
-											}
-										}
+										})
+									}).catch(err => {
+										this.ERR('SetVolume error:' + JSON.stringify(err))
 									});
 								}
 							}
