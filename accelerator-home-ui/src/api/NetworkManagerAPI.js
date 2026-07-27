@@ -74,29 +74,6 @@ class NetworkManager {
         });
     });
   }
-  activate() {
-    return new Promise((resolve, reject) => {
-      this.thunder.call('Controller', 'activate', { callsign: this.callsign }).then(result => {
-        this.INFO(this.callsign + " NetworkManager activate result: " + JSON.stringify(result))
-        resolve(true)
-      }).catch(err => {
-        this.ERR(this.callsign + " NetworkManager activate error: " + JSON.stringify(err))
-        reject(err)
-      });
-    });
-  }
-
-  deactivate() {
-    return new Promise((resolve, reject) => {
-      this.thunder.call('Controller', 'deactivate', { callsign: this.callsign }).then(result => {
-        this.INFO(this.callsign + " NetworkManager deactivate result: " + JSON.stringify(result))
-        resolve(true)
-      }).catch(err => {
-        this.ERR(this.callsign + " NetworkManager deactivate error: " + JSON.stringify(err))
-        reject(err)
-      });
-    });
-  }
 
   GetAvailableInterfaces =() => this.thunderCall('GetAvailableInterfaces', 'GetAvailableInterfaces', {}, 'interfaces');
   GetPrimaryInterface =() => this.thunderCall('GetPrimaryInterface', 'GetPrimaryInterface', {}, 'interface');

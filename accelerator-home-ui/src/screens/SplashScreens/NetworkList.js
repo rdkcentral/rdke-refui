@@ -163,31 +163,9 @@ export default class NetworkList extends Lightning.Component {
       this.tag('JoinAnotherNetwork').visible = true
     }
     this._setState('JoinAnotherNetwork')
-    NetworkManager.activate().then(result => {
-      if (result) {
-        NetworkManager.thunder.on(NetworkManager.callsign, 'onAddressChange', notification => {
-          this.LOG("OnAddresschange result "+JSON.stringify(notification))
-          // if (notification.status == 'ACQUIRED') {
-          //   // Nothing to do here.
-          // } else if (notification.status == 'LOST') {
-          //   if (notification.interface === 'wlan0') {
-          //     NetworkManager.SetInterfaceState('eth0').then(res => {
-          //     })
-          //   }
-          // }
-        })
-        NetworkManager.thunder.on(NetworkManager.callsign, 'onActiveInterfaceChange', notification => {
-          this.LOG("Onactiveinterfacechange result"+JSON.stringify(notification))
-          // if (notification.currentActiveInterface === 'eth0') {
-          //   NetworkManager.SetInterfaceState('eth0').then(result => {
-          //   })
-          // } else if (
-        })
-        NetworkManager.thunder.on(NetworkManager.callsign, 'onInterfaceStateChange', notification => {
-          if (notification.interface === 'eth0' && notification.status === 'INTERFACE_ADDED') {
-            NetworkManager.SetInterfaceState('eth0').then(res => {
-            })
-          }
+    NetworkManager.thunder.on(NetworkManager.callsign, 'onInterfaceStateChange', notification => {
+      if (notification.interface === 'eth0' && notification.status === 'INTERFACE_ADDED') {
+        NetworkManager.SetInterfaceState('eth0').then(res => {
         })
       }
     })

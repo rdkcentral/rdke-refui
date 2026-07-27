@@ -564,8 +564,6 @@ export default class App extends Router.App {
 		appApi.getPluginStatus('org.rdk.NetworkManager').then(result => {
 			if (result[0].state === "activated") {
 				this.SubscribeToNetworkManager()
-			} else {
-				NetworkManager.activate().then((res) => {}).catch((err) => console.error(err))
 			}
 		})
 		appApi.getPluginStatus('org.rdk.MiracastPlayer').then(result => {
