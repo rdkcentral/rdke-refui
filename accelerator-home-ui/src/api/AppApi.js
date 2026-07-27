@@ -201,21 +201,12 @@ export default class AppApi {
    */
   getHDCPStatus() {
     return new Promise((resolve) => {
-      thunder.Controller.activate({ callsign: 'org.rdk.HdcpProfile' })
-        .then(() => {
-          thunder
-            .call('org.rdk.HdcpProfile', 'getHDCPStatus')
-            .then(result => {
-              this.LOG("AppAPI HdcpProfile getHDCPStatus : " + JSON.stringify(result.HDCPStatus));
-              resolve(result.HDCPStatus)
-            })
-            .catch(err => {
-              this.ERR("AppAPI HdcpProfile getHDCPStatus failed." + JSON.stringify(err));
-              resolve(false)
-            })
-        })
-        .catch(err => {
-          this.ERR('AppAPI activate HdcpProfile ', JSON.stringify(err))
+        thunder.call('org.rdk.HdcpProfile', 'getHDCPStatus').then(result => {
+            this.LOG("AppAPI HdcpProfile getHDCPStatus : " + JSON.stringify(result.HDCPStatus));
+            resolve(result.HDCPStatus)
+        }).catch(err => {
+            this.ERR("AppAPI HdcpProfile getHDCPStatus failed." + JSON.stringify(err));
+            resolve(false)
         })
     })
   }
