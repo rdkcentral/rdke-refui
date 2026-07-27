@@ -397,10 +397,6 @@ export default class AppApi {
     // })
   }
 
-  registerPowerEvent(callback) {
-    return PowerManagerApi.get().registerEvent("onPowerModeChanged", callback);
-  }
-
   enableInactivityReporting(bool) {
     return RDKWindowManager.get().enableInactivityReporting(bool)
   }

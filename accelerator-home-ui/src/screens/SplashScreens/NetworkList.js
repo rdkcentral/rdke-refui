@@ -163,7 +163,10 @@ export default class NetworkList extends Lightning.Component {
       this.tag('JoinAnotherNetwork').visible = true
     }
     this._setState('JoinAnotherNetwork')
-    NetworkManager.thunder.on(NetworkManager.callsign, 'onInterfaceStateChange', notification => {
+    if (this.onInterfaceStateChangeCB) {
+      this.onInterfaceStateChangeCB.dispose()
+    }
+    this.onInterfaceStateChangeCB = NetworkManager.thunder.on(NetworkManager.callsign, 'onInterfaceStateChange', notification => {
       if (notification.interface === 'eth0' && notification.status === 'INTERFACE_ADDED') {
         NetworkManager.SetInterfaceState('eth0').then(res => {
         })
