@@ -401,38 +401,34 @@ export default class App extends Router.App {
 	}
 
 	userInactivity() {
-		PersistentStoreApi.get().activate().then(() => {
-			PersistentStoreApi.get().getValue('ScreenSaverTime', 'timerValue').then(result => {
-				// check if result has value property and if it is not undefined^M
-				if (result && result.value && result.value !== undefined && result.value !== "Off") {
-					this.LOG("App PersistentStoreApi screensaver timer value is: " + JSON.stringify(result.value));
-					appApi.enableInactivityReporting(true).then(() => {
-						appApi.setInactivityInterval(result.value).then(() => {
-							this.userInactivity = thunder.on('org.rdk.RDKWindowManager', 'onUserInactivity', notification => {
-								this.LOG("UserInactivityStatusNotification: " + JSON.stringify(notification))
-								appApi.getAvCodeStatus().then(result => {
-									this.LOG("Avdecoder" + JSON.stringify(result.avDecoderStatus));
-									if ((result.avDecoderStatus === "IDLE" || result.avDecoderStatus === "PAUSE") && GLOBALS.topmostApp === "") {
-										this.$hideImage(1);
-									}
-								})
+		PersistentStoreApi.get().getValue('ScreenSaverTime', 'timerValue').then(result => {
+			// check if result has value property and if it is not undefined^M
+			if (result && result.value && result.value !== undefined && result.value !== "Off") {
+				this.LOG("App PersistentStoreApi screensaver timer value is: " + JSON.stringify(result.value));
+				appApi.enableInactivityReporting(true).then(() => {
+					appApi.setInactivityInterval(result.value).then(() => {
+						this.userInactivity = thunder.on('org.rdk.RDKWindowManager', 'onUserInactivity', notification => {
+							this.LOG("UserInactivityStatusNotification: " + JSON.stringify(notification))
+							appApi.getAvCodeStatus().then(result => {
+								this.LOG("Avdecoder" + JSON.stringify(result.avDecoderStatus));
+								if ((result.avDecoderStatus === "IDLE" || result.avDecoderStatus === "PAUSE") && GLOBALS.topmostApp === "") {
+									this.$hideImage(1);
+								}
 							})
 						})
-					});
-				} else {
-					this.WARN("App PersistentStoreApi screensaver timer value is not set or is Off.")
-					appApi.enableInactivityReporting(false).then(() => {
-						this.userInactivity.dispose();
 					})
-				}
-			}).catch(err => {
-				this.ERR("App PersistentStoreApi getValue error: " + JSON.stringify(err));
+				});
+			} else {
+				this.WARN("App PersistentStoreApi screensaver timer value is not set or is Off.")
 				appApi.enableInactivityReporting(false).then(() => {
 					this.userInactivity.dispose();
 				})
-			});
+			}
 		}).catch(err => {
-			this.ERR("App PersistentStoreApi activation error: " + JSON.stringify(err));
+			this.ERR("App PersistentStoreApi getValue error: " + JSON.stringify(err));
+			appApi.enableInactivityReporting(false).then(() => {
+				this.userInactivity.dispose();
+			})
 		});
 	}
 
