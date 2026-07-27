@@ -279,21 +279,12 @@ export default class AppApi {
    */
   getDRMS() {
     return new Promise((resolve) => {
-      thunder.Controller.activate({ callsign: 'OCDM' })
-        .then(() => {
-          thunder
-            .call('OCDM', 'drms')
-            .then(result => {
-              this.LOG("AppAPI OCDM supported drms: " + JSON.stringify(result));
-              resolve(result)
-            })
-            .catch(err => {
-              this.ERR("AppAPI OCDM drms failed." + JSON.stringify(err));
-              resolve(false)
-            })
-        })
-        .catch(err => {
-          this.ERR('AppAPI activate OCDM error:', JSON.stringify(err))
+        thunder.call('OCDM', 'drms').then(result => {
+            this.LOG("AppAPI OCDM supported drms: " + JSON.stringify(result));
+            resolve(result)
+        }).catch(err => {
+            this.ERR("AppAPI OCDM drms failed." + JSON.stringify(err));
+            resolve(false)
         })
     })
   }
