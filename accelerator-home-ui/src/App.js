@@ -1629,10 +1629,6 @@ export default class App extends Router.App {
 	}
 
 	_PowerStateHandlingWhileReboot() {
-		if (this._oldPowerStateWhileReboot === PowerState.POWER_STATE_STANDBY) {
-			this.LOG("_PowerStateHandlingWhileReboot: oldPowerStateWhileReboot is STANDBY, setting it to ON");
-			this._oldPowerStateWhileReboot = PowerState.POWER_STATE_ON;
-		}
 		this.LOG("_PowerStateHandlingWhileReboot: this._oldPowerStateWhileReboot , " + JSON.stringify(this._oldPowerStateWhileReboot) + " this._powerStateWhileReboot, " + JSON.stringify(this._powerStateWhileReboot) + " ");
 		if (this._oldPowerStateWhileReboot != this._powerStateWhileReboot) {
 			this.LOG("_PowerStateHandlingWhileReboot: old power state is not equal to powerstate while reboot " + JSON.stringify(this._oldPowerStateWhileReboot) + " " + JSON.stringify(this._powerStateWhileReboot));
@@ -1644,6 +1640,7 @@ export default class App extends Router.App {
 					});
 					this.LOG("_PowerStateHandlingWhileReboot: powerstate after setting to new powerstate " + JSON.stringify(GLOBALS.powerState) + " and ");
 				}
+				sessionStorage.setItem('powerStateRestored', 'true');
 			}).catch(err => {
 				this.LOG("_PowerStateHandlingWhileReboot: Rebooting the device as set PowerState failed due to " + JSON.stringify(err));
 				appApi.reboot("setPowerState Api Failure");
@@ -1651,6 +1648,7 @@ export default class App extends Router.App {
 		} else {
 			this.LOG("_PowerStateHandlingWhileReboot: power state before reboot and curren tpowerstate is same " + JSON.stringify(this._oldPowerStateWhileReboot) + " " + JSON.stringify(this._powerStateWhileReboot));
 			GLOBALS.powerState = this._powerStateWhileReboot;
+			sessionStorage.setItem('powerStateRestored', 'true');
 		}
 	}
 
@@ -1677,6 +1675,19 @@ export default class App extends Router.App {
 	}
 
 	_getPowerStatebeforeReboot() {
+		// Skip power state restoration on UI reload (e.g., language change)
+		// sessionStorage flag persists across UI reloads but is cleared on actual device reboot
+		if (sessionStorage.getItem('powerStateRestored') === 'true') {
+			this.LOG("_getPowerStatebeforeReboot: Power state already restored in this session, skipping (UI reload detected)");
+			appApi.getPowerState().then(res => {
+				GLOBALS.powerState = res.currentState;
+				this.LOG("_getPowerStatebeforeReboot: Set GLOBALS.powerState to current state: " + JSON.stringify(res.currentState));
+			}).catch(err => {
+				this.LOG("_getPowerStatebeforeReboot: Error getting current power state: " + JSON.stringify(err));
+				GLOBALS.powerState = PowerState.POWER_STATE_ON;
+			});
+			return;
+		}
 		appApi.getPowerStateBeforeReboot().then(res => {
 			this.LOG("_getPowerStatebeforeReboot: getpowerstate before reboot " + JSON.stringify(res));
 			this._oldPowerStateWhileReboot = res;
