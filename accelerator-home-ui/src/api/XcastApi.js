@@ -56,6 +56,13 @@ export default class XcastApi {
                     this._events.get('onApplicationLaunchRequest')(notification);
                   }
                 });
+                // plugin fires onApplicationLaunchRequestWithParam (carries strPayLoad/strAddDataUrl)
+                this._thunder.on(this.callsign, 'onApplicationLaunchRequestWithParam', notification => {
+                  this.LOG("onApplicationLaunchRequestWithParam " + JSON.stringify(notification));
+                  if (this._events.has('onApplicationLaunchRequest')) {
+                    this._events.get('onApplicationLaunchRequest')(notification);
+                  }
+                });
                 this._thunder.on(this.callsign, 'onApplicationHideRequest', notification => {
                   this.LOG("onApplicationHideRequest " + JSON.stringify(notification));
                   if (this._events.has('onApplicationHideRequest')) {
