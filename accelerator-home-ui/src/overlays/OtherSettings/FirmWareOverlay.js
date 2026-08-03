@@ -114,28 +114,20 @@ export default class FirmwareScreen extends Lightning.Component {
     _firstEnable() {
         let state = ['Uninitialized', 'Requesting', 'Downloading', 'Failed', 'DownLoad Complete', 'Validation Complete', 'Preparing to Reboot']
 
-        thunder.Controller.activate({ callsign: "org.rdk.System" })
-            .then(() => {
-                thunder.on("org.rdk.System", "onFirmwareUpdateStateChange", notification => {
-                    this.LOG("FirmwareOverlay: on Firmware update state changed notifcation = " + JSON.stringify(notification));
-
-                    if (state[notification.firmwareUpdateStateChange] == "Downloading") {
-                        this.downloadInterval = setInterval(() => {
-                            this.LOG("Downloading...");
-                            this.getDownloadPercent();
-                        }, 1000)
-                    } else if (state[notification.firmwareUpdateStateChange] != "Downloading" && this.downloadInterval) {
-                        clearInterval(this.downloadInterval);
-                        this.downloadInterval = null
-                    }
-                }, err => {
-                    this.ERR("FirmwareOverlay: error while fetching notification ie. " + JSON.stringify(err))
-                })
-            })
-            .catch(err => {
-                this.ERR("FirmwareOverlay: error while activating the system plugin" + JSON.stringify(err))
-            })
-
+        thunder.on("org.rdk.System", "onFirmwareUpdateStateChange", notification => {
+            this.LOG("FirmwareOverlay: on Firmware update state changed notifcation = " + JSON.stringify(notification));
+            if (state[notification.firmwareUpdateStateChange] == "Downloading") {
+                this.downloadInterval = setInterval(() => {
+                    this.LOG("Downloading...");
+                    this.getDownloadPercent();
+                }, 1000)
+            } else if (state[notification.firmwareUpdateStateChange] != "Downloading" && this.downloadInterval) {
+                clearInterval(this.downloadInterval);
+                this.downloadInterval = null
+            }
+        }, err => {
+            this.ERR("FirmwareOverlay: error while fetching notification ie. " + JSON.stringify(err))
+        })
     }
 
     _unfocus() {

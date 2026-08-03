@@ -42,45 +42,6 @@ export default class PersistentStoreApi {
     return PersistentStoreApi.instance;
   }
 
-  registerEvent(eventId, callback) {
-    this._events.set(eventId, callback)
-  }
-  activate() {
-    return new Promise((resolve, reject) => {
-      this.INFO("PersistentStoreApi: activate.");
-      this.thunder.Controller.activate({ callsign: this.callsign }).then(() => {
-        this.thunder.on(this.callsign, 'onStorageExceeded', notification => {
-          if (this._events.has('onStorageExceeded')) {
-            this._events.get('onStorageExceeded')(notification);
-          } else {
-            this.INFO('PersistentStoreApi: onStorageExceeded ' + JSON.stringify(notification));
-          }
-        });
-        this.thunder.on(this.callsign, 'onValueChanged', notification => {
-          if (this._events.has('onValueChanged')) {
-            this._events.get('onValueChanged')(notification);
-          } else {
-            this.INFO('PersistentStoreApi: onValueChanged ' + JSON.stringify(notification));
-          }
-        });
-        resolve(true);
-      }).catch(err => {
-        this.ERR('PersistentStoreApi: Error Activation ' + JSON.stringify(err));
-        reject(err);
-      })
-    })
-  }
-  deactivate() {
-    return new Promise((resolve, reject) => {
-      this.thunder.Controller.deactivate({ callsign: this.callsign }).then(() => {
-        this.INFO("PersistentStoreApi: deactivated successfully.")
-        resolve(true)
-      }).catch(err => {
-        this.ERR('PersistentStoreApi: Error deactivation ' + JSON.stringify(err));
-        reject(err);
-      })
-    })
-  }
   deleteKey(namespace, key) {
     return new Promise((resolve, reject) => {
       this.INFO("PersistentStoreApi: deleteKey:" + JSON.stringify(namespace) + " & " + JSON.stringify(key));

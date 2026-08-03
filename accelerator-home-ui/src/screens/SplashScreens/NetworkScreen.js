@@ -119,16 +119,6 @@ export default class NetworkScreen extends Lightning.Component {
         }
     }
 
-    async _init() {
-        this.appApi = new AppApi();
-        await this.appApi.checkStatus(NetworkManager.callsign).then(nwPluginStatus => {
-            if (nwPluginStatus[0].state.toLowerCase() !== "activated") {
-                console.log("Iniate the activate call")
-                NetworkManager.activate();
-            }
-        });
-    }
-
     pageTransition() {
         return 'left'
     }

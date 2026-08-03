@@ -22,7 +22,6 @@ import HDMIApi from './HDMIApi';
 import NetflixIIDs from "../../static/data/NetflixIIDs.json";
 import HomeApi from './HomeApi';
 import { availableLanguageCodes, CONFIG, GLOBALS } from '../Config/Config.js';
-import UserSettingsApi from './UserSettingsApi.js';
 import PowerManagerApi from './PowerManagerApi.js';
 import RDKWindowManager from './RDKWindowManagerApi.js';
 import AppManager from './AppManagerApi.js';
@@ -202,21 +201,12 @@ export default class AppApi {
    */
   getHDCPStatus() {
     return new Promise((resolve) => {
-      thunder.Controller.activate({ callsign: 'org.rdk.HdcpProfile' })
-        .then(() => {
-          thunder
-            .call('org.rdk.HdcpProfile', 'getHDCPStatus')
-            .then(result => {
-              this.LOG("AppAPI HdcpProfile getHDCPStatus : " + JSON.stringify(result.HDCPStatus));
-              resolve(result.HDCPStatus)
-            })
-            .catch(err => {
-              this.ERR("AppAPI HdcpProfile getHDCPStatus failed." + JSON.stringify(err));
-              resolve(false)
-            })
-        })
-        .catch(err => {
-          this.ERR('AppAPI activate HdcpProfile ', JSON.stringify(err))
+        thunder.call('org.rdk.HdcpProfile', 'getHDCPStatus').then(result => {
+            this.LOG("AppAPI HdcpProfile getHDCPStatus : " + JSON.stringify(result.HDCPStatus));
+            resolve(result.HDCPStatus)
+        }).catch(err => {
+            this.ERR("AppAPI HdcpProfile getHDCPStatus failed." + JSON.stringify(err));
+            resolve(false)
         })
     })
   }
@@ -274,21 +264,12 @@ export default class AppApi {
    */
   getHDRSetting() {
     return new Promise((resolve) => {
-      thunder.Controller.activate({ callsign: 'DisplayInfo' })
-        .then(() => {
-          thunder
-            .call('DisplayInfo', 'hdrsetting')
-            .then(result => {
-              this.LOG("AppAPI DisplayInfo hdrsetting : " + JSON.stringify(result));
-              resolve(result)
-            })
-            .catch(err => {
-              this.ERR("AppAPI DisplayInfo hdrsetting failed : " + JSON.stringify(err));
-              resolve(false)
-            })
-        })
-        .catch(err => {
-          this.LOG('AppAPI activate DisplayInfo Error', JSON.stringify(err))
+        thunder.call('DisplayInfo', 'hdrsetting').then(result => {
+            this.LOG("AppAPI DisplayInfo hdrsetting : " + JSON.stringify(result));
+            resolve(result)
+        }).catch(err => {
+            this.ERR("AppAPI DisplayInfo hdrsetting failed : " + JSON.stringify(err));
+            resolve(false)
         })
     })
   }
@@ -298,21 +279,12 @@ export default class AppApi {
    */
   getDRMS() {
     return new Promise((resolve) => {
-      thunder.Controller.activate({ callsign: 'OCDM' })
-        .then(() => {
-          thunder
-            .call('OCDM', 'drms')
-            .then(result => {
-              this.LOG("AppAPI OCDM supported drms: " + JSON.stringify(result));
-              resolve(result)
-            })
-            .catch(err => {
-              this.ERR("AppAPI OCDM drms failed." + JSON.stringify(err));
-              resolve(false)
-            })
-        })
-        .catch(err => {
-          this.ERR('AppAPI activate OCDM error:', JSON.stringify(err))
+        thunder.call('OCDM', 'drms').then(result => {
+            this.LOG("AppAPI OCDM supported drms: " + JSON.stringify(result));
+            resolve(result)
+        }).catch(err => {
+            this.ERR("AppAPI OCDM drms failed." + JSON.stringify(err));
+            resolve(false)
         })
     })
   }
@@ -423,10 +395,6 @@ export default class AppApi {
     //     reject(err)
     //   })
     // })
-  }
-
-  registerPowerEvent(callback) {
-    return PowerManagerApi.get().registerEvent("onPowerModeChanged", callback);
   }
 
   enableInactivityReporting(bool) {
@@ -1223,13 +1191,5 @@ export default class AppApi {
           resolve(false)
         });
     })
-  }
-
-  setUILanguage(updatedLanguage) {
-    return UserSettingsApi.get().setPresentationLanguage(updatedLanguage)
-  }
-
-  getUILanguage() {
-    return UserSettingsApi.get().getPresentationLanguage()
   }
 }

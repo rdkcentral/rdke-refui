@@ -19,8 +19,7 @@
 import ThunderJS from 'ThunderJS';
 import { CONFIG } from '../Config/Config'
 
-let instance = null
-export default class RuntimeManager {
+class RuntimeManager {
   constructor() {
     this.thunder = ThunderJS(CONFIG.thunderConfig);
     this.callsign = 'org.rdk.RuntimeManager';
@@ -28,37 +27,7 @@ export default class RuntimeManager {
     this.LOG = console.log;
     this.ERR = console.error;
   }
-  static get() {
-    if (instance === null) {
-      instance = new RuntimeManager()
-    }
-    return instance;
-  }
-
-   activate() {
-          return new Promise((resolve, reject) => {
-              this.thunder.Controller.activate({ callsign: this.callsign })
-                  .then(() => {
-                      resolve(true)
-                      this.INFO("RuntimeManager activated successfully");
-                  })
-                  .catch(err => {
-                      this.ERR("Error Activation RuntimeManager" + JSON.stringify(err))
-                      reject(err)
-                  })
-          })
-      }
-    deactivate() {
-        return new Promise((resolve, reject) => {
-            this.thunder.Controller.deactivate({ callsign: this.callsign })
-                .then(() => {
-                    resolve(true)
-                    this.INFO("RuntimeManager deactivated successfully");
-                })
-                .catch(err => {
-                    this.ERR("Error Deactivation RuntimeManager" + JSON.stringify(err))
-                    reject(err)
-                })
-        })
-      }
 }
+
+const runtimeManager = new RuntimeManager();
+export default runtimeManager;

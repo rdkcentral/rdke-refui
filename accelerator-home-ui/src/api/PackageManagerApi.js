@@ -48,28 +48,6 @@ export default class PackageManager {
     throw err;
   }
 
-  activate() {
-    return this.thunder.Controller.activate(
-      { callsign: this.callsign }
-    ).then(() => {
-      this.INFO(`${this.callsign} activated`);
-      return true;
-    }).catch(err => {
-      this.handleThunderError(`activate(${this.callsign})`, err);
-    });
-  }
-
-  deactivate() {
-    return this.thunder.Controller.deactivate(
-      { callsign: this.callsign }
-    ).then(() => {
-      this.INFO(`${this.callsign} deactivated`);
-      return true;
-    }).catch(err => {
-      this.handleThunderError(`deactivate(${this.callsign})`, err);
-    });
-  }
-
   configuration() {
     const thunderCall = `configuration@${this.callsign}`;
 

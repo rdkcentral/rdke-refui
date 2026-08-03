@@ -121,7 +121,7 @@ export default class TTSScreen extends Lightning.Component {
     refreshEnableButtonState() {
         this.ttsApi.isttsenabled()
             .then(ttsApiIsEnabled => {
-                this.userSettingsApi.getVoiceGuidance()
+                UserSettingsApi.getVoiceGuidance()
                     .then(userSettingsApiIsEnabled => {
                         this.ttsSupport = ttsApiIsEnabled && userSettingsApiIsEnabled;
                         this.LOG("TTS API: " + JSON.stringify(ttsApiIsEnabled) + " US: " + JSON.stringify(userSettingsApiIsEnabled))
@@ -162,10 +162,7 @@ export default class TTSScreen extends Lightning.Component {
         this._setState('Endpoint')
 
         this.ttsApi = new TTSApi();
-        this.userSettingsApi = new UserSettingsApi();
-
         this.ttsApi.activate();
-        this.userSettingsApi.activate();
 
         this.textCollection = '';
     }
@@ -191,11 +188,11 @@ export default class TTSScreen extends Lightning.Component {
     toggleTTS() {
         if(this.ttsSupport) {
             this.ttsApi.enabletts(false);
-            this.userSettingsApi.setVoiceGuidance(false);
+            UserSettingsApi.setVoiceGuidance(false);
         }
         else {
             this.ttsApi.enabletts(true);
-            this.userSettingsApi.setVoiceGuidance(true);
+            UserSettingsApi.setVoiceGuidance(true);
         }
     }
 

@@ -56,13 +56,13 @@ import Miracast from './api/Miracast.js';
 import MiracastNotification from './screens/MiracastNotification.js';
 import NetworkManager from './api/NetworkManagerAPI.js';
 import PowerManagerApi, {PowerState} from './api/PowerManagerApi.js';
-import UserSettingsApi from './api/UserSettingsApi';
 import InactivityHelper from './helpers/InactivityHelper.js';
 import AppManager from './api/AppManagerApi.js';
 import PackageManager from './api/PackageManagerApi.js';
 import RDKWindowManager from './api/RDKWindowManagerApi.js';
 import RuntimeManager from './api/RuntimeManagerApi.js';
 import AppController from './AppController.js';
+import userSettingsApi from './api/UserSettingsApi.js';
 
 var thunder = ThunderJS(CONFIG.thunderConfig);
 var appApi = new AppApi();
@@ -398,38 +398,34 @@ export default class App extends Router.App {
 	}
 
 	userInactivity() {
-		PersistentStoreApi.get().activate().then(() => {
-			PersistentStoreApi.get().getValue('ScreenSaverTime', 'timerValue').then(result => {
-				// check if result has value property and if it is not undefined^M
-				if (result && result.value && result.value !== undefined && result.value !== "Off") {
-					this.LOG("App PersistentStoreApi screensaver timer value is: " + JSON.stringify(result.value));
-					appApi.enableInactivityReporting(true).then(() => {
-						appApi.setInactivityInterval(result.value).then(() => {
-							this.userInactivity = thunder.on('org.rdk.RDKWindowManager', 'onUserInactivity', notification => {
-								this.LOG("UserInactivityStatusNotification: " + JSON.stringify(notification))
-								appApi.getAvCodeStatus().then(result => {
-									this.LOG("Avdecoder" + JSON.stringify(result.avDecoderStatus));
-									if ((result.avDecoderStatus === "IDLE" || result.avDecoderStatus === "PAUSE") && GLOBALS.topmostApp === "") {
-										this.$hideImage(1);
-									}
-								})
+		PersistentStoreApi.get().getValue('ScreenSaverTime', 'timerValue').then(result => {
+			// check if result has value property and if it is not undefined^M
+			if (result && result.value && result.value !== undefined && result.value !== "Off") {
+				this.LOG("App PersistentStoreApi screensaver timer value is: " + JSON.stringify(result.value));
+				appApi.enableInactivityReporting(true).then(() => {
+					appApi.setInactivityInterval(result.value).then(() => {
+						this.userInactivity = thunder.on('org.rdk.RDKWindowManager', 'onUserInactivity', notification => {
+							this.LOG("UserInactivityStatusNotification: " + JSON.stringify(notification))
+							appApi.getAvCodeStatus().then(result => {
+								this.LOG("Avdecoder" + JSON.stringify(result.avDecoderStatus));
+								if ((result.avDecoderStatus === "IDLE" || result.avDecoderStatus === "PAUSE") && GLOBALS.topmostApp === "") {
+									this.$hideImage(1);
+								}
 							})
 						})
-					});
-				} else {
-					this.WARN("App PersistentStoreApi screensaver timer value is not set or is Off.")
-					appApi.enableInactivityReporting(false).then(() => {
-						this.userInactivity.dispose();
 					})
-				}
-			}).catch(err => {
-				this.ERR("App PersistentStoreApi getValue error: " + JSON.stringify(err));
+				});
+			} else {
+				this.WARN("App PersistentStoreApi screensaver timer value is not set or is Off.")
 				appApi.enableInactivityReporting(false).then(() => {
 					this.userInactivity.dispose();
 				})
-			});
+			}
 		}).catch(err => {
-			this.ERR("App PersistentStoreApi activation error: " + JSON.stringify(err));
+			this.ERR("App PersistentStoreApi getValue error: " + JSON.stringify(err));
+			appApi.enableInactivityReporting(false).then(() => {
+				this.userInactivity.dispose();
+			})
 		});
 	}
 
@@ -464,18 +460,9 @@ export default class App extends Router.App {
 			GLOBALS.deviceType = ((result.devicetype != null) ? result.devicetype : "IpTv");
 			Storage.set("deviceType", ((result.devicetype != null) ? result.devicetype : "IpTv"));
 		});
-		UserSettingsApi.get().activate();
 		appApi.getPluginStatus("org.rdk.DeviceDiagnostics").then(res => {
 			this.LOG("App DeviceDiagnostics state:" + JSON.stringify(res[0].state))
-			if (res[0].state === "deactivated") {
-				thunder.Controller.activate({
-					callsign: 'org.rdk.DeviceDiagnostics'
-				}).then(() => {
-					this.AvDecodernotificationcall();
-				}).catch(err => {
-					this.ERR("App DeviceDiagnostics plugin activation error: " + JSON.stringify(err));
-				})
-			} else {
+			if (res[0].state === "activated") {
 				this.AvDecodernotificationcall();
 			}
 		})
@@ -558,21 +545,14 @@ export default class App extends Router.App {
 		appApi.getPluginStatus('org.rdk.PowerManager').then(result => {
 			if (result && result.length > 0 && result[0].state === "activated") {
 				console.log("org.rdk.PowerManager is already activated");
+				this.subscribeToPowerChangeNotifications()
 				this._getPowerStatebeforeReboot();
 				this._setWakeupSourceConfig();
-			} else {
-				 PowerManagerApi.get().activate().then((res) => {
-					this.LOG("activating the powermanager from app.js " + JSON.stringify(res))
-					this._getPowerStatebeforeReboot();
-					this._setWakeupSourceConfig();
-				}).catch((err) => this.ERR(JSON.stringify(err)))
 			}
 		})
 		appApi.getPluginStatus('org.rdk.NetworkManager').then(result => {
 			if (result[0].state === "activated") {
 				this.SubscribeToNetworkManager()
-			} else {
-				NetworkManager.activate().then((res) => {}).catch((err) => console.error(err))
 			}
 		})
 		appApi.getPluginStatus('org.rdk.MiracastPlayer').then(result => {
@@ -581,15 +561,6 @@ export default class App extends Router.App {
 			} else {
 				miracast.activatePlayer().then((res) => {
 					this.LOG("activating the miracst player from app.js " + JSON.stringify(res))
-				}).catch((err) => this.ERR(JSON.stringify(err)))
-			}
-		})
-		appApi.getPluginStatus('org.rdk.PowerManager').then(result => {
-			if (result[0].state === "activated") {
-				this.subscribeToPowerChangeNotifications()
-			} else {
-				PowerManagerApi.get().activate().then((res) => {
-					this.LOG("activating the power manager from app.js " + JSON.stringify(res))
 				}).catch((err) => this.ERR(JSON.stringify(err)))
 			}
 		})
@@ -667,36 +638,12 @@ export default class App extends Router.App {
 				}).catch((err) => this.ERR(JSON.stringify(err)))
 			}
 		})
-		this._subscribeToIOPortNotifications()
+		this._subscribeToIOPortNotifications();
+		this._updateLanguageToDefault();
+		this._SubscribeToAppManagerNotifications();
+		this._SubscribeToRDKWindowManagerNotifications();
+		this._SubscribeToRuntimeManagerNotifications();
 
-		this._updateLanguageToDefault()
-		// Initialize plugins using the abstraction
-		this._activatePlugin(
-			"org.rdk.AppPackageManager",
-			"AppPackageManager",
-			() => packageManager.activate()
-		);
-
-		this._activatePlugin(
-			"org.rdk.AppManager",
-			"AppManager",
-			() => AppManager.get().activate(),
-			() => this._SubscribeToAppManagerNotifications()
-		);
-
-		this._activatePlugin(
-			"org.rdk.RDKWindowManager",
-			"RDKWindowManager",
-			() => RDKWindowManager.get().activate(),
-			() => this._SubscribeToRDKWindowManagerNotifications()
-		);
-
-		this._activatePlugin(
-			"org.rdk.RuntimeManager",
-			"RuntimeManager",
-			() => RuntimeManager.get().activate(),
-			() => this._SubscribeToRuntimeManagerNotifications()
-		);
 		this.xcastApi = new XcastApi()
 		this.xcastApi.activate().then(async result => {
 			console.warn("Xcast plugin activate");
@@ -897,16 +844,16 @@ export default class App extends Router.App {
 		});
 	}
 	_SubscribeToRuntimeManagerNotifications() {
-		thunder.on('org.rdk.RuntimeManager', 'onStarted', data => {
+		thunder.on(RuntimeManager.callsign, 'onStarted', data => {
 			this.LOG('onStarted ' + JSON.stringify(data));
 		});
-		thunder.on('org.rdk.RuntimeManager', 'onTerminated', data => {
+		thunder.on(RuntimeManager.callsign, 'onTerminated', data => {
 			this.LOG('onTerminated ' + JSON.stringify(data));
 		});
-		thunder.on('org.rdk.RuntimeManager', 'onFailure', data => {
+		thunder.on(RuntimeManager.callsign, 'onFailure', data => {
 			this.LOG('onFailure ' + JSON.stringify(data));
 		});
-		thunder.on('org.rdk.RuntimeManager', 'onStateChanged', data => {
+		thunder.on(RuntimeManager.callsign, 'onStateChanged', data => {
 			this.LOG('onStateChanged ' + JSON.stringify(data));
 		});
 	}
@@ -1133,8 +1080,6 @@ export default class App extends Router.App {
 
 	async registerOnUserInactivityListener() {
 		try {
-			const res = await thunder.Controller.activate({ callsign: 'org.rdk.RDKWindowManager' });
-			this.LOG("RDKWindowManager activated, trying to set the inactivity listener; res = " + JSON.stringify(res));
 			thunder.on("org.rdk.RDKWindowManager", "onUserInactivity", async notification => {
 				const { energySaver, screenSaver, sleepTimer } = inactivityHelper.getInactivityConfig();
 				const minutes = Math.floor(Number(notification.minutes));
@@ -1283,12 +1228,17 @@ export default class App extends Router.App {
 
 	_updateLanguageToDefault() {
 		if (availableLanguageCodes[Language.get()].length) {
-			appApi.setUILanguage(availableLanguageCodes[Language.get()])
+			userSettingsApi.setPresentationLanguage(availableLanguageCodes[Language.get()])
 			localStorage.setItem('Language', Language.get())
 		}
 	}
 
 	subscribeToPowerChangeNotifications() {
+		if (this.PowerChangeNotificationsSubscribed) {
+			this.LOG("PowerChangeNotifications already subscribed, skipping...");
+			return;
+		}
+		this.PowerChangeNotificationsSubscribed = true;
 		thunder.on("org.rdk.PowerManager", "onPowerModeChanged", notification => {
 			this.LOG(new Date().toISOString() + " onPowerModeChanged Notification: " + JSON.stringify(notification));
 			appApi.getPowerState().then(res => {

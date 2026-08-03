@@ -136,14 +136,6 @@ export default class WiFiScreen extends Lightning.Component {
     }
   }
 
-  async _init() {
-    await appApi.checkStatus(NetworkManager.callsign).then(result => {
-      if (result[0].state !== "activated") {
-        NetworkManager.activate()
-      }
-    })
-  }
-
   async _active() {
     this.renderSSIDS = this.ssids = []
     await NetworkManager.GetInterfaceState("wlan0").then(enabled => {
