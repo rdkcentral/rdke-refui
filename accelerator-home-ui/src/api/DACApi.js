@@ -23,7 +23,6 @@ import PackageManager from './PackageManagerApi';
 import AppManager from './AppManagerApi';
 import AppController from '../AppController';
 import { ThunderError } from './ThunderError';
-import { Metrics } from '@firebolt-js/sdk'
 import { SIDELOADED_APP_DEFAULT_ICON, deriveNameFromPackageId } from '../helpers/DACAppPresentation'
 import { getApps, getAppDetails, makeDownloadURL } from './AppCatalog';
 
@@ -49,7 +48,6 @@ function logWarning(call, err) {
 function logError(call, err) {
   let errMessage = makeLogMessage(call, err);
   console.error(errMessage);
-  Metrics.error(Metrics.ErrorType.OTHER, "DACApiError", errMessage, false, null);
 }
 
 class OperationLock {
@@ -86,7 +84,6 @@ export async function getAppCatalogInfo() {
       }
       offset = result.length;
     } catch (err) {
-      Metrics.error(Metrics.ErrorType.OTHER, "DACApiError", err.toString(), false, null);
       break;
     }
   }

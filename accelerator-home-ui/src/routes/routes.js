@@ -46,7 +46,6 @@ import AlexaConfirmationScreen from '../screens/AlexaConfirmationScreen'
 import CameraStreamingScreen from '../screens/CameraStreamingScreen'
 import CameraStreamingScreenExitConfirmationScreen from '../screens/CameraStreamingScreenExitConfirmationScreen'
 import { Storage } from '@lightningjs/sdk'
-import { Metrics } from '@firebolt-js/sdk'
 import { GLOBALS } from '../Config/Config.js'
 import AppInfoPage from '../views/AppInfoPage.js'
 
@@ -202,9 +201,6 @@ export default {
   ],
   afterEachRoute: (request) => {
     console.log("Routed to:" + JSON.stringify(request.hash));
-    if ("ResidentApp" !== GLOBALS.selfClientName) {
-      Metrics.page(request.hash).catch(err => { console.log("error in metrics.page" + JSON.stringify(err)) });
-    }
     if (request.hash === "menu") {
       /* To prevent the onboarding screen appearing next time. */
       GLOBALS.RCSkipStatus=true;

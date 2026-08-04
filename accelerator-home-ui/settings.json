@@ -7,7 +7,7 @@
     "debug": false
   },
   "platformSettings": {
-    "id": "UIv3",
+    "id": "UIv6",
     "inspector": false,
     "path": "./static",
     "log": true,
