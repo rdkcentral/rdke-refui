@@ -31,7 +31,7 @@ const LOGTAG = 'AAMPVideoPlayerDBG: '
 export default class AAMPVideoPlayer extends Lightning.Component {
 	constructor(...args) {
 		super(...args);
-		this.INFO = function () { };
+		this.INFO = console.info;
 		this.LOG = console.log;
 		this.ERR = console.error;
 		this.WARN = console.warn;
@@ -43,8 +43,15 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 		this._lastDuration = null;
 		this._lastRate = null;
 		this._lastBitrate = null;
+		this._lastCriticalAnomalySignature = null;
+		this._errorMessageTimeout = null;
+		this._isPlaybackNotificationPinned = false;
 		this._playbackStartedEmitted = false;
 		this._playbackEndedEmitted = false;
+		this._isSessionInitialized = false;
+		this._stopPromise = null;
+		this._pendingStopWaiter = null;
+		this._showingCleanupNotification = false;
 		this._boundOnIpaEvent = this._onIpaEvent.bind(this);
 	}
 	/**
@@ -73,6 +80,7 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 				title: 'Parkour event',
 				url: url,
 				drmConfig: args.drmConfig || null,
+				attribution: args.attribution || null,
 			})
 			this.setVideoRect(0, 0, 1920, 1080)
 		} catch (error) {
@@ -144,6 +152,32 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 					},
 				},
 			},
+			PlaybackNotification: {
+				x: 960,
+				y: 700,
+				mountX: 0.5,
+				alpha: 0,
+				zIndex: 4,
+				w: 1560,
+				h: 80,
+				rect: true,
+				color: 0xCC7A1E1E,
+				clipping: true,
+				Message: {
+					x: 24,
+					y: 40,
+					mountY: 0.5,
+					text: {
+						text: '',
+						fontFace: CONFIG.language.font,
+						fontSize: 30,
+						textColor: 0xffFFFFFF,
+						wordWrap: true,
+						wordWrapWidth: 1510,
+						maxLines: 1,
+					}
+				}
+			},
 			ChannelWrapper: {
 				h: 1080,
 				w: 350,
@@ -190,8 +224,11 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 	}
 
 	async _active() {
+		this.setVideoRect(0, 0, 1920, 1080);
 		this._sessionId = null;
-		this._ipaPlayer = new IPAPlayerRPC();
+		this._isSessionInitialized = false;
+		if (!this._ipaPlayer) { this._ipaPlayer = new IPAPlayerRPC(); }
+		const player = this._ipaPlayer;
 		this.LOG(LOGTAG + 'active start, instanceId=' + GLOBALS.selfclientAppName + ', pendingUrl=' + this._pendingUrl);
 
 		try {
@@ -199,7 +236,7 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 			if (GLOBALS._selfClientId === null || GLOBALS._selfClientId === undefined) {
 				throw new Error('Missing self client id. Could not resolve in _active for instanceId: ' + GLOBALS.selfclientAppName);
 			}
-			await this._ipaPlayer.ready;
+			await player.ready;
 			await this._initializePlaybackSession(GLOBALS._selfClientId, this._pendingUrl, this._pendingDrmConfig).then(() => {
 				this.LOG(LOGTAG + 'active: playback session initialized successfully');
 				this._playPendingUrl();
@@ -214,6 +251,10 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 	async _initializePlaybackSession(selfAppInstanceId = GLOBALS._selfClientId, url = null, drmConfig = null) {
 		try {
 			this.LOG(LOGTAG + 'initialize session start');
+			const player = this._ipaPlayer;
+			if (!player) {
+				throw new Error('IPA player instance not available during session initialization');
+			}
 			if (!selfAppInstanceId) {
 				throw new Error('Missing self app instance id. Could not resolve in _initializePlaybackSession for instanceId: ' + GLOBALS.selfclientAppName);
 			}
@@ -223,16 +264,24 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 			}
 
 			this.LOG(LOGTAG + 'using cached selfAppInstanceId=' + selfAppInstanceId);
-
-			const sessionResponse = await this._ipaPlayer.openSession(GLOBALS.selfclientAppName, selfAppInstanceId);
+			const sessionResponse = await player.openSession(GLOBALS.selfclientAppName, selfAppInstanceId);
 			this.LOG('openSession response: ' + JSON.stringify(sessionResponse));
 
 			if (!sessionResponse || !sessionResponse.sessionId) {
 				throw new Error('Invalid response from openSession: ' + JSON.stringify(sessionResponse));
 			}
 
-			this._sessionId = sessionResponse.sessionId;
-			this.LOG('Session opened successfully, sessionId: ' + this._sessionId);
+			const sessionId = sessionResponse.sessionId;
+			this.LOG('Session opened successfully, sessionId: ' + sessionId);
+			this._sessionId = sessionId;
+			this._isSessionInitialized = false;
+
+			await player.register(this._boundOnIpaEvent);
+			if (player !== this._ipaPlayer) {
+				this.WARN(LOGTAG + 'initialize session aborted: player instance changed during async init');
+				return;
+			}
+			this.LOG(LOGTAG + 'registered for server events');
 
 			const aampcfg = { };
 			if (drmConfig) {
@@ -241,22 +290,21 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 				if (drmConfig.licenseServerUrl) aampcfg.licenseServerUrl = drmConfig.licenseServerUrl;
 				if (drmConfig.preferredDrm) { aampcfg.preferredDrm = drmConfig.preferredDrm; aampcfg.isPreferredDRMConfigured = true; }
 			}
-			this.LOG(LOGTAG + 'configureSession request: ' + JSON.stringify(aampcfg));
-			const configResponse = await this._ipaPlayer.configureSession(this._sessionId, aampcfg);
+			this.LOG(LOGTAG + 'configureSession request params: ' + JSON.stringify(aampcfg));
+			const configResponse = await player.configureSession(sessionId, aampcfg);
 			this.LOG('configureSession response: ' + JSON.stringify(configResponse));
-
-			await this._ipaPlayer.register(this._boundOnIpaEvent);
-			this.LOG(LOGTAG + 'registered for server events');
+			this._isSessionInitialized = true;
 			this.LOG(LOGTAG + 'initialize session complete');
 		} catch (error) {
+			this._isSessionInitialized = false;
 			this.ERR('Error initializing playback session: ' + (error && error.message ? error.message : JSON.stringify(error)));
 			throw error;
 		}
 	}
 
 	async _playPendingUrl() {
-		if (this._playInFlight || !this._pendingUrl || !this._ipaPlayer) {
-			this.INFO(LOGTAG + 'playPendingUrl skip: inFlight=' + this._playInFlight + ', hasPendingUrl=' + !!this._pendingUrl + ', hasIpa=' + !!this._ipaPlayer);
+		if (this._playInFlight || !this._pendingUrl || !this._ipaPlayer || !this._sessionId || !this._isSessionInitialized) {
+			this.INFO(LOGTAG + 'playPendingUrl skip: inFlight=' + this._playInFlight + ', hasPendingUrl=' + !!this._pendingUrl + ', hasIpa=' + !!this._ipaPlayer + ', hasSessionId=' + !!this._sessionId + ', sessionInitialized=' + this._isSessionInitialized);
 			return;
 		}
 
@@ -299,60 +347,250 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 		}
 	}
 
-	_onIpaEvent(eventPayload) {
-		this.INFO(LOGTAG + 'server event received: ' + JSON.stringify(eventPayload));
+	_onIpaEvent(eventPayload, responseEnvelope) {
 		if (!eventPayload) return;
+		const eventMethod = responseEnvelope && typeof responseEnvelope.method === 'string' ? responseEnvelope.method : '';
+		const eventName = eventMethod ? eventMethod.split('.').pop() : '';
+		const payload = this._normalizeIpaEventPayload(eventPayload);
+		this.INFO(LOGTAG + 'event=' + (eventName || 'unknown') + ', payload=' + JSON.stringify(payload));
 
-		if (eventPayload.state) {
-			const state = eventPayload.state;
+		if (payload.sessionId && payload.sessionId !== this._sessionId) {
+			this.WARN(LOGTAG + 'Received event for different sessionId: ' + payload.sessionId + ', expected: ' + this._sessionId + ', discarding event: ' + JSON.stringify(payload));
+			return;
+		}
+
+		if (this._handleTuneFailedEvent(payload, eventName)) {
+			return;
+		}
+
+		if (this._handleAnomalyEvent(payload, eventName)) {
+			return;
+		}
+
+		if (this._handleStateEvent(payload, eventName)) {
+			return;
+		}
+
+		if (this._handleProgressEvent(payload, eventName)) {
+			return;
+		}
+
+		if (this._handleDurationEvent(payload, eventName)) {
+			return;
+		}
+
+		if (this._handleSpeedEvent(payload, eventName)) {
+			return;
+		}
+
+		if (this._handleBitrateEvent(payload, eventName)) {
+			return;
+		}
+
+		this.INFO(LOGTAG + 'unhandled event=' + (eventName || 'unknown') + ', payload=' + JSON.stringify(payload));
+	}
+
+	_handleTuneFailedEvent(payload, eventName = '') {
+		const tuneFailedMessage = payload.description || payload.msg || payload.message;
+		const isTuneFailedEvent = eventName === 'onTuneFailed';
+		if (isTuneFailedEvent || (typeof payload.code === 'number' && typeof tuneFailedMessage === 'string')) {
+			const shouldRetry = !!payload.shouldRetry;
+			this.WARN(LOGTAG + 'onTuneFailed: code=' + payload.code + ', description=' + tuneFailedMessage + ', shouldRetry=' + shouldRetry);
+			this._showPlaybackError(tuneFailedMessage || 'Playback failed', true);
+			if (!shouldRetry) {
+				this._mediaPlaybackFailed();
+			}
+			return true;
+		}
+		return false;
+	}
+
+	_handleAnomalyEvent(payload, eventName = '') {
+		const anomalySeverity = typeof payload.severity === 'number' ? payload.severity : null;
+		const isAnomalyEvent = eventName === 'onAnomalyReport';
+		if (isAnomalyEvent || anomalySeverity !== null) {
+			const anomalyMessage = typeof payload.msg === 'string'
+				? payload.msg
+				: (typeof payload.message === 'string' ? payload.message : 'unknown anomaly');
+			const severityForDecision = anomalySeverity === null ? 1 : anomalySeverity;
+			this.WARN(LOGTAG + 'onAnomalyReport: severity=' + severityForDecision + ', msg=' + anomalyMessage);
+
+			const isCriticalSeverity = severityForDecision <= 1;
+			const isCriticalMessage = /error|failed|fatal|unknown/i.test(anomalyMessage);
+			if (isCriticalSeverity || isCriticalMessage) {
+				const signature = severityForDecision + ':' + anomalyMessage;
+				if (signature !== this._lastCriticalAnomalySignature) {
+					this._lastCriticalAnomalySignature = signature;
+					this.ERR(LOGTAG + 'Critical anomaly detected. Triggering playback failure flow.');
+					this._showPlaybackError(anomalyMessage, true);
+					this._mediaPlaybackFailed();
+				}
+			}
+			return true;
+		}
+		return false;
+	}
+
+	_handleStateEvent(payload, eventName = '') {
+		if (eventName && eventName !== 'onStateChanged' && !payload.state) {
+			return false;
+		}
+		if (payload.state) {
+			const state = payload.state;
+			this._notifyStopWaiter(payload.sessionId, state);
 			const mappedState = this._mapPlayerStateToEnum(state);
 			if (mappedState !== null && state !== this._lastState) {
 				this._playbackStateChanged({ state: mappedState });
 				this._lastState = state;
 			}
 			if (state === 'playing' && !this._playbackStartedEmitted) {
+				this._clearPlaybackNotification();
 				this._mediaPlaybackStarted();
 				this._playbackStartedEmitted = true;
+				return;
 			}
 			if ((state === 'complete' || state === 'stopped') && !this._playbackEndedEmitted) {
 				this._playbackEndedEmitted = true;
 				this._mediaEndReached();
+				return;
 			}
 			if (state === 'error') {
+				this._showPlaybackError(payload.description || payload.message || 'Playback error occurred', true);
 				this._mediaPlaybackFailed();
+				return true;
 			}
+			return true;
 		}
+		return false;
+	}
 
-		const positionMs = typeof eventPayload.positionMs === 'number'
-			? eventPayload.positionMs
-			: (typeof eventPayload.position === 'number' ? eventPayload.position * 1000 : null);
+	_handleProgressEvent(payload, eventName = '') {
+		if (eventName && eventName !== 'onProgress' && typeof payload.positionMs !== 'number' && typeof payload.position !== 'number') {
+			return false;
+		}
+		const positionMs = typeof payload.positionMs === 'number'
+			? payload.positionMs
+			: (typeof payload.position === 'number' ? payload.position * 1000 : null);
 		if (positionMs !== null) {
+			if (positionMs > 0 && this._isPlaybackNotificationPinned) {
+				this._clearPlaybackNotification();
+			}
 			this._mediaProgressUpdate({ positionMiliseconds: positionMs });
+			return true;
 		}
+		return false;
+	}
 
-		const durationSeconds = typeof eventPayload.durationMs === 'number'
-			? eventPayload.durationMs / 1000
-			: (typeof eventPayload.duration === 'number' ? eventPayload.duration : null);
+	_handleDurationEvent(payload, eventName = '') {
+		if (eventName && eventName !== 'onProgress' && eventName !== 'onMediaMetadata' && typeof payload.durationMs !== 'number' && typeof payload.duration !== 'number') {
+			return false;
+		}
+		const durationSeconds = typeof payload.durationMs === 'number'
+			? payload.durationMs / 1000
+			: (typeof payload.duration === 'number' ? payload.duration : null);
 		if (durationSeconds !== null && durationSeconds >= 0 && durationSeconds !== this._lastDuration) {
 			this._mediaDurationChanged({ duration: durationSeconds });
 			this._lastDuration = durationSeconds;
+			return true;
 		}
+		return false;
+	}
 
-		const playbackRate = typeof eventPayload.rate === 'number'
-			? eventPayload.rate
-			: (typeof eventPayload.speed === 'number' ? eventPayload.speed : null);
+	_handleSpeedEvent(payload, eventName = '') {
+		if (eventName && eventName !== 'onSpeedChanged' && typeof payload.rate !== 'number' && typeof payload.speed !== 'number') {
+			return false;
+		}
+		const playbackRate = typeof payload.rate === 'number'
+			? payload.rate
+			: (typeof payload.speed === 'number' ? payload.speed : null);
 		if (playbackRate !== null && playbackRate !== this._lastRate) {
-			this._mediaSpeedChanged({ rate: playbackRate });
 			this._lastRate = playbackRate;
+			this._mediaSpeedChanged({ rate: playbackRate });
+			return true;
+		}
+		return false;
+	}
+
+	_handleBitrateEvent(payload, eventName = '') {
+		if (eventName && eventName !== 'onBitrateChanged' && eventName !== 'onProgress' && typeof payload.bitrate !== 'number' && typeof payload.profileBitrate !== 'number') {
+			return false;
+		}
+		const bitrate = typeof payload.bitrate === 'number'
+			? payload.bitrate
+			: (typeof payload.profileBitrate === 'number' ? payload.profileBitrate : null);
+		if (bitrate !== null && bitrate !== this._lastBitrate) {
+			this._lastBitrate = bitrate;
+			this._bitrateChanged({ bitrate });
+			return true;
+		}
+		return false;
+	}
+
+	_notifyStopWaiter(sessionId, state) {
+		const waiter = this._pendingStopWaiter;
+		if (!waiter || waiter.sessionId !== sessionId) {
+			return;
 		}
 
-		const bitrate = typeof eventPayload.bitrate === 'number'
-			? eventPayload.bitrate
-			: (typeof eventPayload.profileBitrate === 'number' ? eventPayload.profileBitrate : null);
-		if (bitrate !== null && bitrate !== this._lastBitrate) {
-			this._bitrateChanged({ bitrate });
-			this._lastBitrate = bitrate;
+		if (state === 'stopping') waiter.seenStopping = true;
+		if (state === 'idle') waiter.seenIdle = true;
+
+		if (waiter.seenStopping && waiter.seenIdle) {
+			clearTimeout(waiter.timeoutId);
+			this._pendingStopWaiter = null;
+			waiter.resolve();
 		}
+	}
+
+	_shouldWaitForStopSequence(sessionId) {
+		if (!sessionId) return false;
+		const activeStates = ['initializing', 'initialized', 'preparing', 'prepared', 'buffering', 'playing', 'paused', 'seeking', 'stopping'];
+		return activeStates.indexOf(this._lastState) !== -1;
+	}
+
+	_waitForStopStateSequence(sessionId) {
+		if (!sessionId) return Promise.resolve();
+		if (this._lastState === 'idle') return Promise.resolve();
+
+		return new Promise((resolve) => {
+			const timeoutId = setTimeout(() => {
+				if (this._pendingStopWaiter && this._pendingStopWaiter.sessionId === sessionId) {
+					this.WARN(LOGTAG + 'Timed out waiting for stopping->idle for sessionId: ' + sessionId);
+					this._pendingStopWaiter = null;
+				}
+				resolve();
+			}, 4000);
+
+			this._pendingStopWaiter = {
+				sessionId,
+				seenStopping: this._lastState === 'stopping',
+				seenIdle: this._lastState === 'idle',
+				timeoutId,
+				resolve,
+			};
+		});
+	}
+
+	_showCleanupNotification() {
+		this._showingCleanupNotification = true;
+		this._showPlaybackError('Cleaning up video playback sessions...', true);
+	}
+
+	_normalizeIpaEventPayload(eventPayload) {
+		if (!eventPayload || typeof eventPayload !== 'object') {
+			return {};
+		}
+
+		const nestedPayload =
+			(eventPayload.data && typeof eventPayload.data === 'object' && !Array.isArray(eventPayload.data) && eventPayload.data) ||
+			(eventPayload.payload && typeof eventPayload.payload === 'object' && !Array.isArray(eventPayload.payload) && eventPayload.payload) ||
+			null;
+
+		if (!nestedPayload) {
+			return eventPayload;
+		}
+
+		return { ...eventPayload, ...nestedPayload };
 	}
 
 	/**
@@ -406,18 +644,62 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 	/**
 	 * Event handler to handle the event of changing the playback speed.
 	 */
-	_mediaSpeedChanged() { }
+	_mediaSpeedChanged(speedEvent) {
+		const rate = speedEvent && typeof speedEvent.rate === 'number' ? speedEvent.rate : this._lastRate;
+		// 0x and 1x transitions are expected for pause/play and should not surface as warning banners.
+		if (rate === 0 || rate === 1) {
+			return;
+		}
+		this.LOG(LOGTAG + 'Playback speed changed to ' + rate + 'x');
+	}
 
 	/**
 	 * Event handler to handle the event of bit rate change.
 	 */
-	_bitrateChanged() { }
+	_bitrateChanged(bitrateEvent) {
+		// use the bitrate from the event if available, otherwise use the last known bitrate
+		const bitrate = bitrateEvent && typeof bitrateEvent.bitrate === 'number' ? bitrateEvent.bitrate : this._lastBitrate;
+		this.LOG(LOGTAG + 'Bitrate changed to ' + bitrate + ' bps');
+	}
 
 	/**
 	 * Function to handle the event of playback failure.
 	 */
 	_mediaPlaybackFailed() {
-		this.load(this.videoInfo)
+		this._showPlaybackError('Playback error occurred', true);
+	}
+
+	_showPlaybackError(message, pinned = false) {
+		if (!message) return;
+		if (this._isPlaybackNotificationPinned && !pinned) {
+			return;
+		}
+		if (this._errorMessageTimeout) {
+			clearTimeout(this._errorMessageTimeout);
+			this._errorMessageTimeout = null;
+		}
+		this._isPlaybackNotificationPinned = this._isPlaybackNotificationPinned || !!pinned;
+
+		this.showPlayerControls();
+		this.tag('PlaybackNotification').patch({ alpha: 1 });
+		this.tag('PlaybackNotification').tag('Message').text.text = message;
+
+		if (!this._isPlaybackNotificationPinned) {
+			this._errorMessageTimeout = setTimeout(() => {
+				this.tag('PlaybackNotification').setSmooth('alpha', 0, { duration: 0.4 });
+				this._errorMessageTimeout = null;
+			}, 6000);
+		}
+	}
+
+	_clearPlaybackNotification() {
+		this._isPlaybackNotificationPinned = false;
+		if (this._errorMessageTimeout) {
+			clearTimeout(this._errorMessageTimeout);
+			this._errorMessageTimeout = null;
+		}
+		this.tag('PlaybackNotification').setSmooth('alpha', 0, { duration: 0.25 });
+		this.tag('PlaybackNotification').tag('Message').text.text = '';
 	}
 
 	async pause() {
@@ -513,8 +795,10 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 	 */
 	load(videoInfo) {
 		this.videoInfo = videoInfo
+		this.setVideoRect(0, 0, 1920, 1080)
 		this.tag('PlayerControls').title = videoInfo.title
 		this.tag('PlayerControls').currentTime = 0
+		this.tag('PlayerControls').attribution = videoInfo.attribution || null
 		this.play(videoInfo.url, videoInfo.drmConfig)
 	}
 
@@ -525,8 +809,10 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 		if (url) {
 			this._pendingUrl = url;
 			this._pendingDrmConfig = drmConfig;
-			this._playPendingUrl();
 			this.playbackRateIndex = this.playbackSpeeds.indexOf(1);
+			if (this._ipaPlayer && this._sessionId && this._isSessionInitialized) {
+				this._playPendingUrl();
+			}
 			return;
 		}
 		// Resume from pause (signal from player controls)
@@ -543,12 +829,36 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 	 * Stop playback and free resources.
 	 */
 	async stop() {
+		if (this._stopPromise) {
+			return this._stopPromise;
+		}
+
+		this._stopPromise = (async () => {
+			const stoppingSessionId = this._sessionId;
+			const shouldWaitForStopSequence = this._shouldWaitForStopSequence(stoppingSessionId);
+			const stopSequencePromise = shouldWaitForStopSequence
+				? this._waitForStopStateSequence(stoppingSessionId)
+				: Promise.resolve();
+			const showedCleanupNotification = shouldWaitForStopSequence;
+			if (showedCleanupNotification) {
+				this._showCleanupNotification();
+			}
+
 		this._pendingUrl = null;
 		this._pendingDrmConfig = null;
-		this._lastState = null;
 		this._lastDuration = null;
 		this._lastRate = null;
 		this._lastBitrate = null;
+		this._lastCriticalAnomalySignature = null;
+		if (!this._showingCleanupNotification) {
+			if (this._errorMessageTimeout) {
+				clearTimeout(this._errorMessageTimeout);
+				this._errorMessageTimeout = null;
+			}
+			this._isPlaybackNotificationPinned = false;
+			this.tag('PlaybackNotification').alpha = 0;
+			this.tag('PlaybackNotification').tag('Message').text.text = '';
+		}
 		this._playbackStartedEmitted = false;
 		this._playbackEndedEmitted = false;
 		if (this._ipaPlayer && this._sessionId) {
@@ -557,6 +867,9 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 				this.LOG('stop response: ' + JSON.stringify(response));
 				if (response && response.status) {
 					this.LOG('Playback stopped successfully for sessionId: ' + this._sessionId);
+					if (shouldWaitForStopSequence) {
+						await stopSequencePromise;
+					}
 				} else {
 					this.ERR('Invalid response from stop: ' + JSON.stringify(response));
 				}
@@ -564,7 +877,18 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 				this.ERR('Error stopping playback: ' + JSON.stringify(error));
 			}
 		}
+		if (this._showingCleanupNotification) {
+			this._clearPlaybackNotification();
+			this._showingCleanupNotification = false;
+		}
+		this._lastState = null;
 		this.hidePlayerControls()
+		})().finally(() => {
+			this._showingCleanupNotification = false;
+			this._stopPromise = null;
+		});
+
+		return this._stopPromise;
 	}
 
 	async $changeChannel(url, showName, channelName) {
@@ -623,6 +947,9 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 	 * Function to hide the player controls.
 	 */
 	hidePlayerControls() {
+		if (this._isPlaybackNotificationPinned) {
+			return;
+		}
 		this.tag('PlayerControlsWrapper').setSmooth('y', 1080, { duration: 0.7 })
 		this.tag('PlayerControlsWrapper').setSmooth('alpha', 0, { duration: 0.7 })
 		this._setState('HideControls')
@@ -670,8 +997,14 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 	 *Function to hide player control on up key press.
 	 */
 
-	_handleBack() {
-		Router.back()
+	async _handleBack() {
+		if (!Router.isNavigating()) {
+			if (this._shouldWaitForStopSequence(this._sessionId)) {
+				this._showCleanupNotification();
+			}
+			await this.stop()
+			Router.back()
+		}
 	}
 
 	async _inactive() {
@@ -680,7 +1013,10 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 		this.isUSB = false
 		this.isChannel = false
 		this.tag('PlayerControls').reset()
-		this.hidePlayerControls()
+		if (this._shouldWaitForStopSequence(this._sessionId)) {
+			this._showCleanupNotification();
+		}
+		await this.stop()
 		this._pendingUrl = null
 		this._pendingDrmConfig = null
 		this._playInFlight = false
@@ -690,16 +1026,16 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 		this._lastBitrate = null
 		this._playbackStartedEmitted = false
 		this._playbackEndedEmitted = false
+		this._isSessionInitialized = false;
 
-		// Snapshot and immediately null instance fields so a concurrent _active()
-		// gets a clean slate and is not affected by this async teardown.
+		// Snapshot and null current refs first to avoid races with a new activation.
 		const player = this._ipaPlayer;
-		const sessionId = this._sessionId;
 		this._ipaPlayer = null;
 		this._sessionId = null;
 		this._sessionReadyPromise = null;
 
 		if (!player) {
+			this.WARN(LOGTAG + 'inactive: player instance is null.');
 			return;
 		}
 
@@ -707,15 +1043,6 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 			await player.unregister(this._boundOnIpaEvent);
 		} catch (error) {
 			this.WARN(LOGTAG + 'unregister error: ' + (error && error.message ? error.message : JSON.stringify(error)));
-		}
-
-		try {
-			if (sessionId && sessionId.length > 0) {
-				const response = await player.closeSession(sessionId);
-				this.LOG('closeSession response: ' + JSON.stringify(response));
-			}
-		} catch (error) {
-			this.ERR('Error closing session: ' + JSON.stringify(error));
 		} finally {
 			player.destroy();
 		}
@@ -724,6 +1051,7 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 	_focus() {
 		this._setState('HideControls')
 		this.updateInfo()
+		this.setVideoRect(0, 0, 1920, 1080)
 		if (this.isChannel) {
 			this.tag('ChannelOverlay').$focusChannel(this.channelIndex)
 			this.tag('InfoOverlay').y = 790
@@ -737,6 +1065,7 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 		if (this.data == undefined || this.data.length <= 1) {
 			this.tag('PlayerControls').hideNextPrevious()
 		}
+		this.showPlayerControls()
 	}
 	/**
 	 * Function to define the different states of the video player.

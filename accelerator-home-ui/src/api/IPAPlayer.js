@@ -84,15 +84,47 @@ const EVENTS = {
 	ON_SPEED_CHANGED: 'onSpeedChanged',
 	ON_BUFFERING_CHANGED: 'onBufferingChanged',
 	ON_SEEKED: 'onSeeked',
-	ON_BITRATE_CHANGED: 'onBitrateChanged'
+	ON_BITRATE_CHANGED: 'onBitrateChanged',
+	ON_CC_HANDLE_RECEIVED: 'onCCHandleReceived',
+	ON_MEDIA_METADATA: 'onMediaMetadata',
+	ON_TIMED_METADATA: 'onTimedMetadata',
+	ON_BULK_TIMED_METADATA: 'onBulkTimedMetadata',
+	ON_SPEEDS_CHANGED: 'onSpeedsChanged',
+	ON_TUNE_PROFILING: 'onTuneProfiling',
+	ON_DRM_METADATA: 'onDrmMetadata',
+	ON_ANOMALY_REPORT: 'onAnomalyReport',
+	ON_WEBVTT_CUE_DATA: 'onWebVttCueData',
+	ON_AD_RESOLVED: 'onAdResolved',
+	ON_AD_RESERVATION_START: 'onAdReservationStart',
+	ON_AD_RESERVATION_END: 'onAdReservationEnd',
+	ON_AD_PLACEMENT_START: 'onAdPlacementStart',
+	ON_AD_PLACEMENT_END: 'onAdPlacementEnd',
+	ON_AD_PLACEMENT_ERROR: 'onAdPlacementError',
+	ON_AD_PLACEMENT_PROGRESS: 'onAdPlacementProgress',
+	ON_METRICS_DATA: 'onMetricsData',
+	ON_ID3_METADATA: 'onID3Metadata',
+	ON_DRM_MESSAGE: 'onDrmMessage',
+	ON_CONTENT_GAP: 'onContentGap',
+	ON_HTTP_RESPONSE_HEADER: 'onHttpResponseHeader',
+	ON_CONTENT_PROTECTION_DATA_UPDATE: 'onContentProtectionDataUpdate',
+	ON_MANIFEST_REFRESH: 'onManifestRefresh',
+	ON_TUNE_TIME_METRICS: 'onTuneTimeMetrics',
+	ON_MONITOR_AV_STATUS: 'onMonitorAVStatus'
 }
 
 class IPAPlayerRPC {
 	constructor() {
+		if (IPAPlayerRPC._instance) {
+			return IPAPlayerRPC._instance;
+		}
+		// PoC: Limit to one session at this time
+		this.validInstanceId = null;
+		this.validDisplayId = null;
+
 		this.pending = new Map();
 		this.defaultRequestTimeoutMs = 10000;
-		this.INFO = function () { };
-		this.LOG = function () { };
+		this.INFO = function () { }; // Disable INFO logs by default
+		this.LOG = function () { }; // Disable LOG logs by default
 		this.ERR = console.error;
 		this.WARN = console.warn;
 		this.activeSessionId = null;
@@ -120,7 +152,6 @@ class IPAPlayerRPC {
 		}
 		this.socket.onclose = () => {
 			this.isOpen = false;
-			this.activeSessionId = null;
 			this.pending.forEach(({ reject, timeoutId }) => {
 				clearTimeout(timeoutId);
 				reject(new Error('WebSocket connection closed'));
@@ -128,6 +159,15 @@ class IPAPlayerRPC {
 			this.pending.clear();
 			this.ERR(LOGTAG + 'WebSocket connection closed with IPAPlayer backend at ' + wsUrl);
 		}
+
+		IPAPlayerRPC._instance = this;
+	}
+
+	static getInstance() {
+		if (!IPAPlayerRPC._instance) {
+			IPAPlayerRPC._instance = new IPAPlayerRPC();
+		}
+		return IPAPlayerRPC._instance;
 	}
 
 	_normalizeResponse(response) {
@@ -187,6 +227,7 @@ class IPAPlayerRPC {
 		const method = response && typeof response.method === 'string' ? response.method : '';
 		const methodPrefix = EVENT_SUBSCRIPTION_ID + '.';
 		if (!method || method.indexOf(methodPrefix) !== 0) {
+			this.WARN && this.WARN(LOGTAG + 'Received IPAPlayer event with invalid method: ' + method);
 			return false;
 		}
 
@@ -398,11 +439,23 @@ class IPAPlayerRPC {
 	async openSession(instanceId, displayId) {
 		const validInstanceId = this._getValidatedString(instanceId, 'instanceId', METHODS.OPEN_SESSION);
 		const validDisplayId = this._getValidatedString(displayId, 'displayId', METHODS.OPEN_SESSION);
+
+		if (this.validInstanceId !== null || this.validDisplayId !== null) {
+			if (this.validInstanceId === validInstanceId && this.validDisplayId === validDisplayId) {
+				this.LOG(LOGTAG + `Reusing existing session with instanceId: ${this.validInstanceId} and displayId: ${this.validDisplayId}`);
+				return { status: true, sessionId: this.activeSessionId };
+			}
+			throw new Error(`A session is already open with instanceId: ${this.validInstanceId} and displayId: ${this.validDisplayId}. Please close the existing session before opening a new one.`);
+		}
+
 		const result = await this._invokeExpectSuccess(METHODS.OPEN_SESSION, {
 			instanceId: validInstanceId,
 			displayId: validDisplayId
 		});
+
 		if (result && result.sessionId) {
+			this.validInstanceId = validInstanceId;
+			this.validDisplayId = validDisplayId;
 			this.activeSessionId = result.sessionId;
 			return result;
 		}
@@ -476,6 +529,8 @@ class IPAPlayerRPC {
 	closeSession(sessionId) {
 		return this._invokeWithSessionExpectSuccess(METHODS.CLOSE_SESSION, sessionId, {}).then((result) => {
 			this.activeSessionId = null;
+			this.validInstanceId = null;
+			this.validDisplayId = null;
 			return result;
 		});
 	}
@@ -612,13 +667,6 @@ class IPAPlayerRPC {
 			}
 		}
 
-		if (this.socket) {
-			this.socket.onclose = null;
-			this.socket.onerror = null;
-			this.socket.onmessage = null;
-			this.socket.close();
-			this.socket = null;
-		}
 		this.pending.forEach(({ reject, timeoutId }) => {
 			clearTimeout(timeoutId);
 			reject(new Error('IPAPlayer destroyed'));
@@ -628,9 +676,9 @@ class IPAPlayerRPC {
 		this.isRegisteredForEvents = false;
 		this.pendingRegisterPromise = null;
 		this.pendingUnregisterPromise = null;
-		this.activeSessionId = null;
-		this.isOpen = false;
 	}
 }
+
+IPAPlayerRPC._instance = null;
 
 export default IPAPlayerRPC;
