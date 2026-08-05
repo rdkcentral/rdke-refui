@@ -18,13 +18,8 @@
  **/
 import { Language, Lightning, Router } from '@lightningjs/sdk'
 import LanguageItem from '../../items/LanguageItem'
-import { availableLanguages, availableLanguageCodes, CONFIG } from '../../Config/Config'
-import AppApi from '../../api/AppApi';
-import thunderJS from 'ThunderJS';
-
-
-const appApi = new AppApi()
-const thunder = thunderJS(CONFIG.thunderConfig)
+import { availableLanguages, availableLanguageCodes } from '../../Config/Config'
+import UserSettingsApi from '../../api/UserSettingsApi';
 
 export default class LanguageScreen extends Lightning.Component {
 
@@ -113,7 +108,7 @@ export default class LanguageScreen extends Lightning.Component {
         _handleEnter() {
           if (Language.get() !== availableLanguages[this._Languages.tag('List').index]) {
             let updatedLanguage = availableLanguageCodes[availableLanguages[this._Languages.tag('List').index]]
-            appApi.setUILanguage(updatedLanguage)
+            UserSettingsApi.setPresentationLanguage(updatedLanguage)
             localStorage.setItem('Language',availableLanguages[this._Languages.tag('List').index])
             location.reload();
           }

@@ -39,47 +39,13 @@ export default class PowerManagerApi {
     this.ERR = console.error;
     this.WARN = console.warn;
     this.callsign = "org.rdk.PowerManager";
-    this._events = new Map();
   }
-
 
   static get() {
     if (instance === null) {
       instance = new PowerManagerApi()
     }
     return instance;
-  }
-
-  activate() {
-      return new Promise((resolve, reject) => {
-          this.thunder.Controller.activate({ callsign: this.callsign })
-              .then(() => {
-                  this.thunder.on(this.callsign, 'onPowerModeChanged', notification => {
-                    this.LOG("onPowerModeChanged " + JSON.stringify(notification));
-                    if (this._events.has('onPowerModeChanged')) {
-                      this._events.get('onPowerModeChanged')(notification);
-                    }
-                  });
-                  resolve(true)
-              })
-              .catch(err => {
-                  this.ERR("Error Activation " + JSON.stringify(err))
-                  reject(err)
-              })
-      })
-  }
-
-  deactivate() {
-      return new Promise((resolve, reject) => {
-          this.thunder.Controller.deactivate({ callsign: this.callsign })
-              .then(() => {
-                  resolve(true)
-              })
-              .catch(err => {
-                  this.ERR("Error Deactivation " + JSON.stringify(err))
-                  reject(err)
-              })
-      })
   }
 
   setWakeupSourceConfig(params) {
@@ -153,9 +119,5 @@ export default class PowerManagerApi {
           resolve(false)
         })
     })
-  }
-
-  registerEvent(eventId, callback) {
-    this._events.set(eventId, callback);
   }
 }
