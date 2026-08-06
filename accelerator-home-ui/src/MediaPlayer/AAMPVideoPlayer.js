@@ -72,12 +72,13 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 			this.channelIndex = args.channelIndex
 		}
 		let url = args.url ? args.url : 'http://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8'
+		const title = args.displayName || args.title || this._resolveVideoTitle(args)
 		if (args.isAudio) {
 			this.tag('Image').alpha = 1
 		}
 		try {
 			this.load({
-				title: 'Parkour event',
+				title,
 				url: url,
 				drmConfig: args.drmConfig || null,
 				attribution: args.attribution || null,
@@ -125,6 +126,44 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 						fontSize: 35,
 						textColor: 0xffFFFFFF,
 						wordWrap: true, wordWrapWidth: 1350, maxLines: 1,
+					}
+				}
+			},
+			TitleBar: {
+				alpha: 0,
+				y: -180,
+				zIndex: 3,
+				h: 190,
+				w: 1920,
+				rect: true,
+				colorTop: 0xFF000000,
+				colorBottom: 0x00000000,
+				AssetTitle: {
+					x: 90,
+					y: 36,
+					text: {
+						text: '',
+						fontFace: CONFIG.language.font,
+						fontSize: 40,
+						fontStyle: 'bold',
+						textColor: 0xffFFFFFF,
+						wordWrap: true,
+						wordWrapWidth: 1740,
+						maxLines: 1,
+					}
+				},
+				AssetAttribution: {
+					x: 90,
+					y: 90,
+					alpha: 0,
+					text: {
+						text: '',
+						fontFace: CONFIG.language.font,
+						fontSize: 22,
+						textColor: 0xffCCCCCC,
+						wordWrap: true,
+						wordWrapWidth: 1740,
+						maxLines: 1,
 					}
 				}
 			},
@@ -192,6 +231,16 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 				}
 			}
 		}
+	}
+
+	_resolveVideoTitle(args = {}) {
+		if (args.showName) {
+			return args.showName
+		}
+		if (args.list && args.currentIndex !== undefined && args.list[args.currentIndex] && args.list[args.currentIndex].data) {
+			return args.list[args.currentIndex].data.displayName || args.list[args.currentIndex].data.title || 'Parkour event'
+		}
+		return 'Parkour event'
 	}
 
 	async _init() {
@@ -796,9 +845,21 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 	load(videoInfo) {
 		this.videoInfo = videoInfo
 		this.setVideoRect(0, 0, 1920, 1080)
+		this.tag('TitleBar').tag('AssetTitle').text.text = videoInfo.title || ''
+		if (videoInfo.attribution) {
+			this.tag('TitleBar').tag('AssetAttribution').patch({
+				alpha: 1,
+				text: { text: videoInfo.attribution }
+			})
+		} else {
+			this.tag('TitleBar').tag('AssetAttribution').patch({
+				alpha: 0,
+				text: { text: '' }
+			})
+		}
 		this.tag('PlayerControls').title = videoInfo.title
 		this.tag('PlayerControls').currentTime = 0
-		this.tag('PlayerControls').attribution = videoInfo.attribution || null
+		this.tag('PlayerControls').attribution = null
 		this.play(videoInfo.url, videoInfo.drmConfig)
 	}
 
@@ -950,6 +1011,9 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 		if (this._isPlaybackNotificationPinned) {
 			return;
 		}
+		clearTimeout(this.timeout)
+		this.tag('TitleBar').setSmooth('alpha', 0, { duration: 0.7 })
+		this.tag('TitleBar').setSmooth('y', -180, { duration: 0.7 })
 		this.tag('PlayerControlsWrapper').setSmooth('y', 1080, { duration: 0.7 })
 		this.tag('PlayerControlsWrapper').setSmooth('alpha', 0, { duration: 0.7 })
 		this._setState('HideControls')
@@ -961,6 +1025,9 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 	 */
 	showPlayerControls() {
 		// this.tag('PlayerControls').reset()
+		clearTimeout(this.timeout)
+		this.tag('TitleBar').setSmooth('alpha', 1, { duration: 0.7 })
+		this.tag('TitleBar').setSmooth('y', 0, { duration: 0.7 })
 		this.tag('PlayerControlsWrapper').setSmooth('alpha', 1)
 		this.tag('PlayerControlsWrapper').setSmooth('y', 750, { duration: 0.7 })
 		this._setState('ShowControls')

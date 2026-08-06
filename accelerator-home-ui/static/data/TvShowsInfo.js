@@ -65,6 +65,26 @@ export var tvShowsInfo = [
       preferredDrm: 1
     }
   },
+	{
+		displayName: 'Sintel 4K Widevine Alpha',
+		url: '/images/tvShows/summerland.jpg',
+		attribution: '"Sintel" © copyright 2010, Blender Foundation | www.blender.org | CC BY 3.0',
+		uri: "https://storage.googleapis.com/shaka-demo-assets/sintel-widevine/dash.mpd",
+		drmConfig: {
+			licenseServerUrl: "https://cwip-shaka-proxy.appspot.com/no_auth",
+			preferredDrm: 1
+		}
+	},
+	{
+		displayName: 'Sintel 4K WV+Ads',
+		url: '/images/tvShows/summerland.jpg',
+		attribution: '"Sintel" © copyright 2010, Blender Foundation | www.blender.org | CC BY 3.0',
+		uri: "https://storage.googleapis.com/shaka-demo-assets/sintel-widevine/dash.mpd",
+		drmConfig: {
+			licenseServerUrl: "https://cwip-shaka-proxy.appspot.com/no_auth",
+			preferredDrm: 1
+		}
+	},
   {
     // "Tears of Steel" © copyright 2012, Blender Foundation | mango.blender.org | CC BY 3.0
     displayName: 'Playready Test',
