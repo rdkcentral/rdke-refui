@@ -993,8 +993,17 @@ export default class App extends Router.App {
 					this.LOG("_PowerStateHandlingWhileReboot: powerstate after setting to new powerstate " + JSON.stringify(GLOBALS.powerState) + " and ");
 					sessionStorage.setItem('powerStateRestored', 'true');
 				} else {
-					this.LOG("_PowerStateHandlingWhileReboot: Rebooting the device as set PowerState did not succeed (resolved false) for " + JSON.stringify(this._oldPowerStateWhileReboot));
-					appApi.reboot("setPowerState Api Failure");
+					// setPowerState resolved false (call did not succeed). Avoid an automatic
+					// reboot here to prevent a reboot loop if PowerManager keeps returning a
+					// non-null result. Keep the current power state and leave powerStateRestored
+					// unset so restoration can be retried later.
+					this.LOG("_PowerStateHandlingWhileReboot: setPowerState did not succeed (resolved false) for " + JSON.stringify(this._oldPowerStateWhileReboot) + ". Keeping current power state; leaving powerStateRestored unset for a later retry.");
+					appApi.getPowerState().then(res => {
+						GLOBALS.powerState = res.currentState;
+						this.LOG("_PowerStateHandlingWhileReboot: current power state after failed restore " + JSON.stringify(GLOBALS.powerState));
+					}).catch(err => {
+						this.LOG("_PowerStateHandlingWhileReboot: Error getting current power state after failed restore " + JSON.stringify(err));
+					});
 				}
 			}).catch(err => {
 				this.LOG("_PowerStateHandlingWhileReboot: Rebooting the device as set PowerState failed due to " + JSON.stringify(err));
