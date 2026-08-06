@@ -983,14 +983,19 @@ export default class App extends Router.App {
 		if (this._oldPowerStateWhileReboot != this._powerStateWhileReboot) {
 			this.LOG("_PowerStateHandlingWhileReboot: old power state is not equal to powerstate while reboot " + JSON.stringify(this._oldPowerStateWhileReboot) + " " + JSON.stringify(this._powerStateWhileReboot));
 			appApi.setPowerState(this._oldPowerStateWhileReboot).then(res => {
-				this.LOG("_PowerStateHandlingWhileReboot: successfully set powerstate to old powerstate " + JSON.stringify(this._oldPowerStateWhileReboot));
+				// setPowerState resolves false when the call did not succeed, so only
+				// mark the state as restored after a confirmed successful restore.
 				if (res) {
+					this.LOG("_PowerStateHandlingWhileReboot: successfully set powerstate to old powerstate " + JSON.stringify(this._oldPowerStateWhileReboot));
 					appApi.getPowerState().then(res => {
 						GLOBALS.powerState = res.currentState;
 					});
 					this.LOG("_PowerStateHandlingWhileReboot: powerstate after setting to new powerstate " + JSON.stringify(GLOBALS.powerState) + " and ");
+					sessionStorage.setItem('powerStateRestored', 'true');
+				} else {
+					this.LOG("_PowerStateHandlingWhileReboot: Rebooting the device as set PowerState did not succeed (resolved false) for " + JSON.stringify(this._oldPowerStateWhileReboot));
+					appApi.reboot("setPowerState Api Failure");
 				}
-				sessionStorage.setItem('powerStateRestored', 'true');
 			}).catch(err => {
 				this.LOG("_PowerStateHandlingWhileReboot: Rebooting the device as set PowerState failed due to " + JSON.stringify(err));
 				appApi.reboot("setPowerState Api Failure");
