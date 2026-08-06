@@ -22,7 +22,6 @@ import { COLORS } from "../../colors/Colors";
 import { CONFIG, GLOBALS } from "../../Config/Config";
 import AppApi from "../../api/AppApi";
 import ResolutionOverlay from './ResolutionOverlay';
-import FireBoltApi from '../../api/firebolt/FireBoltApi';
 
 /**
  * Class for Video screen.
@@ -185,58 +184,30 @@ export default class VideoScreen extends Lightning.Component {
   }
 
   _focus() {
-    if ("FireboltMainApp-refui" === GLOBALS.selfclientAppName)
-    {
-      FireBoltApi.get().deviceinfo.getscreenresolution().then(resolution =>{
-        this.tag("Resolution.Title").text.text = Language.translate('Resolution: ') + `${JSON.stringify(resolution[0])} , ${JSON.stringify(resolution[1])}`;
-      })
-      FireBoltApi.get().deviceinfo.gethdcp().then(res=>{
-        let hdcp =""
-        for (let key in res)
-        {
-          hdcp += `\t\t${key} : ${res[key]} `
-          hdcp += ","
-        }
-        this.tag("HDCP.Title").text.text = `${Language.translate('HDCP Status: ')} ${hdcp.substring(0, hdcp.length -1)}`
-      })
-      FireBoltApi.get().deviceinfo.gethdr().then(res=>{
-        let hdr =""
-        for (let key in res)
-        {
-          hdr += `\t\t${key} : ${res[key]}`
-          hdr += ","
-        }
-        this.tag("HDR.Title").text.text = `${Language.translate('High Dynamic Range: ')}${hdr.substring(0,hdr.length -1 )}`
-      })
-      
-    }
-    else{
-      this._appApi.getResolution().then(resolution => {
-        this.tag("Resolution.Title").text.text = Language.translate('Resolution: ') + resolution;
-      }).catch(err => {
-        this.ERR("Error fetching the Resolution" + JSON.stringify(err))
-      })
-      this._appApi.getHDCPStatus().then(result => {
-        if (result.isHDCPCompliant && result.isHDCPEnabled) {
-          this.tag("HDCP.Title").text.text = `${Language.translate('HDCP Status: ')}Enabled, Version: ${result.currentHDCPVersion}`;
-        } else {
-          this.tag("HDCP.Title").text.text = `${Language.translate('HDCP Status: ')}Not Supported `;
-        }
+    this._appApi.getResolution().then(resolution => {
+      this.tag("Resolution.Title").text.text = Language.translate('Resolution: ') + resolution;
+    }).catch(err => {
+      this.ERR("Error fetching the Resolution" + JSON.stringify(err))
+    })
+    this._appApi.getHDCPStatus().then(result => {
+      if (result.isHDCPCompliant && result.isHDCPEnabled) {
+        this.tag("HDCP.Title").text.text = `${Language.translate('HDCP Status: ')}Enabled, Version: ${result.currentHDCPVersion}`;
+      } else {
+        this.tag("HDCP.Title").text.text = `${Language.translate('HDCP Status: ')}Not Supported `;
+      }
+    })
 
-      })
-
-      this._appApi.getHDRSetting().then(result => {
-        const availableHDROptions = {
-          "HdrOff": "Off",
-          "Hdr10": "HDR 10",
-          "Hdr10Plus": "HDR 10+",
-          "HdrHlg": "HLG",
-          "HdrDolbyvision": "Dolby Vision",
-          "HdrTechnicolor": "Technicolor HDR"
-        }
-        this.tag("HDR.Title").text.text = Language.translate('High Dynamic Range: ') + availableHDROptions[result];
-      })
-    }
+    this._appApi.getHDRSetting().then(result => {
+      const availableHDROptions = {
+        "HdrOff": "Off",
+        "Hdr10": "HDR 10",
+        "Hdr10Plus": "HDR 10+",
+        "HdrHlg": "HLG",
+        "HdrDolbyvision": "Dolby Vision",
+        "HdrTechnicolor": "Technicolor HDR"
+      }
+      this.tag("HDR.Title").text.text = Language.translate('High Dynamic Range: ') + availableHDROptions[result];
+    })
     this._setState('Resolution')
   }
 

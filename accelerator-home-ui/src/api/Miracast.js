@@ -18,7 +18,7 @@
  **/
 import ThunderJS from 'ThunderJS';
 import { CONFIG } from '../Config/Config'
-import { Metrics } from "@firebolt-js/sdk";
+
 export default class Miracast {
     constructor() {
         this._thunder = ThunderJS(CONFIG.thunderConfig);
@@ -36,7 +36,6 @@ export default class Miracast {
         }).catch(err => {
             reject(err)
             this.ERR('MiracastService: Error Activation ' + JSON.stringify(err));
-            Metrics.error(Metrics.ErrorType.OTHER,"MiracastServiceError", "Error while Thunder Controller MiracastService activate "+JSON.stringify(err), false, null)
         })
         })
     }
@@ -49,7 +48,6 @@ export default class Miracast {
         }).catch(err => {
             reject(err)
             this.ERR('MiracastPlayer: Error Activation ' + JSON.stringify(err));
-            Metrics.error(Metrics.ErrorType.OTHER,"MiracastPlayerError", "Error while Thunder Controller MiracastPlayer activate "+JSON.stringify(err), false, null)
         })
         })
     }
@@ -63,7 +61,6 @@ export default class Miracast {
         }).catch(err => {
             reject(err)
             this.ERR('MiracastService: Error deactivation ' + JSON.stringify(err))
-            Metrics.error(Metrics.ErrorType.OTHER,"MiracastServiceError", "Error while Thunder Controller MiracastService deactivate "+JSON.stringify(err), false, null)
         })
         })
     }
@@ -77,7 +74,6 @@ export default class Miracast {
         }).catch(err => {
             reject(err)
             this.ERR('MiracastPlayer: Error deactivation ' + JSON.stringify(err))
-            Metrics.error(Metrics.ErrorType.OTHER,"MiracastPlayerError", "Error while Thunder Controller MiracastPlayer deactivate "+JSON.stringify(err), false, null)
         })
         })
     }
@@ -91,7 +87,6 @@ export default class Miracast {
                 })
                 .catch(err => {
                     this.ERR("Error response from setEnable " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER,"setEnable", "Error while Thunder  setEnable status "+JSON.stringify(err), false, null)
                     reject(err)
                 })
         })
@@ -107,7 +102,6 @@ export default class Miracast {
                 })
                 .catch(err => {
                     this.ERR("Error response from getEnable " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER,"getEnable", "Error while Thunder  getEnable status "+JSON.stringify(err), false, null)
                     reject(err)
                 })
         })
@@ -123,7 +117,6 @@ export default class Miracast {
                 })
                 .catch(err => {
                     this.ERR("Error response from acceptClientConnection " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER,"acceptClientConnection", "Error while Thunder  acceptClientConnection status "+JSON.stringify(err), false, null)
                     reject(err)
                 })
         })
@@ -139,7 +132,6 @@ export default class Miracast {
                 })
                 .catch(err => {
                     this.ERR("Error response from updatePlayerState " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER,"updatePlayerState", "Error while Thunder  updatePlayerState status "+JSON.stringify(err), false, null)
                     reject(err)
                 })
         })
@@ -155,7 +147,6 @@ export default class Miracast {
                 })
                 .catch(err => {
                     this.ERR("Error response from stopClientConnection " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER,"stopClientConnection", "Error while Thunder  stopClientConnection status "+JSON.stringify(err), false, null)
                     reject(err)
                 })
         })
@@ -171,7 +162,6 @@ export default class Miracast {
                 })
                 .catch(err => {
                     this.ERR("Error response from setLogging " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER,"setLogging", "Error while Thunder  setLogging status "+JSON.stringify(err), false, null)
                     reject(err)
                 })
         })
@@ -189,7 +179,6 @@ export default class Miracast {
                 })
                 .catch(err => {
                     this.ERR("Error response from playRequest " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER,"playRequest", "Error while Thunder  playRequest status "+JSON.stringify(err), false, null)
                     reject(err)
                 })
         })
@@ -205,7 +194,6 @@ export default class Miracast {
                 })
                 .catch(err => {
                     this.ERR("Error response from stopRequest " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER,"stopRequest", "Error while Thunder  stopRequest status "+JSON.stringify(err), false, null)
                     reject(err)
                 })
         })
@@ -221,7 +209,6 @@ export default class Miracast {
                 })
                 .catch(err => {
                     this.ERR("Error response from setPlayerState " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER,"setPlayerState", "Error while Thunder  setPlayerState status "+JSON.stringify(err), false, null)
                     reject(err)
                 })
         })
@@ -237,7 +224,6 @@ export default class Miracast {
                 })
                 .catch(err => {
                     this.ERR("Error response from setVideoRectangle " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER,"setVideoRectangle", "Error while Thunder  setVideoRectangle status "+JSON.stringify(err), false, null)
                     reject(err)
                 })
         })
@@ -253,7 +239,6 @@ export default class Miracast {
                 })
                 .catch(err => {
                     this.ERR("Error response from setRTSPWaitTimeout " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER,"setRTSPWaitTimeout", "Error while Thunder  setRTSPWaitTimeout status "+JSON.stringify(err), false, null)
                     reject(err)
                 })
         })
@@ -269,7 +254,6 @@ export default class Miracast {
                 })
                 .catch(err => {
                     this.ERR("Error response from setLogging " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER,"setLogging", "Error while Thunder  setLogging status "+JSON.stringify(err), false, null)
                     reject(err)
                 })
         })
@@ -290,7 +274,6 @@ export default class Miracast {
                 })
                 .catch(err => {
                     this.ERR("Error response from setVideoFormats " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER,"setVideoFormats", "Error while Thunder  playResetVideoFormatsquest status "+JSON.stringify(err), false, null)
                     reject(err)
                 })
         })
@@ -306,7 +289,6 @@ export default class Miracast {
                 })
                 .catch(err => {
                     this.ERR("Error response from setAudioFormats " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER,"setAudioFormats", "Error while Thunder  setAudioFormats status "+JSON.stringify(err), false, null)
                     reject(err)
                 })
         })

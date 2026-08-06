@@ -156,15 +156,8 @@ export default class ChannelOverlay extends Lightning.Component {
     let focusedChannelIdx = this.tag("Channels").index;
     let channel = this.options[focusedChannelIdx];
     if (channel.dvburi === "OTT") {
-      let params = {
-        launchLocation: "epgScreen",
-        url: channel.url
-      }
-      this.appApi.launchApp(channel.callsign, params).then(() => {
-        this.dtvApi.exitChannel()
-      }).catch(() => {
-        this.dtvApi.exitChannel() //to exit previous channel regardless the app launch succeeds or fails
-      })
+      // FIXME: Implement DVB OTT channel launch logic here.
+      this.WARN("DVB OTT channel launch not implemented.");
     } else if (channel.dvburi.startsWith("C_")) {
       if (!Router.isNavigating()) {
         let playerParams = {

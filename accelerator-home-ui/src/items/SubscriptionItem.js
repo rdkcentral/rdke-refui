@@ -162,19 +162,9 @@ export default class SubscriptionItem extends Lightning.Component {
 
   }
   _handleEnter() {
-    // this.handleDone()
-    if (this._item.host["_@attribute"].toLowerCase() === "youtube") {
-      let appApi = new AppApi()
-      this.LOG("this._item.url: " + JSON.stringify(this._item.url));
-      let params = {
-        url: this._item.url,
-        launchLocation: "gracenote",
-        appIdentifier: 'n:3'
-      }
-      appApi.launchApp("YouTube", params).catch((err) => {
-        this.ERR("Error in launching YouTube: " + JSON.stringify(err))
-      });
-    }
+    // FIXME: Implement subscription selection logic here.
+    this.WARN("Subscription selection not implemented.");
+    this.handleDone()
   }
   _handleRight() {
     // index = (3 + (++index)) % 3;

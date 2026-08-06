@@ -18,7 +18,6 @@
  **/
 import ThunderJS from 'ThunderJS';
 import { CONFIG } from '../Config/Config'
-import { Metrics } from "@firebolt-js/sdk"
 
 export const WiFiState = {
   WIFI_STATE_UNINSTALLED:0,
@@ -66,7 +65,6 @@ class NetworkManager {
             }
           } else {
             this.ERR("NetworkManager: Error " + infoMessage + " " + JSON.stringify(params) + " result: " + JSON.stringify(result));
-            Metrics.error(Metrics.ErrorType.OTHER, "NetworkManagerError", `Error ${infoMessage} ${JSON.stringify(params)} result: ${JSON.stringify(result)}`, false, null)
             reject(result.success);
           }
         })
@@ -74,31 +72,6 @@ class NetworkManager {
           this.ERR("NetworkManager: Error " + infoMessage + " " + JSON.stringify(err));
           reject(err);
         });
-    });
-  }
-  activate() {
-    return new Promise((resolve, reject) => {
-      this.thunder.call('Controller', 'activate', { callsign: this.callsign }).then(result => {
-        this.INFO(this.callsign + " NetworkManager activate result: " + JSON.stringify(result))
-        resolve(true)
-      }).catch(err => {
-        this.ERR(this.callsign + " NetworkManager activate error: " + JSON.stringify(err))
-        Metrics.error(Metrics.ErrorType.NETWORK,"NetworkManagerError", "Error while Thunder Controller NetworkManager activate "+JSON.stringify(err), false, null)
-        reject(err)
-      });
-    });
-  }
-
-  deactivate() {
-    return new Promise((resolve, reject) => {
-      this.thunder.call('Controller', 'deactivate', { callsign: this.callsign }).then(result => {
-        this.INFO(this.callsign + " NetworkManager deactivate result: " + JSON.stringify(result))
-        resolve(true)
-      }).catch(err => {
-        this.ERR(this.callsign + " NetworkManager deactivate error: " + JSON.stringify(err))
-        Metrics.error(Metrics.ErrorType.NETWORK,"NetworkManagerError", "Error while Thunder Controller NetworkManager deactivate "+JSON.stringify(err), false, null)
-        reject(err)
-      });
     });
   }
 
@@ -142,7 +115,6 @@ class NetworkManager {
 
       }).catch(err => {
         this.ERR(this.callsign + ": connect error: " + JSON.stringify(err))
-        Metrics.error(Metrics.ErrorType.NETWORK,"NetworkManagerError", "Error in Thunder NetworkManager connect params "+JSON.stringify(err), false, null)
         reject(err)
       })
     })

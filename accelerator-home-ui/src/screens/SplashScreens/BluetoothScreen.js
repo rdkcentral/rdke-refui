@@ -298,13 +298,7 @@ export default class BluetoothScreen extends Lightning.Component {
         }
     }
 
-    async rcPairingFlow(activatePlugin = false) {
-        if (activatePlugin) {
-            await RCApi.get().activate().catch(err => {
-                this.ERR("SplashBluetoothScreen org.rdk.RemoteControl activate error: " + JSON.stringify(err))
-                return;
-            });
-        }
+    async rcPairingFlow() {
         this.rcStatusListener = _thunder.on('org.rdk.RemoteControl', 'onStatus', data => { this.onStatusCB(data) });
         this.RCTimeout = Registry.setTimeout(() => {
             this.RCTimeout = null;
@@ -368,12 +362,9 @@ export default class BluetoothScreen extends Lightning.Component {
             return; // Prevent duplicate setup
         }
         this.pairingInitialized = true;
-        appApi.getPluginStatus('org.rdk.RemoteControl').then(result => {
-            if (result[0].state != "activated") {
-                this.rcPairingFlow(true);
-            } else {
-                this.rcPairingFlow();
-            }
+        appApi.getPluginStatus('org.rdk.RemoteControl').then(() => {
+            // Success means the plugin is available and activated by systemd target.
+            this.rcPairingFlow();
             this.voiceRcuPluginUsed = true;
         }).catch(err => {
             this.ERR('SplashBluetoothScreen getPluginStatus org.rdk.RemoteControl error: ' + JSON.stringify(err))

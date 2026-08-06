@@ -499,9 +499,7 @@ export default class SplashScreen extends Lightning.Component {
         }
         _handleEnter() {
           if (this.tag('UISwitch.UIList').element._item.title != 'DEFAULT') {
-            this.appApi.launchResident(this.tag('UISwitch.UIList').element._item.uri, GLOBALS.selfClientName).catch(err => {
-              console.log(JSON.stringify(err));
-            })
+            // FIXME: Implement logic to switch (multiple)System UI here.
           } else {
             if (this.remotePaired == false) this._setState('AutoRemotePair')
             else if (this.hasInternet == false) this._setState('ConnectivityScreen')
