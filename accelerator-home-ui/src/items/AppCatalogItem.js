@@ -192,7 +192,7 @@ export default class AppCatalogItem extends DACAppMixin(Lightning.Component) {
                 },
             },
             Text: {
-                alpha: 0,
+                alpha: 1,
                 y: this.height + 10,
                 text: {
                     text: '',
@@ -271,13 +271,11 @@ export default class AppCatalogItem extends DACAppMixin(Lightning.Component) {
         this.scale = 1.15
         this.zIndex = 2
         this.tag("Shadow").alpha = 1
-        this.tag("Text").alpha = 1
     }
     _unfocus() {
         this.scale = 1
         this.zIndex = 1
         this.tag("Shadow").alpha = 0
-        this.tag("Text").alpha = 0
     }
     async _handleEnter() {
         this._app.id = this.data.id

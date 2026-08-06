@@ -16,15 +16,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-import ThunderJS from "ThunderJS";
 import Keymap from "../Config/Keymap";
-import { CONFIG, GLOBALS } from "../Config/Config";
-import {Metrics} from '@firebolt-js/sdk'
 import RDKWindowManager from "../api/RDKWindowManagerApi";
 
-const thunder = ThunderJS(CONFIG.thunderConfig);
-
-export function keyIntercept(clientName = GLOBALS.selfClientId) {
+export function keyIntercept(clientId) {
     return new Promise((resolve, reject) => {
         const intercepts = [
             { "keyCode": Keymap.Home, "modifiers": [] },
@@ -44,7 +39,7 @@ export function keyIntercept(clientName = GLOBALS.selfClientId) {
         ];
         RDKWindowManager.get().addKeyIntercepts(
             {
-                "clientId": clientName,
+                "clientId": clientId,
                 "intercepts": JSON.stringify(intercepts)
             }
         ).then(result => {
@@ -54,7 +49,6 @@ export function keyIntercept(clientName = GLOBALS.selfClientId) {
                 reject(result);
             }
         }).catch(err => {
-            Metrics.error(Metrics.ErrorType.OTHER,"KeyInterceptError", "Thunder RDKWindowManager addKeyIntercepts error "+JSON.stringify(err), false, null)
             reject(err);
         });
     });

@@ -20,8 +20,7 @@ import { Lightning, Utils, Storage } from '@lightningjs/sdk'
 import VideoAndAudioItem from '../../items/VideoAndAudioItem'
 import AppApi from '../../api/AppApi'
 import thunderJS from 'ThunderJS';
-import { CONFIG, GLOBALS} from '../../Config/Config'
-import FireBoltApi from '../../api/firebolt/FireBoltApi';
+import { CONFIG } from '../../Config/Config'
 
 const thunder = thunderJS(CONFIG.thunderConfig)
 

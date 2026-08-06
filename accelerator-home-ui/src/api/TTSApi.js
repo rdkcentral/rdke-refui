@@ -18,7 +18,6 @@
  **/
 import ThunderJS from 'ThunderJS';
 import { CONFIG } from '../Config/Config'
-import { Metrics } from '@firebolt-js/sdk';
 
 const thunder = ThunderJS(CONFIG.thunderConfig)
 const callsign = 'org.rdk.TextToSpeech'
@@ -40,7 +39,6 @@ export default class TTSApi {
                 })
                 .catch(err => {
                     this.ERR("Error Activation " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, errorName, `Error while Thunder Controller ${callsign} activate ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
         })
@@ -53,7 +51,6 @@ export default class TTSApi {
                 })
                 .catch(err => {
                     this.ERR("Error Deactivation " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, errorName, `Error while Thunder Controller ${callsign} deactivate ${JSON.stringify(err)}`, false, null)
                     reject(err)
                 })
         })
@@ -70,7 +67,6 @@ export default class TTSApi {
             })
             .catch(err => {
               this.ERR("TTSApi TextToSpeech enable error: " + JSON.stringify(err))
-              Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder TextToSpeech enable " + JSON.stringify(err), false, null)
               resolve(false)
             })
         })
@@ -85,7 +81,6 @@ export default class TTSApi {
             })
             .catch(err => {
               this.ERR("TTSApi TextToSpeech isEnabled error: " + JSON.stringify(err))
-              Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder TextToSpeech isEnabled " + JSON.stringify(err), false, null)
               resolve(false)
             })
         })
@@ -100,7 +95,6 @@ export default class TTSApi {
             })
             .catch(err => {
               this.ERR("TTSApi TextToSpeech setTTSConfiguration error: " + JSON.stringify(err))
-              Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder TextToSpeech setTTSConfiguration " + JSON.stringify(err), false, null)
               resolve(false)
             })
         })
@@ -115,7 +109,6 @@ export default class TTSApi {
             })
             .catch(err => {
               this.ERR("TTSApi TextToSpeech getTTSConfiguration error: " + JSON.stringify(err))
-              Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder TextToSpeech getTTSConfiguration " + JSON.stringify(err), false, null)
               resolve(false)
             })
         })
@@ -132,7 +125,6 @@ export default class TTSApi {
           })
           .catch(err => {
             this.ERR("TTSAPI TextToSpeech speak error: " + JSON.stringify(err))
-            Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder TextToSpeech Speak " + JSON.stringify(err), false, null)
             resolve(false)
           })
       })
@@ -149,7 +141,6 @@ export default class TTSApi {
           })
           .catch(err => {
             this.ERR("TTSAPI TextToSpeech resume error: " + JSON.stringify(err))
-            Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder TextToSpeech resume " + JSON.stringify(err), false, null)
             resolve(false)
           })
       })
@@ -166,7 +157,6 @@ export default class TTSApi {
           })
           .catch(err => {
             this.ERR("TTSApi TextToSpeech pause error: " + JSON.stringify(err))
-            Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder TextToSpeech pause " + JSON.stringify(err), false, null)
             resolve(false)
           })
       })
@@ -183,7 +173,6 @@ export default class TTSApi {
           })
           .catch(err => {
             this.ERR("TTSAPI TextToSpeech listvoices error: " + JSON.stringify(err))
-            Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder TextToSpeech listVoices " + JSON.stringify(err), false, null)
             resolve(false)
           })
       })
