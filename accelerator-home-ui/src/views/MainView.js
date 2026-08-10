@@ -455,7 +455,26 @@ export default class MainView extends Lightning.Component {
 
 
   _focus() {
-    this._setState(this.state);
+    // After returning from another page (e.g. app info after uninstall),
+    // validate that the current state still has focusable content.
+    if (this.state === 'AppList' && this.myAppsEmpty) {
+      this._setState('DacApps')
+    } else if (this.state === 'AppList' && this.tag('AppList').length === 0) {
+      this._setState('DacApps')
+    } else if (this.state) {
+      this._setState(this.state)
+    } else {
+      // Fallback: determine correct initial state
+      if (this.gracenote) {
+        this._setState('Gracenote')
+      } else if (this.inputSelect) {
+        this._setState('Inputs')
+      } else if (!this.myAppsEmpty && this.tag('AppList').length > 0) {
+        this._setState('AppList')
+      } else {
+        this._setState('DacApps')
+      }
+    }
   }
 
   _firstEnable() {
@@ -558,6 +577,26 @@ export default class MainView extends Lightning.Component {
         bar: 12
       }
     })
+
+    // Clamp AppList index if it's now beyond bounds (e.g. after uninstall)
+    if (this.tag('AppList').length && this.tag('AppList').index >= this.tag('AppList').length) {
+      this.tag('AppList').setIndex(this.tag('AppList').length - 1)
+    }
+
+    // Re-apply focus if the AppList row is currently focused
+    if (this.state === 'AppList' && this.tag('AppList').length) {
+      this._refocus()
+    }
+
+    // If My Apps became empty while focused, move focus to DacApps
+    if (this.myAppsEmpty && this.state === 'AppList') {
+      this._setState('DacApps')
+    }
+
+    // If My Apps just became available but focus is on DacApps (wrong initial focus), correct it
+    if (!this.myAppsEmpty && this.state === 'DacApps' && !this.gracenote && !this.inputSelect) {
+      this._setState('AppList')
+    }
   }
 
   /**
@@ -661,6 +700,11 @@ export default class MainView extends Lightning.Component {
         bar: 12
       }
     })
+
+    // Re-apply focus if the DacApps row is currently focused
+    if (this.state === 'DacApps' && this.tag('DacApps').length) {
+      this._refocus()
+    }
   }
   async $refreshMyAppsRow() {
     console.log('Refreshing My Apps row...')
