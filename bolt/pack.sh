@@ -27,7 +27,7 @@ npm install
 
 npm install -g @lightningjs/cli
 
-npm install --prefix /usr/local/lib/node_modules/@lightningjs/cli typescript@5.2.2 --no-save
+sudo npm install --prefix "$(npm root -g)/@lightningjs/cli" typescript@5.2.2 --no-save
 
 lng dist
 
