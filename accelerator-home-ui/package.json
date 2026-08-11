@@ -3,6 +3,7 @@
   "description": "accelerator-home-ui",
   "dependencies": {
     "@hendt/xml2json": "^1.0.3",
+    "@lightningjs/cli": "2.14.2",
     "@lightningjs/sdk": "^4.8.1",
     "@lightningjs/ui": "^1.3.7",
     "@lightningjs/ui-components": "^2.2.1",

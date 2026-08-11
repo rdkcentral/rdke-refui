@@ -25,11 +25,7 @@ pushd ../accelerator-home-ui
 
 npm install
 
-npm install -g @lightningjs/cli
-
-sudo npm install --prefix "$(npm root -g)/@lightningjs/cli" typescript@5.2.2 --no-save
-
-lng dist
+npx lng dist
 
 if [ ! -d "dist" ]; then
   echo "Dist was not created!"
