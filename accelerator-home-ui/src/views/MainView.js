@@ -457,9 +457,10 @@ export default class MainView extends Lightning.Component {
   _focus() {
     // After returning from another page (e.g. app info after uninstall),
     // validate that the current state still has focusable content.
-    if (this.state === 'AppList' && this.myAppsEmpty) {
+    const baseState = this.state ? this.state.split('.')[0] : ''
+    if (baseState === 'AppList' && this.myAppsEmpty) {
       this._setState('DacApps')
-    } else if (this.state === 'AppList' && this.tag('AppList').length === 0) {
+    } else if (baseState === 'AppList' && this.tag('AppList').length === 0) {
       this._setState('DacApps')
     } else if (this.state) {
       this._setState(this.state)
@@ -584,17 +585,18 @@ export default class MainView extends Lightning.Component {
     }
 
     // Re-apply focus if the AppList row is currently focused
-    if (this.state === 'AppList' && this.tag('AppList').length) {
+    const baseState = this.state ? this.state.split('.')[0] : ''
+    if (baseState === 'AppList' && this.tag('AppList').length) {
       this._refocus()
     }
 
     // If My Apps became empty while focused, move focus to DacApps
-    if (this.myAppsEmpty && this.state === 'AppList') {
+    if (this.myAppsEmpty && baseState === 'AppList') {
       this._setState('DacApps')
     }
 
     // If My Apps just became available but focus is on DacApps (wrong initial focus), correct it
-    if (!this.myAppsEmpty && this.state === 'DacApps' && !this.gracenote && !this.inputSelect) {
+    if (!this.myAppsEmpty && baseState === 'DacApps' && !this.gracenote && !this.inputSelect) {
       this._setState('AppList')
     }
   }
@@ -702,7 +704,8 @@ export default class MainView extends Lightning.Component {
     })
 
     // Re-apply focus if the DacApps row is currently focused
-    if (this.state === 'DacApps' && this.tag('DacApps').length) {
+    const baseState = this.state ? this.state.split('.')[0] : ''
+    if (baseState === 'DacApps' && this.tag('DacApps').length) {
       this._refocus()
     }
   }
