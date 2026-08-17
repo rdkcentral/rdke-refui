@@ -19,7 +19,7 @@
 
 import { Lightning, Router, Language, Utils } from "@lightningjs/sdk";
 import { List } from "@lightningjs/ui";
-import { CONFIG } from "../Config/Config";
+import { CONFIG, GLOBALS } from "../Config/Config";
 import AppCard from "../items/AppCard";
 import { getInstalledDACApps, startDACApp, uninstallDACApp } from "../api/DACApi";
 import { filterExcludedApps } from "../helpers/DACAppPresentation";
@@ -318,6 +318,14 @@ export default class AppInfoPage extends Lightning.Component {
     async _launchApp(appInfo) {
         console.log(`Launching ${appInfo.name}...`);
         try {
+            // If there's no internet, show a clear error instead of launching
+            if (!GLOBALS.IsConnectedToInternet) {
+                console.log('No internet connection. Cannot launch DAC app.');
+                this.widgets.failok.notify({ title: Language.translate('No Internet'), msg: Language.translate('No internet connection. Please check your network and try again.') });
+                Router.focusWidget('FailOk');
+                return;
+            }
+
             const result = await startDACApp({ id: appInfo.id });
             if (result) {
                 console.log(`${appInfo.name} launched successfully`);
