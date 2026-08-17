@@ -209,7 +209,9 @@ export default class DIALManager {
 
     try {
       switch (event) {
-        case 'onApplicationLaunchRequest': {
+        case 'onApplicationLaunchRequest':
+        case 'onApplicationLaunchRequestWithParam':
+	{
           const pairingCode = notification.strPayLoad;
           const additionalDataUrl = notification.strAddDataUrl;
           const params = `&inApp=${this.appController.isLaunched(desc.id)}&launch=dial`;
@@ -251,6 +253,10 @@ export default class DIALManager {
   registerXcastListeners() {
     this.xcastApi.registerEvent('onApplicationLaunchRequest', async notification => {
       await this.handleXcastEvent('onApplicationLaunchRequest', notification);
+    });
+    
+    this.xcastApi.registerEvent('onApplicationLaunchRequestWithParam', async notification => {
+      await this.handleXcastEvent('onApplicationLaunchRequestWithParam', notification);
     });
 
     this.xcastApi.registerEvent('onApplicationHideRequest', async notification => {

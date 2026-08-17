@@ -19,7 +19,6 @@
 
 import ThunderJS from 'ThunderJS';
 import { CONFIG } from '../Config/Config'
-import { Metrics } from "@firebolt-js/sdk"
 import { ThunderError } from './ThunderError';
 
 let instance = null;
