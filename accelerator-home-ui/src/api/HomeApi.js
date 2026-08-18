@@ -28,7 +28,6 @@ import { uiInfo } from "./../../static/data/UIInfo";
 import { metroAppsInfo } from "./../../static/data/MetroAppsInfo.js";
 import { metroAppsInfoOffline } from "./../../static/data/MetroAppsInfoOffline.js";
 import { showCaseApps } from "../../static/data/LightningShowcase";
-import { Metrics } from "@firebolt-js/sdk";
 import xml2json from "@hendt/xml2json";
 import PersistentStoreApi from "./PersistentStore.js";
 
@@ -158,7 +157,6 @@ export default class HomeApi {
               });
           } catch (err) {
             this.ERR("API key not defined." + JSON.stringify(err));
-            Metrics.error(Metrics.ErrorType.OTHER,"ApiError", JSON.stringify(err), false, null)
           }
         }
       }).catch((err) => {
@@ -195,7 +193,6 @@ export default class HomeApi {
               })
               .catch((err) => {
                 this.ERR("Gracenote: Incorrect API key or no data available" + JSON.stringify(err));
-                Metrics.error(Metrics.ErrorType.OTHER,"ApiError", JSON.stringify(err), false, null)
                 resolve({
                   key: res.value,
                   data: [],
@@ -203,7 +200,6 @@ export default class HomeApi {
               });
           } catch (err) {
             this.ERR("Gracenote fetch failed." + JSON.stringify(err));
-            Metrics.error(Metrics.ErrorType.OTHER,"ApiError", JSON.stringify(err), false, null)
             resolve({
               key: res.value,
               data: [],
@@ -211,7 +207,6 @@ export default class HomeApi {
           }
         } else {
           this.ERR("Gracenote apiKey is invalid in PersistentStore.");
-          Metrics.error(Metrics.ErrorType.OTHER,"ApiError", JSON.stringify(err), false, null)
           resolve({
             key: "",
             data: [],

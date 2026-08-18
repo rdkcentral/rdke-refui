@@ -66,6 +66,7 @@ export default class AppController {
 
   async init() {
     const mainAppId = GLOBALS.selfclientAppName;
+    this.LOG('Initializing AppController for mainAppId:', mainAppId);
     let mainClientId;
 
     try {
@@ -92,6 +93,7 @@ export default class AppController {
       this.LOG('selfClientId:', GLOBALS.selfClientId);
 
       try {
+        this.LOG('Adding key intercepts for mainClientId:' + JSON.stringify(this.mainClientId));
         await keyIntercept(this.mainClientId);
       } catch (err) {
         this.WARN(new ThunderError("RDKWindowManager.addKeyIntercepts()", err).toString());

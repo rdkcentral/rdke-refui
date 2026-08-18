@@ -20,7 +20,6 @@
 import { ThunderError } from './ThunderError';
 import ThunderJS from 'ThunderJS';
 import { CONFIG } from '../Config/Config'
-import { Metrics } from "@firebolt-js/sdk"
 
 const REFRESH_INTERVAL_MS = 500;
 
@@ -78,7 +77,6 @@ export default class DownloadManager {
     const err = new ThunderError(thunderCall, thunderErr);
     const errString = err.toString();
     this.ERR(errString);
-    Metrics.error(Metrics.ErrorType.OTHER, "DownloadManager", errString, false, null);
     throw err;
   }
 

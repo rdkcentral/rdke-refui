@@ -1,9 +1,7 @@
 import { Lightning, Language, Router, Utils } from "@lightningjs/sdk";
 import AppApi from "../../api/AppApi";
-import AlexaApi from "../../api/AlexaApi";
-import { CONFIG, GLOBALS } from "../../Config/Config";
+import { CONFIG } from "../../Config/Config";
 import TimeZoneItem from "../../items/TimeZoneItem";
-import FireBoltApi from "../../api/firebolt/FireBoltApi";
 
 export default class TimeZone extends Lightning.Component {
 
@@ -89,11 +87,8 @@ export default class TimeZone extends Lightning.Component {
         this.appApi = new AppApi()
         this.resp = await this.appApi.fetchTimeZone()
         let data = []
-        if ("ResidentApp" === GLOBALS.selfClientName) {
-            this.zone = await this.appApi.getZone()
-        }else {
-            this.zone = await FireBoltApi.get().localization.getTimeZone()
-        }
+        this.zone = await this.appApi.getZone()
+
         try {
             this.LOG(JSON.stringify(this.resp) + " " + JSON.stringify(this.zone))
             delete this.resp.Etc
@@ -101,9 +96,6 @@ export default class TimeZone extends Lightning.Component {
                 if (typeof this.resp[i] === 'object') {
                     data.push([i, this.resp[i], this.zone !== undefined ? this.zone.split('/')[0] === i : false])
                 }
-            }
-            if (AlexaApi.get().checkAlexaAuthStatus() === "AlexaHandleError" && this.zone.length) {
-                AlexaApi.get().updateDeviceTimeZoneInAlexa(this.zone)
             }
         } catch (error) {
             this.ERR('no api present' + JSON.stringify(error))

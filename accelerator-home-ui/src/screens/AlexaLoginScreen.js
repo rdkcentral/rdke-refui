@@ -18,7 +18,6 @@
  **/
 import { Language, Lightning, Router, Utils } from '@lightningjs/sdk'
 import { CONFIG } from '../Config/Config'
-import AlexaApi from '../api/AlexaApi'
 
 export default class AlexaLoginScreen extends Lightning.Component {
     constructor(...args) {
@@ -139,10 +138,8 @@ export default class AlexaLoginScreen extends Lightning.Component {
                     })
                 }
                 async _handleEnter() {
-                    if(AlexaApi.get().checkAlexaAuthStatus() != "AlexaUserDenied"){
-                        this.LOG("Code coming from AlexaLoginScreen")
-                        Router.navigate("CodeScreen")
-                    }
+                    // FIXME: make this routing conditional based on OTP code reception.
+                    Router.navigate("CodeScreen")
                  }
                 _handleUp(){
                     this._setState("BackButton")
@@ -193,7 +190,3 @@ export default class AlexaLoginScreen extends Lightning.Component {
         ]
     }
 }
-
-
-
-
