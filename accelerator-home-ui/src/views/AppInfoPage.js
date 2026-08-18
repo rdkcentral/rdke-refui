@@ -318,8 +318,30 @@ export default class AppInfoPage extends Lightning.Component {
     async _launchApp(appInfo) {
         console.log(`Launching ${appInfo.name}...`);
         try {
-            // If there's no internet, show a clear error instead of launching
-            if (!GLOBALS.IsConnectedToInternet) {
+            // Global variable for internet connectivity.
+            let isConnected = GLOBALS.IsConnectedToInternet;
+            try {
+                // get the latest internet connectivity status from NetworkManager
+                const netRes = await NetworkManager.IsConnectedToInternet();
+                // Accept several possible shapes: boolean, {connected: bool}, or {result: {connected: bool}}
+                // During reboot,the value would be undefined 
+                if (typeof netRes === 'boolean') {
+                    isConnected = netRes;
+                    GLOBALS.IsConnectedToInternet = isConnected;
+                } else if (netRes && typeof netRes.connected !== 'undefined') {
+                    isConnected = !!netRes.connected;
+                    GLOBALS.IsConnectedToInternet = isConnected;
+                } else if (netRes && netRes.result && typeof netRes.result.connected !== 'undefined') {
+                    isConnected = !!netRes.result.connected;
+                    GLOBALS.IsConnectedToInternet = isConnected;
+                } else {
+                    this.LOG('NetworkManager.IsConnectedToInternet() returned unexpected shape: ' + JSON.stringify(netRes));
+                }
+            } catch (err) {
+                this.LOG('NetworkManager.IsConnectedToInternet() failed: ' + JSON.stringify(err));
+            }
+            // if internet is not connected,show a error pop up
+            if (!isConnected) {
                 console.log('No internet connection. Cannot launch DAC app.');
                 this.widgets.failok.notify({ title: Language.translate('No Internet'), msg: Language.translate('No internet connection. Please check your network and try again.') });
                 Router.focusWidget('FailOk');
