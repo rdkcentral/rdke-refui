@@ -18,14 +18,8 @@
  **/
 import { Language, Lightning, Router } from '@lightningjs/sdk'
 import LanguageItem from '../../items/LanguageItem'
-import { availableLanguages, availableLanguageCodes, CONFIG } from '../../Config/Config'
-import AppApi from '../../api/AppApi';
-import AlexaApi from '../../api/AlexaApi';
-import thunderJS from 'ThunderJS';
-
-
-const appApi = new AppApi()
-const thunder = thunderJS(CONFIG.thunderConfig)
+import { availableLanguages, availableLanguageCodes } from '../../Config/Config'
+import UserSettingsApi from '../../api/UserSettingsApi';
 
 export default class LanguageScreen extends Lightning.Component {
 
@@ -114,19 +108,7 @@ export default class LanguageScreen extends Lightning.Component {
         _handleEnter() {
           if (Language.get() !== availableLanguages[this._Languages.tag('List').index]) {
             let updatedLanguage = availableLanguageCodes[availableLanguages[this._Languages.tag('List').index]]
-            if (AlexaApi.get().checkAlexaAuthStatus() === "AlexaHandleError") {
-              AlexaApi.get().getAlexaDeviceSettings();
-              thunder.on('org.rdk.VoiceControl', 'onServerMessage', notification => {
-                if (notification.xr_speech_avs.deviceSettings.currentLocale.toString() != updatedLanguage) {
-                  for (let i = 0; i < notification.xr_speech_avs.deviceSettings.supportedLocales.length; i++) {
-                    if (updatedLanguage === notification.xr_speech_avs.deviceSettings.supportedLocales[i].toString()) {
-                      AlexaApi.get().updateDeviceLanguageInAlexa(updatedLanguage)
-                    }
-                  }
-                }
-              })
-            }
-            appApi.setUILanguage(updatedLanguage)
+            UserSettingsApi.setPresentationLanguage(updatedLanguage)
             localStorage.setItem('Language',availableLanguages[this._Languages.tag('List').index])
             location.reload();
           }

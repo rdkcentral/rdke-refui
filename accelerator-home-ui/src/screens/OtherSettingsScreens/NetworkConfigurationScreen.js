@@ -20,7 +20,6 @@ import { Lightning, Utils, Language, Router } from '@lightningjs/sdk'
 import SettingsMainItem from '../../items/SettingsMainItem'
 import { COLORS } from '../../colors/Colors'
 import { CONFIG } from '../../Config/Config'
-import { Metrics } from '@firebolt-js/sdk'
 import NetworkManager from '../../api/NetworkManagerAPI'
 
 export default class NetworkConfigurationScreen extends Lightning.Component {
@@ -149,11 +148,18 @@ export default class NetworkConfigurationScreen extends Lightning.Component {
             if(interfaceName === "wlan0"){this.$NetworkInterfaceText("WIFI")}
         })
 
-        this.onDefaultIfaceChangedCB = NetworkManager.thunder.on(NetworkManager.callsign, 'onActiveInterfaceChange', data => {
+        this.onActiveInterfaceChangeCB = NetworkManager.thunder.on(NetworkManager.callsign, 'onActiveInterfaceChange', data => {
             if(data.currentActiveInterface === "eth0"){this.$NetworkInterfaceText("ETHERNET")}
             else{this.$NetworkInterfaceText("WIFI")}
             this.tag('TestInternetAccess.Title').text.text = Language.translate('Test Internet Access: ')
-            Metrics.action("user", "User changed the network interface", null)
+        });
+
+        this.onInternetStatusChangeCB = NetworkManager.thunder.on(NetworkManager.callsign, 'onInternetStatusChange', data => {
+            if (data.status && data.status === "FULLY_CONNECTED") {
+                this.tag('TestInternetAccess.Title').text.text = Language.translate('Test Internet Access: ') + Language.translate("Connected")
+            } else {
+                this.tag('TestInternetAccess.Title').text.text = Language.translate('Test Internet Access: ') + Language.translate("Disconnected")
+            }
         });
 
         _newIPSettings = _currentIPSettings
@@ -166,7 +172,10 @@ export default class NetworkConfigurationScreen extends Lightning.Component {
         });
     }
     _inactive() {
-        this.onDefaultIfaceChangedCB.dispose();
+        if (this.onActiveInterfaceChangeCB) { this.onActiveInterfaceChangeCB.dispose(); }
+        if (this.onInternetStatusChangeCB) { this.onInternetStatusChangeCB.dispose(); }
+        if (this.loadingAnimation) { this.loadingAnimation.stop(); }
+        this.tag('TestInternetAccess.Loader').visible = false
     }
     _focus() {
         this._setState(this.state) //can be used on init as well

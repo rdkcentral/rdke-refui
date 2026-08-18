@@ -19,8 +19,6 @@
  import { Lightning } from '@lightningjs/sdk'
  import AppApi from '../api/AppApi.js'
  import TimeItem from './TimeItem.js'
- import { GLOBALS } from '../Config/Config.js';
-import FireBoltApi from '../api/firebolt/FireBoltApi.js';
  /**
   * Class for rendering items in Settings screen.
   */
@@ -75,15 +73,6 @@ import FireBoltApi from '../api/firebolt/FireBoltApi.js';
          this.appApi = new AppApi()
      }
 
-     _init(){
-        if ("ResidentApp" !== GLOBALS.selfClientName){
-            FireBoltApi.get().localization.listen("timeZoneChanged",value =>{
-                this.LOG('timezone changed successfully to ' + JSON.stringify(value))
-            })
-        }
-     }
-
-
      _handleDown() {
          this.tag('List').setNext()
      }
@@ -96,11 +85,7 @@ import FireBoltApi from '../api/firebolt/FireBoltApi.js';
         this.LOG(`${this._item.zone}/${this.tag('List').element._item[0]}`)
         this.fireAncestors("$updateTimeZone",`${this._item.zone}/${this.tag('List').element._item[0]}`)
         //  this.widgets.menu.updateTimeZone(`${this._item.zone}/${this.tag('List').element._item[0]}`)
-        if ("ResidentApp" === GLOBALS.selfClientName) {
-            this.appApi.setZone(`${this._item.zone}/${this.tag('List').element._item[0]}`)
-        } else {
-            FireBoltApi.get().localization.setTimeZone(`${this._item.zone}/${this.tag('List').element._item[0]}`)
-        }
+        this.appApi.setZone(`${this._item.zone}/${this.tag('List').element._item[0]}`)
         //  Router.navigate('settings/advanced/device/timezone', { refresh: true })
          return false; //to execute handle enter in parent component
      }

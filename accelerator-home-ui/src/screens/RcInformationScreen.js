@@ -359,7 +359,6 @@ export default class RCInformationScreen extends Lightning.Component {
         this.tag('DeviceInfoContents').visible = false
         this.tag('PairingStatus').visible = false
         this.clearPairingAttemptTimeout()
-        await RCApi.get().activate().catch(err => { this.ERR("RCInformationScreen error: " + JSON.stringify(err)) });
         this.onStatusCBhandle = _thunder.on('org.rdk.RemoteControl', 'onStatus', data => { this.onStatusCB(data) });
         await RCApi.get().getNetStatus().then(result => {
             this.onStatusCB(result);

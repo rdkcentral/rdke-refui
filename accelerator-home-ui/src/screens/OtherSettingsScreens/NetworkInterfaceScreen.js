@@ -21,7 +21,6 @@ import SettingsMainItem from '../../items/SettingsMainItem'
 import { COLORS } from '../../colors/Colors'
 import { CONFIG } from '../../Config/Config'
 import { Language } from '@lightningjs/sdk';
-import { Metrics } from '@firebolt-js/sdk'
 import NetworkManager, { ETHERNET_STATUS } from '../../api/NetworkManagerAPI'
 
 export default class NetworkInterfaceScreen extends Lightning.Component {
@@ -103,7 +102,7 @@ export default class NetworkInterfaceScreen extends Lightning.Component {
     }
 
     _active() {
-        this.onDefaultInterfaceChangedCB = NetworkManager.thunder.on(NetworkManager.callsign, 'onActiveInterfaceChange', (notification) => {
+        this.onActiveInterfaceChangeCB = NetworkManager.thunder.on(NetworkManager.callsign, 'onActiveInterfaceChange', (notification) => {
             this.LOG('onActiveInterfaceChange notification from networkInterfaceScreen: ' + JSON.stringify(notification))
             if (notification.currentActiveInterface === "eth0") {
                 this.loadingAnimation.stop()
@@ -118,9 +117,8 @@ export default class NetworkInterfaceScreen extends Lightning.Component {
                 this.tag('Ethernet.Loader').visible = false
                 this.tag('Ethernet.Title').text.text = 'Ethernet : ' + Language.translate('Not Connected')
             }
-            Metrics.action("user", "The user changed the network interface", null)
         });
-        this.onConnectionStatusChangedCB = NetworkManager.thunder.on(NetworkManager.callsign, 'onInterfaceStateChange', (notification) => {
+        this.onInterfaceStateChange = NetworkManager.thunder.on(NetworkManager.callsign, 'onInterfaceStateChange', (notification) => {
             this.LOG('onInterfaceStateChange notification from networkInterfaceScreen: ' + JSON.stringify(notification))
             if (notification.interface === "eth0") {
                 if (notification.status == ETHERNET_STATUS.DISCONNECTED) {
@@ -131,7 +129,6 @@ export default class NetworkInterfaceScreen extends Lightning.Component {
                     this.tag('Ethernet.Title').text.text = 'Ethernet: ' + Language.translate(notification.status.toLowerCase())
                 }
             }
-            Metrics.action("App", "network connection of app changed", null)
         });
 
         this.loadingAnimation = this.tag('Ethernet.Loader').animation({
@@ -143,8 +140,8 @@ export default class NetworkInterfaceScreen extends Lightning.Component {
     }
 
     _inactive() {
-        this.onDefaultInterfaceChangedCB.dispose()
-        this.onConnectionStatusChangedCB.dispose()
+        if (this.onActiveInterfaceChangeCB) this.onActiveInterfaceChangeCB.dispose()
+        if (this.onInterfaceStateChange) this.onInterfaceStateChange.dispose()
     }
 
     _firstActive() {

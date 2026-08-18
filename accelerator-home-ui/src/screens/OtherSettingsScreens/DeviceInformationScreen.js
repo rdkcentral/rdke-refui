@@ -20,7 +20,6 @@ import { Lightning, Language, Router, Settings, Storage } from '@lightningjs/sdk
 import { COLORS } from '../../colors/Colors'
 import { CONFIG, GLOBALS } from '../../Config/Config'
 import AppApi from '../../api/AppApi.js';
-import FireBoltApi from '../../api/firebolt/FireBoltApi';
 
 /**
  * Class for Video and Audio screen.
@@ -203,27 +202,16 @@ export default class DeviceInformationScreen extends Lightning.Component {
     }
 
     _focus() {
-
         this._setState('DeviceInformationScreen')
         this.appApi.getSerialNumber().then(result => {
             this.tag("SerialNumber.Value").text.text = `${result}`;
         })
 
-        if ("ResidentApp" === GLOBALS.selfClientName) {
-            this.appApi.getSystemVersions().then(res => {
-                this.tag('FirmwareVersions.Value').text.text = `UI Version - ${Settings.get('platform', 'version')} \nBuild Version - ${res.stbVersion} \nTime Stamp - ${res.stbTimestamp} `
-            }).catch(err => {
-                this.ERR("error while getting the system versions" + JSON.stringify(err))
-            })
-        } else {
-            // Firebolt mode
-            FireBoltApi.get().deviceinfo.getversion().then(res => {
-                this.LOG("build verion" + JSON.stringify(res.firmware.readable) + " Firebolt API Version - " + JSON.stringify(res.api.readable))
-                this.tag('FirmwareVersions.Value').text.text = `UI Version - ${Settings.get('platform', 'version')} \nBuild Version - ${res.firmware.readable} \nFirebolt API Version - ${res.api.readable} `
-            }).catch(err => {
-                this.ERR("error while getting the system versions from Firebolt.getversion API" + JSON.stringify(err))
-            })
-        }
+        this.appApi.getSystemVersions().then(res => {
+            this.tag('FirmwareVersions.Value').text.text = `UI Version - ${Settings.get('platform', 'version')} \nBuild Version - ${res.stbVersion} \nTime Stamp - ${res.stbTimestamp} `
+        }).catch(err => {
+            this.ERR("error while getting the system versions" + JSON.stringify(err))
+        })
 
         this.appApi.getDRMS().then(result => {
             this.LOG("from device info supported drms " + JSON.stringify(result))
@@ -243,50 +231,8 @@ export default class DeviceInformationScreen extends Lightning.Component {
             this.tag('SupportedDRM.Value').text.text = `${drms.substring(0, drms.length - 1)}`
         })
 
-        let self = this;
-        if (Storage.get('Netflix_ESN')) {
-            self.tag('AppVersions.Value').text.text = `Youtube: NA\nAmazon Prime: NA\nNetflix ESN: ${Storage.get('Netflix_ESN')}`
-        }
-        else {
-            self.appApi.getPluginStatus('Netflix')
-                .then(result => {
-                    let sel = self;
-                    sel.LOG("Netflix : plugin status : " + JSON.stringify(result));
-                    if (result[0].state === 'deactivated' || result[0].state === 'deactivation') {
-                        sel.appApi.launchPremiumAppInSuspendMode("Netflix").then(res => {
-                            sel.LOG("Netflix : netflix launch for esn value in suspend mode returns : " + JSON.stringify(res));
-                            let se = sel;
-                            se.appApi.getNetflixESN()
-                                .then(res => {
-                                    Storage.set('Netflix_ESN', res)
-                                    se.LOG("Netflix : netflix esn call returns : " + JSON.stringify(res));
-                                    se.netflixESN = `Youtube: NA \nAmazon Prime: NA \nNetflix ESN: ${res}`
-                                })
-                                .catch(err => {
-                                    se.ERR("Netflix : error while getting netflix esn : " + JSON.stringify(err))
-                                })
-                        }).catch(err => {
-                            sel.ERR("Netflix : error while launching netflix in suspendMode : " + JSON.stringify(err))
-                        })
-                    }
-                    else {
-                        self.appApi.getNetflixESN()
-                            .then(res => {
-                                Storage.set('Netflix_ESN', res)
-                                self.LOG("Netflix : netflix esn call returns : " + JSON.stringify(res));
-                                self.netflixESN = `Youtube: NA \nAmazon Prime: NA \nNetflix ESN: ${res}`;
-                            })
-                            .catch(err => {
-                                self.ERR("Netflix : error while getting netflix esn : " + JSON.stringify(err))
-                            })
-                    }
-                }).catch(err => {
-                    self.ERR("Netflix : error while getting netflix plugin status ie. " + JSON.stringify(err))
-                    self.netflixESN = `Youtube: NA \nAmazon Prime: NA \nNetflix ESN: "Not Detected"`;
-                })
-        }
-
-
+        // FIXME: Implement logic to fetch and display YouTube, Amazon Prime, and Netflix ESN versions here.
+        this.tag('AppVersions.Value').text.text = `Youtube: NA\nAmazon Prime: NA\nNetflix ESN: ${Storage.get('Netflix_ESN')}`
     }
 
     set netflixESN(v) {
