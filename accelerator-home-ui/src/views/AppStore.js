@@ -127,6 +127,13 @@ export default class AppStore extends Lightning.Component {
         Router.focusWidget('FailOk')
     }
 
+    
+    $showNoInternet() {
+        const msg = Language.translate('No Internet Available')
+         this.widgets.failok.notify({ title: Language.translate('No Internet'), msg: Language.translate('No internet connection. Please check your network and try again.') })
+        Router.focusWidget('FailOk')
+    }
+
     static _states() {
         return [
             class Catalog extends this {
