@@ -88,28 +88,31 @@ export default class AppStore extends Lightning.Component {
         }
         this._loadingCatalog = true
         const generation = ++this._loadGeneration
-        let Catalog = []
         try {
-            Catalog = await getAppCatalogInfo()
-        } catch (error) {
-            this.ERR("Failed to get App Catalog Info:" + JSON.stringify(error))
+            let Catalog = []
+            try {
+                Catalog = await getAppCatalogInfo()
+            } catch (error) {
+                this.ERR("Failed to get App Catalog Info:" + JSON.stringify(error))
+                return
+            }
+            if (generation !== this._loadGeneration) {
+                this.LOG('Stale catalog response ignored')
+                return
+            }
+            if (!Array.isArray(Catalog) || Catalog.length === 0) {
+                this.LOG('No apps available in catalog')
+                return
+            }
+            Catalog.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+            this.LOG(`Catalog loaded: ${Catalog.length} apps`)
+            this._fullCatalog = Catalog
+            this._catalogOffset = 0
+            this._renderCatalogPage()
+            this._setState('Catalog')
         } finally {
             this._loadingCatalog = false
         }
-        if (generation !== this._loadGeneration) {
-            this.LOG('Stale catalog response ignored')
-            return
-        }
-        if (!Array.isArray(Catalog) || Catalog.length === 0) {
-            this.LOG('No apps available in catalog')
-            return
-        }
-        Catalog.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
-        this.LOG(`Catalog loaded: ${Catalog.length} apps`)
-        this._fullCatalog = Catalog
-        this._catalogOffset = 0
-        this._renderCatalogPage()
-        this._setState('Catalog')
     }
 
     _releaseGridTextures() {
@@ -271,6 +274,7 @@ export default class AppStore extends Lightning.Component {
                     } else {
                         this.widgets.menu.notify('TopPanel')
                     }
+                    return true
                 }
                 _handleDown() {
                     const grid = this.tag('Catalog')
