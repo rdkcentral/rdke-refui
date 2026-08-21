@@ -1,0 +1,22 @@
+{
+  "id": "com.rdkcentral.flutter.app.refui",
+  "version": "1.0.0",
+  "versionName": "develop",
+  "name": "RDK Ref UI Flutter Native",
+  "packageType": "application",
+  "entryPoint": "/usr/share/flutter/refui-flutter-app/3.38.3/release",
+  "dependencies": {
+    "com.rdkcentral.flutter.runtime.flutter-auto.v3_38_3": "0.0.1"
+  },
+  "permissions": [
+    "urn:rdk:permission:home-app",
+    "urn:rdk:permission:internet",
+    "urn:rdk:permission:firebolt",
+    "urn:rdk:permission:thunder",
+    "urn:rdk:permission:rialto",
+    "urn:rdk:permission:game-controller",
+    "urn:rdk:permission:display-overlay",
+    "urn:rdk:permission:compositor"
+  ],
+  "configuration": {}
+}

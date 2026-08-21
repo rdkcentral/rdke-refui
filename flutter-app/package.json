@@ -1,0 +1,13 @@
+{
+  "name": "refui-flutter-web",
+  "version": "1.0.0",
+  "description": "Flutter Web build scripts for RDK Reference UI",
+  "scripts": {
+    "flutter-dist": "cd flutter-app && flutter clean && flutter pub get && flutter build web --release && cd .. && (if exist flutter-dist rmdir /s /q flutter-dist) && xcopy /E /I flutter-app\\build\\web flutter-dist",
+    "flutter-dist:unix": "cd flutter-app && flutter clean && flutter pub get && flutter build web --release && cd .. && rm -rf flutter-dist && cp -r flutter-app/build/web flutter-dist",
+    "flutter-serve": "cd flutter-dist && python -m http.server 8080",
+    "flutter-dev": "cd flutter-app && flutter run -d chrome --web-port 8080"
+  },
+  "keywords": ["flutter", "web", "rdk", "refui"],
+  "license": "Apache-2.0"
+}

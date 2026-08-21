@@ -1,0 +1,19 @@
+{
+  "id": "com.rdkcentral.flutter",
+  "version": "1.0.0",
+  "versionName": "1.0.0",
+  "name": "RDK Ref UI Flutter Web",
+  "packageType": "application",
+  "entryPoint": "file:///usr/share/flutter-refui/index.html",
+  "dependencies": {
+    "com.rdkcentral.flutter.runtime.flutter-auto.v3_38_3": "0.0.1"
+  },
+  "permissions": [
+    "urn:rdk:permission:internet",
+    "urn:rdk:permission:firebolt",
+    "urn:rdk:permission:thunder",
+    "urn:rdk:permission:rialto"
+  ],
+  "configuration": {
+  }
+}

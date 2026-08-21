@@ -1,0 +1,6 @@
+{
+  "config": "com.rdkcentral.flutter.app.refui.json",
+  "bitbake": {
+    "image": "flutter-refui-bolt-image"
+  }
+}

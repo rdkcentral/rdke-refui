@@ -1,0 +1,9 @@
+{
+  "config": "package-configs/com.rdkcentral.flutter.json",
+  "make": {
+    "script": "./pack-flutter.sh"
+  },
+  "direct": {
+    "path": "../flutter-app/build/web"
+  }
+}
