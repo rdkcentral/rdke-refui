@@ -482,10 +482,16 @@ export default class App extends Router.App {
 		Storage.set("lastVisitedRoute", "menu"); //setting to menu so that it will be always defaulted to #menu
 		GLOBALS.LastvisitedRoute = "menu";
 		NetworkManager.IsConnectedToInternet().then(result => {
-		if (result.connected)
-			GLOBALS.IsConnectedToInternet = true;
-		else
-			GLOBALS.IsConnectedToInternet = false;
+			if (result && result.connected === true) {
+				GLOBALS.IsConnectedToInternet = true;
+				this.log('internet status initialized as connected:', GLOBALS.IsConnectedToInternet);
+				return;
+			}
+			// Never force offline from a reboot-time probe. That value can be stale.
+			// Only explicit NO_INTERNET events should set the app offline.
+			this.log('internet init probe was not definitive; waiting for NetworkManager event');
+		}).catch(err => {
+			this.ERR('NetworkManager.IsConnectedToInternet() init error: ' + JSON.stringify(err));
 		});
 		appApi.enableDisplaySettings().then(res => {
 			this.LOG("results : " + JSON.stringify(res))
@@ -730,13 +736,18 @@ export default class App extends Router.App {
 
 	SubscribeToNetworkManager() {
 		thunder.on('org.rdk.NetworkManager', 'onInternetStatusChange', data => {
-			if (data.status === "FULLY_CONNECTED") {
-				GLOBALS.IsConnectedToInternet = true
-			}
-			else {
-				GLOBALS.IsConnectedToInternet = false
-			}
+			const status = data && data.status;
 			console.warn("onInternetStatusChange:", data);
+            // if internet is fully connected
+			if (status === "FULLY_CONNECTED") {
+				GLOBALS.IsConnectedToInternet = true;
+				return;
+			}
+            // if no internet
+			if (status === "NO_INTERNET") {
+				GLOBALS.IsConnectedToInternet = false;
+				return;
+			}
 		});
 	}
 	SubscribeToMiracastService() {
