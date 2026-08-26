@@ -107,7 +107,7 @@ export const DACAppMixin = (Base) => class extends Base {
         // Check for internet connectivity
         const isConnected = GLOBALS.IsConnectedToInternet === true;
         if (!isConnected) {
-            this.fireAncestors('$showNoInternet')
+            this.fireAncestors('$showNetworkError')
             return false;
         }
         if (this._app.isInstalled) {
