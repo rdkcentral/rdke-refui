@@ -179,7 +179,6 @@ export default class AppInfoPage extends Lightning.Component {
         this._appList = this.tag('AppList');
     this._scrollThumb = this.tag('ScrollIndicator.ScrollThumb');
     // Track the latest NetworkManager status we actually received.
-    // disconnect event is still pending and the UI has not yet reflected offline.
     this._lastInternetStatus = GLOBALS.IsConnectedToInternet === true ? 'FULLY_CONNECTED' : 'UNKNOWN';
     this._lastInternetStatusAt = Date.now();
     this._onInternetStatusChangeCB = NetworkManager.thunder.on('org.rdk.NetworkManager', 'onInternetStatusChange', notification => {
@@ -198,7 +197,6 @@ export default class AppInfoPage extends Lightning.Component {
             GLOBALS.IsConnectedToInternet = false;
             return;
         }
-        // Ignore unknown/transient states here; they are not a definitive offline state.
         this._updateAppCardsNetworkState(true);
     });
     }
