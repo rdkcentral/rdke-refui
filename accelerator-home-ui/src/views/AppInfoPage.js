@@ -191,11 +191,32 @@ export default class AppInfoPage extends Lightning.Component {
         if (notification.status === 'FULLY_CONNECTED') {
             this._updateAppCardsNetworkState(true);
             GLOBALS.IsConnectedToInternet = true;
-        } else {
+            return;
+        }
+        if (notification.status === 'NO_INTERNET') {
             this._updateAppCardsNetworkState(false);
             GLOBALS.IsConnectedToInternet = false;
+            return;
         }
+        // Ignore unknown/transient states here; they are not a definitive offline state.
+        this._updateAppCardsNetworkState(true);
     });
+    }
+
+    _refreshNetworkStateFromGlobals() {
+        if (GLOBALS.IsConnectedToInternet === true) {
+            this._lastInternetStatus = 'FULLY_CONNECTED';
+            this._lastInternetStatusAt = Date.now();
+            return true;
+        }
+        if (GLOBALS.IsConnectedToInternet === false) {
+            this._lastInternetStatus = 'NO_INTERNET';
+            this._lastInternetStatusAt = Date.now();
+            return false;
+        }
+        this._lastInternetStatus = 'UNKNOWN';
+        this._lastInternetStatusAt = Date.now();
+        return null;
     }
 
     _detach() {
@@ -327,51 +348,56 @@ export default class AppInfoPage extends Lightning.Component {
      */
     async _launchApp(appInfo) {
         console.log(`Launching ${appInfo.name}...`);
-       try {
-        const status = this._lastInternetStatus;
-        const now = Date.now();
-        
-        // event after WiFi/WLAN disconnect. During that window the UI still shows
-        // connected even though the app is about to be torn down. Blocking launch
-        const staleGapMs = 5000;
-        // 5s guard: NetworkManager can take a few seconds to propagate an offline
+        try {
+            const status = this._lastInternetStatus;
+            const now = Date.now();
 
-        // Block if this session has already seen a real offline event.
-        if (status === 'NO_INTERNET') {
-            console.log('Block launch: last known NetworkManager status is NO_INTERNET');
-            this.widgets.failok.notify({
-                title: Language.translate('No Internet'),
-                msg: Language.translate('No internet connection. Please check your network and try again.')
-            });
-            Router.focusWidget('FailOk');
-            return;
-        }
+            // NetworkManager reports offline late after reboot/WiFi disconnect.
+            // We only block launch when there was a real offline event, or when a
+            // previously-known connected state has gone stale long enough to match
+            // the delayed disconnect propagation.
+            const staleGapMs = 5000;
 
-        // If the last status is too old or unknown, do not launch immediately.
-        // This avoids the reboot/disconnect race without an extra Thunder API call.
-        if (!status || status === 'UNKNOWN' || (now - this._lastInternetStatusAt) > staleGapMs) {
-            console.log('Block launch: network state is stale/unknown');
-            this.widgets.failok.notify({
-                title: Language.translate('Network Status'),
-                // if the user tries to launch app while netwrok is still pending,show this error message.
-                msg: Language.translate('Network connectivity is still updating. Please wait and try again.')
-            });
-            Router.focusWidget('FailOk');
-            return;
-        }
+            // Block only on a definitive offline event.
+            if (status === 'NO_INTERNET') {
+                console.log('Block launch: last known NetworkManager status is NO_INTERNET');
+                this.widgets.failok.notify({
+                    title: Language.translate('No Internet'),
+                    msg: Language.translate('No internet connection. Please check your network and try again.')
+                });
+                Router.focusWidget('FailOk');
+                return;
+            }
 
-        const result = await startDACApp({ id: appInfo.id });
-        if (result) {
-            console.log(`${appInfo.name} launched successfully`);
-        } else {
-            console.error(`Failed to launch ${appInfo.name}`);
-            this.widgets.failok.notify({
-                title: Language.translate('Launch Failed'),
-                msg: Language.translate('Unable to launch the app. Please try again later.')
-            });
-            Router.focusWidget('FailOk');
-        }
-    } catch (error) {
+            // If the last known status was FULLY_CONNECTED and it is now stale, the
+            // disconnect notification may still be pending. Do not let the app open
+            // in that race window.
+            if (status === 'FULLY_CONNECTED' && (now - this._lastInternetStatusAt) > staleGapMs) {
+                console.log('Block launch: last known connected state is stale; disconnect event may still be pending');
+                this.widgets.failok.notify({
+                    title: Language.translate('Network Status'),
+                    msg: Language.translate('Network connectivity is still updating. Please wait and try again.')
+                });
+                Router.focusWidget('FailOk');
+                return;
+            }
+
+            // Do not block on UNKNOWN by default. Unknown means "no definitive event yet",
+            // not necessarily offline, and that would falsely prevent a connected app from opening.
+            console.log('Allow launch: no definitive offline event was received');
+
+            const result = await startDACApp({ id: appInfo.id });
+            if (result) {
+                console.log(`${appInfo.name} launched successfully`);
+            } else {
+                console.error(`Failed to launch ${appInfo.name}`);
+                this.widgets.failok.notify({
+                    title: Language.translate('Launch Failed'),
+                    msg: Language.translate('Unable to launch the app. Please try again later.')
+                });
+                Router.focusWidget('FailOk');
+            }
+        } catch (error) {
             console.error(`Error launching ${appInfo.name}:`, error);
         }
     }
@@ -524,6 +550,10 @@ export default class AppInfoPage extends Lightning.Component {
     }
 
     _focus() {
+        // Re-sync the last-known internet state when the page is reopened. This
+        // prevents a stale NO_INTERNET timestamp from blocking launches after the
+        // network has recovered.
+        this._refreshNetworkStateFromGlobals();
         // Fetch latest installed apps every time page is focused
         this._fetchInstalledApps();
     }

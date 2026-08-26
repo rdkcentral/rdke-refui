@@ -152,7 +152,7 @@ export const GLOBALS = {
   },
   set IsConnectedToInternet(status)
   {
-    this._IsinternetConnected =status
+    this._IsinternetConnected =!!status
   },
   get IsConnectedToInternet()
   {
