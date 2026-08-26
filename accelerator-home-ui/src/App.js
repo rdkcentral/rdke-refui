@@ -487,9 +487,9 @@ export default class App extends Router.App {
 				this.log('internet status initialized as connected:', GLOBALS.IsConnectedToInternet);
 				return;
 			}
-			// Never force offline from a reboot-time probe. That value can be stale.
-			// Only explicit NO_INTERNET events should set the app offline.
-			this.log('internet init probe was not definitive; waiting for NetworkManager event');
+			// Don't force an offline state from a reboot-time probe (it may be stale).
+			// We leave the current value as-is (defaults to offline) and wait for
+			// explicit NetworkManager events to update it.
 		}).catch(err => {
 			this.ERR('NetworkManager.IsConnectedToInternet() init error: ' + JSON.stringify(err));
 		});
