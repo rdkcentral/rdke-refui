@@ -35,7 +35,7 @@ export function keyIntercept(clientId) {
             { "keyCode": Keymap.Settings_Shortcut, "modifiers": [] },
             { "keyCode": Keymap.Guide_Shortcut, "modifiers": [] },
             { "keyCode": Keymap.AppCarousel, "modifiers": [] },
-            { "keyCode": Keymap.Escape, "modifiers": [] },
+            { "keyCode": Keymap.Escape, "modifiers": [] }
         ];
         RDKWindowManager.get().addKeyIntercepts(
             {

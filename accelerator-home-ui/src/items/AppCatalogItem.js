@@ -18,10 +18,10 @@
  **/
 
 import { Lightning, Utils, Language, Storage } from "@lightningjs/sdk";
-import { CONFIG } from "../Config/Config";
+import { CONFIG,GLOBALS } from "../Config/Config";
 import StatusProgress from '../overlays/StatusProgress'
 import { installDACApp, isDACAppInstalled, startDACApp } from '../api/DACApi'
-
+import NetworkManager from '../api/NetworkManagerAPI'
 /**
  * Mixin providing common DAC app functionality (install, status updates, etc.)
  * Can be used by both AppCatalogItem and DacAppItem to avoid code duplication.
@@ -104,6 +104,32 @@ export const DACAppMixin = (Base) => class extends Base {
     }
 
     async performDACInstall(statusProgressTag, overlayTag) {
+                // Check internet connectivity before attempting install or launch
+        let isConnected = true
+        try {
+            const netRes = await NetworkManager.IsConnectedToInternet()
+            if (typeof netRes === 'boolean') {
+                isConnected = netRes
+                GLOBALS.IsConnectedToInternet = isConnected
+            } else if (netRes && typeof netRes.connected !== 'undefined') {
+                isConnected = !!netRes.connected
+                GLOBALS.IsConnectedToInternet = isConnected
+            } else if (netRes && netRes.result && typeof netRes.result.connected !== 'undefined') {
+                isConnected = !!netRes.result.connected
+                GLOBALS.IsConnectedToInternet = isConnected
+            } else {
+                this.LOG('NetworkManager.IsConnectedToInternet() returned unexpected shape: ' + JSON.stringify(netRes))
+            }
+        } catch (err) {
+            this.LOG('NetworkManager.IsConnectedToInternet() failed: ' + JSON.stringify(err))
+            isConnected = GLOBALS.IsConnectedToInternet ?? false
+        }
+
+        if (!isConnected) {
+            this.fireAncestors('$showNoInternet')
+            return false
+        }
+
         if (this._app.isInstalled) {
             this.LOG("App is already installed, launching: " + this._app.name)
             this.tag(overlayTag).alpha = 0.7
