@@ -356,9 +356,9 @@ export default class AppInfoPage extends Lightning.Component {
             // the delayed disconnect propagation.
             const staleGapMs = 5000;
 
-            // Block only on a definitive offline event.
-            if (status === 'NO_INTERNET') {
-                console.log('Block launch: last known NetworkManager status is NO_INTERNET');
+            // Block on any definitive non-connected status (not just NO_INTERNET).
+            if (status !== 'FULLY_CONNECTED' && status !== 'UNKNOWN') {
+                console.log(`Block launch: last known NetworkManager status indicates offline (${status})`);
                 this.widgets.failok.notify({
                     title: Language.translate('No Internet'),
                     msg: Language.translate('No internet connection. Please check your network and try again.')
