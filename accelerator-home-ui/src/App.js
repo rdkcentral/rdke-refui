@@ -744,7 +744,7 @@ export default class App extends Router.App {
 				return;
 			}
             // if no internet
-			if (status === "NO_INTERNET") {
+			else {
 				GLOBALS.IsConnectedToInternet = false;
 				return;
 			}
