@@ -1,0 +1,43 @@
+name: Build Dist when tag is created 
+
+on:
+  push:
+    tags:
+      - '*' 
+  
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        
+      - name: Remove existing dist folder
+        run: |
+          test -d "./accelerator-home-ui/dist" && rm -rf "./accelerator-home-ui/dist"
+          
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18'
+
+      - name: Install global tools
+        run: |
+          npm install -g @lightningjs/cli typescript
+          lng --version
+      - name: Install project dependencies
+        run: npm install
+        working-directory: ./accelerator-home-ui
+
+      - name: Build project
+        run: lng dist
+        working-directory: ./accelerator-home-ui
+
+      - name: Checking for Dist
+        run: | 
+          if test -d "./accelerator-home-ui/dist"; then 
+            bash lng_script.sh 
+          fi
+      - name: to move dist and remove es6
+        run: mv ./accelerator-home-ui/dist/es6/* ./accelerator-home-ui/dist && rm -d ./accelerator-home-ui/dist/es6
