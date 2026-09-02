@@ -18,7 +18,7 @@
  **/
 
 import { Lightning, Utils, Language, Storage } from "@lightningjs/sdk";
-import { CONFIG } from "../Config/Config";
+import { CONFIG, GLOBALS } from "../Config/Config";
 import StatusProgress from '../overlays/StatusProgress'
 import { installDACApp, isDACAppInstalled, startDACApp } from '../api/DACApi'
 
@@ -104,6 +104,12 @@ export const DACAppMixin = (Base) => class extends Base {
     }
 
     async performDACInstall(statusProgressTag, overlayTag) {
+        // Check for internet connectivity
+        const isConnected = GLOBALS.IsConnectedToInternet === true;
+        if (!isConnected) {
+            this.fireAncestors('$showNetworkError')
+            return false;
+        }
         if (this._app.isInstalled) {
             this.LOG("App is already installed, launching: " + this._app.name)
             this.tag(overlayTag).alpha = 0.7

@@ -19,7 +19,7 @@
 
 import { Lightning, Router, Language, Utils } from "@lightningjs/sdk";
 import { List } from "@lightningjs/ui";
-import { CONFIG } from "../Config/Config";
+import { CONFIG, GLOBALS } from "../Config/Config";
 import AppCard from "../items/AppCard";
 import { getInstalledDACApps, startDACApp, uninstallDACApp } from "../api/DACApi";
 import { filterExcludedApps } from "../helpers/DACAppPresentation";
@@ -177,15 +177,44 @@ export default class AppInfoPage extends Lightning.Component {
 
     _init() {
         this._appList = this.tag('AppList');
-        this._scrollThumb = this.tag('ScrollIndicator.ScrollThumb');
-        this._onInternetStatusChangeCB = NetworkManager.thunder.on('org.rdk.NetworkManager', 'onInternetStatusChange', notification => {
-            console.log('AppInfoPage onInternetStatusChange: ' + JSON.stringify(notification));
-            if (notification.status === 'FULLY_CONNECTED') {
-                this._updateAppCardsNetworkState(true);
-            } else {
-                this._updateAppCardsNetworkState(false);
-            }
-        });
+    this._scrollThumb = this.tag('ScrollIndicator.ScrollThumb');
+    // Track the latest NetworkManager status we actually received.
+    this._lastInternetStatus = GLOBALS.IsConnectedToInternet === true ? 'FULLY_CONNECTED' : 'UNKNOWN';
+    this._lastInternetStatusAt = Date.now();
+    this._onInternetStatusChangeCB = NetworkManager.thunder.on('org.rdk.NetworkManager', 'onInternetStatusChange', notification => {
+        console.log('AppInfoPage onInternetStatusChange: ' + JSON.stringify(notification));
+        // Save the last real status reported by NetworkManager so launch checks can
+        // use the latest known state instead of stale UI assumptions.
+        this._lastInternetStatus = notification && notification.status ? notification.status : 'UNKNOWN';
+        this._lastInternetStatusAt = Date.now();
+        if (notification.status === 'FULLY_CONNECTED') {
+            this._updateAppCardsNetworkState(true);
+            GLOBALS.IsConnectedToInternet = true;
+            return;
+        }
+        if (notification.status === 'NO_INTERNET') {
+            this._updateAppCardsNetworkState(false);
+            GLOBALS.IsConnectedToInternet = false;
+            return;
+        }
+        this._updateAppCardsNetworkState(true);
+    });
+    }
+
+    _refreshNetworkStateFromGlobals() {
+        if (GLOBALS.IsConnectedToInternet === true) {
+            this._lastInternetStatus = 'FULLY_CONNECTED';
+            this._lastInternetStatusAt = Date.now();
+            return true;
+        }
+        if (GLOBALS.IsConnectedToInternet === false) {
+            this._lastInternetStatus = 'NO_INTERNET';
+            this._lastInternetStatusAt = Date.now();
+            return false;
+        }
+        this._lastInternetStatus = 'UNKNOWN';
+        this._lastInternetStatusAt = Date.now();
+        return null;
     }
 
     _detach() {
@@ -318,11 +347,53 @@ export default class AppInfoPage extends Lightning.Component {
     async _launchApp(appInfo) {
         console.log(`Launching ${appInfo.name}...`);
         try {
+            const status = this._lastInternetStatus;
+            const now = Date.now();
+
+            // NetworkManager reports offline late after reboot/WiFi disconnect.
+            // We only block launch when there was a real offline event, or when a
+            // previously-known connected state has gone stale long enough to match
+            // the delayed disconnect propagation.
+            const staleGapMs = 5000;
+
+            // Block on any definitive non-connected status (not just NO_INTERNET).
+            if (status !== 'FULLY_CONNECTED' && status !== 'UNKNOWN') {
+                console.log(`Block launch: last known NetworkManager status indicates offline (${status})`);
+                this.widgets.failok.notify({
+                    title: Language.translate('No Internet'),
+                    msg: Language.translate('No internet connection. Please check your network and try again.')
+                });
+                Router.focusWidget('FailOk');
+                return;
+            }
+
+            // If the last known status was FULLY_CONNECTED and it is now stale, the
+            // disconnect notification may still be pending. Do not let the app open
+            // in that race window.
+            if (status === 'FULLY_CONNECTED' && (now - this._lastInternetStatusAt) > staleGapMs) {
+                console.log('Block launch: last known connected state is stale; disconnect event may still be pending');
+                this.widgets.failok.notify({
+                    title: Language.translate('Network Status'),
+                    msg: Language.translate('Network connectivity is still updating. Please wait and try again.')
+                });
+                Router.focusWidget('FailOk');
+                return;
+            }
+
+            // Do not block on UNKNOWN by default. Unknown means "no definitive event yet",
+            // not necessarily offline, and that would falsely prevent a connected app from opening.
+            console.log('Allow launch: no definitive offline event was received');
+
             const result = await startDACApp({ id: appInfo.id });
             if (result) {
                 console.log(`${appInfo.name} launched successfully`);
             } else {
                 console.error(`Failed to launch ${appInfo.name}`);
+                this.widgets.failok.notify({
+                    title: Language.translate('Launch Failed'),
+                    msg: Language.translate('Unable to launch the app. Please try again later.')
+                });
+                Router.focusWidget('FailOk');
             }
         } catch (error) {
             console.error(`Error launching ${appInfo.name}:`, error);
@@ -477,6 +548,10 @@ export default class AppInfoPage extends Lightning.Component {
     }
 
     _focus() {
+        // Re-sync the last-known internet state when the page is reopened. This
+        // prevents a stale NO_INTERNET timestamp from blocking launches after the
+        // network has recovered.
+        this._refreshNetworkStateFromGlobals();
         // Fetch latest installed apps every time page is focused
         this._fetchInstalledApps();
     }
