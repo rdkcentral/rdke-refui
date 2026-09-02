@@ -316,49 +316,67 @@ export default class AppInfoPage extends Lightning.Component {
      * Launch the selected app
      */
     async _launchApp(appInfo) {
-        console.log(`Launching ${appInfo.name}...`);
-        try {
-            const result = await startDACApp({ id: appInfo.id });
-            if (result) {
-                console.log(`${appInfo.name} launched successfully`);
-            } else {
-                console.error(`Failed to launch ${appInfo.name}`);
-            }
-        } catch (error) {
-            console.error(`Error launching ${appInfo.name}:`, error);
-        }
+    console.log(`Launching ${appInfo.name}...`);
+    try {
+      console.log("Before startDacApp call");
+      const result = await startDACApp({ id: appInfo.id });
+      if (result) {
+        console.log(`${appInfo.name} launched successfully`);
+      } else {
+        console.error(`Failed to launch ${appInfo.name}`);
+      }
+    } catch (error) {
+      console.error(`Error launching ${appInfo.name}:`, error);
+      const currentCard = this._appList.currentItem;
+      if (currentCard && currentCard.resetActionInProgress) {
+        currentCard.resetActionInProgress();
+      }
     }
+  }
 
     /**
      * Update the selected app
      */
     _updateApp(appInfo) {
-        if (!appInfo.hasUpdate) {
-            console.log(`${appInfo.name} is already up to date`);
-            return;
-        }
-        console.log(`Updating ${appInfo.name}...`);
+    if (!appInfo.hasUpdate) {
+      console.log(`${appInfo.name} is already up to date`);
+      // Reset action-in-progress flag
+      const currentCard = this._appList.currentItem;
+      if (currentCard && currentCard.resetActionInProgress) {
+        currentCard.resetActionInProgress();
+      }
+      return;
     }
+    console.log(`Updating ${appInfo.name}...`);
+  }
 
     /**
      * Uninstall the selected app
      */
-    async _uninstallApp(appInfo) {
-        console.log(`Uninstalling ${appInfo.name}...`);
-        try {
+     async _uninstallApp(appInfo) {
+    console.log(`Uninstalling ${appInfo.name}...`);
+    try {
             const result = await uninstallDACApp({ id: appInfo.id, version: appInfo.version, name: appInfo.name }, this);
-            if (result) {
-                console.log(`${appInfo.name} uninstalled successfully`);
-                return true;
-            } else {
-                console.error(`Failed to uninstall ${appInfo.name}`);
-                return false;
-            }
-        } catch (error) {
-            console.error(`Error uninstalling ${appInfo.name}:`, error);
-            return false;
+      if (result) {
+        console.log(`${appInfo.name} uninstalled successfully`);
+        const currentCard = this._appList.currentItem;
+        if (currentCard && currentCard.resetActionInProgress) {
+          currentCard.resetActionInProgress();
         }
+        return true;
+      } else {
+        console.error(`Failed to uninstall ${appInfo.name}`);
+        return false;
+      }
+    } catch (error) {
+      console.error(`Error uninstalling ${appInfo.name}:`, error);
+     const currentCard = this._appList.currentItem;     
+      if (currentCard && currentCard.resetActionInProgress) {
+        currentCard.resetActionInProgress();
+      }
+      return false;
     }
+  }
 
     /**
      * Show the uninstall confirmation overlay

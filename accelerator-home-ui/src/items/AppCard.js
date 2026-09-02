@@ -21,347 +21,397 @@ import { Lightning, Utils, Language } from "@lightningjs/sdk";
 import { CONFIG, GLOBALS } from "../Config/Config";
 
 class ActionButton extends Lightning.Component {
-    static _template() {
-        return {
-            rect: true,
-            w: 160,
-            h: 40,
-            color: 0xFF3D3D3D,
-            shader: {
-                type: Lightning.shaders.RoundedRectangle,
-                radius: 6
-            },
-            FocusIndicator: {
-                alpha: 0,
-                x: -4,
-                y: -4,
-                rect: true,
-                w: 168,
-                h: 48,
-                color: 0x00000000,
-                shader: {
-                    type: Lightning.shaders.RoundedRectangle,
-                    radius: 10,
-                    stroke: 3,
-                    strokeColor: 0xFFFFFFFF
-                }
-            },
-            Label: {
-                mount: 0.5,
-                x: 80,
-                y: 20,
-                text: {
-                    text: '',
-                    fontSize: 18,
-                    fontFace: CONFIG.language.font,
-                    textColor: 0xFFFFFFFF
-                }
-            }
-        }
-    }
+  static _template() {
+    return {
+      rect: true,
+      w: 160,
+      h: 40,
+      color: 0xff3d3d3d,
+      shader: {
+        type: Lightning.shaders.RoundedRectangle,
+        radius: 6,
+      },
+      FocusIndicator: {
+        alpha: 0,
+        x: -4,
+        y: -4,
+        rect: true,
+        w: 168,
+        h: 48,
+        color: 0x00000000,
+        shader: {
+          type: Lightning.shaders.RoundedRectangle,
+          radius: 10,
+          stroke: 3,
+          strokeColor: 0xffffffff,
+        },
+      },
+      Label: {
+        mount: 0.5,
+        x: 80,
+        y: 20,
+        text: {
+          text: "",
+          fontSize: 18,
+          fontFace: CONFIG.language.font,
+          textColor: 0xffffffff,
+        },
+      },
+    };
+  }
 
-    set label(text) {
-        this.tag('Label').text.text = text;
-    }
+  set label(text) {
+    this.tag("Label").text.text = text;
+  }
 
-    set action(actionType) {
-        this._action = actionType;
-    }
+  set action(actionType) {
+    this._action = actionType;
+  }
 
-    get action() {
-        return this._action;
-    }
+  get action() {
+    return this._action;
+  }
 
-    _focus() {
-        this.tag('FocusIndicator').alpha = 1;
-        this.patch({
-            color: CONFIG.theme.hex,
-            smooth: { scale: 1.1 }
-        });
-        this.tag('Label').patch({
-            text: { textColor: 0xFFFFFFFF }
-        });
-    }
+  _focus() {
+    this.tag("FocusIndicator").alpha = 1;
+    this.patch({
+      color: CONFIG.theme.hex,
+      smooth: { scale: 1.1 },
+    });
+    this.tag("Label").patch({
+      text: { textColor: 0xffffffff },
+    });
+  }
 
-    _unfocus() {
-        this.tag('FocusIndicator').alpha = 0;
-        this.patch({
-            color: 0xFF3D3D3D,
-            smooth: { scale: 1 }
-        });
-    }
+  _unfocus() {
+    this.tag("FocusIndicator").alpha = 0;
+    this.patch({
+      color: 0xff3d3d3d,
+      smooth: { scale: 1 },
+    });
+  }
 }
 
 export default class AppCard extends Lightning.Component {
-    static _template() {
-        return {
-            rect: true,
-            w: AppCard.width,
-            h: AppCard.height,
-            color: 0xFF1A1A1A,
-            shader: {
-                type: Lightning.shaders.RoundedRectangle,
-                radius: 10
-            },
-            Border: {
-                rect: true,
-                w: AppCard.width,
-                h: AppCard.height,
-                color: 0x00000000,
-                shader: {
-                    type: Lightning.shaders.RoundedRectangle,
-                    radius: 10,
-                    stroke: 2,
-                    strokeColor: 0xFF3D3D3D
-                }
-            },
-            
-            // Left: App Icon (40px from left edge)
-            AppIcon: {
-                x: 40,
-                y: 15, // Vertically centered: (150 - 120) / 2 = 15
-                rect: true,
-                w: 160,
-                h: 120,
-                color: 0xFF2D2D2D,
-                shader: {
-                    type: Lightning.shaders.RoundedRectangle,
-                    radius: 8
-                },
-                IconImage: {
-                    w: 160,
-                    h: 120,
-                    shader: {
-                        type: Lightning.shaders.RoundedRectangle,
-                        radius: 8
-                    }
-                },
-                DefaultImage: {
-                    w: 160,
-                    h: 120,
-                    src: Utils.asset('/images/metroApps/offline.png'),
-                    alpha: 0,
-                    shader: {
-                        type: Lightning.shaders.RoundedRectangle,
-                        radius: 8
-                    }
-                }
-            },
+  static _template() {
+    return {
+      rect: true,
+      w: AppCard.width,
+      h: AppCard.height,
+      color: 0xff1a1a1a,
+      shader: {
+        type: Lightning.shaders.RoundedRectangle,
+        radius: 10,
+      },
+      Border: {
+        rect: true,
+        w: AppCard.width,
+        h: AppCard.height,
+        color: 0x00000000,
+        shader: {
+          type: Lightning.shaders.RoundedRectangle,
+          radius: 10,
+          stroke: 2,
+          strokeColor: 0xff3d3d3d,
+        },
+      },
 
-            // Middle: App Details (40px gap after icon)
-            AppDetails: {
-                x: 240, // 40 + 160 + 40 = 240
-                y: 25,
-                w: 450,
-                AppName: {
-                    text: {
-                        text: '',
-                        fontSize: 26,
-                        fontFace: CONFIG.language.font,
-                        textColor: 0xFFFFFFFF,
-                        fontStyle: 'bold',
-                        wordWrapWidth: 440
-                    }
-                },
-                Version: {
-                    y: 35,
-                    text: {
-                        text: '',
-                        fontSize: 18,
-                        fontFace: CONFIG.language.font,
-                        textColor: 0xFFAAAAAA
-                    }
-                },
-                BasePackageVersion: {
-                    y: 60,
-                    text: {
-                        text: '',
-                        fontSize: 18,
-                        fontFace: CONFIG.language.font,
-                        textColor: 0xFFAAAAAA
-                    }
-                }
-            },
+      // Left: App Icon (40px from left edge)
+      AppIcon: {
+        x: 40,
+        y: 15, // Vertically centered: (150 - 120) / 2 = 15
+        rect: true,
+        w: 160,
+        h: 120,
+        color: 0xff2d2d2d,
+        shader: {
+          type: Lightning.shaders.RoundedRectangle,
+          radius: 8,
+        },
+        IconImage: {
+          w: 160,
+          h: 120,
+          shader: {
+            type: Lightning.shaders.RoundedRectangle,
+            radius: 8,
+          },
+        },
+        DefaultImage: {
+          w: 160,
+          h: 120,
+          src: Utils.asset("/images/metroApps/offline.png"),
+          alpha: 0,
+          shader: {
+            type: Lightning.shaders.RoundedRectangle,
+            radius: 8,
+          },
+        },
+      },
 
-            // Right: Action Buttons (520px total, 40px from right edge)
-            // Position: 1640 - 40 - 520 = 1080
-            ActionButtons: {
-                x: 1080,
-                y: 55, // Vertically centered: (150 - 40) / 2 = 55
-                LaunchButton: {
-                    x: 0,
-                    type: ActionButton,
-                    label: Language.translate('Launch'),
-                    action: 'launch'
-                },
-                UpdateButton: {
-                    x: 180, // 160 + 20 spacing
-                    type: ActionButton,
-                    label: Language.translate('Update'),
-                    action: 'update'
-                },
-                UninstallButton: {
-                    x: 360, // 160 + 20 + 160 + 20
-                    type: ActionButton,
-                    label: Language.translate('Uninstall'),
-                    action: 'uninstall'
-                }
-            },
+      // Middle: App Details (40px gap after icon)
+      AppDetails: {
+        x: 240, // 40 + 160 + 40 = 240
+        y: 25,
+        w: 450,
+        AppName: {
+          text: {
+            text: "",
+            fontSize: 26,
+            fontFace: CONFIG.language.font,
+            textColor: 0xffffffff,
+            fontStyle: "bold",
+            wordWrapWidth: 440,
+          },
+        },
+        Version: {
+          y: 35,
+          text: {
+            text: "",
+            fontSize: 18,
+            fontFace: CONFIG.language.font,
+            textColor: 0xffaaaaaa,
+          },
+        },
+        BasePackageVersion: {
+          y: 60,
+          text: {
+            text: "",
+            fontSize: 18,
+            fontFace: CONFIG.language.font,
+            textColor: 0xffaaaaaa,
+          },
+        },
+      },
 
-            FocusBorder: {
-                alpha: 0,
-                rect: true,
-                w: AppCard.width,
-                h: AppCard.height,
-                color: 0x00000000,
-                shader: {
-                    type: Lightning.shaders.RoundedRectangle,
-                    radius: 10,
-                    stroke: 3,
-                    strokeColor: CONFIG.theme.hex
-                }
-            }
-        }
+      // Right: Action Buttons (520px total, 40px from right edge)
+      // Position: 1640 - 40 - 520 = 1080
+      ActionButtons: {
+        x: 1080,
+        y: 55, // Vertically centered: (150 - 40) / 2 = 55
+        LaunchButton: {
+          x: 0,
+          type: ActionButton,
+          label: Language.translate("Launch"),
+          action: "launch",
+        },
+        UpdateButton: {
+          x: 180, // 160 + 20 spacing
+          type: ActionButton,
+          label: Language.translate("Update"),
+          action: "update",
+        },
+        UninstallButton: {
+          x: 360, // 160 + 20 + 160 + 20
+          type: ActionButton,
+          label: Language.translate("Uninstall"),
+          action: "uninstall",
+        },
+      },
+
+      FocusBorder: {
+        alpha: 0,
+        rect: true,
+        w: AppCard.width,
+        h: AppCard.height,
+        color: 0x00000000,
+        shader: {
+          type: Lightning.shaders.RoundedRectangle,
+          radius: 10,
+          stroke: 3,
+          strokeColor: CONFIG.theme.hex,
+        },
+      },
+    };
+  }
+
+  static get width() {
+    return 1640; // 1920 - 200 - 60 (scrollbar) - 20 padding
+  }
+
+  static get height() {
+    return 150;
+  }
+
+  _init() {
+    this._buttonIndex = 0;
+    this._buttons = ["LaunchButton", "UpdateButton", "UninstallButton"];
+    this._isActionInProgress = false;
+    this.tag("AppIcon.IconImage").on("txError", () => {
+      this.tag("AppIcon.IconImage").alpha = 0;
+      this.tag("AppIcon.DefaultImage").alpha = 1;
+    });
+    this.tag("AppIcon.IconImage").on("txLoaded", () => {
+      // Only hide offline placeholder if network is connected
+      if (GLOBALS.IsConnectedToInternet) {
+        this.tag("AppIcon.IconImage").alpha = 1;
+        this.tag("AppIcon.DefaultImage").alpha = 0;
+      }
+    });
+  }
+
+  set appInfo(data) {
+    this._appInfo = data;
+
+    // Set app name
+    const appName =
+      data.name ||
+      data.appName ||
+      (data.installed && data.installed[0] && data.installed[0].appName) ||
+      "Unknown App";
+    this.tag("AppDetails.AppName").text.text = appName;
+
+    // Set version
+    const version =
+      data.version ||
+      (data.installed && data.installed[0] && data.installed[0].version) ||
+      "";
+    this.tag("AppDetails.Version").text.text = version
+      ? `${Language.translate("Version")}: ${version}`
+      : "";
+
+    // Set base package version
+    const baseVersion =
+      data.basePackageVersion ||
+      (data.installed &&
+        data.installed[0] &&
+        data.installed[0].basePackageVersion) ||
+      "";
+    this.tag("AppDetails.BasePackageVersion").text.text = baseVersion
+      ? `${Language.translate("Base Package")}: ${baseVersion}`
+      : "";
+
+    // Set icon
+    if (data.icon) {
+      if (data.icon.startsWith("/images")) {
+        this.tag("AppIcon.IconImage").patch({ src: Utils.asset(data.icon) });
+      } else {
+        this.tag("AppIcon.IconImage").patch({ src: data.icon });
+      }
     }
 
-    static get width() {
-        return 1640; // 1920 - 200 - 60 (scrollbar) - 20 padding
+    // If network is disconnected, show offline placeholder immediately
+    if (!GLOBALS.IsConnectedToInternet) {
+      this.tag("AppIcon.DefaultImage").alpha = 1;
+      this.tag("AppIcon.IconImage").alpha = 0;
     }
 
-    static get height() {
-        return 150;
+    // Show/hide update button based on update availability
+    if (!data.hasUpdate) {
+      this.tag("ActionButtons.UpdateButton").alpha = 0.5;
     }
+  }
 
-    _init() {
-        this._buttonIndex = 0;
-        this._buttons = ['LaunchButton', 'UpdateButton', 'UninstallButton'];
-        this.tag('AppIcon.IconImage').on('txError', () => {
-            this.tag('AppIcon.IconImage').alpha = 0;
-            this.tag('AppIcon.DefaultImage').alpha = 1;
-        });
-        this.tag('AppIcon.IconImage').on('txLoaded', () => {
-            // Only hide offline placeholder if network is connected
-            if (GLOBALS.IsConnectedToInternet) {
-                this.tag('AppIcon.IconImage').alpha = 1;
-                this.tag('AppIcon.DefaultImage').alpha = 0;
-            }
-        });
+  get appInfo() {
+    return this._appInfo;
+  }
+
+  _focus() {
+    this.tag("FocusBorder").alpha = 1;
+    this.patch({ smooth: { scale: 1.02 } });
+    this._focusButton();
+  }
+
+  _unfocus() {
+    this.tag("FocusBorder").alpha = 0;
+    this.patch({ smooth: { scale: 1 } });
+    this._unfocusAllButtons();
+  }
+
+  _focusButton() {
+    this._unfocusAllButtons();
+    const button = this.tag(
+      `ActionButtons.${this._buttons[this._buttonIndex]}`,
+    );
+    if (button) {
+      button._focus();
     }
+  }
 
-    set appInfo(data) {
-        this._appInfo = data;
-        
-        // Set app name
-        const appName = data.name || data.appName || (data.installed && data.installed[0] && data.installed[0].appName) || 'Unknown App';
-        this.tag('AppDetails.AppName').text.text = appName;
-        
-        // Set version
-        const version = data.version || (data.installed && data.installed[0] && data.installed[0].version) || '';
-        this.tag('AppDetails.Version').text.text = version ? `${Language.translate('Version')}: ${version}` : '';
-        
-        // Set base package version
-        const baseVersion = data.basePackageVersion || (data.installed && data.installed[0] && data.installed[0].basePackageVersion) || '';
-        this.tag('AppDetails.BasePackageVersion').text.text = baseVersion ? `${Language.translate('Base Package')}: ${baseVersion}` : '';
-        
-        // Set icon
-        if (data.icon) {
-            if (data.icon.startsWith('/images')) {
-                this.tag('AppIcon.IconImage').patch({ src: Utils.asset(data.icon) });
-            } else {
-                this.tag('AppIcon.IconImage').patch({ src: data.icon });
-            }
-        }
+  _unfocusAllButtons() {
+    this._buttons.forEach((btn) => {
+      const button = this.tag(`ActionButtons.${btn}`);
+      if (button) {
+        button._unfocus();
+      }
+    });
+  }
 
-        // If network is disconnected, show offline placeholder immediately
-        if (!GLOBALS.IsConnectedToInternet) {
-            this.tag('AppIcon.DefaultImage').alpha = 1;
-            this.tag('AppIcon.IconImage').alpha = 0;
-        }
-
-        // Show/hide update button based on update availability
-        if (!data.hasUpdate) {
-            this.tag('ActionButtons.UpdateButton').alpha = 0.5;
-        }
+  _handleLeft() {
+    if (this._buttonIndex > 0) {
+      this._buttonIndex--;
+      this._focusButton();
+      return true;
     }
+    return false;
+  }
 
-    get appInfo() {
-        return this._appInfo;
+  _handleRight() {
+    if (this._buttonIndex < this._buttons.length - 1) {
+      this._buttonIndex++;
+      this._focusButton();
+      return true;
     }
+    return false;
+  }
 
-    _focus() {
-        this.tag('FocusBorder').alpha = 1;
-        this.patch({ smooth: { scale: 1.02 } });
-        this._focusButton();
-    }
+  _handleUp() {
+    // Return false to let parent handle navigation between AppCards
+    return false;
+  }
 
-    _unfocus() {
-        this.tag('FocusBorder').alpha = 0;
-        this.patch({ smooth: { scale: 1 } });
-        this._unfocusAllButtons();
-    }
+  _handleDown() {
+    // Return false to let parent handle navigation between AppCards
+    return false;
+  }
 
-    _focusButton() {
-        this._unfocusAllButtons();
-        const button = this.tag(`ActionButtons.${this._buttons[this._buttonIndex]}`);
-        if (button) {
-            button._focus();
-        }
+  _handleEnter() {
+    const button = this.tag(
+      `ActionButtons.${this._buttons[this._buttonIndex]}`,
+    );
+    if (button) {
+      // Directly call the action handler instead of relying on signal
+      const action = button.action;
+      this._onButtonPressed(action);
     }
+  }
 
-    _unfocusAllButtons() {
-        this._buttons.forEach(btn => {
-            const button = this.tag(`ActionButtons.${btn}`);
-            if (button) {
-                button._unfocus();
-            }
-        });
+  _onButtonPressed(action) {
+    console.log("AppCard _onButtonPressed:", action, this._appInfo);
+    // Double-check action is not already in progress
+    if (this._isActionInProgress) {
+      console.log("Action already in progress. Ignoring:", action);
+      return false;
     }
+    this._isActionInProgress = true;
+    console.log("Action started - disabling buttons");
 
-    _handleLeft() {
-        if (this._buttonIndex > 0) {
-            this._buttonIndex--;
-            this._focusButton();
-            return true;
-        }
-        return false;
-    }
+    // Disable all buttons visually while action is in progress
+    this._setActionButtonsDisabled(true);
 
-    _handleRight() {
-        if (this._buttonIndex < this._buttons.length - 1) {
-            this._buttonIndex++;
-            this._focusButton();
-            return true;
-        }
-        return false;
-    }
+    // Use fireAncestors to bubble up the event to AppInfoPage
+    this.fireAncestors("$appAction", { action, appInfo: this._appInfo });
+  }
 
-    _handleUp() {
-        // Return false to let parent handle navigation between AppCards
-        return false;
-    }
+  _setActionButtonsDisabled(disabled) {
+    this._buttons.forEach((btnName) => {
+      const button = this.tag(`ActionButtons.${btnName}`);
+      if (button) {
+        // Reduce opacity to show disabled state
+        button.alpha = disabled ? 0.5 : 1;
+      }
+    });
+  }
 
-    _handleDown() {
-        // Return false to let parent handle navigation between AppCards
-        return false;
-    }
+  resetActionInProgress() {
+    console.log("Resetting action in progress flag");
+    this._isActionInProgress = false;
+    // Re-enable all buttons
+    this._setActionButtonsDisabled(false);
+    console.log("Buttons re-enabled");
+  }
 
-    _handleEnter() {
-        const button = this.tag(`ActionButtons.${this._buttons[this._buttonIndex]}`);
-        if (button) {
-            // Directly call the action handler instead of relying on signal
-            const action = button.action;
-            this._onButtonPressed(action);
-        }
-    }
-
-    _onButtonPressed(action) {
-        console.log('AppCard _onButtonPressed:', action, this._appInfo);
-        // Use fireAncestors to bubble up the event to AppInfoPage
-        this.fireAncestors('$appAction', { action, appInfo: this._appInfo });
-    }
-
-    // Reset button focus to first button when card regains focus
-    _resetButtonFocus() {
-        this._buttonIndex = 0;
-    }
+  // Reset button focus to first button when card regains focus
+  _resetButtonFocus() {
+    this._buttonIndex = 0;
+  }
 }
