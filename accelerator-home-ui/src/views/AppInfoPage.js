@@ -316,17 +316,35 @@ export default class AppInfoPage extends Lightning.Component {
      * Launch the selected app
      */
     async _launchApp(appInfo) {
-        console.log(`Launching ${appInfo.name}...`);
+       console.log(`Launching ${appInfo.name}...`);
         try {
+            console.log("Before startDacApp call");
             const result = await startDACApp({ id: appInfo.id });
-            if (result) {
-                console.log(`${appInfo.name} launched successfully`);
-            } else {
-                console.error(`Failed to launch ${appInfo.name}`);
-            }
-        } catch (error) {
-            console.error(`Error launching ${appInfo.name}:`, error);
-        }
+                if (result) {
+                        console.log(`${appInfo.name} launched successfully`);
+                        const currentCard = this._appList.currentItem;
+                        // reset the in-progress state after app launched.
+                        if (currentCard && currentCard.resetActionInProgress) {
+                            setTimeout(() => {
+                            currentCard.resetActionInProgress();
+                            }, 10000); 
+                        }
+                } else {
+                        console.error(`Failed to launch ${appInfo.name}`);
+                         const currentCard = this._appList.currentItem;
+                          // reset the in-progress state after app launc failed.
+                         if (currentCard && currentCard.resetActionInProgress) {
+                         currentCard.resetActionInProgress();
+                         }
+                }
+            } 
+        catch (error) {
+                console.error(`Error launching ${appInfo.name}:`, error);
+                const currentCard = this._appList.currentItem;
+                if (currentCard && currentCard.resetActionInProgress) {
+                    currentCard.resetActionInProgress();
+                    }
+                }
     }
 
     /**
@@ -343,22 +361,34 @@ export default class AppInfoPage extends Lightning.Component {
     /**
      * Uninstall the selected app
      */
-    async _uninstallApp(appInfo) {
+     async _uninstallApp(appInfo) {
         console.log(`Uninstalling ${appInfo.name}...`);
         try {
-            const result = await uninstallDACApp({ id: appInfo.id, version: appInfo.version, name: appInfo.name }, this);
-            if (result) {
-                console.log(`${appInfo.name} uninstalled successfully`);
-                return true;
-            } else {
-                console.error(`Failed to uninstall ${appInfo.name}`);
-                return false;
+                const result = await uninstallDACApp({ id: appInfo.id, version: appInfo.version, name: appInfo.name }, this);
+        if (result) {
+            console.log(`${appInfo.name} uninstalled successfully`);
+            const currentCard = this._appList.currentItem;
+            if (currentCard && currentCard.resetActionInProgress) {
+            currentCard.resetActionInProgress();
+            }
+            return true;
+        } else {
+            console.error(`Failed to uninstall ${appInfo.name}`);
+            const currentCard = this._appList.currentItem;
+            if (currentCard && currentCard.resetActionInProgress) {
+            currentCard.resetActionInProgress();
+            }
+            return false;
             }
         } catch (error) {
-            console.error(`Error uninstalling ${appInfo.name}:`, error);
-            return false;
+        console.error(`Error uninstalling ${appInfo.name}:`, error);
+        const currentCard = this._appList.currentItem;     
+        if (currentCard && currentCard.resetActionInProgress) {
+            currentCard.resetActionInProgress();
         }
-    }
+        return false;
+        }
+        }
 
     /**
      * Show the uninstall confirmation overlay
@@ -410,6 +440,10 @@ export default class AppInfoPage extends Lightning.Component {
      */
     $cancelUninstall() {
         console.log('Uninstall cancelled');
+        const currentCard = this._appList.currentItem;     
+        if (currentCard && currentCard.resetActionInProgress) {
+            currentCard.resetActionInProgress();
+        }
         this._hideUninstallConfirmation();
         // Data hasn't changed — restore previous page state
         if (this._appData.length > 0) {
