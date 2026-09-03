@@ -323,7 +323,7 @@ export default class AppInfoPage extends Lightning.Component {
                 if (result) {
                         console.log(`${appInfo.name} launched successfully`);
                         const currentCard = this._appList.currentItem;
-                        // reset the in-progress state after app launched
+                        // reset the in-progress state after app launched.
                         if (currentCard && currentCard.resetActionInProgress) {
                             setTimeout(() => {
                             currentCard.resetActionInProgress();
@@ -331,6 +331,11 @@ export default class AppInfoPage extends Lightning.Component {
                         }
                 } else {
                         console.error(`Failed to launch ${appInfo.name}`);
+                         const currentCard = this._appList.currentItem;
+                          // reset the in-progress state after app launc failed.
+                         if (currentCard && currentCard.resetActionInProgress) {
+                         currentCard.resetActionInProgress();
+                         }
                 }
             } 
         catch (error) {
@@ -346,17 +351,12 @@ export default class AppInfoPage extends Lightning.Component {
      * Update the selected app
      */
     _updateApp(appInfo) {
-    if (!appInfo.hasUpdate) {
-      console.log(`${appInfo.name} is already up to date`);
-      // Reset action-in-progress flag
-      const currentCard = this._appList.currentItem;
-      if (currentCard && currentCard.resetActionInProgress) {
-        currentCard.resetActionInProgress();
-      }
-      return;
+        if (!appInfo.hasUpdate) {
+            console.log(`${appInfo.name} is already up to date`);
+            return;
+        }
+        console.log(`Updating ${appInfo.name}...`);
     }
-    console.log(`Updating ${appInfo.name}...`);
-  }
 
     /**
      * Uninstall the selected app
@@ -374,6 +374,10 @@ export default class AppInfoPage extends Lightning.Component {
             return true;
         } else {
             console.error(`Failed to uninstall ${appInfo.name}`);
+            const currentCard = this._appList.currentItem;
+            if (currentCard && currentCard.resetActionInProgress) {
+            currentCard.resetActionInProgress();
+            }
             return false;
             }
         } catch (error) {
