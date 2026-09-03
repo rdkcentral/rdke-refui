@@ -261,14 +261,14 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 		this.playbackRateIndex = this.playbackSpeeds.indexOf(1)
 
 		try {
-			const isInstalled = await AppManager.get().isInstalled('com.rdkcentral.aamp-cli-sh')
+			const isInstalled = await AppManager.get().isInstalled('com.rdkcentral.refplayer')
 			if (!isInstalled) {
-				throw new Error('AAMP CLI is not installed on the device')
+				throw new Error('RefPlayer is not installed on the device')
 			}
-			const response = await AppManager.get().launchApp('com.rdkcentral.aamp-cli-sh')
+			const response = await AppManager.get().launchApp('com.rdkcentral.refplayer')
 			this.LOG('launchApp response: ' + JSON.stringify(response))
 		} catch (error) {
-			this.ERR('Error launching AAMP CLI: ' + JSON.stringify(error))
+			this.ERR('Error launching RefPlayer: ' + JSON.stringify(error))
 		}
 	}
 
