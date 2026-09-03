@@ -436,6 +436,10 @@ export default class AppInfoPage extends Lightning.Component {
      */
     $cancelUninstall() {
         console.log('Uninstall cancelled');
+        const currentCard = this._appList.currentItem;     
+        if (currentCard && currentCard.resetActionInProgress) {
+            currentCard.resetActionInProgress();
+        }
         this._hideUninstallConfirmation();
         // Data hasn't changed — restore previous page state
         if (this._appData.length > 0) {

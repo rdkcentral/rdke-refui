@@ -393,7 +393,7 @@ export default class AppCard extends Lightning.Component {
   }
 
   _setActionButtonsDisabled(disabled) {
-    this._buttons.forEach((btnName) => {
+    ["LaunchButton", "UninstallButton"].forEach((btnName) => {
       const button = this.tag(`ActionButtons.${btnName}`);
       if (button) {
         // Reduce opacity to show disabled state
