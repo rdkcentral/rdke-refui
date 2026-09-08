@@ -25,6 +25,8 @@ import NativePlayerRPC from '../api/NativePlayerApis.js';
 
 let position = null
 const LOGTAG = 'NativeVideoPlayer: '
+const nativePlayerServiceBolt = "com.rdkcentral.nativeplayer";
+
 /**
  * Class to render AAMP video player.
  */
@@ -271,12 +273,11 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 		if (this._nativeServiceReady) return;
 		if (!this._nativeServiceLaunchPromise) {
 			this._nativeServiceLaunchPromise = (async () => {
-				const serviceBolt = NativePlayerRPC.get().nativePlayerServiceBolt;
-				const isInstalled = await AppManager.get().isInstalled(serviceBolt)
+				const isInstalled = await AppManager.get().isInstalled(nativePlayerServiceBolt)
 				if (!isInstalled) {
-					throw new Error(serviceBolt + ' is not installed on the device')
+					throw new Error(nativePlayerServiceBolt + ' is not installed on the device')
 				}
-				const response = await AppManager.get().launchApp(serviceBolt)
+				const response = await AppManager.get().launchApp(nativePlayerServiceBolt)
 				this.LOG('launchApp response: ' + JSON.stringify(response))
 				this._nativeServiceReady = true;
 			})().finally(() => {
