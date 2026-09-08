@@ -875,7 +875,7 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 		}
 		this.tag('PlayerControls').title = videoInfo.title
 		this.tag('PlayerControls').currentTime = 0
-		this.tag('PlayerControls').attribution = null
+		this.tag('PlayerControls').attribution = videoInfo.attribution || null
 		this.play(videoInfo.url, videoInfo.drmConfig)
 	}
 

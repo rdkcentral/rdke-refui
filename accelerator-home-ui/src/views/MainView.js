@@ -1071,6 +1071,9 @@ export default class MainView extends Lightning.Component {
           }
           const currentIndex = this.tag('TVShows').index
           const currentItem = this.tag('TVShows').items[currentIndex] && this.tag('TVShows').items[currentIndex].data
+          if (!currentItem || !currentItem.uri) {
+            return
+          }
             Router.navigate('player', {
               url: currentItem.uri,
               displayName: currentItem.displayName,
