@@ -18,9 +18,9 @@
  **/
 
 const wsUrl = `ws://localhost:10101`
-const LOGTAG = 'AAMPIPPlayer :'
+const LOGTAG = 'NativePlayer :'
 
-const METHOD_BASE = 'org.rdk.player.'
+const METHOD_BASE = 'org.rdk.nativeplayer.'
 const METHODS = {
 	REGISTER: METHOD_BASE + 'register',
 	UNREGISTER: METHOD_BASE + 'unregister',
@@ -112,10 +112,10 @@ const EVENTS = {
 	ON_MONITOR_AV_STATUS: 'onMonitorAVStatus'
 }
 
-class IPAPlayerRPC {
+class NativePlayer {
 	constructor() {
-		if (IPAPlayerRPC._instance) {
-			return IPAPlayerRPC._instance;
+		if (NativePlayer._instance) {
+			return NativePlayer._instance;
 		}
 		// PoC: Limit to one session at this time
 		this.validInstanceId = null;
@@ -141,14 +141,14 @@ class IPAPlayerRPC {
 		this.socket.onopen = () => {
 			this.isOpen = true;
 			_resolveOpen();
-			this.LOG(LOGTAG + 'WebSocket connection established with IPAPlayer backend at ' + wsUrl);
+			this.LOG(LOGTAG + 'WebSocket connection established with NativePlayer backend at ' + wsUrl);
 		}
 		this.socket.onmessage = (event) => {
 			this._handleIncomingMessage(event);
 		}
 		this.socket.onerror = (event) => {
 			try { _rejectOpen(new Error('WebSocket error')); } catch(e) {}
-			this.ERR(LOGTAG + 'WebSocket error with IPAPlayer backend at ' + wsUrl + ': ' + (event && event.message ? event.message : 'unknown error'));
+			this.ERR(LOGTAG + 'WebSocket error with NativePlayer backend at ' + wsUrl + ': ' + (event && event.message ? event.message : 'unknown error'));
 		}
 		this.socket.onclose = () => {
 			this.isOpen = false;
@@ -157,17 +157,17 @@ class IPAPlayerRPC {
 				reject(new Error('WebSocket connection closed'));
 			});
 			this.pending.clear();
-			this.ERR(LOGTAG + 'WebSocket connection closed with IPAPlayer backend at ' + wsUrl);
+			this.ERR(LOGTAG + 'WebSocket connection closed with NativePlayer backend at ' + wsUrl);
 		}
 
-		IPAPlayerRPC._instance = this;
+		NativePlayer._instance = this;
 	}
 
 	static getInstance() {
-		if (!IPAPlayerRPC._instance) {
-			IPAPlayerRPC._instance = new IPAPlayerRPC();
+		if (!NativePlayer._instance) {
+			NativePlayer._instance = new NativePlayer();
 		}
-		return IPAPlayerRPC._instance;
+		return NativePlayer._instance;
 	}
 
 	_normalizeResponse(response) {
@@ -180,24 +180,24 @@ class IPAPlayerRPC {
 	_handleIncomingMessage(event) {
 		let response = null;
 		try {
-			this.INFO(LOGTAG + 'Received message from IPAPlayer backend: ' + JSON.stringify(event.data));
+			this.INFO(LOGTAG + 'Received message from NativePlayer backend: ' + JSON.stringify(event.data));
 			response = JSON.parse(event.data);
 		} catch (error) {
-			this.ERR(LOGTAG + 'Failed to parse IPAPlayer response: ' + (error && error.message ? error.message : String(error)));
+			this.ERR(LOGTAG + 'Failed to parse NativePlayer response: ' + (error && error.message ? error.message : String(error)));
 			return;
 		}
 
 		if (!response || !Object.prototype.hasOwnProperty.call(response, 'id')) {
 			const consumed = this._emitEvent(response);
 			if (!consumed) {
-				this.WARN && this.WARN(LOGTAG + 'Received IPAPlayer notification/event without request id: ' + JSON.stringify(response));
+				this.WARN && this.WARN(LOGTAG + 'Received NativePlayer notification/event without request id: ' + JSON.stringify(response));
 			}
 			return;
 		}
 
 		const pendingId = response.id;
 		if (!this.pending.has(pendingId)) {
-			this.WARN && this.WARN(LOGTAG + 'Received IPAPlayer response without a matching pending request: ' + JSON.stringify(response));
+			this.WARN && this.WARN(LOGTAG + 'Received NativePlayer response without a matching pending request: ' + JSON.stringify(response));
 			return;
 		}
 
@@ -227,7 +227,7 @@ class IPAPlayerRPC {
 		const method = response && typeof response.method === 'string' ? response.method : '';
 		const methodPrefix = EVENT_SUBSCRIPTION_ID + '.';
 		if (!method || method.indexOf(methodPrefix) !== 0) {
-			this.WARN && this.WARN(LOGTAG + 'Received IPAPlayer event with invalid method: ' + method);
+			this.WARN && this.WARN(LOGTAG + 'Received NativePlayer event with invalid method: ' + method);
 			return false;
 		}
 
@@ -236,7 +236,7 @@ class IPAPlayerRPC {
 			try {
 				callback(eventPayload, response);
 			} catch (error) {
-				this.ERR(LOGTAG + 'Error in IPAPlayer event callback: ' + (error && error.message ? error.message : String(error)));
+				this.ERR(LOGTAG + 'Error in NativePlayer event callback: ' + (error && error.message ? error.message : String(error)));
 			}
 		});
 
@@ -669,7 +669,7 @@ class IPAPlayerRPC {
 
 		this.pending.forEach(({ reject, timeoutId }) => {
 			clearTimeout(timeoutId);
-			reject(new Error('IPAPlayer destroyed'));
+			reject(new Error('NativePlayer destroyed'));
 		});
 		this.pending.clear();
 		this.listeners.clear();
@@ -679,6 +679,6 @@ class IPAPlayerRPC {
 	}
 }
 
-IPAPlayerRPC._instance = null;
+NativePlayer._instance = null;
 
-export default IPAPlayerRPC;
+export default NativePlayer;

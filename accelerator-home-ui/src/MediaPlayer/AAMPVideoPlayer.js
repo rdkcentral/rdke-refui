@@ -21,7 +21,7 @@ import LightningPlayerControls from './LightningPlayerControl';
 import { CONFIG, GLOBALS } from '../Config/Config';
 import ChannelOverlay from './ChannelOverlay';
 import AppManager from '../api/AppManagerApi.js';
-import IPAPlayerRPC from '../api/IPAPlayer.js';
+import NativePlayerRPC from '../api/NativePlayerApis.js';
 
 let position = null
 const LOGTAG = 'AAMPVideoPlayerDBG: '
@@ -276,8 +276,8 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 		this.setVideoRect(0, 0, 1920, 1080);
 		this._sessionId = null;
 		this._isSessionInitialized = false;
-		if (!this._ipaPlayer) { this._ipaPlayer = new IPAPlayerRPC(); }
-		const player = this._ipaPlayer;
+		if (!this._nativePlayer) { this._nativePlayer = new NativePlayerRPC(); }
+		const player = this._nativePlayer;
 		this.LOG(LOGTAG + 'active start, instanceId=' + GLOBALS.selfclientAppName + ', pendingUrl=' + this._pendingUrl);
 
 		try {
@@ -300,7 +300,7 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 	async _initializePlaybackSession(selfAppInstanceId = GLOBALS._selfClientId, url = null, drmConfig = null) {
 		try {
 			this.LOG(LOGTAG + 'initialize session start');
-			const player = this._ipaPlayer;
+			const player = this._nativePlayer;
 			if (!player) {
 				throw new Error('IPA player instance not available during session initialization');
 			}
@@ -326,7 +326,7 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 			this._isSessionInitialized = false;
 
 			await player.register(this._boundOnIpaEvent);
-			if (player !== this._ipaPlayer) {
+			if (player !== this._nativePlayer) {
 				this.WARN(LOGTAG + 'initialize session aborted: player instance changed during async init');
 				return;
 			}
@@ -352,8 +352,8 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 	}
 
 	async _playPendingUrl() {
-		if (this._playInFlight || !this._pendingUrl || !this._ipaPlayer || !this._sessionId || !this._isSessionInitialized) {
-			this.INFO(LOGTAG + 'playPendingUrl skip: inFlight=' + this._playInFlight + ', hasPendingUrl=' + !!this._pendingUrl + ', hasIpa=' + !!this._ipaPlayer + ', hasSessionId=' + !!this._sessionId + ', sessionInitialized=' + this._isSessionInitialized);
+		if (this._playInFlight || !this._pendingUrl || !this._nativePlayer || !this._sessionId || !this._isSessionInitialized) {
+			this.INFO(LOGTAG + 'playPendingUrl skip: inFlight=' + this._playInFlight + ', hasPendingUrl=' + !!this._pendingUrl + ', hasIpa=' + !!this._nativePlayer + ', hasSessionId=' + !!this._sessionId + ', sessionInitialized=' + this._isSessionInitialized);
 			return;
 		}
 
@@ -363,7 +363,7 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 				const url = this._pendingUrl;
 				this._pendingUrl = null;
 				this.LOG('Starting playback for sessionId: ' + this._sessionId + ', url: ' + url);
-				const playResponse = await this._ipaPlayer.play(this._sessionId, url);
+				const playResponse = await this._nativePlayer.play(this._sessionId, url);
 				this.LOG('play response: ' + JSON.stringify(playResponse));
 
 				if (playResponse && playResponse.status) {
@@ -752,9 +752,9 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 	}
 
 	async pause() {
-		if (!this._ipaPlayer || !this._sessionId) return;
+		if (!this._nativePlayer || !this._sessionId) return;
 		try {
-			await this._ipaPlayer.setRate(this._sessionId, 0);
+			await this._nativePlayer.setRate(this._sessionId, 0);
 			this.LOG('Playback paused');
 		} catch (error) {
 			this.ERR('Error pausing playback: ' + (error && error.message ? error.message : JSON.stringify(error)));
@@ -762,11 +762,11 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 	}
 
 	async seekFwd() {
-		if (!this._ipaPlayer || !this._sessionId) return;
+		if (!this._nativePlayer || !this._sessionId) return;
 		try {
-			const posResp = await this._ipaPlayer.getPlaybackPosition(this._sessionId);
+			const posResp = await this._nativePlayer.getPlaybackPosition(this._sessionId);
 			const current = posResp && typeof posResp.position === 'number' ? posResp.position : 0;
-			await this._ipaPlayer.seek(this._sessionId, current + 10);
+			await this._nativePlayer.seek(this._sessionId, current + 10);
 			this.LOG('Seeked forward 10s from ' + current);
 		} catch (error) {
 			this.ERR('Error seeking forward: ' + (error && error.message ? error.message : JSON.stringify(error)));
@@ -774,11 +774,11 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 	}
 
 	async seekRwd() {
-		if (!this._ipaPlayer || !this._sessionId) return;
+		if (!this._nativePlayer || !this._sessionId) return;
 		try {
-			const posResp = await this._ipaPlayer.getPlaybackPosition(this._sessionId);
+			const posResp = await this._nativePlayer.getPlaybackPosition(this._sessionId);
 			const current = posResp && typeof posResp.position === 'number' ? posResp.position : 0;
-			await this._ipaPlayer.seek(this._sessionId, Math.max(0, current - 10));
+			await this._nativePlayer.seek(this._sessionId, Math.max(0, current - 10));
 			this.LOG('Seeked backward 10s from ' + current);
 		} catch (error) {
 			this.ERR('Error seeking backward: ' + (error && error.message ? error.message : JSON.stringify(error)));
@@ -786,11 +786,11 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 	}
 
 	async fastfwd() {
-		if (!this._ipaPlayer || !this._sessionId) return;
+		if (!this._nativePlayer || !this._sessionId) return;
 		try {
 			this.playbackRateIndex = Math.min(this.playbackRateIndex + 1, this.playbackSpeeds.length - 1);
 			const rate = this.playbackSpeeds[this.playbackRateIndex];
-			await this._ipaPlayer.setRate(this._sessionId, rate);
+			await this._nativePlayer.setRate(this._sessionId, rate);
 			this.LOG('Fast forward rate: ' + rate);
 		} catch (error) {
 			this.ERR('Error fast forwarding: ' + (error && error.message ? error.message : JSON.stringify(error)));
@@ -798,11 +798,11 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 	}
 
 	async fastrwd() {
-		if (!this._ipaPlayer || !this._sessionId) return;
+		if (!this._nativePlayer || !this._sessionId) return;
 		try {
 			this.playbackRateIndex = Math.max(this.playbackRateIndex - 1, 0);
 			const rate = this.playbackSpeeds[this.playbackRateIndex];
-			await this._ipaPlayer.setRate(this._sessionId, rate);
+			await this._nativePlayer.setRate(this._sessionId, rate);
 			this.LOG('Fast rewind rate: ' + rate);
 		} catch (error) {
 			this.ERR('Error fast rewinding: ' + (error && error.message ? error.message : JSON.stringify(error)));
@@ -871,15 +871,15 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 			this._pendingUrl = url;
 			this._pendingDrmConfig = drmConfig;
 			this.playbackRateIndex = this.playbackSpeeds.indexOf(1);
-			if (this._ipaPlayer && this._sessionId && this._isSessionInitialized) {
+			if (this._nativePlayer && this._sessionId && this._isSessionInitialized) {
 				this._playPendingUrl();
 			}
 			return;
 		}
 		// Resume from pause (signal from player controls)
-		if (!this._ipaPlayer || !this._sessionId) return;
+		if (!this._nativePlayer || !this._sessionId) return;
 		try {
-			await this._ipaPlayer.setRate(this._sessionId, 1);
+			await this._nativePlayer.setRate(this._sessionId, 1);
 			this.LOG('Playback resumed');
 		} catch (error) {
 			this.ERR('Error resuming playback: ' + (error && error.message ? error.message : JSON.stringify(error)));
@@ -922,9 +922,9 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 		}
 		this._playbackStartedEmitted = false;
 		this._playbackEndedEmitted = false;
-		if (this._ipaPlayer && this._sessionId) {
+		if (this._nativePlayer && this._sessionId) {
 			try {
-				const response = await this._ipaPlayer.stop(this._sessionId);
+				const response = await this._nativePlayer.stop(this._sessionId);
 				this.LOG('stop response: ' + JSON.stringify(response));
 				if (response && response.status) {
 					this.LOG('Playback stopped successfully for sessionId: ' + this._sessionId);
@@ -1096,8 +1096,8 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 		this._isSessionInitialized = false;
 
 		// Snapshot and null current refs first to avoid races with a new activation.
-		const player = this._ipaPlayer;
-		this._ipaPlayer = null;
+		const player = this._nativePlayer;
+		this._nativePlayer = null;
 		this._sessionId = null;
 		this._sessionReadyPromise = null;
 
