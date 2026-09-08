@@ -192,12 +192,15 @@ export default class AppCatalogItem extends DACAppMixin(Lightning.Component) {
                 },
             },
             Text: {
-                alpha: 0,
+                alpha: 1,
                 y: this.height + 10,
                 text: {
                     text: '',
                     fontFace: CONFIG.language.font,
                     fontSize: 25,
+                    wordWrapWidth: this.width,
+                    maxLines: 1,
+                    textOverflow: '...',
                 },
             },
             StatusProgress: {
@@ -231,16 +234,26 @@ export default class AppCatalogItem extends DACAppMixin(Lightning.Component) {
         this.data = data
         if (!Object.prototype.hasOwnProperty.call(data, 'icon'))
             data.icon = "/images/apps/DACApp_455_255.png";
-        if (data.icon.startsWith('/images')) {
-            this.tag('Image').patch({
-                src: Utils.asset(data.icon),
-            });
-        } else {
-            this.tag('Image').patch({
-                src: data.icon,
-            });
-        }
+        const imgSrc = data.icon.startsWith('/images') ? Utils.asset(data.icon) : data.icon;
+        this.tag('Image').patch({
+            src: imgSrc,
+        });
         this.tag('Text').text.text = data.name
+    }
+
+    _detach() {
+        try {
+            const img = this.tag('Image')
+            if (img) {
+                if (img.texture && img.texture.source && typeof img.texture.source.free === 'function') {
+                    img.texture.source.free()
+                }
+                img.texture = null
+                img.src = undefined
+            }
+        } catch (e) {
+            // ignore
+        }
     }
 
     static get width() {
@@ -271,13 +284,11 @@ export default class AppCatalogItem extends DACAppMixin(Lightning.Component) {
         this.scale = 1.15
         this.zIndex = 2
         this.tag("Shadow").alpha = 1
-        this.tag("Text").alpha = 1
     }
     _unfocus() {
         this.scale = 1
         this.zIndex = 1
         this.tag("Shadow").alpha = 0
-        this.tag("Text").alpha = 0
     }
     async _handleEnter() {
         this._app.id = this.data.id

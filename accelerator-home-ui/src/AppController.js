@@ -167,6 +167,7 @@ export default class AppController {
 
     thunder.on('org.rdk.AppManager', 'onAppLaunchRequest', data => {
       this.LOG('onAppLaunchRequested ' + JSON.stringify(data));
+      this.launchedAppId = data.appId;
     });
 
     thunder.on('org.rdk.AppManager', 'onAppUnloaded', async data => {
@@ -194,7 +195,6 @@ export default class AppController {
   }
 
   async launch(id) {
-    this.launchedAppId = id;
     await AppManager.get().launchApp(id);
   }
 }
