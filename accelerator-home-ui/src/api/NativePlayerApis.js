@@ -117,6 +117,9 @@ class NativePlayer {
 		if (NativePlayer._instance) {
 			return NativePlayer._instance;
 		}
+
+		this.nativePlayerServiceBolt = "com.rdkcentral.nativeplayer";
+
 		// PoC: Limit to one session at this time
 		this.validInstanceId = null;
 		this.validDisplayId = null;

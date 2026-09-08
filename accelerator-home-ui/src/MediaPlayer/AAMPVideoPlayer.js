@@ -24,7 +24,7 @@ import AppManager from '../api/AppManagerApi.js';
 import NativePlayerRPC from '../api/NativePlayerApis.js';
 
 let position = null
-const LOGTAG = 'AAMPVideoPlayerDBG: '
+const LOGTAG = 'NativeVideoPlayer: '
 /**
  * Class to render AAMP video player.
  */
@@ -261,14 +261,15 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 		this.playbackRateIndex = this.playbackSpeeds.indexOf(1)
 
 		try {
-			const isInstalled = await AppManager.get().isInstalled('com.rdkcentral.refplayer')
+			// Start the NativePlayer service if it's not already running.
+			const isInstalled = await AppManager.get().isInstalled(NativePlayerRPC.get().nativePlayerServiceBolt)
 			if (!isInstalled) {
-				throw new Error('RefPlayer is not installed on the device')
+				throw new Error(NativePlayerRPC.get().nativePlayerServiceBolt + ' is not installed on the device')
 			}
-			const response = await AppManager.get().launchApp('com.rdkcentral.refplayer')
+			const response = await AppManager.get().launchApp(NativePlayerRPC.get().nativePlayerServiceBolt)
 			this.LOG('launchApp response: ' + JSON.stringify(response))
 		} catch (error) {
-			this.ERR('Error launching RefPlayer: ' + JSON.stringify(error))
+			this.ERR('Error launching ' + NativePlayerRPC.get().nativePlayerServiceBolt + ': ' + JSON.stringify(error))
 		}
 	}
 
