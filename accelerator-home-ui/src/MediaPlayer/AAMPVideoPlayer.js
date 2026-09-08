@@ -53,6 +53,12 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 		this._pendingStopWaiter = null;
 		this._showingCleanupNotification = false;
 		this._boundOnIpaEvent = this._onIpaEvent.bind(this);
+		this.videoEl = null;
+		this._nativeServiceReady = false;
+		this._nativeServiceLaunchPromise = null;
+		this.playbackSpeeds = [-16, -8, -4, -2, 1, 2, 4, 8, 16];
+		this.playerStatesEnum = { idle: 0, initializing: 1, playing: 8, paused: 6, seeking: 7 };
+		this.playbackRateIndex = this.playbackSpeeds.indexOf(1);
 	}
 	/**
 	 * Function to render player controls.
@@ -244,36 +250,44 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 	}
 
 	async _init() {
-		this.x = 0
-		this.y = 0
-		this.w = 0
-		this.h = 0
-		this.videoEl = document.createElement('video')
-		this.videoEl.setAttribute('id', 'video-player')
-		this.videoEl.style.position = 'absolute'
-		this.videoEl.style.zIndex = '1'
-		this.videoEl.setAttribute('width', '100%')
-		this.videoEl.setAttribute('height', '100%')
-		this.videoEl.setAttribute('type', 'video/ave')
-		document.body.appendChild(this.videoEl)
-		this.playbackSpeeds = [-16, -8, -4, -2, 1, 2, 4, 8, 16]
-		this.playerStatesEnum = { idle: 0, initializing: 1, playing: 8, paused: 6, seeking: 7 }
-		this.playbackRateIndex = this.playbackSpeeds.indexOf(1)
+		await this._ensureNativePlayerServiceStarted();
+	}
 
-		try {
-			// Start the NativePlayer service if it's not already running.
-			const isInstalled = await AppManager.get().isInstalled(NativePlayerRPC.get().nativePlayerServiceBolt)
-			if (!isInstalled) {
-				throw new Error(NativePlayerRPC.get().nativePlayerServiceBolt + ' is not installed on the device')
-			}
-			const response = await AppManager.get().launchApp(NativePlayerRPC.get().nativePlayerServiceBolt)
-			this.LOG('launchApp response: ' + JSON.stringify(response))
-		} catch (error) {
-			this.ERR('Error launching ' + NativePlayerRPC.get().nativePlayerServiceBolt + ': ' + JSON.stringify(error))
+	_ensureVideoElement() {
+		if (!this.videoEl || !document.body.contains(this.videoEl)) {
+			this.videoEl = document.createElement('video')
+			this.videoEl.setAttribute('id', 'video-player')
+			this.videoEl.style.position = 'absolute'
+			this.videoEl.style.zIndex = '1'
+			this.videoEl.setAttribute('width', '100%')
+			this.videoEl.setAttribute('height', '100%')
+			this.videoEl.setAttribute('type', 'video/ave')
+			document.body.appendChild(this.videoEl)
 		}
+		this.videoEl.style.display = 'block'
+	}
+
+	async _ensureNativePlayerServiceStarted() {
+		if (this._nativeServiceReady) return;
+		if (!this._nativeServiceLaunchPromise) {
+			this._nativeServiceLaunchPromise = (async () => {
+				const serviceBolt = NativePlayerRPC.get().nativePlayerServiceBolt;
+				const isInstalled = await AppManager.get().isInstalled(serviceBolt)
+				if (!isInstalled) {
+					throw new Error(serviceBolt + ' is not installed on the device')
+				}
+				const response = await AppManager.get().launchApp(serviceBolt)
+				this.LOG('launchApp response: ' + JSON.stringify(response))
+				this._nativeServiceReady = true;
+			})().finally(() => {
+				this._nativeServiceLaunchPromise = null;
+			});
+		}
+		await this._nativeServiceLaunchPromise;
 	}
 
 	async _active() {
+		this._ensureVideoElement();
 		this.setVideoRect(0, 0, 1920, 1080);
 		this._sessionId = null;
 		this._isSessionInitialized = false;
@@ -1076,6 +1090,9 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 	}
 
 	async _inactive() {
+		if (this.videoEl) {
+			this.videoEl.style.display = 'none';
+		}
 		this.tag('Image').alpha = 0
 		this.tag('InfoOverlay').alpha = 0
 		this.isUSB = false
