@@ -284,6 +284,9 @@ export default class MainView extends Lightning.Component {
     this.xcastApi = new XcastApi();
     this.hdmiApi = new HDMIApi()
     this.appApi = new AppApi()
+    this._isRefreshingMyApps = false
+    this._pendingMyAppsRefresh = false
+    this._refreshMyAppsTimer = null
     let thunder = ThunderJS(CONFIG.thunderConfig);
 
     // Setup loading animation for DacApps
@@ -412,7 +415,7 @@ export default class MainView extends Lightning.Component {
     // Refresh My Apps row when apps are installed/uninstalled (including sideloaded via curl)
     this._onPackageChanged = (action, data) => {
       this.LOG('onPackageChanged: ' + action + ' ' + JSON.stringify(data))
-      this.$refreshMyAppsRow()
+      this._scheduleMyAppsRefresh()
     }
     AppController.get().addPackageChangedListener(this._onPackageChanged)
 
@@ -439,6 +442,41 @@ export default class MainView extends Lightning.Component {
     if (this._onCatalogRefreshNeeded) {
       eventTarget.removeEventListener(RefreshNeeded.eventName, this._onCatalogRefreshNeeded)
     }
+    if (this._refreshMyAppsTimer) {
+      clearTimeout(this._refreshMyAppsTimer)
+      this._refreshMyAppsTimer = null
+    }
+  }
+
+  _scheduleMyAppsRefresh(force = false) {
+    const isMainViewActive = Router.getActiveHash() === 'menu'
+    if (!isMainViewActive && !force) {
+      this._pendingMyAppsRefresh = true
+      return
+    }
+
+    this._pendingMyAppsRefresh = true
+    if (this._refreshMyAppsTimer) {
+      return
+    }
+
+    this._refreshMyAppsTimer = setTimeout(async () => {
+      this._refreshMyAppsTimer = null
+      if (this._isRefreshingMyApps || !this._pendingMyAppsRefresh) {
+        return
+      }
+
+      this._isRefreshingMyApps = true
+      this._pendingMyAppsRefresh = false
+      try {
+        await this.$refreshMyAppsRow()
+      } finally {
+        this._isRefreshingMyApps = false
+        if (this._pendingMyAppsRefresh) {
+          this._scheduleMyAppsRefresh(true)
+        }
+      }
+    }, 300)
   }
 
   _firstActive() {
@@ -455,6 +493,11 @@ export default class MainView extends Lightning.Component {
 
 
   _focus() {
+    // If a My Apps refresh was deferred while this view was inactive,
+    // trigger it now that we're focused again.
+    if (this._pendingMyAppsRefresh) {
+      this._scheduleMyAppsRefresh(true)
+    }
     // After returning from another page (e.g. app info after uninstall),
     // validate that the current state still has focusable content.
     const baseState = this.state ? this.state.split('.')[0] : ''
