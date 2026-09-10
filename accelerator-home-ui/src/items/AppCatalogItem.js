@@ -282,6 +282,9 @@ export default class AppCatalogItem extends DACAppMixin(Lightning.Component) {
     }
 
     _detach() {
+        // Tear down any active loader so its timeout/animation can't fire after
+        // detach or leak into a pooled/reused instance.
+        this._hideIconLoader()
         // Drop only this element's reference to its texture. Do not free the
         // shared texture source, since the same icon may be in use by other
         // views (MainView rows). Lightning's texture manager will reclaim the
@@ -295,6 +298,14 @@ export default class AppCatalogItem extends DACAppMixin(Lightning.Component) {
             }
         } catch (e) {
             // ignore
+        }
+    }
+
+    _inactive() {
+        // Pause the spinner animation while off-stage; _active() will resume it
+        // if the loader is still pending when the element re-attaches.
+        if (this._loaderAnimation) {
+            this._loaderAnimation.stop()
         }
     }
 

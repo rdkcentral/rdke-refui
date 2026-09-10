@@ -333,12 +333,21 @@ export default class AppStore extends Lightning.Component {
                     const currentIndex = grid.index || 0
                     const totalItems = this._visibleItemsCount
                     const currentColumn = currentIndex % this._columns
+                    const currentRow = Math.floor(currentIndex / this._columns)
+                    const lastRow = Math.floor(Math.max(0, totalItems - 1) / this._columns)
 
-                    if (currentIndex >= totalItems - this._columns) {
+                    // Only act when actually on the last visible row. Using row
+                    // math (not currentIndex >= totalItems - columns) avoids a
+                    // false positive when the last row is partially filled
+                    // (e.g. 6 items / 5 columns would otherwise trip at index 1).
+                    if (currentRow >= lastRow) {
                         if (this._catalogOffset + this._pageSize < this._fullCatalog.length) {
                             this._loadMoreItems(currentColumn)
-                            return true
                         }
+                        // Consume the key regardless: on the last page there is
+                        // nowhere further down to go, so don't let focus escape
+                        // the grid.
+                        return true
                     }
 
                     return false
