@@ -74,6 +74,10 @@ export default class AppStore extends Lightning.Component {
         this._loadGeneration = 0
         this._fullCatalog = []
         this._catalogOffset = 0
+        this._columns = 5
+        this._pageSize = 10
+        this._visibleItemsCount = 0
+        this._gridInitialized = false
         this._onRefreshNeeded = () => {
             this.LOG('RefreshNeeded event received - reloading catalog')
             this._loadCatalog()
@@ -108,23 +112,41 @@ export default class AppStore extends Lightning.Component {
             this.LOG(`Catalog loaded: ${Catalog.length} apps`)
             this._fullCatalog = Catalog
             this._catalogOffset = 0
-            this._renderCatalogPage()
+            this._ensureGridPool()
+            this._renderCatalogPage(0, 0)
             this._setState('Catalog')
         } finally {
             this._loadingCatalog = false
         }
     }
 
+    _ensureGridPool() {
+        if (this._gridInitialized) {
+            return
+        }
+
+        const grid = this.tag('Catalog')
+        const placeholders = []
+        for (let i = 0; i < this._pageSize; i++) {
+            placeholders.push({ h: AppCatalogItem.height + 90, w: AppCatalogItem.width, info: { name: '', icon: '/images/apps/DACApp_455_255.png' } })
+        }
+        grid.add(placeholders)
+        grid.index = 0
+        this._gridInitialized = true
+    }
+
     _releaseGridTextures() {
+        // Drop only this view's references to its icon textures. Do NOT call
+        // texture.source.free(): Lightning shares texture sources by src URL, so
+        // freeing here would blank the same icons in other views (e.g. the
+        // MainView "My Apps"/"Recommended" rows). Lightning's texture manager
+        // reclaims GPU memory for sources no longer referenced by any element.
         const grid = this.tag('Catalog')
         if (grid && grid.items) {
             grid.items.forEach((item) => {
                 try {
                     const img = item.tag ? item.tag('Image') : null
                     if (img) {
-                        if (img.texture && img.texture.source && typeof img.texture.source.free === 'function') {
-                            img.texture.source.free()
-                        }
                         img.texture = null
                         img.src = undefined
                     }
@@ -148,32 +170,53 @@ export default class AppStore extends Lightning.Component {
         }
     }
 
-    _renderCatalogPage() {
-        const PAGE_SIZE = 10
-        const page = this._fullCatalog.slice(this._catalogOffset, this._catalogOffset + PAGE_SIZE)
-        this._releaseGridTextures()
-        this.tag('Catalog').clear()
-        this._forceGC()
-        this.tag('Catalog').add(page.map((element) => {
-            return { h: AppCatalogItem.height + 90, w: AppCatalogItem.width, info: element }
-        }))
+    _renderCatalogPage(focusColumn = 0, focusRow = 0) {
+        this._ensureGridPool()
+        const grid = this.tag('Catalog')
+        const page = this._fullCatalog.slice(this._catalogOffset, this._catalogOffset + this._pageSize)
+        this._visibleItemsCount = page.length
+
+        for (let i = 0; i < this._pageSize; i++) {
+            const item = grid.items && grid.items[i]
+            if (!item) {
+                continue
+            }
+
+            if (i < page.length) {
+                item.visible = true
+                item.alpha = 1
+                item.info = page[i]
+            } else {
+                item.visible = false
+                item.alpha = 0
+                item.info = { name: '', icon: '/images/apps/DACApp_455_255.png' }
+            }
+        }
+
+        const maxIndex = page.length - 1
+        if (maxIndex >= 0) {
+            const safeColumn = Math.max(0, Math.min(focusColumn, this._columns - 1))
+            const targetIndex = Math.min((focusRow * this._columns) + safeColumn, maxIndex)
+            grid.index = targetIndex
+        }
+
         this.LOG(`Rendered catalog items ${this._catalogOffset} to ${this._catalogOffset + page.length} of ${this._fullCatalog.length}`)
         this._updateScrollIndicator()
     }
 
-    _loadMoreItems() {
-        const PAGE_SIZE = 10
-        if (this._catalogOffset + PAGE_SIZE < this._fullCatalog.length) {
-            this._catalogOffset += PAGE_SIZE
-            this._renderCatalogPage()
+    _loadMoreItems(focusColumn = 0) {
+        if (this._catalogOffset + this._pageSize < this._fullCatalog.length) {
+            this._catalogOffset += this._pageSize
+            this._renderCatalogPage(focusColumn, 0)
         }
     }
 
-    _loadPreviousItems() {
-        const PAGE_SIZE = 10
-        if (this._catalogOffset - PAGE_SIZE >= 0) {
-            this._catalogOffset -= PAGE_SIZE
-            this._renderCatalogPage()
+    _loadPreviousItems(focusColumn = 0) {
+        if (this._catalogOffset - this._pageSize >= 0) {
+            this._catalogOffset -= this._pageSize
+            const page = this._fullCatalog.slice(this._catalogOffset, this._catalogOffset + this._pageSize)
+            const lastRow = Math.max(0, Math.ceil(page.length / this._columns) - 1)
+            this._renderCatalogPage(focusColumn, lastRow)
         }
     }
 
@@ -183,6 +226,8 @@ export default class AppStore extends Lightning.Component {
         }
         this._releaseGridTextures()
         this._fullCatalog = []
+        this._visibleItemsCount = 0
+        this._gridInitialized = false
         this.tag('Catalog').clear()
     }
 
@@ -192,13 +237,12 @@ export default class AppStore extends Lightning.Component {
 
     _updateScrollIndicator() {
         const totalItems = this._fullCatalog.length
-        const columns = 5
-        const totalRows = Math.ceil(totalItems / columns)
+        const totalRows = Math.ceil(totalItems / this._columns)
         const grid = this.tag('Catalog')
         const currentIndex = grid.index || 0
         // Calculate the absolute row position across all pages
         const absoluteIndex = this._catalogOffset + currentIndex
-        const currentRow = Math.floor(absoluteIndex / columns)
+        const currentRow = Math.floor(absoluteIndex / this._columns)
 
         if (totalRows > 0) {
             const trackHeight = 680
@@ -269,28 +313,44 @@ export default class AppStore extends Lightning.Component {
                     return this.tag('Catalog')
                 }
                 _handleUp() {
-                    if (this._catalogOffset > 0) {
-                        this._loadPreviousItems()
-                    } else {
-                        this.widgets.menu.notify('TopPanel')
+                    const grid = this.tag('Catalog')
+                    const currentIndex = grid.index || 0
+                    const currentColumn = currentIndex % this._columns
+
+                    if (currentIndex < this._columns) {
+                        if (this._catalogOffset > 0) {
+                            this._loadPreviousItems(currentColumn)
+                        } else {
+                            this.widgets.menu.notify('TopPanel')
+                        }
+                        return true
                     }
-                    return true
+
+                    return false
                 }
                 _handleDown() {
                     const grid = this.tag('Catalog')
-                    const columns = 5
                     const currentIndex = grid.index || 0
-                    const totalItems = grid.items ? grid.items.length : 0
-                    if (currentIndex >= totalItems - columns) {
-                        const PAGE_SIZE = 10
-                        if (this._catalogOffset + PAGE_SIZE >= this._fullCatalog.length) {
-                            // Last page reached, wrap to first page
-                            this._catalogOffset = 0
-                            this._renderCatalogPage()
-                        } else {
-                            this._loadMoreItems()
+                    const totalItems = this._visibleItemsCount
+                    const currentColumn = currentIndex % this._columns
+                    const currentRow = Math.floor(currentIndex / this._columns)
+                    const lastRow = Math.floor(Math.max(0, totalItems - 1) / this._columns)
+
+                    // Only act when actually on the last visible row. Using row
+                    // math (not currentIndex >= totalItems - columns) avoids a
+                    // false positive when the last row is partially filled
+                    // (e.g. 6 items / 5 columns would otherwise trip at index 1).
+                    if (currentRow >= lastRow) {
+                        if (this._catalogOffset + this._pageSize < this._fullCatalog.length) {
+                            this._loadMoreItems(currentColumn)
                         }
+                        // Consume the key regardless: on the last page there is
+                        // nowhere further down to go, so don't let focus escape
+                        // the grid.
+                        return true
                     }
+
+                    return false
                 }
             }
         ];

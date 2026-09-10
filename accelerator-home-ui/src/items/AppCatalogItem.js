@@ -20,7 +20,7 @@
 import { Lightning, Utils, Language, Storage } from "@lightningjs/sdk";
 import { CONFIG } from "../Config/Config";
 import StatusProgress from '../overlays/StatusProgress'
-import { installDACApp, isDACAppInstalled, startDACApp } from '../api/DACApi'
+import { installDACApp, isDACAppInstalled, isDACOperationInProgress, startDACApp } from '../api/DACApi'
 
 /**
  * Mixin providing common DAC app functionality (install, status updates, etc.)
@@ -131,6 +131,14 @@ export const DACAppMixin = (Base) => class extends Base {
             return false; // In progress
         }
 
+        if (isDACOperationInProgress()) {
+            this.tag(overlayTag + '.OverlayText').text.text = Language.translate('Another install is in progress');
+            this.tag(overlayTag).alpha = 0.7;
+            this.tag(overlayTag + '.OverlayText').alpha = 1;
+            this.tag(overlayTag).setSmooth('alpha', 0, { duration: 3 });
+            return false;
+        }
+
         this.tag(overlayTag + '.OverlayText').text.text = Language.translate("Please wait");
         this.tag(overlayTag).alpha = 0.7;
         this.tag(overlayTag + '.OverlayText').alpha = 1;
@@ -172,6 +180,22 @@ export default class AppCatalogItem extends DACAppMixin(Lightning.Component) {
             Image: {
                 h: this.height,
                 w: this.width
+            },
+            Placeholder: {
+                alpha: 0,
+                zIndex: 5,
+                rect: true,
+                color: 0xFF1A1A1A,
+                h: this.height,
+                w: this.width,
+                Loader: {
+                    mount: 0.5,
+                    x: this.width / 2,
+                    y: this.height / 2,
+                    w: 60,
+                    h: 60,
+                    src: Utils.asset('images/loading.png'),
+                },
             },
             Overlay: {
                 alpha: 0,
@@ -235,24 +259,53 @@ export default class AppCatalogItem extends DACAppMixin(Lightning.Component) {
         if (!Object.prototype.hasOwnProperty.call(data, 'icon'))
             data.icon = "/images/apps/DACApp_455_255.png";
         const imgSrc = data.icon.startsWith('/images') ? Utils.asset(data.icon) : data.icon;
-        this.tag('Image').patch({
-            src: imgSrc,
-        });
+        const imageTag = this.tag('Image')
+        // Only re-assign the src when it actually changes to avoid redundant
+        // texture re-decodes. Do NOT call texture.source.free() here: Lightning
+        // shares texture sources by src URL, so freeing would blank the same
+        // icon wherever else it is displayed (e.g. the MainView rows).
+        if (this._currentIconSrc !== imgSrc) {
+            // Hide the stale icon and show a loader while the new texture
+            // decodes/uploads. The loader is hidden again on txLoaded/txError.
+            this._showIconLoader()
+            imageTag.patch({
+                src: imgSrc,
+            });
+            this._currentIconSrc = imgSrc
+            // If the texture is already loaded (cached/shared source), txLoaded
+            // will not fire, so hide the loader right away.
+            if (imageTag.texture && imageTag.texture.source && imageTag.texture.source.loaded) {
+                this._hideIconLoader()
+            }
+        }
         this.tag('Text').text.text = data.name
     }
 
     _detach() {
+        // Tear down any active loader so its timeout/animation can't fire after
+        // detach or leak into a pooled/reused instance.
+        this._hideIconLoader()
+        // Drop only this element's reference to its texture. Do not free the
+        // shared texture source, since the same icon may be in use by other
+        // views (MainView rows). Lightning's texture manager will reclaim the
+        // GPU memory for sources that are no longer referenced by any element.
         try {
             const img = this.tag('Image')
             if (img) {
-                if (img.texture && img.texture.source && typeof img.texture.source.free === 'function') {
-                    img.texture.source.free()
-                }
                 img.texture = null
                 img.src = undefined
+                this._currentIconSrc = null
             }
         } catch (e) {
             // ignore
+        }
+    }
+
+    _inactive() {
+        // Pause the spinner animation while off-stage; _active() will resume it
+        // if the loader is still pending when the element re-attaches.
+        if (this._loaderAnimation) {
+            this._loaderAnimation.stop()
         }
     }
 
@@ -278,6 +331,58 @@ export default class AppCatalogItem extends DACAppMixin(Lightning.Component) {
     _init() {
         this.initDACApp();
         this._buttonIndex = 0;
+        this._currentIconSrc = null
+        this._loaderVisible = false
+        const imageTag = this.tag('Image')
+        imageTag.on('txLoaded', () => this._hideIconLoader())
+        imageTag.on('txError', () => this._hideIconLoader())
+    }
+
+    _active() {
+        // Animations can only run once the element is attached to the stage.
+        if (this._loaderVisible) {
+            this._startLoaderSpin()
+        }
+    }
+
+    _startLoaderSpin() {
+        if (!this.attached) {
+            return
+        }
+        if (!this._loaderAnimation) {
+            this._loaderAnimation = this.tag('Placeholder.Loader').animation({
+                duration: 1,
+                repeat: -1,
+                actions: [{ property: 'rotation', v: { 0: 0, 1: Math.PI * 2 } }],
+            })
+        }
+        this._loaderAnimation.start()
+    }
+
+    _showIconLoader() {
+        this._loaderVisible = true
+        this.tag('Image').alpha = 0
+        this.tag('Placeholder').alpha = 1
+        this._startLoaderSpin()
+        // Safety fallback: never leave the loader spinning forever if the
+        // txLoaded/txError event is missed (e.g. set before attach).
+        if (this._loaderTimeout) {
+            clearTimeout(this._loaderTimeout)
+        }
+        this._loaderTimeout = setTimeout(() => this._hideIconLoader(), 5000)
+    }
+
+    _hideIconLoader() {
+        this._loaderVisible = false
+        this.tag('Image').alpha = 1
+        this.tag('Placeholder').alpha = 0
+        if (this._loaderAnimation) {
+            this._loaderAnimation.stop()
+        }
+        if (this._loaderTimeout) {
+            clearTimeout(this._loaderTimeout)
+            this._loaderTimeout = null
+        }
     }
 
     _focus() {

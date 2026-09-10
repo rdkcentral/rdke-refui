@@ -121,14 +121,12 @@ export default class DacAppItem extends DACAppMixin(Lightning.Component) {
     const imageUrl = this.data.url || '/images/apps/DACApp_455_255.png'
     if (imageUrl.startsWith('/images')) {
       this.tag('ImageWrapper.Image').patch({
-        rtt: true,
         w: this.w,
         h: this.h,
         src: Utils.asset(imageUrl),
       });
     } else {
       this.tag('ImageWrapper.Image').patch({
-        rtt: true,
         w: this.w,
         h: this.h,
         src: imageUrl,
