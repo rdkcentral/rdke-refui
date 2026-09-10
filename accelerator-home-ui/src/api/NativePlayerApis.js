@@ -676,6 +676,12 @@ class NativePlayer {
 		this.isRegisteredForEvents = false;
 		this.pendingRegisterPromise = null;
 		this.pendingUnregisterPromise = null;
+		if (this.socket && (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING)) {
+			try { this.socket.close(); } catch (e) { }
+		}
+		this.socket = null;
+		this.isOpen = false;
+		NativePlayer._instance = null;
 	}
 }
 

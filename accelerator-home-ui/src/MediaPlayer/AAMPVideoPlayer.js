@@ -382,7 +382,7 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 				const playResponse = await this._nativePlayer.play(this._sessionId, url);
 				this.LOG('play response: ' + JSON.stringify(playResponse));
 
-				if (playResponse && playResponse.status) {
+				if (playResponse && (playResponse.status === true || playResponse.success === true)) {
 					this.LOG('Playback started successfully for sessionId: ' + this._sessionId);
 					this._playbackStartedEmitted = false;
 					this._playbackEndedEmitted = false;
