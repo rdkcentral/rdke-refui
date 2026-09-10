@@ -81,3 +81,7 @@ to the included package.json file for details of dependencies.  LICENSE
 contains a copy of every license which may apply to the contents of the bundled application.
 
 The TMDB image "tmdb-logo.png" is used with permission (https://www.themoviedb.org/about/logos-attribution)
+
+This repository contains software which uses some external streams licensed under the Creative Commons CC-BY-3.0 license.
+See the TvShowsInfo.js file for full details of streams.  The text of the license is available at:
+https://creativecommons.org/licenses/by/3.0/legalcode.en
