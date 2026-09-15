@@ -288,6 +288,7 @@ export default class MainView extends Lightning.Component {
     this._pendingMyAppsRefresh = false
     this._refreshMyAppsTimer = null
     this._myAppsActive = true
+    this._mainViewSubscribed = false
     let thunder = ThunderJS(CONFIG.thunderConfig);
 
     // Setup loading animation for DacApps
@@ -391,7 +392,9 @@ export default class MainView extends Lightning.Component {
       })
     //get the available input methods from the api
 
-    this._onInternetStatusChangeCB = NetworkManager.thunder.on('org.rdk.NetworkManager', 'onInternetStatusChange', notification => {
+    // Define the internet-status handler once so it can be (re)subscribed on
+    // every attach without recreating the function identity.
+    this._onInternetStatusChange = notification => {
       this.LOG('on InternetStatus Change' + JSON.stringify(notification))
       if (notification.status === "FULLY_CONNECTED") {
         // Immediately restore icons so they aren't stuck on the offline placeholder
@@ -412,20 +415,18 @@ export default class MainView extends Lightning.Component {
         // Show offline placeholder for all My Apps icons
         this._updateMyAppsNetworkState(false)
       }
-    })
+    }
     // Refresh My Apps row when apps are installed/uninstalled (including sideloaded via curl)
     this._onPackageChanged = (action, data) => {
       this.LOG('onPackageChanged: ' + action + ' ' + JSON.stringify(data))
       this._scheduleMyAppsRefresh()
     }
-    AppController.get().addPackageChangedListener(this._onPackageChanged)
-
     // Refresh DAC apps row when app catalog authentication changes
     this._onCatalogRefreshNeeded = () => {
       this.LOG('RefreshNeeded event received - refreshing DAC apps row')
       this.refreshSecondRow()
     }
-    eventTarget.addEventListener(RefreshNeeded.eventName, this._onCatalogRefreshNeeded)
+    this._subscribeMainViewEvents()
 
     this.dacApps = dacCatalog
 
@@ -433,16 +434,54 @@ export default class MainView extends Lightning.Component {
     // this._setState('AppList.0')
   }
 
-  _detach() {
-    // Unsubscribe to avoid stale references to this MainView instance
+  /**
+   * Subscribe to external events (internet status, package changes, catalog
+   * refresh). Idempotent: safe to call from both _init and _attach. Since
+   * _init runs only once, _attach must re-subscribe after _detach tore the
+   * subscriptions down, otherwise returning to home leaves rows stale.
+   */
+  _subscribeMainViewEvents() {
+    // Handlers are created in _init(). The first _attach() fires before _init(),
+    // so bail until they exist; _init() calls this again once they are ready.
+    if (!this._onPackageChanged && !this._onCatalogRefreshNeeded && !this._onInternetStatusChange) {
+      return
+    }
+    if (this._mainViewSubscribed) {
+      return
+    }
+    if (this._onInternetStatusChange && !this._onInternetStatusChangeCB) {
+      this._onInternetStatusChangeCB = NetworkManager.thunder.on(
+        'org.rdk.NetworkManager', 'onInternetStatusChange', this._onInternetStatusChange)
+    }
+    if (this._onPackageChanged) {
+      AppController.get().addPackageChangedListener(this._onPackageChanged)
+    }
+    if (this._onCatalogRefreshNeeded) {
+      eventTarget.addEventListener(RefreshNeeded.eventName, this._onCatalogRefreshNeeded)
+    }
+    this._mainViewSubscribed = true
+  }
+
+  /**
+   * Unsubscribe from all external events. Mirrors _subscribeMainViewEvents().
+   */
+  _unsubscribeMainViewEvents() {
     if (this._onInternetStatusChangeCB) {
       this._onInternetStatusChangeCB.dispose()
       this._onInternetStatusChangeCB = null
     }
-    AppController.get().removePackageChangedListener(this._onPackageChanged)
+    if (this._onPackageChanged) {
+      AppController.get().removePackageChangedListener(this._onPackageChanged)
+    }
     if (this._onCatalogRefreshNeeded) {
       eventTarget.removeEventListener(RefreshNeeded.eventName, this._onCatalogRefreshNeeded)
     }
+    this._mainViewSubscribed = false
+  }
+
+  _detach() {
+    // Unsubscribe to avoid stale references to this MainView instance
+    this._unsubscribeMainViewEvents()
     // Invalidate any in-flight My Apps refresh: a pending timer callback may
     // already be awaiting _buildInstalledAppsList(); this flag makes it discard
     // its result (and skip rescheduling) instead of patching a detached view.
@@ -541,6 +580,9 @@ export default class MainView extends Lightning.Component {
     // Re-activate the My Apps refresh guard when the view is re-attached
     // (it is set false in _detach). _init only runs once, so reset here.
     this._myAppsActive = true
+    // Re-subscribe to external events torn down in _detach(); without this,
+    // returning to home leaves My Apps/catalog/network updates stale.
+    this._subscribeMainViewEvents()
   }
 
   scroll(val) {
