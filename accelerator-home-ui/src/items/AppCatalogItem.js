@@ -352,6 +352,11 @@ export default class AppCatalogItem extends DACAppMixin(Lightning.Component) {
         try {
             const img = this.tag('Image')
             if (img) {
+                // Unregister texture callbacks before clearing src. Clearing
+                // src can itself trigger txError/txLoaded, which would then
+                // run _hideIconLoader() on a detached/reused tile.
+                if (this._onImageTxLoaded) img.off('txLoaded', this._onImageTxLoaded)
+                if (this._onImageTxError) img.off('txError', this._onImageTxError)
                 img.texture = null
                 img.src = undefined
                 this._currentIconSrc = null
@@ -401,14 +406,37 @@ export default class AppCatalogItem extends DACAppMixin(Lightning.Component) {
         this._currentIconSrc = null
         this._loaderVisible = false
         const imageTag = this.tag('Image')
-        imageTag.on('txLoaded', () => this._hideIconLoader())
-        imageTag.on('txError', () => this._hideIconLoader())
+        // Keep references so _detach() can unregister these. A late
+        // txLoaded/txError (including one triggered by _detach() clearing
+        // src) would otherwise still run _hideIconLoader() -> patch Image
+        // and Placeholder tags on a detached instance, bypassing the new
+        // cleanup guard and risking a crash if the tags have been torn
+        // down or the pool item reassigned.
+        this._onImageTxLoaded = () => {
+            if (!this._itemActive || !this.attached) return
+            this._hideIconLoader()
+        }
+        this._onImageTxError = () => {
+            if (!this._itemActive || !this.attached) return
+            this._hideIconLoader()
+        }
+        imageTag.on('txLoaded', this._onImageTxLoaded)
+        imageTag.on('txError', this._onImageTxError)
     }
 
     _attach() {
         // The item may have been marked inactive by a previous _detach() (pool
         // reuse); reactivate so a new install can proceed on this instance.
         this._itemActive = true
+        // Re-register texture listeners that _detach() removed, so the loader
+        // is still hidden when a new icon finishes decoding after reuse.
+        const imageTag = this.tag('Image')
+        if (imageTag && this._onImageTxLoaded && this._onImageTxError) {
+            imageTag.off('txLoaded', this._onImageTxLoaded)
+            imageTag.off('txError', this._onImageTxError)
+            imageTag.on('txLoaded', this._onImageTxLoaded)
+            imageTag.on('txError', this._onImageTxError)
+        }
     }
 
     _active() {

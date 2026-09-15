@@ -237,6 +237,22 @@ export default class DacAppItem extends DACAppMixin(Lightning.Component) {
 
   _attach() {
     this._itemActive = true
+    // Re-register the texture callbacks that _detach() removed. Without this,
+    // a reused DacAppItem (after navigation or list virtualization) never
+    // hides the fallback on txLoaded or shows it on txError, leaving icons
+    // blank/stale. Guard for the first _attach that runs before _init() has
+    // created the handler references.
+    if (this._onImageTxError && this._onImageTxLoaded) {
+      const img = this.tag('ImageWrapper.Image')
+      if (img) {
+        // Defensive off() first so we can't accumulate duplicate listeners
+        // across repeated detach/attach cycles.
+        img.off('txError', this._onImageTxError)
+        img.off('txLoaded', this._onImageTxLoaded)
+        img.on('txError', this._onImageTxError)
+        img.on('txLoaded', this._onImageTxLoaded)
+      }
+    }
   }
 
   async $fireDACOperationFinished(success, msg) {
