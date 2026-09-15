@@ -396,6 +396,11 @@ export default class AppCatalogItem extends DACAppMixin(Lightning.Component) {
         this.tag("Shadow").alpha = 0
     }
     async _handleEnter() {
+        // Guard against blank placeholder tiles (hidden pool items on a partial
+        // page have no app id); do nothing rather than act on empty data.
+        if (!this.data || !this.data.id) {
+            return
+        }
         this._app.id = this.data.id
         this._app.name = this.data.name
         this._app.version = this.data.version

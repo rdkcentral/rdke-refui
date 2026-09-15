@@ -602,10 +602,18 @@ export default class MainView extends Lightning.Component {
       const timeoutPromise = new Promise((_, reject) => {
         timeoutId = setTimeout(() => reject(new Error('DAC catalog fetch timed out')), FETCH_TIMEOUT)
       })
-      this.dacApps = await Promise.race([this._buildDacAppsList(), timeoutPromise])
+      const dacApps = await Promise.race([this._buildDacAppsList(), timeoutPromise])
+      // The view may have been detached while awaiting; discard the result so
+      // the dacApps setter does not patch DacApps / refocus a detached view.
+      if (!this._myAppsActive) {
+        return
+      }
+      this.dacApps = dacApps
     } catch (err) {
       this.ERR('Failed to refresh DAC catalog: ' + (err instanceof Error ? err.message : JSON.stringify(err)))
-      this._hideDacAppsLoader()
+      if (this._myAppsActive) {
+        this._hideDacAppsLoader()
+      }
     } finally {
       clearTimeout(timeoutId)
     }

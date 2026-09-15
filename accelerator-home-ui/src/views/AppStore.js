@@ -376,6 +376,27 @@ export default class AppStore extends Lightning.Component {
                         return true
                     }
 
+                    // Not on the last row: a normal Down would move to
+                    // currentIndex + columns. If that target is a hidden
+                    // placeholder (partial last row), clamp to the last visible
+                    // item instead of letting focus land on a blank tile.
+                    const downIndex = currentIndex + this._columns
+                    if (downIndex >= totalItems) {
+                        grid.index = totalItems - 1
+                        return true
+                    }
+
+                    return false
+                }
+                _handleRight() {
+                    const grid = this.tag('Catalog')
+                    const currentIndex = grid.index || 0
+                    const totalItems = this._visibleItemsCount
+                    // Prevent moving right onto a hidden placeholder on a partial
+                    // last row (indices beyond the visible count).
+                    if (currentIndex + 1 >= totalItems) {
+                        return true
+                    }
                     return false
                 }
             }
