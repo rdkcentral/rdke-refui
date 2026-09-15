@@ -33,6 +33,14 @@ export const DACAppMixin = (Base) => class extends Base {
         this._app.isInstalled = false
         this._app.isInstalling = false
         this._app.isUnInstalling = false
+        // Install-lifecycle guard state, shared by both AppCatalogItem and
+        // DacAppItem (both call initDACApp()). Without initializing these
+        // here, DacAppItem would leave _itemActive undefined, causing
+        // performDACInstall()/$fireDACOperationFinished() to always treat
+        // the operation as stale and skip error UI / success handling.
+        this._itemActive = true
+        this._installGeneration = 0
+        this._installSession = 0
     }
 
     initLogging() {
@@ -271,6 +279,24 @@ export default class AppCatalogItem extends DACAppMixin(Lightning.Component) {
     }
 
     set info(data) {
+        // The grid pool reassigns info in place (no _detach/_attach cycle) when
+        // paging. If this tile currently represents a different app (or a
+        // blank placeholder) than the incoming data, invalidate any in-flight
+        // operation for the previous app: bump the generation so stale
+        // install/uninstall callbacks are discarded, and reset the shared
+        // _app snapshot so a pending isDACAppInstalled()/install for the old
+        // app can't be misapplied to the new app once it resolves.
+        const previousId = this.data && (this.data.id || this.data.appIdentifier || this.data.uri)
+        const nextId = data && (data.id || data.appIdentifier || data.uri)
+        if (previousId !== nextId) {
+            const nextGeneration = (this._installGeneration || 0) + 1
+            this.initDACApp()
+            // initDACApp() resets _installGeneration to 0; restore the bumped
+            // value so any callback captured before this reuse (session ===
+            // the pre-bump generation) is correctly recognized as stale.
+            this._installGeneration = nextGeneration
+        }
+
         this.data = data
         if (!Object.prototype.hasOwnProperty.call(data, 'icon'))
             data.icon = "/images/apps/DACApp_455_255.png";
@@ -362,9 +388,6 @@ export default class AppCatalogItem extends DACAppMixin(Lightning.Component) {
         this._buttonIndex = 0;
         this._currentIconSrc = null
         this._loaderVisible = false
-        this._itemActive = true
-        this._installGeneration = 0
-        this._installSession = 0
         const imageTag = this.tag('Image')
         imageTag.on('txLoaded', () => this._hideIconLoader())
         imageTag.on('txError', () => this._hideIconLoader())

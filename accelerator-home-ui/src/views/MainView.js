@@ -40,6 +40,16 @@ export default class MainView extends Lightning.Component {
     this.LOG = console.log;
     this.ERR = console.error;
     this.WARN = console.warn;
+    // Initialized here (constructor runs before any lifecycle hook, including
+    // the first _attach()) so _attach()'s resume-check always sees explicit
+    // false values rather than undefined. If _init() reset these instead,
+    // _attach() firing first (Lightning's normal order) would read them as
+    // undefined, treat init as not-yet-started, and call
+    // _initializeMainView() itself; _init() would then unconditionally reset
+    // both flags and start a second, racing initializer with duplicate
+    // fetches and duplicate event-handler registration.
+    this._initCompleted = false
+    this._initInProgress = false
   }
   /**
    * Function to render various elements in main view.
@@ -275,8 +285,9 @@ export default class MainView extends Lightning.Component {
   }
 
   async _init() {
-    this._initCompleted = false
-    this._initInProgress = false
+    // _initCompleted/_initInProgress are initialized once in the constructor
+    // (not reset here) so a first _attach() firing before _init() cannot race
+    // this call into starting a duplicate _initializeMainView().
     await this._initializeMainView()
   }
 

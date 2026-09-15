@@ -201,7 +201,27 @@ export default class DacAppItem extends DACAppMixin(Lightning.Component) {
     })
   }
 
+  _detach() {
+    // Invalidate any in-flight DAC install/uninstall so its late callbacks
+    // (progress + $fireDACOperationFinished) can't patch destroyed tags or
+    // fire install/uninstall errors on the wrong route after navigation away
+    // from the home screen.
+    this._itemActive = false
+    this._installGeneration = (this._installGeneration || 0) + 1
+  }
+
+  _attach() {
+    this._itemActive = true
+  }
+
   async $fireDACOperationFinished(success, msg) {
+    // Discard the callback if the item was detached (or the underlying row
+    // item recreated) while the install was in flight. Without this,
+    // fireAncestors(...) would bubble '$showInstallError' on the wrong route,
+    // and setProgress/updateDACStatus would patch destroyed tags.
+    if (!this._itemActive || this._installSession !== this._installGeneration) {
+      return
+    }
     const wasInstalling = this._app.isInstalling;
     const completed = await this.fireDACOperationFinished(success, msg, 'ImageWrapper.StatusProgress', 'ImageWrapper.Overlay');
   }
@@ -216,10 +236,16 @@ export default class DacAppItem extends DACAppMixin(Lightning.Component) {
       // Launch the installed app
       try {
         this._app.isRunning = await startDACApp(this._app);
+        if (!this._itemActive) {
+          return
+        }
         if (!this._app.isRunning) {
           this.fireAncestors('$showLaunchError', { name: this._app.name });
         }
       } catch (err) {
+        if (!this._itemActive) {
+          return
+        }
         this.fireAncestors('$showLaunchError', { name: this._app.name, error: err.message || err });
       }
       return
@@ -298,6 +324,12 @@ export default class DacAppItem extends DACAppMixin(Lightning.Component) {
 
     // Check if already installed
     this._app.isInstalled = await isDACAppInstalled(this._app);
+
+    // The item may have been detached while awaiting isDACAppInstalled; do
+    // not proceed to install/launch on a stale/detached instance.
+    if (!this._itemActive) {
+      return
+    }
 
     // Install or launch
     this.myfireINSTALL();
