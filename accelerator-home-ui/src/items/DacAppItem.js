@@ -233,20 +233,25 @@ export default class DacAppItem extends DACAppMixin(Lightning.Component) {
   async myfireINSTALL() {
     if (this._app.isInstalled) {
       this.LOG("App is already installed, launching...")
+      // Snapshot the install generation before awaiting startDACApp so a late
+      // response after detach/reattach or pool reuse (_itemActive is reset to
+      // true by _attach()) is still rejected.
+      const launchGeneration = this._installGeneration
+      const launchAppName = this._app.name
       // Launch the installed app
       try {
         this._app.isRunning = await startDACApp(this._app);
-        if (!this._itemActive) {
+        if (!this._itemActive || this._installGeneration !== launchGeneration) {
           return
         }
         if (!this._app.isRunning) {
-          this.fireAncestors('$showLaunchError', { name: this._app.name });
+          this.fireAncestors('$showLaunchError', { name: launchAppName });
         }
       } catch (err) {
-        if (!this._itemActive) {
+        if (!this._itemActive || this._installGeneration !== launchGeneration) {
           return
         }
-        this.fireAncestors('$showLaunchError', { name: this._app.name, error: err.message || err });
+        this.fireAncestors('$showLaunchError', { name: launchAppName, error: err.message || err });
       }
       return
     }

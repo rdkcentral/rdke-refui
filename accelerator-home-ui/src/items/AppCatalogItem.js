@@ -117,20 +117,32 @@ export const DACAppMixin = (Base) => class extends Base {
             this.tag(overlayTag).alpha = 0.7
             this.tag(overlayTag + '.OverlayText').alpha = 1
             this.tag(overlayTag + '.OverlayText').text.text = Language.translate('Launching') + "...";
+            // Snapshot the current install generation; _detach()/pool reuse via
+            // set info() bumps it. _itemActive alone is insufficient because
+            // _attach() flips it back to true, so a launch that resolves after
+            // detach+reattach or pool-reuse would otherwise sneak through.
+            const launchGeneration = this._installGeneration
+            const launchAppName = this._app.name
             try {
                 const launched = await startDACApp({ id: this._app.id })
+                if (!this._itemActive || this._installGeneration !== launchGeneration) {
+                    return true
+                }
                 if (launched) {
-                    this.LOG("App launched successfully: " + this._app.name)
+                    this.LOG("App launched successfully: " + launchAppName)
                     this.tag(overlayTag + '.OverlayText').text.text = Language.translate('Running') + "!";
                 } else {
-                    this.ERR("Failed to launch app: " + this._app.name)
+                    this.ERR("Failed to launch app: " + launchAppName)
                     this.tag(overlayTag + '.OverlayText').text.text = Language.translate('Launch failed');
-                    this.fireAncestors('$showLaunchError', { name: this._app.name });
+                    this.fireAncestors('$showLaunchError', { name: launchAppName });
                 }
             } catch (err) {
+                if (!this._itemActive || this._installGeneration !== launchGeneration) {
+                    return true
+                }
                 this.ERR("Error launching app: " + JSON.stringify(err))
                 this.tag(overlayTag + '.OverlayText').text.text = Language.translate('Launch failed');
-                this.fireAncestors('$showLaunchError', { name: this._app.name, error: err.message || err });
+                this.fireAncestors('$showLaunchError', { name: launchAppName, error: err.message || err });
             }
             this.tag(overlayTag).setSmooth('alpha', 0, { duration: 5 })
             return true; // Already installed

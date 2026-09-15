@@ -50,6 +50,10 @@ export default class MainView extends Lightning.Component {
     // fetches and duplicate event-handler registration.
     this._initCompleted = false
     this._initInProgress = false
+    // Shared promise for the current _initializeMainView() run. Both _init()
+    // and _attach() await this so _init cannot return before the initializer
+    // (potentially started by an earlier _attach()) has actually finished.
+    this._initPromise = null
   }
   /**
    * Function to render various elements in main view.
@@ -285,23 +289,40 @@ export default class MainView extends Lightning.Component {
   }
 
   async _init() {
-    // _initCompleted/_initInProgress are initialized once in the constructor
-    // (not reset here) so a first _attach() firing before _init() cannot race
-    // this call into starting a duplicate _initializeMainView().
+    // Both _init() and _attach() route through _initializeMainView() which
+    // stores a single in-flight promise. Awaiting it here guarantees _init
+    // does not return before initialization actually completes -- even if an
+    // earlier _attach() started the run.
     await this._initializeMainView()
   }
 
   /**
    * Idempotent initializer for MainView. Safe to call from _init() and from
-   * _attach(): does nothing while already running, does nothing once complete.
-   * Bails cleanly if the view is detached mid-await (a later _attach() will
-   * re-invoke it to finish setup).
+   * _attach(): while an initializer is in flight both callers await the same
+   * promise; once complete, further calls are a cheap no-op. Bails cleanly if
+   * the view is detached mid-await (a later _attach() will re-invoke it to
+   * finish setup).
    */
-  async _initializeMainView() {
-    if (this._initCompleted || this._initInProgress) {
-      return
+  _initializeMainView() {
+    if (this._initCompleted) {
+      return Promise.resolve()
+    }
+    // Reuse the in-flight promise so _init() and _attach() cannot start two
+    // concurrent runs, and so _init() waits on the same completion as the
+    // _attach()-started run rather than returning immediately.
+    if (this._initPromise) {
+      return this._initPromise
     }
     this._initInProgress = true
+    this._initPromise = this._runMainViewInitializer()
+      .finally(() => {
+        this._initInProgress = false
+        this._initPromise = null
+      })
+    return this._initPromise
+  }
+
+  async _runMainViewInitializer() {
     this.gracenote = false
     this.inputSelect = false //false by default
     this.settingsScreen = false
@@ -316,6 +337,9 @@ export default class MainView extends Lightning.Component {
     this._refreshMyAppsTimer = null
     this._myAppsActive = true
     this._mainViewSubscribed = false
+    // Bumped in _detach() so awaits that resolve after detach can be rejected
+    // even if the view is later re-attached (which flips _myAppsActive back).
+    this._launchGeneration = 0
     let thunder = ThunderJS(CONFIG.thunderConfig);
 
     // Setup loading animation for DacApps
@@ -340,7 +364,6 @@ export default class MainView extends Lightning.Component {
     // so the home rows and event handlers still get set up on re-entry.
     if (!this._myAppsActive) {
       this.LOG('MainView detached during _init (after installed-apps fetch); will resume on next attach')
-      this._initInProgress = false
       return
     }
     let data = this.homeApi.getPartnerAppsInfo()
@@ -356,7 +379,6 @@ export default class MainView extends Lightning.Component {
     }
     if (!this._myAppsActive) {
       this.LOG('MainView detached during _init (after DAC catalog fetch); will resume on next attach')
-      this._initInProgress = false
       return
     }
 
@@ -474,7 +496,6 @@ export default class MainView extends Lightning.Component {
     this.refreshFirstRow()
     // this._setState('AppList.0')
     this._initCompleted = true
-    this._initInProgress = false
   }
 
   /**
@@ -533,6 +554,10 @@ export default class MainView extends Lightning.Component {
     // already be awaiting _buildInstalledAppsList(); this flag makes it discard
     // its result (and skip rescheduling) instead of patching a detached view.
     this._myAppsActive = false
+    // Bump the launch generation so any DAC launch awaiting startDACApp() at
+    // the time of detach is treated as stale even if the view is re-attached
+    // (which flips _myAppsActive back to true) before it resolves.
+    this._launchGeneration = (this._launchGeneration || 0) + 1
     this._pendingMyAppsRefresh = false
     if (this._refreshMyAppsTimer) {
       clearTimeout(this._refreshMyAppsTimer)
@@ -630,11 +655,11 @@ export default class MainView extends Lightning.Component {
     // Re-subscribe to external events torn down in _detach(); without this,
     // returning to home leaves My Apps/catalog/network updates stale.
     this._subscribeMainViewEvents()
-    // If _init() bailed mid-await due to an earlier detach, resume it now so
-    // the home rows and handlers still get set up on this attach.
-    if (!this._initCompleted && !this._initInProgress) {
-      this._initializeMainView()
-    }
+    // Resume initialization if it hasn't completed. _initializeMainView() is
+    // idempotent: it returns the in-flight promise when one is running (so a
+    // pending _init()/earlier _attach() await is shared) and no-ops once
+    // complete. Not awaited here since _attach() itself is synchronous.
+    this._initializeMainView()
   }
 
   scroll(val) {
@@ -1128,13 +1153,27 @@ export default class MainView extends Lightning.Component {
               url: uri
             }
             this.LOG('Launching DAC app from My Apps: ' + JSON.stringify(dacApp))
+            // Snapshot the launch generation and app name before awaiting;
+            // startDACApp() can resolve after _detach() (which bumps
+            // _launchGeneration) and even after a subsequent _attach() (which
+            // sets _myAppsActive back to true). Checking both fields ensures
+            // a stale completion cannot bubble $showLaunchError on the wrong
+            // route or against a repopulated My Apps row.
+            const launchAppName = appData.displayName
+            const launchGeneration = this._launchGeneration
             try {
               const launched = await startDACApp(dacApp)
+              if (!this._myAppsActive || this._launchGeneration !== launchGeneration) {
+                return
+              }
               if (!launched) {
-                this.$showLaunchError({ name: appData.displayName })
+                this.$showLaunchError({ name: launchAppName })
               }
             } catch (err) {
-              this.$showLaunchError({ name: appData.displayName, error: err.message || err })
+              if (!this._myAppsActive || this._launchGeneration !== launchGeneration) {
+                return
+              }
+              this.$showLaunchError({ name: launchAppName, error: err.message || err })
             }
           }
         }
