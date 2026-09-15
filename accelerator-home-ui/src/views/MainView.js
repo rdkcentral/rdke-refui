@@ -287,6 +287,7 @@ export default class MainView extends Lightning.Component {
     this._isRefreshingMyApps = false
     this._pendingMyAppsRefresh = false
     this._refreshMyAppsTimer = null
+    this._myAppsActive = true
     let thunder = ThunderJS(CONFIG.thunderConfig);
 
     // Setup loading animation for DacApps
@@ -442,6 +443,11 @@ export default class MainView extends Lightning.Component {
     if (this._onCatalogRefreshNeeded) {
       eventTarget.removeEventListener(RefreshNeeded.eventName, this._onCatalogRefreshNeeded)
     }
+    // Invalidate any in-flight My Apps refresh: a pending timer callback may
+    // already be awaiting _buildInstalledAppsList(); this flag makes it discard
+    // its result (and skip rescheduling) instead of patching a detached view.
+    this._myAppsActive = false
+    this._pendingMyAppsRefresh = false
     if (this._refreshMyAppsTimer) {
       clearTimeout(this._refreshMyAppsTimer)
       this._refreshMyAppsTimer = null
@@ -449,6 +455,9 @@ export default class MainView extends Lightning.Component {
   }
 
   _scheduleMyAppsRefresh(force = false) {
+    if (!this._myAppsActive) {
+      return
+    }
     const isMainViewActive = Router.getActiveHash() === 'menu'
     if (!isMainViewActive && !force) {
       this._pendingMyAppsRefresh = true
@@ -472,7 +481,8 @@ export default class MainView extends Lightning.Component {
         await this.$refreshMyAppsRow()
       } finally {
         this._isRefreshingMyApps = false
-        if (this._pendingMyAppsRefresh) {
+        // Do not reschedule if the view was detached while awaiting.
+        if (this._myAppsActive && this._pendingMyAppsRefresh) {
           this._scheduleMyAppsRefresh(true)
         }
       }
@@ -525,6 +535,12 @@ export default class MainView extends Lightning.Component {
     console.timeEnd('PerformanceTest')
     this.LOG('Mainview Screen timer end - ' + JSON.stringify(new Date().toUTCString()))
     this.internetConnectivity = false;
+  }
+
+  _attach() {
+    // Re-activate the My Apps refresh guard when the view is re-attached
+    // (it is set false in _detach). _init only runs once, so reset here.
+    this._myAppsActive = true
   }
 
   scroll(val) {
@@ -756,6 +772,11 @@ export default class MainView extends Lightning.Component {
     console.log('Refreshing My Apps row...')
     try {
       let appItems = await this._buildInstalledAppsList()
+      // The view may have been detached while awaiting; discard the result so
+      // we don't patch AppList / move focus on a detached MainView.
+      if (!this._myAppsActive) {
+        return
+      }
       this.tempRow = JSON.parse(JSON.stringify(appItems));
       this.firstRowItems = appItems
       this.appItems = this.tempRow

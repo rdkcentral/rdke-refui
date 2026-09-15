@@ -88,6 +88,13 @@ export default class AppStore extends Lightning.Component {
 
     _attach() {
         this._detached = false
+        // Re-register the RefreshNeeded listener removed in _detach(). Without
+        // this, RefreshNeeded events are ignored after the first navigation
+        // away from /apps. addEventListener dedupes the same handler reference,
+        // so this is safe even if it is somehow still registered.
+        if (this._onRefreshNeeded) {
+            eventTarget.addEventListener(RefreshNeeded.eventName, this._onRefreshNeeded)
+        }
     }
 
     async _loadCatalog() {
