@@ -275,6 +275,22 @@ export default class MainView extends Lightning.Component {
   }
 
   async _init() {
+    this._initCompleted = false
+    this._initInProgress = false
+    await this._initializeMainView()
+  }
+
+  /**
+   * Idempotent initializer for MainView. Safe to call from _init() and from
+   * _attach(): does nothing while already running, does nothing once complete.
+   * Bails cleanly if the view is detached mid-await (a later _attach() will
+   * re-invoke it to finish setup).
+   */
+  async _initializeMainView() {
+    if (this._initCompleted || this._initInProgress) {
+      return
+    }
+    this._initInProgress = true
     this.gracenote = false
     this.inputSelect = false //false by default
     this.settingsScreen = false
@@ -309,9 +325,11 @@ export default class MainView extends Lightning.Component {
     }
     // Bail out of the rest of _init if the view was detached while awaiting.
     // Assigning appItems/dacApps below would patch tags and move focus on a
-    // detached MainView.
+    // detached MainView. A later _attach() will re-run _initializeMainView()
+    // so the home rows and event handlers still get set up on re-entry.
     if (!this._myAppsActive) {
-      this.LOG('MainView detached during _init (after installed-apps fetch); aborting')
+      this.LOG('MainView detached during _init (after installed-apps fetch); will resume on next attach')
+      this._initInProgress = false
       return
     }
     let data = this.homeApi.getPartnerAppsInfo()
@@ -326,7 +344,8 @@ export default class MainView extends Lightning.Component {
       dacCatalog = []
     }
     if (!this._myAppsActive) {
-      this.LOG('MainView detached during _init (after DAC catalog fetch); aborting')
+      this.LOG('MainView detached during _init (after DAC catalog fetch); will resume on next attach')
+      this._initInProgress = false
       return
     }
 
@@ -443,6 +462,8 @@ export default class MainView extends Lightning.Component {
 
     this.refreshFirstRow()
     // this._setState('AppList.0')
+    this._initCompleted = true
+    this._initInProgress = false
   }
 
   /**
@@ -598,6 +619,11 @@ export default class MainView extends Lightning.Component {
     // Re-subscribe to external events torn down in _detach(); without this,
     // returning to home leaves My Apps/catalog/network updates stale.
     this._subscribeMainViewEvents()
+    // If _init() bailed mid-await due to an earlier detach, resume it now so
+    // the home rows and handlers still get set up on this attach.
+    if (!this._initCompleted && !this._initInProgress) {
+      this._initializeMainView()
+    }
   }
 
   scroll(val) {
