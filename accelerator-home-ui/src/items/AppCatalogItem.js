@@ -474,20 +474,44 @@ export default class AppCatalogItem extends DACAppMixin(Lightning.Component) {
         if (!this.data || !this.data.id) {
             return
         }
-        this._app.id = this.data.id
-        this._app.name = this.data.name
-        this._app.version = this.data.version
-        this._app.type = this.data.type
-        this._app.description = this.data.description;
-        this._app.size = this.data.size;
-        this._app.category = this.data.category;
-        this._app.isInstalled = await isDACAppInstalled(this._app);
-        // The item may have been detached (or pooled and reused for a different
-        // app) while awaiting isDACAppInstalled; do not proceed to install/launch
-        // on a stale/detached instance.
-        if (!this._itemActive) {
+        // Snapshot identity + generation BEFORE mutating _app or awaiting.
+        // The grid pool may reassign this tile (set info -> initDACApp() which
+        // resets _itemActive to true and bumps _installGeneration) while
+        // isDACAppInstalled is in flight. Without a local snapshot we would
+        // (a) write the stale result into the new _app, and (b) call
+        // myfireINSTALL() for a partially-initialized/wrong app.
+        const enterGeneration = this._installGeneration
+        const appSnapshot = {
+            id: this.data.id,
+            name: this.data.name,
+            version: this.data.version,
+            type: this.data.type,
+            description: this.data.description,
+            size: this.data.size,
+            category: this.data.category,
+        }
+        let isInstalled
+        try {
+            isInstalled = await isDACAppInstalled(appSnapshot)
+        } catch (e) {
             return
         }
+        // Reject if detached, reused by the pool, or if the underlying data
+        // no longer matches the app whose install-state we just queried.
+        if (!this._itemActive
+            || this._installGeneration !== enterGeneration
+            || !this.data
+            || this.data.id !== appSnapshot.id) {
+            return
+        }
+        this._app.id = appSnapshot.id
+        this._app.name = appSnapshot.name
+        this._app.version = appSnapshot.version
+        this._app.type = appSnapshot.type
+        this._app.description = appSnapshot.description
+        this._app.size = appSnapshot.size
+        this._app.category = appSnapshot.category
+        this._app.isInstalled = isInstalled
         this.myfireINSTALL();
     }
 }
