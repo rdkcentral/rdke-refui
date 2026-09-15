@@ -72,6 +72,7 @@ export default class AppStore extends Lightning.Component {
     _firstEnable() {
         this._loadingCatalog = false
         this._loadGeneration = 0
+        this._detached = false
         this._fullCatalog = []
         this._catalogOffset = 0
         this._columns = 5
@@ -83,6 +84,10 @@ export default class AppStore extends Lightning.Component {
             this._loadCatalog()
         }
         eventTarget.addEventListener(RefreshNeeded.eventName, this._onRefreshNeeded)
+    }
+
+    _attach() {
+        this._detached = false
     }
 
     async _loadCatalog() {
@@ -100,8 +105,11 @@ export default class AppStore extends Lightning.Component {
                 this.ERR("Failed to get App Catalog Info:" + JSON.stringify(error))
                 return
             }
-            if (generation !== this._loadGeneration) {
-                this.LOG('Stale catalog response ignored')
+            // Bail out if the view was detached or a newer load started while
+            // this request was in flight. Prevents patching tags on a detached
+            // view (a common source of UI crashes).
+            if (this._detached || generation !== this._loadGeneration) {
+                this.LOG('Stale or detached catalog response ignored')
                 return
             }
             if (!Array.isArray(Catalog) || Catalog.length === 0) {
@@ -171,8 +179,14 @@ export default class AppStore extends Lightning.Component {
     }
 
     _renderCatalogPage(focusColumn = 0, focusRow = 0) {
+        if (this._detached) {
+            return
+        }
         this._ensureGridPool()
         const grid = this.tag('Catalog')
+        if (!grid) {
+            return
+        }
         const page = this._fullCatalog.slice(this._catalogOffset, this._catalogOffset + this._pageSize)
         this._visibleItemsCount = page.length
 
@@ -224,6 +238,11 @@ export default class AppStore extends Lightning.Component {
         if (this._onRefreshNeeded) {
             eventTarget.removeEventListener(RefreshNeeded.eventName, this._onRefreshNeeded)
         }
+        // Invalidate any in-flight _loadCatalog() so its late response cannot
+        // render/patch tags on this now-detached view.
+        this._detached = true
+        this._loadGeneration++
+        this._loadingCatalog = false
         this._releaseGridTextures()
         this._fullCatalog = []
         this._visibleItemsCount = 0
