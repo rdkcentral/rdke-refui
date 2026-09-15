@@ -97,16 +97,29 @@ export default class DacAppItem extends DACAppMixin(Lightning.Component) {
       h: this.h,
     })
 
-    this.tag('ImageWrapper.Image').on('txError', () => {
-      this.tag('ImageWrapper.DefaultImage').patch({
+    // Keep references so we can unregister on _detach. Without this, a
+    // late texture callback after detach/tear-down would patch
+    // ImageWrapper.DefaultImage on a stale instance, bypassing the
+    // _itemActive / _installGeneration guards and potentially reproducing
+    // the browsing crash when the tag has been destroyed.
+    this._onImageTxError = () => {
+      if (!this._itemActive || !this.attached) return
+      const wrapper = this.tag('ImageWrapper.DefaultImage')
+      if (!wrapper) return
+      wrapper.patch({
         w: this.w,
         h: this.h,
         alpha: 1
       })
-    })
-    this.tag('ImageWrapper.Image').on('txLoaded', () => {
-      this.tag('ImageWrapper.DefaultImage').alpha = 0
-    })
+    }
+    this._onImageTxLoaded = () => {
+      if (!this._itemActive || !this.attached) return
+      const wrapper = this.tag('ImageWrapper.DefaultImage')
+      if (!wrapper) return
+      wrapper.alpha = 0
+    }
+    this.tag('ImageWrapper.Image').on('txError', this._onImageTxError)
+    this.tag('ImageWrapper.Image').on('txLoaded', this._onImageTxLoaded)
     this.tag('Shadow').patch({
       color: CONFIG.theme.hex,
       rect: true,
@@ -208,6 +221,18 @@ export default class DacAppItem extends DACAppMixin(Lightning.Component) {
     // from the home screen.
     this._itemActive = false
     this._installGeneration = (this._installGeneration || 0) + 1
+    // Unregister image texture callbacks so an in-flight icon decode that
+    // resolves after detach cannot patch ImageWrapper.DefaultImage on this
+    // (possibly destroyed) instance.
+    try {
+      const img = this.tag('ImageWrapper.Image')
+      if (img) {
+        if (this._onImageTxError) img.off('txError', this._onImageTxError)
+        if (this._onImageTxLoaded) img.off('txLoaded', this._onImageTxLoaded)
+      }
+    } catch (e) {
+      // ignore
+    }
   }
 
   _attach() {
@@ -320,21 +345,38 @@ export default class DacAppItem extends DACAppMixin(Lightning.Component) {
       return
     }
 
-    // Set up app info for DAC operations
-    this._app.id = this.data.appIdentifier || this.data.uri
-    this._app.name = this.data.displayName
-    this._app.version = this.data.version
-    this._app.type = this.data.applicationType
-    this._app.url = this.data.uri
-
-    // Check if already installed
-    this._app.isInstalled = await isDACAppInstalled(this._app);
-
-    // The item may have been detached while awaiting isDACAppInstalled; do
-    // not proceed to install/launch on a stale/detached instance.
-    if (!this._itemActive) {
+    // Snapshot identity + generation BEFORE mutating _app or awaiting. A
+    // _detach/_attach cycle (or row rebuild) flips _itemActive back to true,
+    // so without a generation + id comparison the stale result would be
+    // written into the new _app and myfireINSTALL() would run against the
+    // wrong/partially-initialized item.
+    const enterGeneration = this._installGeneration
+    const appSnapshot = {
+      id: this.data.appIdentifier || this.data.uri,
+      name: this.data.displayName,
+      version: this.data.version,
+      type: this.data.applicationType,
+      url: this.data.uri,
+    }
+    let isInstalled
+    try {
+      isInstalled = await isDACAppInstalled(appSnapshot)
+    } catch (e) {
       return
     }
+    if (!this._itemActive
+      || this._installGeneration !== enterGeneration
+      || !this.data
+      || (this.data.appIdentifier || this.data.uri) !== appSnapshot.id) {
+      return
+    }
+
+    this._app.id = appSnapshot.id
+    this._app.name = appSnapshot.name
+    this._app.version = appSnapshot.version
+    this._app.type = appSnapshot.type
+    this._app.url = appSnapshot.url
+    this._app.isInstalled = isInstalled
 
     // Install or launch
     this.myfireINSTALL();
