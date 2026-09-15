@@ -307,6 +307,13 @@ export default class MainView extends Lightning.Component {
       this.ERR('Failed to fetch installed apps: ' + JSON.stringify(err))
       appItems = []
     }
+    // Bail out of the rest of _init if the view was detached while awaiting.
+    // Assigning appItems/dacApps below would patch tags and move focus on a
+    // detached MainView.
+    if (!this._myAppsActive) {
+      this.LOG('MainView detached during _init (after installed-apps fetch); aborting')
+      return
+    }
     let data = this.homeApi.getPartnerAppsInfo()
 
     // Fetch DAC catalog, sort alphabetically, and take first 4 apps + More Apps item
@@ -317,6 +324,10 @@ export default class MainView extends Lightning.Component {
     } catch (err) {
       this.ERR('Failed to fetch DAC catalog: ' + JSON.stringify(err))
       dacCatalog = []
+    }
+    if (!this._myAppsActive) {
+      this.LOG('MainView detached during _init (after DAC catalog fetch); aborting')
+      return
     }
 
 
@@ -444,6 +455,10 @@ export default class MainView extends Lightning.Component {
     // Handlers are created in _init(). The first _attach() fires before _init(),
     // so bail until they exist; _init() calls this again once they are ready.
     if (!this._onPackageChanged && !this._onCatalogRefreshNeeded && !this._onInternetStatusChange) {
+      return
+    }
+    // Do not subscribe on a detached view; _attach() will call again on re-entry.
+    if (this._myAppsActive === false) {
       return
     }
     if (this._mainViewSubscribed) {
