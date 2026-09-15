@@ -153,7 +153,18 @@ export const DACAppMixin = (Base) => class extends Base {
         this._installSession = (this._installGeneration || 0)
 
         this._app.isInstalling = true;
-        if (!await installDACApp(this._app, this.tag(statusProgressTag))) {
+        const installOk = await installDACApp(this._app, this.tag(statusProgressTag))
+        // Discard the result if the item was detached or reused from the pool
+        // for a different app while the install call was in flight. Without
+        // this, the failure branch patches Overlay/OverlayText and bubbles
+        // $showInstallError on the detached/wrong route. installDACApp returns
+        // false on failure without invoking $fireDACOperationFinished, so the
+        // session/generation check must run here too.
+        if (!this._itemActive || this._installSession !== this._installGeneration) {
+            this._app.isInstalling = false;
+            return false;
+        }
+        if (!installOk) {
             this._app.isInstalling = false;
             const errorCode = this._app.errorCode ?? -1;
             this.tag(overlayTag + '.OverlayText').text.text = Language.translate("Status") + ':' + errorCode;
@@ -436,6 +447,12 @@ export default class AppCatalogItem extends DACAppMixin(Lightning.Component) {
         this._app.size = this.data.size;
         this._app.category = this.data.category;
         this._app.isInstalled = await isDACAppInstalled(this._app);
+        // The item may have been detached (or pooled and reused for a different
+        // app) while awaiting isDACAppInstalled; do not proceed to install/launch
+        // on a stale/detached instance.
+        if (!this._itemActive) {
+            return
+        }
         this.myfireINSTALL();
     }
 }
