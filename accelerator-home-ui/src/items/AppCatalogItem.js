@@ -147,6 +147,11 @@ export const DACAppMixin = (Base) => class extends Base {
         // Reset progress bar to clear any stale state from a previous install cycle
         this.tag(statusProgressTag).reset();
 
+        // Record which install "session" this callback set belongs to. On
+        // _detach() we bump _installGeneration, and $fireDACOperationFinished
+        // discards any callback whose recorded session != current generation.
+        this._installSession = (this._installGeneration || 0)
+
         this._app.isInstalling = true;
         if (!await installDACApp(this._app, this.tag(statusProgressTag))) {
             this._app.isInstalling = false;
@@ -282,6 +287,12 @@ export default class AppCatalogItem extends DACAppMixin(Lightning.Component) {
     }
 
     _detach() {
+        // Invalidate any in-flight DAC install/uninstall so its late callbacks
+        // (progress + $fireDACOperationFinished) can't patch destroyed tags or
+        // fire install/uninstall errors on the wrong route. The item may also
+        // be reused from the pool for a different app.
+        this._itemActive = false
+        this._installGeneration = (this._installGeneration || 0) + 1
         // Tear down any active loader so its timeout/animation can't fire after
         // detach or leak into a pooled/reused instance.
         this._hideIconLoader()
@@ -318,6 +329,13 @@ export default class AppCatalogItem extends DACAppMixin(Lightning.Component) {
     }
 
     async $fireDACOperationFinished(success, msg) {
+        // Discard the callback if the item was detached (or pooled and reused
+        // for a different app) while the install was in flight. Without this,
+        // fireAncestors(...) would bubble '$showInstallError' up on the wrong
+        // route, and setProgress/updateDACStatus would patch destroyed tags.
+        if (!this._itemActive || this._installSession !== this._installGeneration) {
+            return
+        }
         this.fireDACOperationFinished(success, msg, 'StatusProgress', 'Overlay');
     }
 
@@ -333,9 +351,18 @@ export default class AppCatalogItem extends DACAppMixin(Lightning.Component) {
         this._buttonIndex = 0;
         this._currentIconSrc = null
         this._loaderVisible = false
+        this._itemActive = true
+        this._installGeneration = 0
+        this._installSession = 0
         const imageTag = this.tag('Image')
         imageTag.on('txLoaded', () => this._hideIconLoader())
         imageTag.on('txError', () => this._hideIconLoader())
+    }
+
+    _attach() {
+        // The item may have been marked inactive by a previous _detach() (pool
+        // reuse); reactivate so a new install can proceed on this instance.
+        this._itemActive = true
     }
 
     _active() {
