@@ -336,7 +336,6 @@ export default class AppInfoPage extends Lightning.Component {
                          currentCard.resetActionInProgress();
                          }
                 }
-            } 
         catch (error) {
                 console.error(`Error launching ${appInfo.name}:`, error);
                 const currentCard = this._appList.currentItem;
