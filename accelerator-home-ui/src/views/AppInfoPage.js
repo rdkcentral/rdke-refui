@@ -332,8 +332,7 @@ export default class AppInfoPage extends Lightning.Component {
                 } else {
                         console.error(`Failed to launch ${appInfo.name}`);
                          const currentCard = this._appList.currentItem;
-                          // reset the in-progress state after app launc failed.
-                         if (currentCard && currentCard.resetActionInProgress) {
+                         // reset the in-progress state after app launch failed.
                          currentCard.resetActionInProgress();
                          }
                 }
