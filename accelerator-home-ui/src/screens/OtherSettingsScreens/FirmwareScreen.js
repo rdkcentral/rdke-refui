@@ -19,14 +19,12 @@
 import { Lightning, Language, Router } from '@lightningjs/sdk'
 import { COLORS } from '../../colors/Colors'
 import { CONFIG } from '../../Config/Config'
-import AppApi from '../../api/AppApi';
-import ThunderJS from 'ThunderJS';
+import SysSrvApi, { FWUpdateState, FWUpdateAvailableEnum } from '../../api/SystemServicesApi';
+import PowerManagerApi from '../../api/PowerManagerApi';
 
 /**
  * Class for Firmware screen.
  */
-
-const thunder = ThunderJS(CONFIG.thunderConfig)
 
 export default class FirmwareScreen extends Lightning.Component {
     constructor(...args) {
@@ -134,44 +132,63 @@ export default class FirmwareScreen extends Lightning.Component {
     }
 
     _init() {
-        this._appApi = new AppApi();
+        this.FWUpdateRebootImmediately = false;
+        this.FWUpdateIsRebootDeferred = false;
+        this.FWUpdateRebooting = false;
+        this.autoRebootStartedCB = null;
     }
 
     _active() {
-        this.onFirmwareUpdateStateChangeCB = thunder.on('org.rdk.System', 'onFirmwareUpdateStateChange', notification => {
-            this.tag('State.Title').text.text = Language.translate("Firmware State: ") + FirmwareScreen.STATES[notification.firmwareUpdateStateChange]
+        this.onFirmwareUpdateStateChangeCB = SysSrvApi.on('onFirmwareUpdateStateChange', notification => {
+            this.tag('State.Title').text.text = Language.translate("Firmware State: ") + SysSrvApi.getFirmwareUpdateStateString(notification.firmwareUpdateStateChange);
             this.LOG('onFirmwareUpdateStateChange:' + JSON.stringify(notification));
-            if (FirmwareScreen.STATES[notification.firmwareUpdateStateChange] === "Downloading") {
+            if (FWUpdateState.FWUpdateStateDownloading === notification.firmwareUpdateStateChange) {
                 this.showUpdateButton(notification.firmwareUpdateStateChange)
                 this.downloadInterval = setInterval(() => {
                     this.LOG("Downloading...");
                     this.getDownloadPercent();
                 }, 1000)
-            } else if (notification.firmwareUpdateStateChange > 3) {
+            } else if (notification.firmwareUpdateStateChange > FWUpdateState.FWUpdateStateFailed) {
                 this.showUpdateButton(notification.firmwareUpdateStateChange)
                 this.getDownloadFirmwareInfo()
-            } else if (FirmwareScreen.STATES[notification.firmwareUpdateStateChange] != "Downloading") {
+                if (FWUpdateState.FWUpdateStatePreparingReboot === notification.firmwareUpdateStateChange) {
+                    this.FWUpdateRebooting = true;
+                    if (true === this.FWUpdateRebootImmediately === !this.FWUpdateIsRebootDeferred) {
+                        this.autoRebootStartedCB = this.startAutoRebootCountdown();
+                    } else {
+                        this.tag('State.Title').text.text = Language.translate("Firmware State: ") + Language.translate("Reboot to complete the update");
+                        setTimeout(() => {
+                            if (!Router.isNavigating()) Router.navigate('settings/advanced/device/reboot')
+                        }, 1000)
+                    }
+                }
+            } else if (FWUpdateState.FWUpdateStateDownloading !== notification.firmwareUpdateStateChange) {
                 this.tag('DownloadedPercent.Title').visible = false;
                 this.showUpdateButton(notification.firmwareUpdateStateChange)
                 if (this.downloadInterval) {
-                    this.LOG("");
                     clearInterval(this.downloadInterval);
                     this.downloadInterval = null
                 }
             }
         });
         // TODO: This need to be in _init() as it should be system wide.
-        this.onFirmwareUpdateInfoReceivedCB = thunder.on('org.rdk.System', 'onFirmwareUpdateInfoReceived', params => {
+        this.onFirmwareUpdateInfoReceivedCB = SysSrvApi.on('onFirmwareUpdateInfoReceived', params => {
             this.LOG("onFirmwareUpdateInfoReceived" + JSON.stringify(params))
             if (params.success) {
                 if (params.updateAvailable) {
                     switch(params.updateAvailableEnum) {
-                        case 0: // A new firmware version is available.
+                        case FWUpdateAvailableEnum.FW_UPDATE_AVAILABLE: // A new firmware version is available.
+                            this.FWUpdateRebootImmediately = false;
+                            if (params.rebootImmediately) {
+                                this.FWUpdateRebootImmediately = true;
+                            } else {
+                                this.FWUpdateRebootImmediately = false;
+                            }
                             this.showUpdateButton(params.updateAvailable)
                             break;
-                        case 1: // The firmware version is at the current version.
-                        case 2: // XCONF did not return a firmware version (timeout or other XCONF error).
-                        case 3: // The device is configured not to update the firmware (swupdate.conf exists on the device).
+                        case FWUpdateAvailableEnum.FW_MATCH_CURRENT_VER: // The firmware version is at the current version.
+                        case FWUpdateAvailableEnum.NO_FW_VERSION: // XCONF did not return a firmware version (timeout or other XCONF error).
+                        case FWUpdateAvailableEnum.EMPTY_SW_UPDATE_CONF: // The device is configured not to update the firmware (swupdate.conf exists on the device).
                             this.tag("FirmwareUpdate").alpha = 0
                             this._setState('Idle')
                             break;
@@ -181,17 +198,39 @@ export default class FirmwareScreen extends Lightning.Component {
         });
         // TODO: decouple updateFirmware from here.
         //this.getDownloadFirmwareInfo();
-        this.getDownloadPercent();
+        this.showDownloadPercent();
     }
 
-    showDownloadPercentage() {
+    startAutoRebootCountdown() {
+        this.tag("FirmwareUpdate").alpha = 0
+        this._setState('Idle')
+        this.tag('State.Title').text.text = Language.translate("Firmware State: ") + Language.translate("Rebooting") + ": 5"
+        let countdown = 5;
+        let countdownInterval = setInterval(() => {
+            countdown--;
+            if (this.tag('State.Title')) {
+                this.tag('State.Title').text.text = Language.translate("Firmware State: ") + Language.translate("Rebooting") + ":" + countdown;
+            }
+            if (countdown <= 0) {
+                clearInterval(countdownInterval);
+                PowerManagerApi.reboot("UI-FirmwareUpdate-AutoReboot").then(res => {
+                    this.LOG("Rebooting device: " + JSON.stringify(res));
+                }).catch(err => {
+                    this.ERR("Error: " + JSON.stringify(err));
+                });
+            }
+        }, 1000)
+        return countdownInterval;
+    }
+
+    startDownloadPercentageTimer() {
         this.downloadInterval = setInterval(() => {
-            this.getDownloadPercent();
+            this.showDownloadPercent();
         }, 1000)
     }
 
     showUpdateButton(state){
-        if(state > 3 || state === 2) {
+        if(state > FWUpdateState.FWUpdateStateFailed || state === FWUpdateState.FWUpdateStateDownloading) {
             this.tag("FirmwareUpdate").alpha = 0
             this._setState('Idle')
         } else {
@@ -202,29 +241,30 @@ export default class FirmwareScreen extends Lightning.Component {
 
     _disable() {
         if (this.onFirmwareUpdateStateChangeCB) this.onFirmwareUpdateStateChangeCB.dispose();
+        if (this.autoRebootStartedCB) clearInterval(this.autoRebootStartedCB);
     }
 
     async _focus() {
         this.downloadInterval = null;
-        await this._appApi.getFirmwareUpdateState().then(res => {
+        await SysSrvApi.getFirmwareUpdateState().then(res => {
             if (res.success) {
                 this.LOG("getFirmwareUpdateState from firmware screen " + JSON.stringify(res))
-                this.tag('State.Title').text.text = Language.translate("Firmware State: ") + FirmwareScreen.STATES[res.firmwareUpdateState]
+                this.tag('State.Title').text.text = Language.translate("Firmware State: ") + SysSrvApi.getFirmwareUpdateStateString(res.firmwareUpdateState)
                 this.showUpdateButton(res.firmwareUpdateState)
-                if (res.firmwareUpdateState === "Downloading") {
-                    this.showDownloadPercentage();
+                if (FWUpdateState.FWUpdateStateDownloading === res.firmwareUpdateState) {
+                    this.startDownloadPercentageTimer();
                 }
             }
-        })
-        this._appApi.getDownloadFirmwareInfo().then(res => {
-            this.LOG("getDownloadFirmwareInfo : " + JSON.stringify(res));
+        });
+        await SysSrvApi.getDownloadedFirmwareInfo().then(res => {
+            this.LOG("getDownloadedFirmwareInfo : " + JSON.stringify(res));
             this.tag('Version.Title').text.text = Language.translate("Firmware Versions: ") + res.currentFWVersion
             this.tag('DownloadedVersion.Title').text.text = Language.translate('Downloaded Firmware Version: ') + `${res.downloadedFWVersion ? res.downloadedFWVersion : 'NA'}`
-        })
+        });
     }
 
-    getDownloadPercent() {
-        this._appApi.getFirmwareDownloadPercent().then(res => {
+    showDownloadPercent() {
+        SysSrvApi.getFirmwareDownloadPercent().then(res => {
             if (res.downloadPercent < 0) {
                 this.tag('DownloadedPercent.Title').visible = false;
                 this.tag('DownloadedPercent.Title').text.text = "";
@@ -233,7 +273,7 @@ export default class FirmwareScreen extends Lightning.Component {
                 this.tag('DownloadedPercent.Title').visible = true;
                 this.tag('DownloadedPercent.Title').text.text = Language.translate("Download Progress: ") + res.downloadPercent + "%";
                 if (this.downloadInterval === null) {
-                    this.showDownloadPercentage()
+                    this.startDownloadPercentageTimer()
                 }
             }
         }).catch(err => {
@@ -241,32 +281,40 @@ export default class FirmwareScreen extends Lightning.Component {
         })
     }
 
-    getDownloadFirmwareInfo() {
-        this._appApi.updateFirmware().then(res => {
-            this._appApi.getDownloadFirmwareInfo().then(result => {
-                this.LOG("getDownloadFirmwareInfo : " + JSON.stringify(result.downloadedFWVersion));
-                this.tag('DownloadedVersion.Title').text.text = Language.translate('Downloaded Firmware Version: ') + `${result.downloadedFWVersion ? result.downloadedFWVersion :"" }`
-                this.tag('Version.Title').text.text = Language.translate("Firmware Versions: ") + result.currentFWVersion
-            }).catch(err => {
-                this.ERR("Error: " + JSON.stringify(err));
-            })
+    async showDownloadFirmwareInfo() {
+        this.tag('DownloadedVersion.Title').text.text = Language.translate('Check for Firmware Update') + ":" + Language.translate('Please wait');
+        await SysSrvApi.updateFirmware().catch(err => {
+            this.ERR("Error: " + JSON.stringify(err));
+        });
+        await SysSrvApi.getDownloadedFirmwareInfo().then(result => {
+            this.LOG("getDownloadedFirmwareInfo : " + JSON.stringify(result.downloadedFWVersion));
+
+            this.tag('Version.Title').text.text = Language.translate("Firmware Versions: ") + result.currentFWVersion
+            this.tag('DownloadedVersion.Title').text.text = Language.translate('Downloaded Firmware Version: ') + `${result.downloadedFWVersion ? result.downloadedFWVersion : 'NA'}`
+
+            this.FWUpdateIsRebootDeferred = false;
+            if (result.isRebootDeferred) {
+                this.FWUpdateRebootImmediately = true;
+            } else {
+                this.FWUpdateRebootImmediately = false;
+            }
         }).catch(err => {
             this.ERR("Error: " + JSON.stringify(err));
-        })
+        });
     }
 
     _handleBack() {
-        if(!Router.isNavigating()){
+        if(!Router.isNavigating() && !this.FWUpdateRebooting) {
            Router.navigate('settings/advanced/device')
         }
     }
 
     static _states() {
         return [
-            class FirmwareUpdate extends this{
+            class FirmwareUpdate extends this {
                 _handleEnter() {
-                    this.getDownloadFirmwareInfo()
-                    this.getDownloadPercent()
+                    this.showDownloadFirmwareInfo()
+                    this.showDownloadPercent()
                 }
             },
             class Idle extends this {
@@ -275,4 +323,3 @@ export default class FirmwareScreen extends Lightning.Component {
         ]
     }
 }
-FirmwareScreen.STATES = ['Uninitialized', 'Requesting', 'Downloading', 'Failed', 'Download Complete', 'Validation Complete', 'Preparing to Reboot']
