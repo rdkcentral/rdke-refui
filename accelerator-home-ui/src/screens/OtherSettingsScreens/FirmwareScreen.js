@@ -146,7 +146,7 @@ export default class FirmwareScreen extends Lightning.Component {
                 this.showUpdateButton(notification.firmwareUpdateStateChange)
                 this.downloadInterval = setInterval(() => {
                     this.LOG("Downloading...");
-                    this.getDownloadPercent();
+                    this.showDownloadPercent();
                 }, 1000)
             } else if (notification.firmwareUpdateStateChange > FWUpdateState.FWUpdateStateFailed) {
                 this.showUpdateButton(notification.firmwareUpdateStateChange)
@@ -240,8 +240,12 @@ export default class FirmwareScreen extends Lightning.Component {
     }
 
     _disable() {
-        if (this.onFirmwareUpdateStateChangeCB) this.onFirmwareUpdateStateChangeCB.dispose();
-        if (this.autoRebootStartedCB) clearInterval(this.autoRebootStartedCB);
+        if (this.onFirmwareUpdateStateChangeCB) {
+            SysSrvApi.off('onFirmwareUpdateStateChange', this.onFirmwareUpdateStateChangeCB);
+        }
+        if (this.onFirmwareUpdateInfoReceivedCB) {
+            SysSrvApi.off('onFirmwareUpdateInfoReceived', this.onFirmwareUpdateInfoReceivedCB);
+        }
     }
 
     async _focus() {

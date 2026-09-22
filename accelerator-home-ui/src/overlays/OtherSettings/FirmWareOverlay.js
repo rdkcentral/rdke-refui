@@ -115,7 +115,7 @@ export default class FirmwareScreen extends Lightning.Component {
             if (FWUpdateState.FWUpdateStateDownloading === notification.firmwareUpdateStateChange) {
                 this.downloadInterval = setInterval(() => {
                     this.LOG("Downloading...");
-                    this.getDownloadPercent();
+                    this.showDownloadPercent();
                 }, 1000)
             } else if ((FWUpdateState.FWUpdateStateDownloading !== notification.firmwareUpdateStateChange) &&
                        this.downloadInterval) {
