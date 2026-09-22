@@ -150,7 +150,7 @@ export default class FirmwareScreen extends Lightning.Component {
                 }, 1000)
             } else if (notification.firmwareUpdateStateChange > FWUpdateState.FWUpdateStateFailed) {
                 this.showUpdateButton(notification.firmwareUpdateStateChange)
-                this.getDownloadFirmwareInfo()
+                this.showDownloadFirmwareInfo()
                 if (FWUpdateState.FWUpdateStatePreparingReboot === notification.firmwareUpdateStateChange) {
                     this.FWUpdateRebooting = true;
                     if (true === this.FWUpdateRebootImmediately === !this.FWUpdateIsRebootDeferred) {

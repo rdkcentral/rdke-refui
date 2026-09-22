@@ -146,7 +146,7 @@ export default class FirmwareScreen extends Lightning.Component {
                 }
             }
         });
-        this.getDownloadPercent();
+        this.showDownloadPercent();
     }
 
     startDownloadPercentageTimer() {
@@ -215,7 +215,7 @@ export default class FirmwareScreen extends Lightning.Component {
             class FirmwareUpdate extends this{
                 _handleEnter() {
                     this.showDownloadFirmwareInfo()
-                    this.getDownloadPercent()
+                    this.showDownloadPercent()
                 }
             }
         ]
