@@ -298,9 +298,9 @@ export default class FirmwareScreen extends Lightning.Component {
 
             this.FWUpdateIsRebootDeferred = false;
             if (result.isRebootDeferred) {
-                this.FWUpdateRebootImmediately = true;
+                this.FWUpdateIsRebootDeferred = true;
             } else {
-                this.FWUpdateRebootImmediately = false;
+                this.FWUpdateIsRebootDeferred = false;
             }
         }).catch(err => {
             this.ERR("Error: " + JSON.stringify(err));
