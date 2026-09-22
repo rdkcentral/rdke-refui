@@ -213,7 +213,7 @@ export default class FirmwareScreen extends Lightning.Component {
             }
             if (countdown <= 0) {
                 clearInterval(countdownInterval);
-                PowerManagerApi.reboot("UI-FirmwareUpdate-AutoReboot").then(res => {
+                PowerManagerApi.get().reboot("UI-FirmwareUpdate-AutoReboot").then(res => {
                     this.LOG("Rebooting device: " + JSON.stringify(res));
                 }).catch(err => {
                     this.ERR("Error: " + JSON.stringify(err));
