@@ -44,6 +44,7 @@ export default class DIALManager {
    * @returns {DIALManager}
    */
   static get() {
+    // create instance for dial manager.and return
     if (instance === null) {
       instance = new DIALManager();
     }
@@ -82,6 +83,7 @@ export default class DIALManager {
    * @param {string} applicationName
    * @param {import('./AppController.js').AppState} appControllerState
    */
+  // tha application state is set based on appcontroller state.
   async setApplicationState(applicationName, appControllerState) {
     let state = 'stopped';
 
@@ -102,7 +104,8 @@ export default class DIALManager {
         this.ERR(`Received invalid state: ${appControllerState} for ${applicationName}`);
         break;
     }
-
+    
+    // it contains current state of the app along with app name
     const appState = {
       applicationName,
       state,
@@ -111,6 +114,7 @@ export default class DIALManager {
     this.LOG(`Set ${applicationName} state to ${state}`);
 
     try {
+      // get current status of the app state.
       const status = await this.xcastApi.setApplicationState(appState);
       if (status == false) {
         throw new Error("Got false");
@@ -123,78 +127,133 @@ export default class DIALManager {
   /**
    * @returns {Promise<any>}
    */
+  // main intialisation of DIAL support,it is called from app.js file
+  // it is called in init state,it triggers whenever the app is started.
   async start() {
+    
     if (this.started) {
       throw new Error("DIALManager already started!");
     }
 
     this.started = true;
 
-    if (!await this.xcastApi.activate()) {
-      throw new Error("XcastApi activatation failed");
-    }
+    await this.activateXcast();
 
     this.registerXcastListeners();
+
+    await this.configureFriendlyName();
+
+    await this.enableDiscovery();
+
+    await this.configureStandby();
+
+    await this.registerDialApplications();
+
+    this.registerLifecycleListener();
+
+    this.INFO("DIALManager.start() completed");
+  }
+
+  async activateXcast() {
+    if (!await this.xcastApi.activate()) {
+        throw new Error("XcastApi activation failed");
+    }
+  }
+
+  async configureFriendlyName() {
 
     const serialNumber = await appApi.getSerialNumber().catch(() => "") || "DefaultSLNO";
     const model = await this.xcastApi.getModelName().catch(() => "") || ("RDK" + GLOBALS.deviceType);
     const friendlyName = model + (serialNumber.length < 6 ? serialNumber : serialNumber.slice(-6));
 
     this.LOG(`Set friendly name to: ${friendlyName}`);
-
-    await appApi.setFriendlyName(friendlyName).catch(err => {
+      await appApi.setFriendlyName(friendlyName).catch(err => {
       const terr = new ThunderError(`appApi.setFriendlyName(${friendlyName})`, err);
       this.ERR(`DIALManager.start() ${terr}`);
-    });
+      });
+  }
 
-    await this.xcastApi.setEnabled(true).then(() => {
-      GLOBALS.LocalDeviceDiscoveryStatus = true;
-    }).catch(err => {
-      GLOBALS.LocalDeviceDiscoveryStatus = false;
-      const terr = new ThunderError(`xcastApi.setStandbyBehavior("active")`, err);
-      this.ERR(`DIALManager.start() ${terr}`);
-    });
+  async enableDiscovery() {
+    await this.xcastApi.setEnabled(true).then(() => 
+            {
+              GLOBALS.LocalDeviceDiscoveryStatus = true;
+            }
+            ).catch(err => {
+            GLOBALS.LocalDeviceDiscoveryStatus = false;
+            const terr = new ThunderError(
+                    `xcastApi.setEnabled(true)`,
+                    err
+                );
 
-    await this.xcastApi.setStandbyBehavior("active").catch(err => {
-      const terr = new ThunderError(`xcastApi.setStandbyBehavior("active")`, err);
-      this.ERR(`DIALManager.start() ${terr}`);
-    });
+            this.ERR(`DIALManager.enableDiscovery() ${terr}`);
+        });
+  }
 
-    let params = {
-      "applications": []
+  async configureStandby() {
+    await this.xcastApi
+        .setStandbyBehavior("active")
+        .catch(err => {
+            const terr =
+                new ThunderError(
+                    `xcastApi.setStandbyBehavior("active")`,
+                    err
+                );
+
+            this.ERR(
+                `DIALManager.configureStandby() ${terr}`
+            );
+        });
+  }
+
+  async registerDialApplications() {
+
+    const params = {
+        applications: []
     };
 
     for (const appName in DIAL_APPS) {
-      try {
-        if (await this.appController.isPackageInstalled(DIAL_APPS[appName].id)) {
-          params.applications.push({
-            name: appName,
-            cors: DIAL_APPS[appName].cors,
-          });
+        try {
+            const app =DIAL_APPS[appName];
+
+            if (await this.appController.isPackageInstalled(app.id)) {
+                params.applications.push({
+                    name: appName,
+                    cors: app.cors
+                });
+            }
+        } catch (err) {
+            this.ERR(
+                `registerDialApplications(): ${err}`
+            );
         }
-      } catch (err) {
-        this.ERR(`DIALManager.start() ${err}`);
-      }
     }
 
     this.INFO(`Register DIAL apps: ${JSON.stringify(params)}`);
 
-    await this.xcastApi.registerApplications(params).catch(err => {
-      const terr = new ThunderError(`xcastApi.registerApplications())`, err);
-      this.ERR(`DIALManager.start(): ${terr}`);
-    });
+    await this.xcastApi
+        .registerApplications(params)
+        .catch(err => {
+            const terr =
+                new ThunderError(
+                    `xcastApi.registerApplications()`,
+                    err
+                );
+            this.ERR(
+                `registerDialApplications(): ${terr}`
+            );
+        });
+  }
 
+  registerLifecycleListener() {
     this.appController.addAppLifecycleStateListener((id, state) => {
-      for (const appName in DIAL_APPS) {
-        const app = DIAL_APPS[appName];
-        this.INFO(`${appName} -> ${JSON.stringify(app)}`);
-        if (id === app.id) {
-          this.setApplicationState(appName, state);
-        }
-      }
-    });
+                for (const appName in DIAL_APPS) {
+                    const app = DIAL_APPS[appName];
 
-    this.INFO("DIALManager.start() completed");
+                  if (id === app.id) {
+                      this.setApplicationState(appName, state);
+                  }
+                }
+            });
   }
 
   /**
@@ -220,11 +279,12 @@ export default class DIALManager {
           const params = `&inApp=${this.appController.isLaunched(desc.id)}&launch=dial`;
           const url = `${desc.url}?${pairingCode}&additionalDataUrl=${additionalDataUrl}${params}`;
 
-          if (this.appController.getAppLifecycleState(desc.id) !== 'APP_STATE_ACTIVE') {
-            await this.appController.launch(desc.id, url);
-          } else {
-            await this.appController.sendIntent(desc.id, url);
-          }
+          const isActive = this.appController.getAppLifecycleState(desc.id) === 'APP_STATE_ACTIVE';
+        if (isActive) {
+        await this.appController.sendIntent(desc.id, url);
+        } else {
+        await this.appController.launch(desc.id, url);
+        }
           break;
         }
         case 'onApplicationHideRequest':
