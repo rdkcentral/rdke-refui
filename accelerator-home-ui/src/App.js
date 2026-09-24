@@ -26,7 +26,6 @@ import {
 import ThunderJS from 'ThunderJS';
 import routes from './routes/routes';
 import AppApi from '../src/api/AppApi.js';
-import XcastApi from '../src/api/XcastApi';
 import {
 	CONFIG,
 	GLOBALS,
@@ -62,6 +61,7 @@ import PackageManager from './api/PackageManagerApi.js';
 import RDKWindowManager from './api/RDKWindowManagerApi.js';
 import RuntimeManager from './api/RuntimeManagerApi.js';
 import AppController from './AppController.js';
+import DIALManager from './DIALManager.js';
 import userSettingsApi from './api/UserSettingsApi.js';
 
 var thunder = ThunderJS(CONFIG.thunderConfig);
@@ -72,6 +72,7 @@ var voiceApi = new VoiceApi();
 var miracast = new Miracast();
 var inactivityHelper = new InactivityHelper();
 const SLEEP_STATE = 'SLEEPING';
+var powermanagerapi = new PowerManagerApi();
 var packageManager = new PackageManager();
 
 export default class App extends Router.App {
@@ -492,6 +493,9 @@ export default class App extends Router.App {
 
 		thunder.on('Controller.1', 'all', noti => {
 			this.LOG("App controller notification:" + JSON.stringify(noti))
+			if ((noti.data.url && noti.data.url.slice(-5) === "#boot") || (noti.data.httpstatus && noti.data.httpstatus != 200 && noti.data.httpstatus != -1)) { // to exit metro apps by pressing back key & to auto exit webapp if httpstatus is not 200
+				appApi.exitApp(GLOBALS.topmostApp);
+			}
 			if (noti.callsign === "org.rdk.HdmiCecSource") {
 				this.SubscribeToHdmiCecSourcevent(noti.data.state, self.appIdentifiers)
 			}
@@ -644,6 +648,38 @@ export default class App extends Router.App {
 		this._SubscribeToRDKWindowManagerNotifications();
 		this._SubscribeToRuntimeManagerNotifications();
 
+		this._updateLanguageToDefault()
+		// Initialize plugins using the abstraction
+		this._activatePlugin(
+			"org.rdk.AppPackageManager",
+			"AppPackageManager",
+			() => packageManager.activate()
+		);
+
+		this._activatePlugin(
+			"org.rdk.AppManager",
+			"AppManager",
+			() => AppManager.get().activate(),
+			() => this._SubscribeToAppManagerNotifications()
+		);
+
+		this._activatePlugin(
+			"org.rdk.RDKWindowManager",
+			"RDKWindowManager",
+			() => RDKWindowManager.get().activate(),
+			() => this._SubscribeToRDKWindowManagerNotifications()
+		);
+
+		this._activatePlugin(
+			"org.rdk.RuntimeManager",
+			"RuntimeManager",
+			() => RuntimeManager.get().activate(),
+			() => this._SubscribeToRuntimeManagerNotifications()
+		);
+
+		DIALManager.get().start().catch(err => {
+			console.error(`DIALManager.start() failed: ${err}`);
+		});
 		this.xcastApi = new XcastApi()
 		this.xcastApi.activate().then(async result => {
 			console.warn("Xcast plugin activate");
@@ -1221,6 +1257,122 @@ export default class App extends Router.App {
 			this._registerVoiceApiEvents()
 		}).catch(err => {
 			this.ERR("App VoiceControl Plugin activation error: " + JSON.stringify(err));
+		})
+	}
+
+	updateAlexaTimeZone(updatedTimeZone) {
+		if (updatedTimeZone.length) {
+			this.LOG("App: updateDeviceTimeZoneInAlexa with zone:" + JSON.stringify(updatedTimeZone))
+			AlexaApi.get().updateDeviceTimeZoneInAlexa(updatedTimeZone);
+		} else {
+			this.ERR("App getTimezoneDST returned: " + JSON.stringify(updatedTimeZone))
+		}
+	}
+
+	deactivateChildApp(plugin) { //#needToBeRemoved
+		switch (plugin) {
+			case 'WebApp':
+				appApi.deactivateWeb();
+				break;
+			case 'YouTube':
+				appApi.suspendPremiumApp("YouTube").then(() => {
+					this.LOG("YouTube : suspend YouTube request");
+				}).catch((err) => {
+					this.ERR(JSON.stringify(err));
+				});
+				break;
+			case 'YouTubeTV':
+				appApi.suspendPremiumApp("YouTubeTV").then(() => {
+					this.LOG("YouTubeTV : suspend YouTubeTV request");
+				}).catch((err) => {
+					this.ERR(JSON.stringify(err));
+				});
+				break;
+			case 'Lightning':
+				appApi.deactivateLightning();
+				break;
+			case 'Native':
+				appApi.killNative();
+				break;
+			case 'Amazon':
+				appApi.suspendPremiumApp('Amazon');
+				break;
+			case "Netflix":
+				appApi.suspendPremiumApp("Netflix").then((res) => {
+					Router.navigate(GLOBALS.LastvisitedRoute);
+					this._moveApptoFront(GLOBALS.selfClientName, true)
+				});
+				break;
+			case 'HDMI':
+				new HDMIApi().stopHDMIInput()
+				Storage.set("_currentInputMode", {});
+				break;
+			default:
+				break;
+		}
+	}
+
+	$initLaunchPad(url) {
+		return new Promise((resolve, reject) => {
+			appApi.getPluginStatus('Netflix')
+				.then(result => {
+					this.LOG("netflix plugin status is : " + JSON.stringify(result));
+					if (result[0].state === 'deactivated' || result[0].state === 'deactivation') {
+						Router.navigate('image', {
+							src: Utils.asset('images/apps/App_Netflix_Splash.png')
+						})
+						if (url) {
+							appApi.configureApplication('Netflix', url).then(() => {
+								appApi.launchPremiumApp("Netflix").then(() => {
+									RDKShellApis.setVisibility(GLOBALS.selfClientName, false);
+									resolve(true)
+								}).catch(() => {
+									reject(false)
+								}); // ie. org.rdk.RDKShell.launch
+							}).catch(err => {
+								this.ERR("Netflix : error while fetching configuration data : " + JSON.stringify(err));
+								reject(err)
+							}) // gets configuration object and sets configuration
+						} else {
+							appApi.launchPremiumApp("Netflix").then(() => {
+								RDKShellApis.setVisibility(GLOBALS.selfClientName, false);
+								resolve(true)
+							}).catch(() => {
+								reject(false)
+							}); // ie. org.rdk.RDKShell.launch
+						}
+					} else {
+						/* Not in deactivated; could be suspended */
+						if (url) {
+							appApi.launchPremiumApp("Netflix").then(() => {
+								thunder.call("Netflix", "systemcommand", {
+										"command": url
+									})
+									.then(() => {})
+									.catch(err => {
+										this.ERR("Netflix : error while sending systemcommand : " + JSON.stringify(err))
+										Metrics.error(Metrics.ErrorType.OTHER, 'AppError', "Netflix : error while sending systemcommand : " + JSON.stringify(err), false, null)
+										reject(false);
+									});
+								RDKShellApis.setVisibility(GLOBALS.selfClientName, false);
+								resolve(true)
+							}).catch(() => {
+								reject(false)
+							}); // ie. org.rdk.RDKShell.launch
+						} else {
+							appApi.launchPremiumApp("Netflix").then(res => {
+								this.LOG("Netflix : launch premium app resulted in " + JSON.stringify(res));
+								RDKShellApis.setVisibility(GLOBALS.selfClientName, false);
+								resolve(true)
+							});
+						}
+					}
+				})
+				.catch(err => {
+					this.ERR("Netflix plugin error: " + JSON.stringify(err));
+					GLOBALS.topmostApp = GLOBALS.selfClientName;
+					reject(false)
+				})
 		})
 	}
 
