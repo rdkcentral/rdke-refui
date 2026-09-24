@@ -67,6 +67,11 @@ class OperationLock {
 };
 
 let packageLock = new OperationLock();
+let activeInstallAppId = null;
+
+export function isDACOperationInProgress() {
+  return activeInstallAppId !== null;
+}
 
 export async function getAppCatalogInfo() {
   let result = [];
@@ -185,6 +190,20 @@ export async function installDACApp(app, progressElement) {
 
   console.log(`installDACApp ${JSON.stringify(app)}`);
 
+  if (activeInstallAppId && activeInstallAppId !== app.id) {
+    app.errorCode = -100;
+    logWarning(`installDACApp(${app.id})`, new Error(`Another install is already in progress for ${activeInstallAppId}`));
+    return false;
+  }
+
+  if (activeInstallAppId === app.id) {
+    app.errorCode = -101;
+    logWarning(`installDACApp(${app.id})`, new Error(`Install already in progress for ${app.id}`));
+    return false;
+  }
+
+  activeInstallAppId = app.id;
+
   const unlock = await packageLock.lock();
 
   function progress(percent, state) {
@@ -235,6 +254,7 @@ export async function installDACApp(app, progressElement) {
     app.errorCode = err?.cause?.code ?? -2;
     logError(`installDACApp(${app.id})`, err);
   } finally {
+    activeInstallAppId = null;
     unlock();
   }
 

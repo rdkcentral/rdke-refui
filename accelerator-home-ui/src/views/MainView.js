@@ -40,6 +40,20 @@ export default class MainView extends Lightning.Component {
     this.LOG = console.log;
     this.ERR = console.error;
     this.WARN = console.warn;
+    // Initialized here (constructor runs before any lifecycle hook, including
+    // the first _attach()) so _attach()'s resume-check always sees explicit
+    // false values rather than undefined. If _init() reset these instead,
+    // _attach() firing first (Lightning's normal order) would read them as
+    // undefined, treat init as not-yet-started, and call
+    // _initializeMainView() itself; _init() would then unconditionally reset
+    // both flags and start a second, racing initializer with duplicate
+    // fetches and duplicate event-handler registration.
+    this._initCompleted = false
+    this._initInProgress = false
+    // Shared promise for the current _initializeMainView() run. Both _init()
+    // and _attach() await this so _init cannot return before the initializer
+    // (potentially started by an earlier _attach()) has actually finished.
+    this._initPromise = null
   }
   /**
    * Function to render various elements in main view.
@@ -275,6 +289,40 @@ export default class MainView extends Lightning.Component {
   }
 
   async _init() {
+    // Both _init() and _attach() route through _initializeMainView() which
+    // stores a single in-flight promise. Awaiting it here guarantees _init
+    // does not return before initialization actually completes -- even if an
+    // earlier _attach() started the run.
+    await this._initializeMainView()
+  }
+
+  /**
+   * Idempotent initializer for MainView. Safe to call from _init() and from
+   * _attach(): while an initializer is in flight both callers await the same
+   * promise; once complete, further calls are a cheap no-op. Bails cleanly if
+   * the view is detached mid-await (a later _attach() will re-invoke it to
+   * finish setup).
+   */
+  _initializeMainView() {
+    if (this._initCompleted) {
+      return Promise.resolve()
+    }
+    // Reuse the in-flight promise so _init() and _attach() cannot start two
+    // concurrent runs, and so _init() waits on the same completion as the
+    // _attach()-started run rather than returning immediately.
+    if (this._initPromise) {
+      return this._initPromise
+    }
+    this._initInProgress = true
+    this._initPromise = this._runMainViewInitializer()
+      .finally(() => {
+        this._initInProgress = false
+        this._initPromise = null
+      })
+    return this._initPromise
+  }
+
+  async _runMainViewInitializer() {
     this.gracenote = false
     this.inputSelect = false //false by default
     this.settingsScreen = false
@@ -284,6 +332,14 @@ export default class MainView extends Lightning.Component {
     this.xcastApi = new XcastApi();
     this.hdmiApi = new HDMIApi()
     this.appApi = new AppApi()
+    this._isRefreshingMyApps = false
+    this._pendingMyAppsRefresh = false
+    this._refreshMyAppsTimer = null
+    this._myAppsActive = true
+    this._mainViewSubscribed = false
+    // Bumped in _detach() so awaits that resolve after detach can be rejected
+    // even if the view is later re-attached (which flips _myAppsActive back).
+    this._launchGeneration = 0
     let thunder = ThunderJS(CONFIG.thunderConfig);
 
     // Setup loading animation for DacApps
@@ -302,6 +358,14 @@ export default class MainView extends Lightning.Component {
       this.ERR('Failed to fetch installed apps: ' + JSON.stringify(err))
       appItems = []
     }
+    // Bail out of the rest of _init if the view was detached while awaiting.
+    // Assigning appItems/dacApps below would patch tags and move focus on a
+    // detached MainView. A later _attach() will re-run _initializeMainView()
+    // so the home rows and event handlers still get set up on re-entry.
+    if (!this._myAppsActive) {
+      this.LOG('MainView detached during _init (after installed-apps fetch); will resume on next attach')
+      return
+    }
     let data = this.homeApi.getPartnerAppsInfo()
 
     // Fetch DAC catalog, sort alphabetically, and take first 4 apps + More Apps item
@@ -312,6 +376,10 @@ export default class MainView extends Lightning.Component {
     } catch (err) {
       this.ERR('Failed to fetch DAC catalog: ' + JSON.stringify(err))
       dacCatalog = []
+    }
+    if (!this._myAppsActive) {
+      this.LOG('MainView detached during _init (after DAC catalog fetch); will resume on next attach')
+      return
     }
 
 
@@ -387,7 +455,9 @@ export default class MainView extends Lightning.Component {
       })
     //get the available input methods from the api
 
-    this._onInternetStatusChangeCB = NetworkManager.thunder.on('org.rdk.NetworkManager', 'onInternetStatusChange', notification => {
+    // Define the internet-status handler once so it can be (re)subscribed on
+    // every attach without recreating the function identity.
+    this._onInternetStatusChange = notification => {
       this.LOG('on InternetStatus Change' + JSON.stringify(notification))
       if (notification.status === "FULLY_CONNECTED") {
         // Immediately restore icons so they aren't stuck on the offline placeholder
@@ -408,37 +478,126 @@ export default class MainView extends Lightning.Component {
         // Show offline placeholder for all My Apps icons
         this._updateMyAppsNetworkState(false)
       }
-    })
+    }
     // Refresh My Apps row when apps are installed/uninstalled (including sideloaded via curl)
     this._onPackageChanged = (action, data) => {
       this.LOG('onPackageChanged: ' + action + ' ' + JSON.stringify(data))
-      this.$refreshMyAppsRow()
+      this._scheduleMyAppsRefresh()
     }
-    AppController.get().addPackageChangedListener(this._onPackageChanged)
-
     // Refresh DAC apps row when app catalog authentication changes
     this._onCatalogRefreshNeeded = () => {
       this.LOG('RefreshNeeded event received - refreshing DAC apps row')
       this.refreshSecondRow()
     }
-    eventTarget.addEventListener(RefreshNeeded.eventName, this._onCatalogRefreshNeeded)
+    this._subscribeMainViewEvents()
 
     this.dacApps = dacCatalog
 
     this.refreshFirstRow()
     // this._setState('AppList.0')
+    this._initCompleted = true
   }
 
-  _detach() {
-    // Unsubscribe to avoid stale references to this MainView instance
+  /**
+   * Subscribe to external events (internet status, package changes, catalog
+   * refresh). Idempotent: safe to call from both _init and _attach. Since
+   * _init runs only once, _attach must re-subscribe after _detach tore the
+   * subscriptions down, otherwise returning to home leaves rows stale.
+   */
+  _subscribeMainViewEvents() {
+    // Handlers are created in _init(). The first _attach() fires before _init(),
+    // so bail until they exist; _init() calls this again once they are ready.
+    if (!this._onPackageChanged && !this._onCatalogRefreshNeeded && !this._onInternetStatusChange) {
+      return
+    }
+    // Do not subscribe on a detached view; _attach() will call again on re-entry.
+    if (this._myAppsActive === false) {
+      return
+    }
+    if (this._mainViewSubscribed) {
+      return
+    }
+    if (this._onInternetStatusChange && !this._onInternetStatusChangeCB) {
+      this._onInternetStatusChangeCB = NetworkManager.thunder.on(
+        'org.rdk.NetworkManager', 'onInternetStatusChange', this._onInternetStatusChange)
+    }
+    if (this._onPackageChanged) {
+      AppController.get().addPackageChangedListener(this._onPackageChanged)
+    }
+    if (this._onCatalogRefreshNeeded) {
+      eventTarget.addEventListener(RefreshNeeded.eventName, this._onCatalogRefreshNeeded)
+    }
+    this._mainViewSubscribed = true
+  }
+
+  /**
+   * Unsubscribe from all external events. Mirrors _subscribeMainViewEvents().
+   */
+  _unsubscribeMainViewEvents() {
     if (this._onInternetStatusChangeCB) {
       this._onInternetStatusChangeCB.dispose()
       this._onInternetStatusChangeCB = null
     }
-    AppController.get().removePackageChangedListener(this._onPackageChanged)
+    if (this._onPackageChanged) {
+      AppController.get().removePackageChangedListener(this._onPackageChanged)
+    }
     if (this._onCatalogRefreshNeeded) {
       eventTarget.removeEventListener(RefreshNeeded.eventName, this._onCatalogRefreshNeeded)
     }
+    this._mainViewSubscribed = false
+  }
+
+  _detach() {
+    // Unsubscribe to avoid stale references to this MainView instance
+    this._unsubscribeMainViewEvents()
+    // Invalidate any in-flight My Apps refresh: a pending timer callback may
+    // already be awaiting _buildInstalledAppsList(); this flag makes it discard
+    // its result (and skip rescheduling) instead of patching a detached view.
+    this._myAppsActive = false
+    // Bump the launch generation so any DAC launch awaiting startDACApp() at
+    // the time of detach is treated as stale even if the view is re-attached
+    // (which flips _myAppsActive back to true) before it resolves.
+    this._launchGeneration = (this._launchGeneration || 0) + 1
+    this._pendingMyAppsRefresh = false
+    if (this._refreshMyAppsTimer) {
+      clearTimeout(this._refreshMyAppsTimer)
+      this._refreshMyAppsTimer = null
+    }
+  }
+
+  _scheduleMyAppsRefresh(force = false) {
+    if (!this._myAppsActive) {
+      return
+    }
+    const isMainViewActive = Router.getActiveHash() === 'menu'
+    if (!isMainViewActive && !force) {
+      this._pendingMyAppsRefresh = true
+      return
+    }
+
+    this._pendingMyAppsRefresh = true
+    if (this._refreshMyAppsTimer) {
+      return
+    }
+
+    this._refreshMyAppsTimer = setTimeout(async () => {
+      this._refreshMyAppsTimer = null
+      if (this._isRefreshingMyApps || !this._pendingMyAppsRefresh) {
+        return
+      }
+
+      this._isRefreshingMyApps = true
+      this._pendingMyAppsRefresh = false
+      try {
+        await this.$refreshMyAppsRow()
+      } finally {
+        this._isRefreshingMyApps = false
+        // Do not reschedule if the view was detached while awaiting.
+        if (this._myAppsActive && this._pendingMyAppsRefresh) {
+          this._scheduleMyAppsRefresh(true)
+        }
+      }
+    }, 300)
   }
 
   _firstActive() {
@@ -455,6 +614,11 @@ export default class MainView extends Lightning.Component {
 
 
   _focus() {
+    // If a My Apps refresh was deferred while this view was inactive,
+    // trigger it now that we're focused again.
+    if (this._pendingMyAppsRefresh) {
+      this._scheduleMyAppsRefresh(true)
+    }
     // After returning from another page (e.g. app info after uninstall),
     // validate that the current state still has focusable content.
     const baseState = this.state ? this.state.split('.')[0] : ''
@@ -484,6 +648,20 @@ export default class MainView extends Lightning.Component {
     this.internetConnectivity = false;
   }
 
+  _attach() {
+    // Re-activate the My Apps refresh guard when the view is re-attached
+    // (it is set false in _detach). _init only runs once, so reset here.
+    this._myAppsActive = true
+    // Re-subscribe to external events torn down in _detach(); without this,
+    // returning to home leaves My Apps/catalog/network updates stale.
+    this._subscribeMainViewEvents()
+    // Resume initialization if it hasn't completed. _initializeMainView() is
+    // idempotent: it returns the in-flight promise when one is running (so a
+    // pending _init()/earlier _attach() await is shared) and no-ops once
+    // complete. Not awaited here since _attach() itself is synchronous.
+    this._initializeMainView()
+  }
+
   scroll(val) {
     this.tag('MainView').patch({
       smooth: {
@@ -501,10 +679,18 @@ export default class MainView extends Lightning.Component {
       const timeoutPromise = new Promise((_, reject) => {
         timeoutId = setTimeout(() => reject(new Error('DAC catalog fetch timed out')), FETCH_TIMEOUT)
       })
-      this.dacApps = await Promise.race([this._buildDacAppsList(), timeoutPromise])
+      const dacApps = await Promise.race([this._buildDacAppsList(), timeoutPromise])
+      // The view may have been detached while awaiting; discard the result so
+      // the dacApps setter does not patch DacApps / refocus a detached view.
+      if (!this._myAppsActive) {
+        return
+      }
+      this.dacApps = dacApps
     } catch (err) {
       this.ERR('Failed to refresh DAC catalog: ' + (err instanceof Error ? err.message : JSON.stringify(err)))
-      this._hideDacAppsLoader()
+      if (this._myAppsActive) {
+        this._hideDacAppsLoader()
+      }
     } finally {
       clearTimeout(timeoutId)
     }
@@ -713,6 +899,11 @@ export default class MainView extends Lightning.Component {
     console.log('Refreshing My Apps row...')
     try {
       let appItems = await this._buildInstalledAppsList()
+      // The view may have been detached while awaiting; discard the result so
+      // we don't patch AppList / move focus on a detached MainView.
+      if (!this._myAppsActive) {
+        return
+      }
       this.tempRow = JSON.parse(JSON.stringify(appItems));
       this.firstRowItems = appItems
       this.appItems = this.tempRow
@@ -962,13 +1153,27 @@ export default class MainView extends Lightning.Component {
               url: uri
             }
             this.LOG('Launching DAC app from My Apps: ' + JSON.stringify(dacApp))
+            // Snapshot the launch generation and app name before awaiting;
+            // startDACApp() can resolve after _detach() (which bumps
+            // _launchGeneration) and even after a subsequent _attach() (which
+            // sets _myAppsActive back to true). Checking both fields ensures
+            // a stale completion cannot bubble $showLaunchError on the wrong
+            // route or against a repopulated My Apps row.
+            const launchAppName = appData.displayName
+            const launchGeneration = this._launchGeneration
             try {
               const launched = await startDACApp(dacApp)
+              if (!this._myAppsActive || this._launchGeneration !== launchGeneration) {
+                return
+              }
               if (!launched) {
-                this.$showLaunchError({ name: appData.displayName })
+                this.$showLaunchError({ name: launchAppName })
               }
             } catch (err) {
-              this.$showLaunchError({ name: appData.displayName, error: err.message || err })
+              if (!this._myAppsActive || this._launchGeneration !== launchGeneration) {
+                return
+              }
+              this.$showLaunchError({ name: launchAppName, error: err.message || err })
             }
           }
         }
@@ -1065,8 +1270,21 @@ export default class MainView extends Lightning.Component {
         }
         _handleEnter() {
           if (Router.isNavigating()) return;
-          this.widgets.failok.notify({ title: Language.translate('Not Supported'), msg: Language.translate('VOD feature is not supported.') })
-          Router.focusWidget('FailOk')
+          if (!GLOBALS.IsConnectedToInternet) {
+            this.$showNetworkError()
+            return
+          }
+          const currentIndex = this.tag('TVShows').index
+          const currentItem = this.tag('TVShows').items[currentIndex] && this.tag('TVShows').items[currentIndex].data
+          if (!currentItem || !currentItem.uri) {
+            return
+          }
+            Router.navigate('player', {
+              url: currentItem.uri,
+              displayName: currentItem.displayName,
+              attribution: currentItem.attribution || null,
+              drmConfig: currentItem.drmConfig || null,
+            })
         }
         $exit() {
           this.tag('Text3').text.fontStyle = 'normal'
