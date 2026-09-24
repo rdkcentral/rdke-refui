@@ -142,10 +142,6 @@ export default class WiFiScreen extends Lightning.Component {
 
   }
 
-  _init() {
-    NetworkManager.activate()
-  }
-
   async _active() {
     this.ssids = this.renderSSIDS = []
     await NetworkManager.GetInterfaceState("wlan0").then(enabled => {
@@ -246,7 +242,6 @@ export default class WiFiScreen extends Lightning.Component {
       this.LOG("check - not calling stopScan since this.wifiStatus is FALSE.")
     }
     if (this.onWIFIStateChangedHandler) this.onWIFIStateChangedHandler.dispose();
-    if (this.onErrorHandler) this.onErrorHandler.dispose();
     if (this.onAvailableSSIDsCB) this.onAvailableSSIDsCB.dispose();
   }
 
@@ -379,7 +374,7 @@ export default class WiFiScreen extends Lightning.Component {
             if (ssids.length) { // ispaired.result == 0 means saved SSID.
                 if (ssids.includes(selectedssid.ssid)) {
                   this.LOG("WiFiScreen getPairedSSID matched with current selection; try auto connect.");
-                  NetworkManager.WiFiConnect(true).then(() => {
+                  NetworkManager.ConnectToKnownSSID(selectedssid.ssid).then(() => {
                     NetworkManager.thunder.on('onWiFiStateChange', notification => {
                       if (notification.code === WiFiState.WIFI_STATE_SSID_CHANGED || notification.code === WiFiState.WIFI_STATE_INVALID_CREDENTIALS|| notification.state === WiFiState.WIFI_STATE_AUTHENTICATION_FAILED) {
 

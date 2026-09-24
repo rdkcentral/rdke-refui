@@ -159,14 +159,25 @@ export default class Volume extends Lightning.Component {
         this._updateText(this.volume)
     }
 
-    setVolume = async (val) => {
-        let audioport = await this.getAudioPorts()
-        for (let i = 0; i < audioport.length; i++) {
-            if ((GLOBALS.deviceType == "IpTv" && audioport[i].startsWith("SPEAKER")) ||
-                (GLOBALS.deviceType != "IpTv" && audioport[i].startsWith("HDMI"))) {
-                await this.appApi.setVolumeLevel(audioport[i], val)
-            }
+    setVolume = (val) => {
+        const safeVolume = Number.parseInt(val, 10);
+        if (Number.isNaN(safeVolume)) {
+            this.WARN('Volume setVolume called with invalid value:' + JSON.stringify(val));
+            return false;
         }
+
+        this.getAudioPorts()
+            .then(audioport => {
+                for (let i = 0; i < audioport.length; i++) {
+                    if ((GLOBALS.deviceType == "IpTv" && audioport[i].startsWith("SPEAKER")) ||
+                        (GLOBALS.deviceType != "IpTv" && audioport[i].startsWith("HDMI"))) {
+                        this.appApi.setVolumeLevel(audioport[i], safeVolume)
+                    }
+                }
+            })
+            .catch(err => {
+                this.ERR('Volume setVolume getConnectedAudioPorts error:' + JSON.stringify(err, null, 3))
+            })
         return true;
     }
 
@@ -230,7 +241,7 @@ export default class Volume extends Lightning.Component {
             this.appApi.getConnectedAudioPorts().then(res => {
                 resolve(res.connectedAudioPorts)
             }).catch(err => {
-                this.ERR('Volume getConnectedAudioPorts error:' + JSON.stringify(err, 3, null))
+                this.ERR('Volume getConnectedAudioPorts error:' + JSON.stringify(err, null, 3))
                 reject(false)
             })
         })
@@ -243,7 +254,7 @@ export default class Volume extends Lightning.Component {
                 this._updateIcon(this.mute);
                 resolve(true)
             }).catch(err => {
-                this.ERR('Volume updateIcon error:' + JSON.stringify(err, 3, null))
+                this.ERR('Volume updateIcon error:' + JSON.stringify(err, null, 3))
                 reject(false)
             });
         })
@@ -251,22 +262,34 @@ export default class Volume extends Lightning.Component {
 
     getVolume() {
         return new Promise(async (resolve, reject) => {
-            let audioport = await this.getAudioPorts()
+            let audioport = []
+            try {
+                audioport = await this.getAudioPorts()
+            } catch (err) {
+                this.ERR('Volume getAudioPorts error:' + JSON.stringify(err, null, 3))
+                resolve(0)
+                return
+            }
             /* Returns an array. */
             for (let i = 0; i < audioport.length; i++) {
                 if ((GLOBALS.deviceType == "IpTv" && audioport[i].startsWith("SPEAKER")) ||
                     (GLOBALS.deviceType != "IpTv" && audioport[i].startsWith("HDMI"))) {
                     this.appApi.getVolumeLevel(audioport[i]).then(async res1 => {
                         await this.updateIcon(audioport[i])
-                        if (res1) {
-                            resolve(parseInt(res1.volumeLevel));
+                        if (res1 && res1.success) {
+                            const level = Number.parseInt(res1.volumeLevel, 10);
+                            resolve(Number.isNaN(level) ? 0 : level);
+                        } else {
+                            resolve(0);
                         }
                     }).catch(err => {
-                        this.ERR('Volume getVolumeLevel error:' + JSON.stringify(err, 3, null))
-                        reject(false)
+                        this.ERR('Volume getVolumeLevel error:' + JSON.stringify(err, null, 3))
+                        resolve(0)
                     })
+                    return;
                 }
             }
+            resolve(0);
         })
     }
 }

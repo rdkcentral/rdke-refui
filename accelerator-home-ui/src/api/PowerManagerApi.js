@@ -19,7 +19,6 @@
 
 import ThunderJS from 'ThunderJS';
 import { CONFIG } from '../Config/Config'
-import { Metrics } from '@firebolt-js/sdk';
 
 export const PowerState = {
   POWER_STATE_ON:'ON',
@@ -40,49 +39,13 @@ export default class PowerManagerApi {
     this.ERR = console.error;
     this.WARN = console.warn;
     this.callsign = "org.rdk.PowerManager";
-    this._events = new Map();
   }
-  
 
   static get() {
     if (instance === null) {
       instance = new PowerManagerApi()
     }
     return instance;
-  }
-
-  activate() {
-      return new Promise((resolve, reject) => {
-          this.thunder.Controller.activate({ callsign: this.callsign })
-              .then(() => {
-                  this.thunder.on(this.callsign, 'onPowerModeChanged', notification => {
-                    this.LOG("onPowerModeChanged " + JSON.stringify(notification));
-                    if (this._events.has('onPowerModeChanged')) {
-                      this._events.get('onPowerModeChanged')(notification);
-                    }
-                  });
-                  resolve(true)
-              })
-              .catch(err => {
-                  this.ERR("Error Activation " + JSON.stringify(err))
-                  Metrics.error(Metrics.ErrorType.OTHER, "PowerManager", `Error while Thunder Controller ${this.callsign} activate ${JSON.stringify(err)}`, false, null)
-                  reject(err)
-              })
-      })
-  }
-
-  deactivate() {
-      return new Promise((resolve, reject) => {
-          this.thunder.Controller.deactivate({ callsign: this.callsign })
-              .then(() => {
-                  resolve(true)
-              })
-              .catch(err => {
-                  this.ERR("Error Deactivation " + JSON.stringify(err))
-                  Metrics.error(Metrics.ErrorType.OTHER, "PackageManager", `Error while Thunder Controller ${this.callsign} deactivate ${JSON.stringify(err)}`, false, null)
-                  reject(err)
-              })
-      })
   }
 
   setWakeupSourceConfig(params) {
@@ -93,7 +56,6 @@ export default class PowerManagerApi {
           resolve(result)
         }).catch(err => {
           this.ERR(" setWakeupSourceConfig error:", JSON.stringify(err))
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder system setWakeupSourceConfig " + JSON.stringify(err), false, null)
           reject(err)
         })
       })
@@ -101,7 +63,7 @@ export default class PowerManagerApi {
 
   setPowerState(value) {
     return new Promise((resolve) => {
-      this.thunder.call(this.callsign, 'setPowerState', { "powerState": value, "standbyReason": "ResidentApp User Requested" })
+      this.thunder.call(this.callsign, 'setPowerState', { "powerState": value, "standbyReason": "SystemUI User Requested" })
         .then(result => {
           this.LOG("PowerManager setPowerState result:", JSON.stringify(result))
           if(result === null){
@@ -112,7 +74,6 @@ export default class PowerManagerApi {
         })
         .catch(err => {
           this.ERR("PowerManager setPowerState failed: ", JSON.stringify(err));
-          Metrics.error(Metrics.ErrorType.OTHER, "PowerStateFailure", "Error in Thunder PowerManager setPowerState " + JSON.stringify(err), false, null)
           resolve(false)
         })
     })
@@ -125,7 +86,6 @@ export default class PowerManagerApi {
         resolve(result);
       }).catch(err => {
         this.ERR("PowerManager getPowerStateBeforeReboot failed: ", JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER, "PowerStateFailure", "Error in Thunder PowerManager getPowerStateBeforeReboot " + JSON.stringify(err), false, null);
         reject(err);
       });
     });
@@ -140,7 +100,6 @@ export default class PowerManagerApi {
         })
         .catch(err => {
           this.ERR("PowerManager getPowerState failed: ", JSON.stringify(err));
-          Metrics.error(Metrics.ErrorType.OTHER, "PowerStateFailure", "Error in Thunder PowerManager getPowerState " + JSON.stringify(err), false, null)
           reject(err)
         })
     })
@@ -157,13 +116,8 @@ export default class PowerManagerApi {
         })
         .catch(err => {
           this.ERR("PowerManager reboot error:", JSON.stringify(err, 3, null))
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder PowerManager reboot " + JSON.stringify(err), false, null)
           resolve(false)
         })
     })
-  }
-
-  registerEvent(eventId, callback) {
-    this._events.set(eventId, callback);
   }
 }

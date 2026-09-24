@@ -19,7 +19,6 @@
 
 import ThunderJS from 'ThunderJS';
 import { CONFIG } from '../Config/Config'
-import { Metrics } from '@firebolt-js/sdk';
 
 /**
  * Class for HDMI thunder plugin apis.
@@ -78,7 +77,6 @@ export default class HDMIApi {
                 })
                 .catch(err => {
                     this.ERR("Failed to activate HdmiInput plugin" + " " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER,"HdmiApiError", "Error while Thunder Controller HdmiApi activate "+JSON.stringify(err), false, null)
                     reject(false)
                 })
         })
@@ -95,7 +93,6 @@ export default class HDMIApi {
                 .catch(err => {
                     // reject(err) // #forTesting //make the api reject, instead of resolving empty array
                     this.ERR("getHDMIDevices Error: " + JSON.stringify(err) + " resolving empty array")
-                    Metrics.error(Metrics.ErrorType.OTHER,"HdmiApiError", "Error in Thunder HdmiApi getHDMIInputDevices "+JSON.stringify(err), false, null)
                     resolve([])
                 })
         })
@@ -110,7 +107,6 @@ export default class HDMIApi {
                 })
                 .catch(err => {
                     this.ERR(JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER,"HdmiApiError", "Error while Thunder Controller.1 HdmiApi status "+JSON.stringify(err), false, null)
                     reject(err)
                 })
         })
@@ -128,7 +124,6 @@ export default class HDMIApi {
                 })
                 .catch(err => {
                     this.ERR('Failed to fetch dimensions' + " " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER,"HdmiApiError", "Error in Thunder playerInfo resolution "+JSON.stringify(err), false, null)
                     resolve([1920, 1080])
                 })
         })
@@ -147,7 +142,6 @@ export default class HDMIApi {
                         resolve(result)
                     })
                     .catch(err => {
-                        Metrics.error(Metrics.ErrorType.OTHER,"HdmiApiError", "Error in Thunder HdmiApi startHdmiInput "+JSON.stringify(err), false, null)
                         reject(err)
                     })
             } else {

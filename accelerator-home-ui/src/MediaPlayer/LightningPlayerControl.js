@@ -86,6 +86,20 @@ export default class LightningPlayerControls extends Lightning.Component {
           textColor: 0xffFFFFFF
         }
       },
+      Attribution: {
+        x: 90,
+		y: 210,
+        alpha: 0,
+        text: {
+          text: '',
+          fontFace: CONFIG.language.font,
+          fontSize: 22,
+          textColor: 0xffCCCCCC,
+          wordWrap: true,
+          wordWrapWidth: 1740,
+          maxLines: 1,
+        }
+      },
       Buttons: {
         x: 820,
         y: 125,
@@ -145,6 +159,14 @@ export default class LightningPlayerControls extends Lightning.Component {
    * Function to set the duration of the video.
    * @param {String} duration video duration to be set.
    */
+  set attribution(text) {
+    if (text) {
+      this.tag('Attribution').patch({ alpha: 1, text: { text } });
+    } else {
+      this.tag('Attribution').patch({ alpha: 0, text: { text: '' } });
+    }
+  }
+
    set duration(duration) {
     this.LOG("duration was set = " + JSON.stringify(duration));
     this.videoDuration = duration

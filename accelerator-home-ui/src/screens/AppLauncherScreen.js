@@ -17,12 +17,9 @@
  * limitations under the License.
  **/
 
-import { Lightning, Registry, Router, Storage, Utils, Settings } from "@lightningjs/sdk";
+import { Lightning, Registry, Router, Utils } from "@lightningjs/sdk";
 import ThunderJS from "ThunderJS";
-import AppApi from "../api/AppApi";
-import RDKShellApis from "../api/RDKShellApis";
 import { CONFIG, GLOBALS } from '../Config/Config'
-import { Metrics } from "@firebolt-js/sdk";
 
 //applauncher screen "will" be responsible for handling all overlays as widget and splash screens for apps(if required) | currently only handles settings overlay widget
 export default class AppLauncherScreen extends Lightning.Component {
@@ -52,37 +49,6 @@ export default class AppLauncherScreen extends Lightning.Component {
     };
   }
 
-  showSplashImage(callsign) {
-    if (this.splashImages[callsign]) { //splash image won't be shown if the callsign and image location is mapped in this.splashImages
-
-      //first frame event
-      this.firstFrameListener = this._thunder.on("org.rdk.RDKShell", "onApplicationFirstFrame", (notification) => {
-        this.LOG("onApplicationFirstFrame notification from applauncherscreen: " + JSON.stringify(notification))
-        if (notification.client === callsign.toLowerCase()) {
-          this.LOG("firstframe event triggered hiding splash image");
-          this.tag("SplashImage").src = ""
-          this.tag("SplashImage").visible = false;
-          this.moveApptoFront(callsign);
-          this.firstFrameListener.dispose(); //dispose listener after event is triggered for first time
-        }
-      })
-
-      //to show the splash image
-      this.splashTimeout && Registry.clearTimeout(this.splashTimeout)
-      this.tag("SplashImage").src = Utils.asset(this.splashImages[callsign])
-      this.tag("SplashImage").visible = true;
-
-      //to hide the splash image after 30 sec in case firstframe event failed
-      this.splashTimeout = Registry.setTimeout(() => {
-        this.LOG("timeout triggered hiding splash image");
-        this.tag("SplashImage").src = ""
-        this.tag("SplashImage").visible = false;
-        RDKShellApis.moveToFront(callsign);
-        this.firstFrameListener.dispose(); //dispose the event listener incase event did not trigger till 30s
-      }, 30000)
-    }
-  }
-
   _firstEnable() {
     this.LOG("AppLauncherScreen is enabled for firstTime");
     this.splashImages = {
@@ -98,14 +64,12 @@ export default class AppLauncherScreen extends Lightning.Component {
   _handleKey() {
     this.LOG("AppLauncherScreen is in focus, returning focus to corresponding app")
     if (GLOBALS.topmostApp === GLOBALS.selfClientName) { //if appLauncher screen is in focus while on residentApp
-      RDKShellApis.moveToFront(GLOBALS.selfClientName);
-      RDKShellApis.setFocus(GLOBALS.selfClientName);
-      RDKShellApis.setVisibility(GLOBALS.selfClientName, true);
-      Router.navigate(GLOBALS.LastvisitedRoute);
+        // FIXME: use new AppManager APIs.
+        this.WARN("App : Are we missing any logic here when using AppManager APIs?");
+        Router.navigate(GLOBALS.LastvisitedRoute);
     } else {
-      RDKShellApis.moveToFront(GLOBALS.topmostApp);
-      RDKShellApis.setFocus(GLOBALS.topmostApp);
-      RDKShellApis.setVisibility(GLOBALS.topmostApp, true);
+        // FIXME: use new AppManager APIs.
+        this.WARN("App : Are we missing any logic here when using AppManager APIs?");
     }
   }
 }

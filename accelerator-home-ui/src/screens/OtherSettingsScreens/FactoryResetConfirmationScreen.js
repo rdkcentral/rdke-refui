@@ -18,16 +18,11 @@
  **/
 import { Lightning, Utils, Router, Language } from '@lightningjs/sdk'
 import AppApi from '../../api/AppApi'
-import BluetoothApi from '../../api/BluetoothApi'
 import { CONFIG,GLOBALS } from '../../Config/Config'
-import WiFi from '../../api/WifiApi'
-import NetworkManager from '../../api/NetworkManagerAPI.js'
-import AlexaApi from '../../api/AlexaApi.js';
 import RCApi from '../../api/RemoteControl'
 import Warehouse from '../../api/WarehouseApis.js'
 
 const appApi = new AppApi()
-const _btApi = new BluetoothApi()
 
 /**
  * Class for Reboot Confirmation Screen.
@@ -78,8 +73,24 @@ export default class RebootConfirmationScreen extends Lightning.Component {
                         fontSize: 25,
                     },
                 },
+                Note: {
+                    x: 0,
+                    y: 180,
+                    mountX: 0.5,
+                    w: 1400,
+                    text: {
+                        text: Language.translate("Please manually reset the remote control by following the instructions in its user manual."),
+                        fontFace: CONFIG.language.font,
+                        fontSize: 20,
+                        textColor: 0xFFFFCC00,
+                        textAlign: 'center',
+                        maxLines: 2,
+                        wordWrap: true,
+                        wordWrapWidth: 1400,
+                    },
+                },
                 Buttons: {
-                    x: 100, y: 200, w: 440, mountX: 0.5, h: 50,
+                    x: 100, y: 235, w: 440, mountX: 0.5, h: 50,
                     Confirm: {
                         x: 0, w: 200, mountX: 0.5, h: 50, rect: true, color: 0xFFFFFFFF,
                         Title: {
@@ -110,11 +121,11 @@ export default class RebootConfirmationScreen extends Lightning.Component {
                     },
                 },
                 BorderBottom: {
-                    x: 0, y: 300, w: 1558, h: 3, rect: true, mountX: 0.5,
+                    x: 0, y: 335, w: 1558, h: 3, rect: true, mountX: 0.5,
                 },
                 Loader: {
                     x: 0,
-                    y: 150,
+                    y: 170,
                     mountX: 0.5,
                     w: 90,
                     h: 90,
@@ -124,10 +135,6 @@ export default class RebootConfirmationScreen extends Lightning.Component {
                 },
             }
         }
-    }
-
-    _init() {
-        this.AppApi = new AppApi()
     }
 
     _focus() {
@@ -140,12 +147,16 @@ export default class RebootConfirmationScreen extends Lightning.Component {
 
 
     _firstEnable() {
-        this.AppApi.checkStatus(Warehouse.get().callsign).then(resp => {
-            this.LOG("FactoryReset: warehouse plugin status : " + JSON.stringify(resp[0].status));
-            if (resp[0].status != 'activated') {
-                Warehouse.get().activate().catch(err => {
-                    this.ERR("FactoryReset: warehouse plugin activation failed; feature may not work." + JSON.stringify(err));
-                });
+        appApi.checkStatus(Warehouse.get().callsign).then(resp => {
+            if (resp && resp[0] && resp[0].state) {
+                this.LOG("FactoryReset: warehouse plugin state: " + JSON.stringify(resp[0].state));
+                if (resp[0].state !== 'activated') {
+                    Warehouse.get().activate().catch(err => {
+                        this.ERR("FactoryReset: warehouse plugin activation failed; feature may not work." + JSON.stringify(err));
+                    });
+                }
+            } else {
+                this.WARN("FactoryReset: unexpected checkStatus response: " + JSON.stringify(resp));
             }
         });
     }
@@ -157,57 +168,9 @@ export default class RebootConfirmationScreen extends Lightning.Component {
     }
 
     async _performFactoryReset() {
-        // Deactivate SmartScreen instance to prevent overlay when Auth is revoked.
-        AlexaApi.get().disableSmartScreen();
-        if(GLOBALS.AlexaAvsstatus){AlexaApi.get().resetAVSCredentials();}
-        AlexaApi.get().setAlexaAuthStatus("AlexaAuthPending");
-        let getsuportedmode = await appApi.getSupportedAudioPorts();
-        for (let i = 0; i < getsuportedmode.supportedAudioPorts.length; i++) {
-            if(getsuportedmode.supportedAudioPorts[i] != 'SPDIF0'){
-                let rsbass = await appApi.resetBassEnhancer(getsuportedmode.supportedAudioPorts[i]).catch((err) =>{ this.ERR("resetBassEnhancer" + JSON.stringify(err)) });
-                if (rsbass.success != true) { this.LOG("resetBassEnhancer" + JSON.stringify(rsbass)) }
-                let rsDialog = await appApi.resetDialogEnhancement(getsuportedmode.supportedAudioPorts[i]).catch((err) =>{ this.ERR("resetDialogEnhancement" + JSON.stringify(err)) })
-                if (rsDialog.success != true) { this.LOG("resetDialogEnhancement" + JSON.stringify(rsDialog)) }
-                let rsVirtualizer = await appApi.resetSurroundVirtualizer(getsuportedmode.supportedAudioPorts[i]).catch(err =>{ this.ERR("resetSurroundVirtualizer" + JSON.stringify(err)) });
-                if (rsVirtualizer.success != true) { this.LOG("resetSurroundVirtualizer" + JSON.stringify(rsVirtualizer)) }
-                let rsvolumelvel = await appApi.resetVolumeLeveller(getsuportedmode.supportedAudioPorts[i]).catch(err =>{ this.ERR("resetVolumeLeveller" + JSON.stringify(err)) });
-                if (rsvolumelvel.success != true) { this.LOG("resetVolumeLeveller" + JSON.stringify(rsvolumelvel)) }
-            }
-        }
-        let btActivate = await _btApi.btactivate().then(result => this.LOG("Btactivate" + JSON.stringify(result))).catch(err=> this.ERR("error while activating bluetooth"))
-        let getPairedDevices = await _btApi.getPairedDevices().then(res=>res).catch(err => 0)
-        this.LOG("getpairedDevices" + JSON.stringify(getPairedDevices))
-        for(let i=0 ; i<getPairedDevices.length; i++){
-            if(getPairedDevices.length > 0){
-                let btunpair =  await _btApi.unpair(getPairedDevices[i].deviceId).catch(err => { this.ERR("btunpair" + JSON.stringify(err)) });
-                if(btunpair.success != true){ this.LOG("btunpair" + JSON.stringify(btunpair)) }
-            }
-        }
-        await RCApi.get().activate().then(()=>{ RCApi.get().factoryReset(); }).catch(err => this.ERR("error while resetting remote control" + JSON.stringify(err)));
-        let contollerStat = await appApi.checkStatus("Monitor")
-        for(let i=0; i< contollerStat[0].configuration.observables.length; i++){
-            let monitorstat = await appApi.monitorStatus(contollerStat[0].configuration.observables[i].callsign).catch(err =>{ this.ERR("monitorStatus" + JSON.stringify(err)) });
-            if(monitorstat.length < 0){ this.LOG("monitorStatus" + JSON.stringify(monitorstat)) }
-        }
-        await Warehouse.get().internalReset().catch(err => { this.ERR("internalReset" + JSON.stringify(err)) });
-        await Warehouse.get().isClean().catch(err => { this.ERR("isClean" + JSON.stringify(err)) });
-        await Warehouse.get().lightReset().catch(err => { this.ERR("lightReset" + JSON.stringify(err))});
-        await Warehouse.get().resetDevice().catch(err => { this.ERR("resetDevice" + JSON.stringify(err)) });
-
+        await RCApi.get().factoryReset().catch(err => this.ERR("error while resetting remote control" + JSON.stringify(err)));
         let rsactivitytime = await appApi.resetInactivityTime().catch(err => { this.ERR("resetInactivityTime" + JSON.stringify(err)) });
         if (rsactivitytime != null) { this.LOG("rsactivitytime" + JSON.stringify(rsactivitytime)) }
-        let GetKnownSSIDs = await NetworkManager.GetKnownSSIDs().then((ssids)=>{ssids}).catch(err =>  { console.error("GetKnownssids",err) });
-        let clearSSID =false
-        if(GetKnownSSIDs && GetKnownSSIDs.length>0)
-        {
-            for(let i=0;i<GetKnownSSIDs.length;i++)
-            {
-                {clearSSID= await NetworkManager.RemoveKnownSSID(ssids[i]).catch(err =>  { this.ERR("clearSSID" + JSON.stringify(err)) });}
-            }
-        }
-        if (clearSSID != true)  { this.LOG("clearSSID" + JSON.stringify(clearSSID)) }
-        let wifidisconnect = await NetworkManager.WiFiDisconnect().catch(err =>{ this.ERR("wifidisconnect" + JSON.stringify(err)) });
-        if (wifidisconnect.success != true) { this.LOG("wifidisconnect" + JSON.stringify(wifidisconnect)) }
         try {
             localStorage.clear();
             this.LOG("localStorage cleared successfully");
@@ -216,7 +179,33 @@ export default class RebootConfirmationScreen extends Lightning.Component {
             this.ERR("Error clearing localStorage: " + JSON.stringify(err));
         }
         await appApi.clearCache().catch(err => { this.ERR("clearCache error: " + JSON.stringify(err)) })
-        await appApi.reboot("User Trigger").then(result => { this.LOG('device rebooting' + JSON.stringify(result))})
+        // Ensure Warehouse plugin is activated before calling resetDevice.
+        let warehouseStatus = await appApi.checkStatus(Warehouse.get().callsign);
+        let isActivated = warehouseStatus && warehouseStatus[0] && warehouseStatus[0].state === 'activated';
+        if (!isActivated) {
+            if (!warehouseStatus || !warehouseStatus[0] || !warehouseStatus[0].state) {
+                this.WARN("FactoryReset: checkStatus returned unexpected response: " + JSON.stringify(warehouseStatus) + "; attempting activation.");
+            } else {
+                this.LOG("FactoryReset: Warehouse state is '" + warehouseStatus[0].state + "'; activating.");
+            }
+            let activationSuccess = await Warehouse.get().activate().then(() => true).catch(err => {
+                this.ERR("FactoryReset: warehouse activation failed: " + JSON.stringify(err));
+                return false;
+            });
+            if (!activationSuccess) {
+                this.ERR("FactoryReset: cannot proceed without Warehouse plugin.");
+                this.tag("Title").text.text = Language.translate("Factory Reset");
+                this.tag("Info").text.text = Language.translate("Factory Reset failed. Please try again.");
+                this._setState('Confirm');
+                return;
+            }
+        }
+        await Warehouse.get().resetDevice().catch(err => {
+            this.ERR("resetDevice" + JSON.stringify(err));
+            this.tag("Title").text.text = Language.translate("Factory Reset");
+            this.tag("Info").text.text = Language.translate("Factory Reset failed. Please try again.");
+            this._setState('Confirm');
+        });
     }
 
     static _states() {

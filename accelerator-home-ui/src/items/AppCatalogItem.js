@@ -20,7 +20,7 @@
 import { Lightning, Utils, Language, Storage } from "@lightningjs/sdk";
 import { CONFIG } from "../Config/Config";
 import StatusProgress from '../overlays/StatusProgress'
-import { installDACApp, isDACAppInstalled, startDACApp } from '../api/DACApi'
+import { installDACApp, isDACAppInstalled, isDACOperationInProgress, startDACApp } from '../api/DACApi'
 
 /**
  * Mixin providing common DAC app functionality (install, status updates, etc.)
@@ -33,6 +33,14 @@ export const DACAppMixin = (Base) => class extends Base {
         this._app.isInstalled = false
         this._app.isInstalling = false
         this._app.isUnInstalling = false
+        // Install-lifecycle guard state, shared by both AppCatalogItem and
+        // DacAppItem (both call initDACApp()). Without initializing these
+        // here, DacAppItem would leave _itemActive undefined, causing
+        // performDACInstall()/$fireDACOperationFinished() to always treat
+        // the operation as stale and skip error UI / success handling.
+        this._itemActive = true
+        this._installGeneration = 0
+        this._installSession = 0
     }
 
     initLogging() {
@@ -49,7 +57,9 @@ export const DACAppMixin = (Base) => class extends Base {
             const errorCode = this._app.errorCode ?? -1;
             if (Object.prototype.hasOwnProperty.call(this._app, "errorCode")) delete this._app.errorCode;
             this.updateDACStatus(statusProgressTag, overlayTag)
-            if (!success) {
+            if (success) {
+                this._showGreenTick(statusProgressTag)
+            } else {
                 this.tag(statusProgressTag).setProgress(1.0, 'Error: ' + msg)
                 this.fireAncestors('$showInstallError', { name: this._app.name, errorCode: errorCode })
             }
@@ -86,32 +96,67 @@ export const DACAppMixin = (Base) => class extends Base {
         }
     }
 
+    _showGreenTick(statusProgressTag) {
+        const tickMarkTag = statusProgressTag.replace('StatusProgress', 'TickMark')
+        const tickOverlayTag = statusProgressTag.replace('StatusProgress', 'TickOverlay')
+        const tickMark = this.tag(tickMarkTag)
+        const tickOverlay = this.tag(tickOverlayTag)
+        if (tickMark) {
+            if (tickOverlay) tickOverlay.alpha = 0.7
+            tickMark.alpha = 1
+            setTimeout(() => {
+                tickMark.setSmooth('alpha', 0, { duration: 0.5 })
+                if (tickOverlay) tickOverlay.setSmooth('alpha', 0, { duration: 0.5 })
+            }, 2000)
+        }
+    }
+
     async performDACInstall(statusProgressTag, overlayTag) {
         if (this._app.isInstalled) {
             this.LOG("App is already installed, launching: " + this._app.name)
             this.tag(overlayTag).alpha = 0.7
             this.tag(overlayTag + '.OverlayText').alpha = 1
             this.tag(overlayTag + '.OverlayText').text.text = Language.translate('Launching') + "...";
+            // Snapshot the current install generation; _detach()/pool reuse via
+            // set info() bumps it. _itemActive alone is insufficient because
+            // _attach() flips it back to true, so a launch that resolves after
+            // detach+reattach or pool-reuse would otherwise sneak through.
+            const launchGeneration = this._installGeneration
+            const launchAppName = this._app.name
             try {
                 const launched = await startDACApp({ id: this._app.id })
+                if (!this._itemActive || this._installGeneration !== launchGeneration) {
+                    return true
+                }
                 if (launched) {
-                    this.LOG("App launched successfully: " + this._app.name)
+                    this.LOG("App launched successfully: " + launchAppName)
                     this.tag(overlayTag + '.OverlayText').text.text = Language.translate('Running') + "!";
                 } else {
-                    this.ERR("Failed to launch app: " + this._app.name)
+                    this.ERR("Failed to launch app: " + launchAppName)
                     this.tag(overlayTag + '.OverlayText').text.text = Language.translate('Launch failed');
-                    this.fireAncestors('$showLaunchError', { name: this._app.name });
+                    this.fireAncestors('$showLaunchError', { name: launchAppName });
                 }
             } catch (err) {
+                if (!this._itemActive || this._installGeneration !== launchGeneration) {
+                    return true
+                }
                 this.ERR("Error launching app: " + JSON.stringify(err))
                 this.tag(overlayTag + '.OverlayText').text.text = Language.translate('Launch failed');
-                this.fireAncestors('$showLaunchError', { name: this._app.name, error: err.message || err });
+                this.fireAncestors('$showLaunchError', { name: launchAppName, error: err.message || err });
             }
             this.tag(overlayTag).setSmooth('alpha', 0, { duration: 5 })
             return true; // Already installed
         } else if (this._app.isInstalling) {
             this.LOG(`App installation is in progress`);
             return false; // In progress
+        }
+
+        if (isDACOperationInProgress()) {
+            this.tag(overlayTag + '.OverlayText').text.text = Language.translate('Another install is in progress');
+            this.tag(overlayTag).alpha = 0.7;
+            this.tag(overlayTag + '.OverlayText').alpha = 1;
+            this.tag(overlayTag).setSmooth('alpha', 0, { duration: 3 });
+            return false;
         }
 
         this.tag(overlayTag + '.OverlayText').text.text = Language.translate("Please wait");
@@ -122,8 +167,24 @@ export const DACAppMixin = (Base) => class extends Base {
         // Reset progress bar to clear any stale state from a previous install cycle
         this.tag(statusProgressTag).reset();
 
+        // Record which install "session" this callback set belongs to. On
+        // _detach() we bump _installGeneration, and $fireDACOperationFinished
+        // discards any callback whose recorded session != current generation.
+        this._installSession = (this._installGeneration || 0)
+
         this._app.isInstalling = true;
-        if (!await installDACApp(this._app, this.tag(statusProgressTag))) {
+        const installOk = await installDACApp(this._app, this.tag(statusProgressTag))
+        // Discard the result if the item was detached or reused from the pool
+        // for a different app while the install call was in flight. Without
+        // this, the failure branch patches Overlay/OverlayText and bubbles
+        // $showInstallError on the detached/wrong route. installDACApp returns
+        // false on failure without invoking $fireDACOperationFinished, so the
+        // session/generation check must run here too.
+        if (!this._itemActive || this._installSession !== this._installGeneration) {
+            this._app.isInstalling = false;
+            return false;
+        }
+        if (!installOk) {
             this._app.isInstalling = false;
             const errorCode = this._app.errorCode ?? -1;
             this.tag(overlayTag + '.OverlayText').text.text = Language.translate("Status") + ':' + errorCode;
@@ -156,6 +217,22 @@ export default class AppCatalogItem extends DACAppMixin(Lightning.Component) {
                 h: this.height,
                 w: this.width
             },
+            Placeholder: {
+                alpha: 0,
+                zIndex: 5,
+                rect: true,
+                color: 0xFF1A1A1A,
+                h: this.height,
+                w: this.width,
+                Loader: {
+                    mount: 0.5,
+                    x: this.width / 2,
+                    y: this.height / 2,
+                    w: 60,
+                    h: 60,
+                    src: Utils.asset('images/loading.png'),
+                },
+            },
             Overlay: {
                 alpha: 0,
                 rect: true,
@@ -175,35 +252,126 @@ export default class AppCatalogItem extends DACAppMixin(Lightning.Component) {
                 },
             },
             Text: {
-                alpha: 0,
+                alpha: 1,
                 y: this.height + 10,
                 text: {
                     text: '',
                     fontFace: CONFIG.language.font,
                     fontSize: 25,
+                    wordWrapWidth: this.width,
+                    maxLines: 1,
+                    textOverflow: '...',
                 },
             },
             StatusProgress: {
                 type: StatusProgress, x: 50, y: 80, w: 200,
                 alpha: 1,
             },
+            TickOverlay: {
+                alpha: 0,
+                zIndex: 11,
+                rect: true,
+                color: 0xFF000000,
+                x: 0,
+                y: 0,
+                w: this.width,
+                h: this.height,
+            },
+            TickMark: {
+                alpha: 0,
+                zIndex: 12,
+                mount: 0.5,
+                x: this.width / 2,
+                y: this.height / 2,
+                w: 100,
+                h: 100,
+                src: Utils.asset('/images/tick.png'),
+            },
         }
     }
 
     set info(data) {
+        // The grid pool reassigns info in place (no _detach/_attach cycle) when
+        // paging. If this tile currently represents a different app (or a
+        // blank placeholder) than the incoming data, invalidate any in-flight
+        // operation for the previous app: bump the generation so stale
+        // install/uninstall callbacks are discarded, and reset the shared
+        // _app snapshot so a pending isDACAppInstalled()/install for the old
+        // app can't be misapplied to the new app once it resolves.
+        const previousId = this.data && (this.data.id || this.data.appIdentifier || this.data.uri)
+        const nextId = data && (data.id || data.appIdentifier || data.uri)
+        if (previousId !== nextId) {
+            const nextGeneration = (this._installGeneration || 0) + 1
+            this.initDACApp()
+            // initDACApp() resets _installGeneration to 0; restore the bumped
+            // value so any callback captured before this reuse (session ===
+            // the pre-bump generation) is correctly recognized as stale.
+            this._installGeneration = nextGeneration
+        }
+
         this.data = data
         if (!Object.prototype.hasOwnProperty.call(data, 'icon'))
             data.icon = "/images/apps/DACApp_455_255.png";
-        if (data.icon.startsWith('/images')) {
-            this.tag('Image').patch({
-                src: Utils.asset(data.icon),
+        const imgSrc = data.icon.startsWith('/images') ? Utils.asset(data.icon) : data.icon;
+        const imageTag = this.tag('Image')
+        // Only re-assign the src when it actually changes to avoid redundant
+        // texture re-decodes. Do NOT call texture.source.free() here: Lightning
+        // shares texture sources by src URL, so freeing would blank the same
+        // icon wherever else it is displayed (e.g. the MainView rows).
+        if (this._currentIconSrc !== imgSrc) {
+            // Hide the stale icon and show a loader while the new texture
+            // decodes/uploads. The loader is hidden again on txLoaded/txError.
+            this._showIconLoader()
+            imageTag.patch({
+                src: imgSrc,
             });
-        } else {
-            this.tag('Image').patch({
-                src: data.icon,
-            });
+            this._currentIconSrc = imgSrc
+            // If the texture is already loaded (cached/shared source), txLoaded
+            // will not fire, so hide the loader right away.
+            if (imageTag.texture && imageTag.texture.source && imageTag.texture.source.loaded) {
+                this._hideIconLoader()
+            }
         }
         this.tag('Text').text.text = data.name
+    }
+
+    _detach() {
+        // Invalidate any in-flight DAC install/uninstall so its late callbacks
+        // (progress + $fireDACOperationFinished) can't patch destroyed tags or
+        // fire install/uninstall errors on the wrong route. The item may also
+        // be reused from the pool for a different app.
+        this._itemActive = false
+        this._installGeneration = (this._installGeneration || 0) + 1
+        // Tear down any active loader so its timeout/animation can't fire after
+        // detach or leak into a pooled/reused instance.
+        this._hideIconLoader()
+        // Drop only this element's reference to its texture. Do not free the
+        // shared texture source, since the same icon may be in use by other
+        // views (MainView rows). Lightning's texture manager will reclaim the
+        // GPU memory for sources that are no longer referenced by any element.
+        try {
+            const img = this.tag('Image')
+            if (img) {
+                // Unregister texture callbacks before clearing src. Clearing
+                // src can itself trigger txError/txLoaded, which would then
+                // run _hideIconLoader() on a detached/reused tile.
+                if (this._onImageTxLoaded) img.off('txLoaded', this._onImageTxLoaded)
+                if (this._onImageTxError) img.off('txError', this._onImageTxError)
+                img.texture = null
+                img.src = undefined
+                this._currentIconSrc = null
+            }
+        } catch (e) {
+            // ignore
+        }
+    }
+
+    _inactive() {
+        // Pause the spinner animation while off-stage; _active() will resume it
+        // if the loader is still pending when the element re-attaches.
+        if (this._loaderAnimation) {
+            this._loaderAnimation.stop()
+        }
     }
 
     static get width() {
@@ -215,6 +383,13 @@ export default class AppCatalogItem extends DACAppMixin(Lightning.Component) {
     }
 
     async $fireDACOperationFinished(success, msg) {
+        // Discard the callback if the item was detached (or pooled and reused
+        // for a different app) while the install was in flight. Without this,
+        // fireAncestors(...) would bubble '$showInstallError' up on the wrong
+        // route, and setProgress/updateDACStatus would patch destroyed tags.
+        if (!this._itemActive || this._installSession !== this._installGeneration) {
+            return
+        }
         this.fireDACOperationFinished(success, msg, 'StatusProgress', 'Overlay');
     }
 
@@ -228,29 +403,143 @@ export default class AppCatalogItem extends DACAppMixin(Lightning.Component) {
     _init() {
         this.initDACApp();
         this._buttonIndex = 0;
+        this._currentIconSrc = null
+        this._loaderVisible = false
+        const imageTag = this.tag('Image')
+        // Keep references so _detach() can unregister these. A late
+        // txLoaded/txError (including one triggered by _detach() clearing
+        // src) would otherwise still run _hideIconLoader() -> patch Image
+        // and Placeholder tags on a detached instance, bypassing the new
+        // cleanup guard and risking a crash if the tags have been torn
+        // down or the pool item reassigned.
+        this._onImageTxLoaded = () => {
+            if (!this._itemActive || !this.attached) return
+            this._hideIconLoader()
+        }
+        this._onImageTxError = () => {
+            if (!this._itemActive || !this.attached) return
+            this._hideIconLoader()
+        }
+        imageTag.on('txLoaded', this._onImageTxLoaded)
+        imageTag.on('txError', this._onImageTxError)
+    }
+
+    _attach() {
+        // The item may have been marked inactive by a previous _detach() (pool
+        // reuse); reactivate so a new install can proceed on this instance.
+        this._itemActive = true
+        // Re-register texture listeners that _detach() removed, so the loader
+        // is still hidden when a new icon finishes decoding after reuse.
+        const imageTag = this.tag('Image')
+        if (imageTag && this._onImageTxLoaded && this._onImageTxError) {
+            imageTag.off('txLoaded', this._onImageTxLoaded)
+            imageTag.off('txError', this._onImageTxError)
+            imageTag.on('txLoaded', this._onImageTxLoaded)
+            imageTag.on('txError', this._onImageTxError)
+        }
+    }
+
+    _active() {
+        // Animations can only run once the element is attached to the stage.
+        if (this._loaderVisible) {
+            this._startLoaderSpin()
+        }
+    }
+
+    _startLoaderSpin() {
+        if (!this.attached) {
+            return
+        }
+        if (!this._loaderAnimation) {
+            this._loaderAnimation = this.tag('Placeholder.Loader').animation({
+                duration: 1,
+                repeat: -1,
+                actions: [{ property: 'rotation', v: { 0: 0, 1: Math.PI * 2 } }],
+            })
+        }
+        this._loaderAnimation.start()
+    }
+
+    _showIconLoader() {
+        this._loaderVisible = true
+        this.tag('Image').alpha = 0
+        this.tag('Placeholder').alpha = 1
+        this._startLoaderSpin()
+        // Safety fallback: never leave the loader spinning forever if the
+        // txLoaded/txError event is missed (e.g. set before attach).
+        if (this._loaderTimeout) {
+            clearTimeout(this._loaderTimeout)
+        }
+        this._loaderTimeout = setTimeout(() => this._hideIconLoader(), 5000)
+    }
+
+    _hideIconLoader() {
+        this._loaderVisible = false
+        this.tag('Image').alpha = 1
+        this.tag('Placeholder').alpha = 0
+        if (this._loaderAnimation) {
+            this._loaderAnimation.stop()
+        }
+        if (this._loaderTimeout) {
+            clearTimeout(this._loaderTimeout)
+            this._loaderTimeout = null
+        }
     }
 
     _focus() {
         this.scale = 1.15
         this.zIndex = 2
         this.tag("Shadow").alpha = 1
-        this.tag("Text").alpha = 1
     }
     _unfocus() {
         this.scale = 1
         this.zIndex = 1
         this.tag("Shadow").alpha = 0
-        this.tag("Text").alpha = 0
     }
     async _handleEnter() {
-        this._app.id = this.data.id
-        this._app.name = this.data.name
-        this._app.version = this.data.version
-        this._app.type = this.data.type
-        this._app.description = this.data.description;
-        this._app.size = this.data.size;
-        this._app.category = this.data.category;
-        this._app.isInstalled = await isDACAppInstalled(this._app);
+        // Guard against blank placeholder tiles (hidden pool items on a partial
+        // page have no app id); do nothing rather than act on empty data.
+        if (!this.data || !this.data.id) {
+            return
+        }
+        // Snapshot identity + generation BEFORE mutating _app or awaiting.
+        // The grid pool may reassign this tile (set info -> initDACApp() which
+        // resets _itemActive to true and bumps _installGeneration) while
+        // isDACAppInstalled is in flight. Without a local snapshot we would
+        // (a) write the stale result into the new _app, and (b) call
+        // myfireINSTALL() for a partially-initialized/wrong app.
+        const enterGeneration = this._installGeneration
+        const appSnapshot = {
+            id: this.data.id,
+            name: this.data.name,
+            version: this.data.version,
+            type: this.data.type,
+            description: this.data.description,
+            size: this.data.size,
+            category: this.data.category,
+        }
+        let isInstalled
+        try {
+            isInstalled = await isDACAppInstalled(appSnapshot)
+        } catch (e) {
+            return
+        }
+        // Reject if detached, reused by the pool, or if the underlying data
+        // no longer matches the app whose install-state we just queried.
+        if (!this._itemActive
+            || this._installGeneration !== enterGeneration
+            || !this.data
+            || this.data.id !== appSnapshot.id) {
+            return
+        }
+        this._app.id = appSnapshot.id
+        this._app.name = appSnapshot.name
+        this._app.version = appSnapshot.version
+        this._app.type = appSnapshot.type
+        this._app.description = appSnapshot.description
+        this._app.size = appSnapshot.size
+        this._app.category = appSnapshot.category
+        this._app.isInstalled = isInstalled
         this.myfireINSTALL();
     }
 }

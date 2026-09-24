@@ -19,7 +19,6 @@
 
 import ThunderJS from 'ThunderJS';
 import { CONFIG } from '../Config/Config'
-import { Metrics } from '@firebolt-js/sdk';
 
 /**
  * Class for Xcast thunder plugin apis.
@@ -94,13 +93,11 @@ export default class XcastApi {
             })
             .catch(err => {
               this.ERR("Enabling failure: " + JSON.stringify(err));
-              Metrics.error(Metrics.ErrorType.OTHER,"XcastApiError", "Error in Thunder Xcast enable  " + JSON.stringify(err), false, null)
               reject('Xcast enabling failed', err);
             });
         })
         .catch(err => {
           this.ERR("Activation failure: " + JSON.stringify(err));
-          Metrics.error(Metrics.ErrorType.OTHER,"XcastApiError", "Error in Thunder Controller Xcast activate "+JSON.stringify(err), false, null)
           reject('Xcast activation failed', err);
         });
     });
@@ -114,7 +111,6 @@ export default class XcastApi {
         })
         .catch(err => {
           this.ERR("Xdial setEnabled error: " + JSON.stringify(err))
-          Metrics.error(Metrics.ErrorType.OTHER,"XcastApiError", "Error while fetching Thunder Xcast enable status"+JSON.stringify(err), false, null)
           reject(err)
         })
     })
@@ -128,7 +124,6 @@ export default class XcastApi {
         })
         .catch(err => {
           this.ERR("Xdial error: " + JSON.stringify(err))
-          Metrics.error(Metrics.ErrorType.OTHER,"XcastApiError", "Error while fetching Thunder Xcast enable status"+JSON.stringify(err), false, null)
           reject(err)
         })
     })
@@ -141,7 +136,6 @@ export default class XcastApi {
         })
         .catch(err => {
           this.ERR("Xdial getFriendlyName error: " + JSON.stringify(err));
-          Metrics.error(Metrics.ErrorType.OTHER,"XcastApiError", "Error while getting Thunder Xcast FriendlyName "+JSON.stringify(err), false, null)
           reject(err)
         })
     })
@@ -155,7 +149,6 @@ export default class XcastApi {
         })
         .catch(err => {
           this.ERR("Xdial getModelName error: " + JSON.stringify(err));
-          Metrics.error(Metrics.ErrorType.OTHER,"XcastApiError", "Error while getting Thunder Xcast getModelName "+JSON.stringify(err), false, null)
           reject(err)
         })
     })
@@ -169,7 +162,6 @@ export default class XcastApi {
         })
         .catch(err => {
           this.ERR("Xdial setStandbyBehavior error: " + JSON.stringify(err))
-          Metrics.error(Metrics.ErrorType.OTHER,"XcastApiError", "Error while fetching Thunder setStandbyBehavior status"+JSON.stringify(err), false, null)
           reject(err)
         })
     })
@@ -181,13 +173,11 @@ export default class XcastApi {
         resolve(result);
       }).catch(err => {
         this.ERR(JSON.stringify(err)); resolve(false);
-        Metrics.error(Metrics.ErrorType.OTHER,"XcastApiError", "Error while setting Thunder Xcast FriendlyName "+JSON.stringify(err), false, null)
       });
     }).then(val => {
       this.LOG("The resolved value is: " + JSON.stringify(val));
     })
       .catch(error => {
-        Metrics.error(Metrics.ErrorType.OTHER,"XcastApiError", "An error occurred: "+JSON.stringify(error), false, null)
         this.ERR("An error occurred: " + JSON.stringify(error));
       });
   }
@@ -209,7 +199,6 @@ export default class XcastApi {
 		this._thunder.call('Controller', 'deactivate', { callsign: this.callsign }).then(res => {
 			resolve(res);
 		}).catch(err => {
-			Metrics.error(Metrics.ErrorType.OTHER,"XcastApiError", "Error Failed to deactivate Xcast: "+JSON.stringify(err), false, null)
 			this.ERR("Failed to deactivate Xcast: " + JSON.stringify(err))
 		})
 	})
@@ -223,7 +212,6 @@ export default class XcastApi {
 				resolve(true);
 			}).catch(err => {
 				this.ERR("setApplicationState failed trying older API. error is: " + JSON.stringify(err));
-				Metrics.error(Metrics.ErrorType.OTHER,"XcastApiError", "Error in Thunder Xcast setApplicationState "+JSON.stringify(err), false, null)
 				resolve(false);
 			});
 		});
@@ -240,7 +228,6 @@ export default class XcastApi {
         resolve(result);
       }).catch(err => {
         this.ERR(JSON.stringify(err)); resolve(false);
-        Metrics.error(Metrics.ErrorType.OTHER,"XcastApiError", "Error in Thunder Xcast.1 onApplicationStateChange "+JSON.stringify(err), false, null)
       });
     });
   }
@@ -253,7 +240,6 @@ export default class XcastApi {
         })
         .catch(err => {
           this.ERR("Xdial registerApplications error: " + JSON.stringify(err));
-          Metrics.error(Metrics.ErrorType.OTHER,"XcastApiError", "Error while getting Thunder Xcast registerApplications "+JSON.stringify(err), false, null)
           reject(err)
         })
     })

@@ -21,8 +21,6 @@ import ListItem from '../items/ListItem.js'
 import DacAppItem from '../items/DacAppItem.js'
 import ThunderJS from 'ThunderJS'
 import AppApi from '../api/AppApi.js'
-import RDKShellApis from '../api/RDKShellApis.js'
-import UsbApi from '../api/UsbApi.js'
 import { CONFIG, GLOBALS } from '../Config/Config.js'
 import XcastApi from '../api/XcastApi'
 import HomeApi from '../api/HomeApi.js'
@@ -42,6 +40,20 @@ export default class MainView extends Lightning.Component {
     this.LOG = console.log;
     this.ERR = console.error;
     this.WARN = console.warn;
+    // Initialized here (constructor runs before any lifecycle hook, including
+    // the first _attach()) so _attach()'s resume-check always sees explicit
+    // false values rather than undefined. If _init() reset these instead,
+    // _attach() firing first (Lightning's normal order) would read them as
+    // undefined, treat init as not-yet-started, and call
+    // _initializeMainView() itself; _init() would then unconditionally reset
+    // both flags and start a second, racing initializer with duplicate
+    // fetches and duplicate event-handler registration.
+    this._initCompleted = false
+    this._initInProgress = false
+    // Shared promise for the current _initializeMainView() run. Both _init()
+    // and _attach() await this so _init cannot return before the initializer
+    // (potentially started by an earlier _attach()) has actually finished.
+    this._initPromise = null
   }
   /**
    * Function to render various elements in main view.
@@ -267,7 +279,7 @@ export default class MainView extends Lightning.Component {
       }))
     // Add "More Apps" item at the end
     apps.push({
-      displayName: 'More Apps',
+      displayName: Language.translate('More Apps'),
       applicationType: 'MoreApps',
       uri: 'apps',
       url: '/images/sidePanel/moreapps.png',
@@ -277,16 +289,57 @@ export default class MainView extends Lightning.Component {
   }
 
   async _init() {
+    // Both _init() and _attach() route through _initializeMainView() which
+    // stores a single in-flight promise. Awaiting it here guarantees _init
+    // does not return before initialization actually completes -- even if an
+    // earlier _attach() started the run.
+    await this._initializeMainView()
+  }
+
+  /**
+   * Idempotent initializer for MainView. Safe to call from _init() and from
+   * _attach(): while an initializer is in flight both callers await the same
+   * promise; once complete, further calls are a cheap no-op. Bails cleanly if
+   * the view is detached mid-await (a later _attach() will re-invoke it to
+   * finish setup).
+   */
+  _initializeMainView() {
+    if (this._initCompleted) {
+      return Promise.resolve()
+    }
+    // Reuse the in-flight promise so _init() and _attach() cannot start two
+    // concurrent runs, and so _init() waits on the same completion as the
+    // _attach()-started run rather than returning immediately.
+    if (this._initPromise) {
+      return this._initPromise
+    }
+    this._initInProgress = true
+    this._initPromise = this._runMainViewInitializer()
+      .finally(() => {
+        this._initInProgress = false
+        this._initPromise = null
+      })
+    return this._initPromise
+  }
+
+  async _runMainViewInitializer() {
     this.gracenote = false
     this.inputSelect = false //false by default
     this.settingsScreen = false
     this.myAppsEmpty = true // Will be updated when appItems is set
     this.indexVal = 0
-    this.usbApi = new UsbApi();
     this.homeApi = new HomeApi();
     this.xcastApi = new XcastApi();
     this.hdmiApi = new HDMIApi()
     this.appApi = new AppApi()
+    this._isRefreshingMyApps = false
+    this._pendingMyAppsRefresh = false
+    this._refreshMyAppsTimer = null
+    this._myAppsActive = true
+    this._mainViewSubscribed = false
+    // Bumped in _detach() so awaits that resolve after detach can be rejected
+    // even if the view is later re-attached (which flips _myAppsActive back).
+    this._launchGeneration = 0
     let thunder = ThunderJS(CONFIG.thunderConfig);
 
     // Setup loading animation for DacApps
@@ -297,8 +350,6 @@ export default class MainView extends Lightning.Component {
     // Start loading animation
     this._showDacAppsLoader()
 
-    // for initially showing/hiding usb icon
-
     let appItems = []
     try {
       appItems = await this._buildInstalledAppsList()
@@ -306,6 +357,14 @@ export default class MainView extends Lightning.Component {
     } catch (err) {
       this.ERR('Failed to fetch installed apps: ' + JSON.stringify(err))
       appItems = []
+    }
+    // Bail out of the rest of _init if the view was detached while awaiting.
+    // Assigning appItems/dacApps below would patch tags and move focus on a
+    // detached MainView. A later _attach() will re-run _initializeMainView()
+    // so the home rows and event handlers still get set up on re-entry.
+    if (!this._myAppsActive) {
+      this.LOG('MainView detached during _init (after installed-apps fetch); will resume on next attach')
+      return
     }
     let data = this.homeApi.getPartnerAppsInfo()
 
@@ -318,6 +377,10 @@ export default class MainView extends Lightning.Component {
       this.ERR('Failed to fetch DAC catalog: ' + JSON.stringify(err))
       dacCatalog = []
     }
+    if (!this._myAppsActive) {
+      this.LOG('MainView detached during _init (after DAC catalog fetch); will resume on next attach')
+      return
+    }
 
 
     let prop_apps = 'applications'
@@ -326,7 +389,6 @@ export default class MainView extends Lightning.Component {
     let prop_apptype = 'applicationType'
     let appdetails = []
     let appdetails_format = []
-    let usbAppsArr = [];
     try {
       if (data != null && Object.prototype.hasOwnProperty.call(JSON.parse(data), prop_apps)) {
         appdetails = JSON.parse(data).applications
@@ -336,11 +398,8 @@ export default class MainView extends Lightning.Component {
             Object.prototype.hasOwnProperty.call(appdetails[i], prop_uri) &&
             Object.prototype.hasOwnProperty.call(appdetails[i], prop_apptype)
           ) {
-            usbAppsArr.push(appdetails[i])
+            appdetails_format.push(appdetails[i])
           }
-        }
-        for (let i = 0; i < usbAppsArr.length; i++) {
-          appdetails_format.push(usbAppsArr[i])
         }
         for (let i = 0; i < appItems.length; i++) {
           appdetails_format.push(appItems[i])
@@ -353,11 +412,8 @@ export default class MainView extends Lightning.Component {
       appdetails_format = appItems
       this.LOG('Query data is not proper: ' + JSON.stringify(e))
     }
-    this.firstRowItems = appdetails_format
+    this.firstRowItems = appdetails_format.filter(item => item.uri !== 'USB')
     this.tempRow = JSON.parse(JSON.stringify(this.firstRowItems));
-    if (this.firstRowItems.length > 0 && this.firstRowItems[0].uri === 'USB') {
-      this.tempRow.shift()
-    }
     this.appItems = this.tempRow
 
     this.hdmiApi.activate()
@@ -374,7 +430,7 @@ export default class MainView extends Lightning.Component {
           this.fireAncestors("$hideImage", 0);
           this.LOG('onSignalChanged ' + JSON.stringify(notification))
           if (notification.signalStatus !== 'stableSignal') {
-            RDKShellApis.setVisibility(GLOBALS.selfClientName, true)
+            // FIXME: make the visibility change when graphics overlay is implemented for input select.
             this.widgets.fail.notify({ title: this.tag('Inputs.Slider').items[this.tag('Inputs.Slider').index].data.displayName, msg: Language.translate("Input disconnected") })
             Router.focusWidget('Fail')
           }
@@ -399,108 +455,152 @@ export default class MainView extends Lightning.Component {
       })
     //get the available input methods from the api
 
-
-    // for USB event
-    const registerListener = () => {
-      let listener;
-
-      listener = thunder.on('org.rdk.UsbAccess', 'onUSBMountChanged', (notification) => {
-        this.LOG('onUsbMountChanged notification: ' + JSON.stringify(notification))
-        Storage.set('UsbMountedStatus', notification.mounted ? 'mounted' : 'unmounted')
-        const currentPage = window.location.href.split('#').slice(-1)[0]
-        if (Storage.get('UsbMedia') === 'ON') {
-
-          if (notification.mounted) {
-            this.appItems = this.firstRowItems
-            this._setState('AppList.0')
-          } else if (!notification.mounted) {
-            this.appItems = this.tempRow
-            this._setState('AppList.0')
-          }
-          this.LOG('app items = ' + JSON.stringify(this.appItems));
-
-          if (currentPage === 'menu') { //refresh page to hide or show usb icon
-            this.LOG('page refreshed on unplug/plug')
-
-          }
-
-          if (!notification.mounted) { //if mounted is false
-            if (currentPage === 'usb' || currentPage === 'usb/image' || currentPage === 'usb/player') { // hot exit if we are on usb screen or sub screens
-              // this.$changeHomeText('Home')
-              Router.navigate('menu');
-            }
-          }
-        }
-        this.LOG('usb event successfully registered');
-      })
-
-      return listener;
-    }
-    NetworkManager.thunder.on('org.rdk.NetworkManager', 'onInternetStatusChange', notification => {
+    // Define the internet-status handler once so it can be (re)subscribed on
+    // every attach without recreating the function identity.
+    this._onInternetStatusChange = notification => {
       this.LOG('on InternetStatus Change' + JSON.stringify(notification))
       if (notification.status === "FULLY_CONNECTED") {
+        // Immediately restore icons so they aren't stuck on the offline placeholder
+        // even if the row refresh is slow or fails.
+        this._updateMyAppsNetworkState(true)
+        this.$refreshMyAppsRow()
         this.refreshSecondRow()
-      } else if (notification.status === "NO_INTERNET") {
+      } else {
         this._hideDacAppsLoader()
         // Clear stale cached apps (broken/default icons) and show only "More Apps"
         this.dacApps = [{
-          displayName: 'More Apps',
+          displayName: Language.translate('More Apps'),
           applicationType: 'MoreApps',
           uri: 'apps',
           url: '/images/sidePanel/moreapps.png',
           appIdentifier: 'moreApps'
         }]
+        // Show offline placeholder for all My Apps icons
+        this._updateMyAppsNetworkState(false)
       }
-    })
+    }
     // Refresh My Apps row when apps are installed/uninstalled (including sideloaded via curl)
     this._onPackageChanged = (action, data) => {
       this.LOG('onPackageChanged: ' + action + ' ' + JSON.stringify(data))
-      this.$refreshMyAppsRow()
+      this._scheduleMyAppsRefresh()
     }
-    AppController.get().addPackageChangedListener(this._onPackageChanged)
-
     // Refresh DAC apps row when app catalog authentication changes
     this._onCatalogRefreshNeeded = () => {
       this.LOG('RefreshNeeded event received - refreshing DAC apps row')
       this.refreshSecondRow()
     }
-    eventTarget.addEventListener(RefreshNeeded.eventName, this._onCatalogRefreshNeeded)
+    this._subscribeMainViewEvents()
 
     this.dacApps = dacCatalog
 
-    this.fireAncestors("$mountEventConstructor", registerListener.bind(this))
-
     this.refreshFirstRow()
     // this._setState('AppList.0')
+    this._initCompleted = true
+  }
+
+  /**
+   * Subscribe to external events (internet status, package changes, catalog
+   * refresh). Idempotent: safe to call from both _init and _attach. Since
+   * _init runs only once, _attach must re-subscribe after _detach tore the
+   * subscriptions down, otherwise returning to home leaves rows stale.
+   */
+  _subscribeMainViewEvents() {
+    // Handlers are created in _init(). The first _attach() fires before _init(),
+    // so bail until they exist; _init() calls this again once they are ready.
+    if (!this._onPackageChanged && !this._onCatalogRefreshNeeded && !this._onInternetStatusChange) {
+      return
+    }
+    // Do not subscribe on a detached view; _attach() will call again on re-entry.
+    if (this._myAppsActive === false) {
+      return
+    }
+    if (this._mainViewSubscribed) {
+      return
+    }
+    if (this._onInternetStatusChange && !this._onInternetStatusChangeCB) {
+      this._onInternetStatusChangeCB = NetworkManager.thunder.on(
+        'org.rdk.NetworkManager', 'onInternetStatusChange', this._onInternetStatusChange)
+    }
+    if (this._onPackageChanged) {
+      AppController.get().addPackageChangedListener(this._onPackageChanged)
+    }
+    if (this._onCatalogRefreshNeeded) {
+      eventTarget.addEventListener(RefreshNeeded.eventName, this._onCatalogRefreshNeeded)
+    }
+    this._mainViewSubscribed = true
+  }
+
+  /**
+   * Unsubscribe from all external events. Mirrors _subscribeMainViewEvents().
+   */
+  _unsubscribeMainViewEvents() {
+    if (this._onInternetStatusChangeCB) {
+      this._onInternetStatusChangeCB.dispose()
+      this._onInternetStatusChangeCB = null
+    }
+    if (this._onPackageChanged) {
+      AppController.get().removePackageChangedListener(this._onPackageChanged)
+    }
+    if (this._onCatalogRefreshNeeded) {
+      eventTarget.removeEventListener(RefreshNeeded.eventName, this._onCatalogRefreshNeeded)
+    }
+    this._mainViewSubscribed = false
   }
 
   _detach() {
     // Unsubscribe to avoid stale references to this MainView instance
-    AppController.get().removePackageChangedListener(this._onPackageChanged)
-    if (this._onCatalogRefreshNeeded) {
-      eventTarget.removeEventListener(RefreshNeeded.eventName, this._onCatalogRefreshNeeded)
+    this._unsubscribeMainViewEvents()
+    // Invalidate any in-flight My Apps refresh: a pending timer callback may
+    // already be awaiting _buildInstalledAppsList(); this flag makes it discard
+    // its result (and skip rescheduling) instead of patching a detached view.
+    this._myAppsActive = false
+    // Bump the launch generation so any DAC launch awaiting startDACApp() at
+    // the time of detach is treated as stale even if the view is re-attached
+    // (which flips _myAppsActive back to true) before it resolves.
+    this._launchGeneration = (this._launchGeneration || 0) + 1
+    this._pendingMyAppsRefresh = false
+    if (this._refreshMyAppsTimer) {
+      clearTimeout(this._refreshMyAppsTimer)
+      this._refreshMyAppsTimer = null
     }
   }
 
-  _firstActive() {
-    if (!Storage.get('UsbMedia')) {
-      this.usbApi.activate().then(() => {
-        Storage.set('UsbMedia', 'ON')
-        this.fireAncestors('$registerUsbMount')
-      })
-    } else if (Storage.get('UsbMedia') === 'ON') {
-      this.usbApi.activate().then(() => {
-        this.fireAncestors('$registerUsbMount')
-      })
-    } else if (Storage.get('UsbMedia') === 'OFF') {
-      // deactivate usb Plugin here
-      this.usbApi.deactivate().then(() => {
-        this.LOG(`disabled the Usb Plugin`);
-      }).catch(err => {
-        this.ERR(`error while disabling the usb plugin = ${err}`)
-      })
+  _scheduleMyAppsRefresh(force = false) {
+    if (!this._myAppsActive) {
+      return
+    }
+    const isMainViewActive = Router.getActiveHash() === 'menu'
+    if (!isMainViewActive && !force) {
+      this._pendingMyAppsRefresh = true
+      return
     }
 
+    this._pendingMyAppsRefresh = true
+    if (this._refreshMyAppsTimer) {
+      return
+    }
+
+    this._refreshMyAppsTimer = setTimeout(async () => {
+      this._refreshMyAppsTimer = null
+      if (this._isRefreshingMyApps || !this._pendingMyAppsRefresh) {
+        return
+      }
+
+      this._isRefreshingMyApps = true
+      this._pendingMyAppsRefresh = false
+      try {
+        await this.$refreshMyAppsRow()
+      } finally {
+        this._isRefreshingMyApps = false
+        // Do not reschedule if the view was detached while awaiting.
+        if (this._myAppsActive && this._pendingMyAppsRefresh) {
+          this._scheduleMyAppsRefresh(true)
+        }
+      }
+    }, 300)
+  }
+
+  _firstActive() {
     if (this.gracenote) {
       this._setState("Gracenote")
     } else if (this.inputSelect) {
@@ -514,13 +614,52 @@ export default class MainView extends Lightning.Component {
 
 
   _focus() {
-    this._setState(this.state);
+    // If a My Apps refresh was deferred while this view was inactive,
+    // trigger it now that we're focused again.
+    if (this._pendingMyAppsRefresh) {
+      this._scheduleMyAppsRefresh(true)
+    }
+    // After returning from another page (e.g. app info after uninstall),
+    // validate that the current state still has focusable content.
+    const baseState = this.state ? this.state.split('.')[0] : ''
+    if (baseState === 'AppList' && this.myAppsEmpty) {
+      this._setState('DacApps')
+    } else if (baseState === 'AppList' && this.tag('AppList').length === 0) {
+      this._setState('DacApps')
+    } else if (this.state) {
+      this._setState(this.state)
+    } else {
+      // Fallback: determine correct initial state
+      if (this.gracenote) {
+        this._setState('Gracenote')
+      } else if (this.inputSelect) {
+        this._setState('Inputs')
+      } else if (!this.myAppsEmpty && this.tag('AppList').length > 0) {
+        this._setState('AppList')
+      } else {
+        this._setState('DacApps')
+      }
+    }
   }
 
   _firstEnable() {
     console.timeEnd('PerformanceTest')
     this.LOG('Mainview Screen timer end - ' + JSON.stringify(new Date().toUTCString()))
     this.internetConnectivity = false;
+  }
+
+  _attach() {
+    // Re-activate the My Apps refresh guard when the view is re-attached
+    // (it is set false in _detach). _init only runs once, so reset here.
+    this._myAppsActive = true
+    // Re-subscribe to external events torn down in _detach(); without this,
+    // returning to home leaves My Apps/catalog/network updates stale.
+    this._subscribeMainViewEvents()
+    // Resume initialization if it hasn't completed. _initializeMainView() is
+    // idempotent: it returns the in-flight promise when one is running (so a
+    // pending _init()/earlier _attach() await is shared) and no-ops once
+    // complete. Not awaited here since _attach() itself is synchronous.
+    this._initializeMainView()
   }
 
   scroll(val) {
@@ -540,39 +679,24 @@ export default class MainView extends Lightning.Component {
       const timeoutPromise = new Promise((_, reject) => {
         timeoutId = setTimeout(() => reject(new Error('DAC catalog fetch timed out')), FETCH_TIMEOUT)
       })
-      this.dacApps = await Promise.race([this._buildDacAppsList(), timeoutPromise])
+      const dacApps = await Promise.race([this._buildDacAppsList(), timeoutPromise])
+      // The view may have been detached while awaiting; discard the result so
+      // the dacApps setter does not patch DacApps / refocus a detached view.
+      if (!this._myAppsActive) {
+        return
+      }
+      this.dacApps = dacApps
     } catch (err) {
       this.ERR('Failed to refresh DAC catalog: ' + (err instanceof Error ? err.message : JSON.stringify(err)))
-      this._hideDacAppsLoader()
+      if (this._myAppsActive) {
+        this._hideDacAppsLoader()
+      }
     } finally {
       clearTimeout(timeoutId)
     }
   }
   refreshFirstRow() {
-    if (Storage.get('UsbMedia') === 'ON') {
-      this.usbApi.activate().then(() => {
-        this.usbApi.getMountedDevices().then(result => {
-          if (result.mounted.length === 1) {
-            this.appItems = this.firstRowItems
-          } else {
-            this.appItems = this.tempRow
-          }
-        })
-      })
-    } else if (Storage.get('UsbMedia') === 'OFF') {
-      this.appItems = this.tempRow
-    } else {
-      Storage.set('UsbMedia', 'ON')
-      this.usbApi.activate().then(() => {
-        this.usbApi.getMountedDevices().then(result => {
-          if (result.mounted.length === 1) {
-            this.appItems = this.firstRowItems
-          } else {
-            this.appItems = this.tempRow
-          }
-        })
-      })
-    }
+    this.appItems = this.tempRow
   }
 
   /**
@@ -620,14 +744,14 @@ export default class MainView extends Lightning.Component {
     const safeItems = Array.isArray(items) ? items : []
     this.currentItems = safeItems
     this.myAppsEmpty = safeItems.length === 0
-    
+
     // Hide My Apps row if empty
     this.tag('Text1').visible = !this.myAppsEmpty
     this.tag('AppList').visible = !this.myAppsEmpty
-    
+
     // Update row positions based on My Apps visibility
     this._updateRowPositions()
-    
+
     this.tag('AppList').items = safeItems.map((info, idx) => {
       return {
         w: 325,
@@ -640,6 +764,27 @@ export default class MainView extends Lightning.Component {
         bar: 12
       }
     })
+
+    // Clamp AppList index if it's now beyond bounds (e.g. after uninstall)
+    if (this.tag('AppList').length && this.tag('AppList').index >= this.tag('AppList').length) {
+      this.tag('AppList').setIndex(this.tag('AppList').length - 1)
+    }
+
+    // Re-apply focus if the AppList row is currently focused
+    const baseState = this.state ? this.state.split('.')[0] : ''
+    if (baseState === 'AppList' && this.tag('AppList').length) {
+      this._refocus()
+    }
+
+    // If My Apps became empty while focused, move focus to DacApps
+    if (this.myAppsEmpty && baseState === 'AppList') {
+      this._setState('DacApps')
+    }
+
+    // If My Apps just became available but focus is on DacApps (wrong initial focus), correct it
+    if (!this.myAppsEmpty && baseState === 'DacApps' && !this.gracenote && !this.inputSelect) {
+      this._setState('AppList')
+    }
   }
 
   /**
@@ -690,6 +835,33 @@ export default class MainView extends Lightning.Component {
   }
 
   /**
+   * Update My Apps row items to show/hide offline placeholder for all app icons.
+   * When offline, every app icon is replaced with the offline.png placeholder.
+   * When back online, the original icon src is restored.
+   * @param {boolean} isOnline - true to restore images, false to show offline placeholder
+   */
+  _updateMyAppsNetworkState(isOnline) {
+    const appList = this.tag('AppList')
+    if (!appList || !appList.items || !appList.items.length) return
+    for (let i = 0; i < appList.items.length; i++) {
+      const item = appList.items[i]
+      if (!item || !item.data || !item.data.url) continue
+      const img = item.tag('Image')
+      if (!isOnline) {
+        img.patch({ src: Utils.asset('/images/metroApps/offline.png') })
+        img.alpha = 1
+      } else {
+        // Restore original icon URL
+        const src = item.data.url.startsWith('/images')
+          ? Utils.asset(item.data.url)
+          : item.data.url
+        img.patch({ src })
+        img.alpha = 1
+      }
+    }
+  }
+
+  /**
    * Hide loading spinner for DacApps row
    */
   _hideDacAppsLoader() {
@@ -703,7 +875,7 @@ export default class MainView extends Lightning.Component {
   set dacApps(items) {
     // Hide loader and show content
     this._hideDacAppsLoader()
-    
+
     this.tag('DacApps').items = items.map((info, index) => {
       return {
         w: 325,
@@ -716,11 +888,22 @@ export default class MainView extends Lightning.Component {
         bar: 12
       }
     })
+
+    // Re-apply focus if the DacApps row is currently focused
+    const baseState = this.state ? this.state.split('.')[0] : ''
+    if (baseState === 'DacApps' && this.tag('DacApps').length) {
+      this._refocus()
+    }
   }
   async $refreshMyAppsRow() {
     console.log('Refreshing My Apps row...')
     try {
       let appItems = await this._buildInstalledAppsList()
+      // The view may have been detached while awaiting; discard the result so
+      // we don't patch AppList / move focus on a detached MainView.
+      if (!this._myAppsActive) {
+        return
+      }
       this.tempRow = JSON.parse(JSON.stringify(appItems));
       this.firstRowItems = appItems
       this.appItems = this.tempRow
@@ -887,7 +1070,7 @@ export default class MainView extends Lightning.Component {
               GLOBALS.topmostApp = 'HDMI';
               const currentInput = this.tag('Inputs.Slider').items[this.tag('Inputs.Slider').index].data
               Storage.set("_currentInputMode", { id: currentInput.id, locator: currentInput.locator });
-              RDKShellApis.setVisibility(GLOBALS.selfClientName, false)
+              // FIXME: make the visibility change when graphics overlay is implemented for input select.
             })
             .catch(err => {
               this.ERR('failed' + JSON.stringify(err))
@@ -955,13 +1138,7 @@ export default class MainView extends Lightning.Component {
           let applicationType = appData.applicationType;
           let uri = appData.uri;
           let appIdentifier = appData.appIdentifier;
-          if (uri === 'USB') {
-            this.usbApi.getMountedDevices().then(result => {
-              if (result.mounted.length === 1) {
-                Router.navigate('usb');
-              }
-            })
-          } else if (applicationType === 'DAC') {
+          if (applicationType === 'DAC') {
             // Launch DAC app using startDACApp
             if (!GLOBALS.IsConnectedToInternet) {
               console.log('No internet connection. Cannot launch DAC app.')
@@ -976,13 +1153,27 @@ export default class MainView extends Lightning.Component {
               url: uri
             }
             this.LOG('Launching DAC app from My Apps: ' + JSON.stringify(dacApp))
+            // Snapshot the launch generation and app name before awaiting;
+            // startDACApp() can resolve after _detach() (which bumps
+            // _launchGeneration) and even after a subsequent _attach() (which
+            // sets _myAppsActive back to true). Checking both fields ensures
+            // a stale completion cannot bubble $showLaunchError on the wrong
+            // route or against a repopulated My Apps row.
+            const launchAppName = appData.displayName
+            const launchGeneration = this._launchGeneration
             try {
               const launched = await startDACApp(dacApp)
+              if (!this._myAppsActive || this._launchGeneration !== launchGeneration) {
+                return
+              }
               if (!launched) {
-                this.$showLaunchError({ name: appData.displayName })
+                this.$showLaunchError({ name: launchAppName })
               }
             } catch (err) {
-              this.$showLaunchError({ name: appData.displayName, error: err.message || err })
+              if (!this._myAppsActive || this._launchGeneration !== launchGeneration) {
+                return
+              }
+              this.$showLaunchError({ name: launchAppName, error: err.message || err })
             }
           }
         }
@@ -1079,8 +1270,21 @@ export default class MainView extends Lightning.Component {
         }
         _handleEnter() {
           if (Router.isNavigating()) return;
-          this.widgets.failok.notify({ title: Language.translate('Not Supported'), msg: Language.translate('VOD feature is not supported.') })
-          Router.focusWidget('FailOk')
+          if (!GLOBALS.IsConnectedToInternet) {
+            this.$showNetworkError()
+            return
+          }
+          const currentIndex = this.tag('TVShows').index
+          const currentItem = this.tag('TVShows').items[currentIndex] && this.tag('TVShows').items[currentIndex].data
+          if (!currentItem || !currentItem.uri) {
+            return
+          }
+            Router.navigate('player', {
+              url: currentItem.uri,
+              displayName: currentItem.displayName,
+              attribution: currentItem.attribution || null,
+              drmConfig: currentItem.drmConfig || null,
+            })
         }
         $exit() {
           this.tag('Text3').text.fontStyle = 'normal'

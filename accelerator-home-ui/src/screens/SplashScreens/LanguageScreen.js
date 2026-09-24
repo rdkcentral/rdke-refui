@@ -21,9 +21,7 @@ import { Lightning, Router, Language } from '@lightningjs/sdk'
 import { CONFIG } from '../../Config/Config'
 import LanguageItem from '../../items/LanguageItem'
 import { availableLanguages, availableLanguageCodes } from '../../Config/Config'
-import AppApi from '../../api/AppApi'
-
-const appApi = new AppApi()
+import UserSettingsApi from '../../api/UserSettingsApi'
 
 export default class LanguageScreen extends Lightning.Component {
   constructor(...args) {
@@ -134,7 +132,7 @@ export default class LanguageScreen extends Lightning.Component {
   }
 
   updateUILanguage(index) {
-    appApi.setUILanguage(availableLanguageCodes[availableLanguages[index]])
+    UserSettingsApi.setPresentationLanguage(availableLanguageCodes[availableLanguages[index]])
     localStorage.setItem('Language',availableLanguages[index])
   }
 

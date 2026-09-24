@@ -143,6 +143,19 @@ export default class DeviceScreen extends Lightning.Component {
                         src: Utils.asset('images/settings/Arrow.png'),
                     },
                 },
+                ResetNote: {
+                    y: 420,
+                    w: 1600,
+                    text: {
+                        text: Language.translate("Please manually reset the remote control by following the instructions in its user manual."),
+                        textColor: COLORS.titleColor,
+                        fontFace: CONFIG.language.font,
+                        fontSize: 18,
+                        maxLines: 2,
+                        wordWrap: true,
+                        wordWrapWidth: 1600,
+                    }
+                },
             },
             DeviceInformationScreen:{
             type: DeviceInformationScreen,

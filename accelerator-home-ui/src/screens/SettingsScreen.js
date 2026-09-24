@@ -23,7 +23,6 @@ import SettingsMainItem from '../items/SettingsMainItem'
 import { CONFIG, GLOBALS } from '../Config/Config'
 import DTVApi from '../api/DTVApi';
 import AppApi from '../api/AppApi';
-import { Metrics } from '@firebolt-js/sdk';
 
 var thunder = ThunderJS(CONFIG.thunderConfig);
 
@@ -458,7 +457,6 @@ export default class SettingsScreen extends Lightning.Component {
               self.LOG("Netflix : nfr disable updation results in " + JSON.stringify(nr))
             }).catch(nerr => {
               self.ERR("Netflix : error while updating nfrstatus" + JSON.stringify(nerr))
-              Metrics.error(Metrics.ErrorType.OTHER, 'PluginError', "Thunder Netflix.1 nfrstatus disabling error"+JSON.stringify(nerr), false, null)
             })
 
           }
@@ -471,7 +469,6 @@ export default class SettingsScreen extends Lightning.Component {
             }).catch(nerr => {
               self.ERR("Netflix : error while updating nfrstatus ")
               self.ERR(nerr)
-              Metrics.error(Metrics.ErrorType.OTHER, 'PluginError', "Thunder Netflix.1 nfrstatus enabling error"+JSON.stringify(nerr), false, null)
             })
 
           }

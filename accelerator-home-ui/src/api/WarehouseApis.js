@@ -18,7 +18,6 @@
  **/
 import ThunderJS from 'ThunderJS';
 import { CONFIG } from '../Config/Config'
-import { Metrics } from '@firebolt-js/sdk';
 
 let instance = null
 
@@ -46,7 +45,6 @@ export default class Warehouse {
         resolve(true)
       }).catch(err => {
         this.ERR(this.callsign + " activate error: " + JSON.stringify(err))
-        Metrics.error(Metrics.ErrorType.OTHER,"WarehouseApiError", "Error in Thunder controller warehouseApi activate "+JSON.stringify(err), false, null)
         reject(err)
       });
     });
@@ -59,7 +57,6 @@ export default class Warehouse {
         resolve(true)
       }).catch(err => {
         this.ERR(this.callsign + " deactivate error: " + JSON.stringify(err))
-        Metrics.error(Metrics.ErrorType.OTHER,"WarehouseApiError", "Error in Thunder controller warehouseApi deactivate "+JSON.stringify(err), false, null)
         reject(err)
       });
     });
@@ -73,7 +70,6 @@ export default class Warehouse {
         reject(false)
       }).catch(err => {
         this.ERR(this.callsign + " executeHardwareTest error: " + JSON.stringify(err))
-        Metrics.error(Metrics.ErrorType.OTHER,"WarehouseApiError", "Error while Thunder warehouseApi executeHardwareTest "+JSON.stringify(err), false, null)
         reject(err)
       })
     })
@@ -87,7 +83,6 @@ export default class Warehouse {
         reject(false)
       }).catch(err => {
         this.ERR(this.callsign + " internalReset error: " + JSON.stringify(err))
-        Metrics.error(Metrics.ErrorType.OTHER,"WarehouseApiError", "Error while Thunder warehouseApi internalReset "+JSON.stringify(err), false, null)
         reject(err)
       })
     })
@@ -101,7 +96,6 @@ export default class Warehouse {
         reject(false)
       }).catch(err => {
         this.ERR(this.callsign + " isClean error: " + JSON.stringify(err))
-        Metrics.error(Metrics.ErrorType.OTHER,"WarehouseApiError", "Error while Thunder warehouseApi isClean "+JSON.stringify(err), false, null)
         reject(err)
       })
     })
@@ -115,23 +109,24 @@ export default class Warehouse {
         else{reject(false)}
       }).catch(err => {
         this.ERR(this.callsign + " lightReset error: " + JSON.stringify(err))
-        Metrics.error(Metrics.ErrorType.OTHER,"WarehouseApiError", "Error while Thunder warehouseApi lightReset "+JSON.stringify(err), false, null)
         reject(err)
       })
     })
   }
 
-  resetDevice(resetType = "USERFACTORY", suppressReboot = "false") {
+  resetDevice(resetType = "WAREHOUSE_CLEAR", suppressReboot = false) {
     return new Promise((resolve, reject) => {
       let params = { resetType: resetType, suppressReboot: suppressReboot}
       this.INFO(this.callsign + " resetDevice params: " + JSON.stringify(params));
       this.thunder.call(this.callsign, 'resetDevice', params).then(result => {
         this.INFO(this.callsign + " resetDevice result: " + JSON.stringify(result))
-        if (result.success)resolve(result.success)
-        reject(false)
+        if (result.success) {
+          resolve(result.success)
+        } else {
+          reject(false)
+        }
       }).catch(err => {
         this.ERR(this.callsign + " resetDevice error: " + JSON.stringify(err))
-        Metrics.error(Metrics.ErrorType.OTHER,"WarehouseApiError", "Error while Thunder warehouseApi resetDevice "+JSON.stringify(err), false, null)
         reject(err)
       })
     })
@@ -145,7 +140,6 @@ export default class Warehouse {
         reject(false)
       }).catch(err => {
         this.ERR(this.callsign + " setFrontPanelState error: " + JSON.stringify(err))
-        Metrics.error(Metrics.ErrorType.OTHER,"WarehouseApiError", "Error while Thunder warehouseApi setFrontPanelState "+JSON.stringify(err), false, null)
         reject(err)
       })
     })

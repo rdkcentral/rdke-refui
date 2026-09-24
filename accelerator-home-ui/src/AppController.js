@@ -140,6 +140,7 @@ export default class AppController {
    */
   async init() {
     const mainAppId = GLOBALS.selfclientAppName;
+    this.LOG('Initializing AppController for mainAppId:', mainAppId);
     let mainClientId;
 
     try {
@@ -166,6 +167,7 @@ export default class AppController {
       this.LOG('selfClientId:', GLOBALS.selfClientId);
 
       try {
+        this.LOG('Adding key intercepts for mainClientId:' + JSON.stringify(this.mainClientId));
         await keyIntercept(this.mainClientId);
       } catch (err) {
         this.WARN(new ThunderError("RDKWindowManager.addKeyIntercepts()", err).toString());
@@ -266,6 +268,7 @@ export default class AppController {
 
     thunder.on('org.rdk.AppManager', 'onAppLaunchRequest', data => {
       this.LOG('onAppLaunchRequested ' + JSON.stringify(data));
+      this.launchedAppId = data.appId;
     });
 
     thunder.on('org.rdk.AppManager', 'onAppUnloaded', async data => {
@@ -298,50 +301,7 @@ export default class AppController {
     }
   }
 
-  /**
-   * @param {string} id
-   * @returns {boolean}
-   */
-  isLaunched(id) {
-    return id === this.launchedAppId;
-  }
-
-  /**
-   * @param {string} id
-   * @param {string} intent
-   * @returns {Promise<any>}
-   * @throws {ThunderError}
-   */
-  async launch(id, intent) {
-    this.launchedAppId = id;
-    await AppManager.get().launchApp(id, intent);
-  }
-
-  /**
-   * @param {string} id
-   * @param {string} intent
-   * @returns {Promise<any>}
-   * @throws {ThunderError}
-   */
-  async sendIntent(id, intent) {
-    await AppManager.get().sendIntent(id, intent);
-  }
-
-  /**
-   * @param {string} id
-   * @returns {Promise<any>}
-   * @throws {ThunderError}
-   */
-  async close(id) {
-    await AppManager.get().closeApp(id);
-  }
-
-  /**
-   * @param {string} id
-   * @returns {Promise<any>}
-   * @throws {ThunderError}
-   */
-  async terminate(id) {
-    await AppManager.get().terminateApp(id);
+  async launch(id) {
+    await AppManager.get().launchApp(id);
   }
 }

@@ -18,7 +18,6 @@
  **/
 import { Language, Lightning, Registry, Router, Utils } from '@lightningjs/sdk'
 import { CONFIG } from '../Config/Config'
-import AlexaApi from '../api/AlexaApi.js';
 
 export default class SuccessScreen extends Lightning.Component {
     static _template() {
@@ -142,7 +141,6 @@ export default class SuccessScreen extends Lightning.Component {
                     this.tag("DoneButton")
                 }
                 _handleEnter() {
-                    AlexaApi.get().enableSmartScreen()
                     Registry.setTimeout(() => {
                         Router.navigate('menu')
                     }, (Router.isNavigating() ? 20 : 0));

@@ -18,7 +18,7 @@
  **/
 
 import { Lightning, Utils, Language } from "@lightningjs/sdk";
-import { CONFIG } from "../Config/Config";
+import { CONFIG, GLOBALS } from "../Config/Config";
 
 class ActionButton extends Lightning.Component {
     static _template() {
@@ -135,6 +135,16 @@ export default class AppCard extends Lightning.Component {
                         type: Lightning.shaders.RoundedRectangle,
                         radius: 8
                     }
+                },
+                DefaultImage: {
+                    w: 160,
+                    h: 120,
+                    src: Utils.asset('/images/metroApps/offline.png'),
+                    alpha: 0,
+                    shader: {
+                        type: Lightning.shaders.RoundedRectangle,
+                        radius: 8
+                    }
                 }
             },
 
@@ -225,6 +235,18 @@ export default class AppCard extends Lightning.Component {
     _init() {
         this._buttonIndex = 0;
         this._buttons = ['LaunchButton', 'UpdateButton', 'UninstallButton'];
+        this._isActionInProgress = false;
+        this.tag('AppIcon.IconImage').on('txError', () => {
+            this.tag('AppIcon.IconImage').alpha = 0;
+            this.tag('AppIcon.DefaultImage').alpha = 1;
+        });
+        this.tag('AppIcon.IconImage').on('txLoaded', () => {
+            // Only hide offline placeholder if network is connected
+            if (GLOBALS.IsConnectedToInternet) {
+                this.tag('AppIcon.IconImage').alpha = 1;
+                this.tag('AppIcon.DefaultImage').alpha = 0;
+            }
+        });
     }
 
     set appInfo(data) {
@@ -249,6 +271,12 @@ export default class AppCard extends Lightning.Component {
             } else {
                 this.tag('AppIcon.IconImage').patch({ src: data.icon });
             }
+        }
+
+        // If network is disconnected, show offline placeholder immediately
+        if (!GLOBALS.IsConnectedToInternet) {
+            this.tag('AppIcon.DefaultImage').alpha = 1;
+            this.tag('AppIcon.IconImage').alpha = 0;
         }
 
         // Show/hide update button based on update availability
@@ -330,8 +358,34 @@ export default class AppCard extends Lightning.Component {
     _onButtonPressed(action) {
         console.log('AppCard _onButtonPressed:', action, this._appInfo);
         // Use fireAncestors to bubble up the event to AppInfoPage
+        if (this._isActionInProgress) {
+          console.log("Action already in progress. Ignoring:", action);
+          return false;
+        }
+        this._isActionInProgress = true;
+        console.log("Action started - disabling buttons");
+        // Disable all buttons visually while action is in progress
+        this._setActionButtonsDisabled(true);
         this.fireAncestors('$appAction', { action, appInfo: this._appInfo });
     }
+
+    _setActionButtonsDisabled(disabled) {
+      ["LaunchButton", "UninstallButton"].forEach((btnName) => {
+        const button = this.tag(`ActionButtons.${btnName}`);
+        if (button) {
+        // Reduce opacity to show disabled state
+        button.alpha = disabled ? 0.5 : 1;
+          }
+       });
+      }
+
+      resetActionInProgress() {
+        console.log("Resetting action in progress flag");
+        this._isActionInProgress = false;
+        // Re-enable all buttons
+        this._setActionButtonsDisabled(false);
+        console.log("Buttons re-enabled");
+      }
 
     // Reset button focus to first button when card regains focus
     _resetButtonFocus() {

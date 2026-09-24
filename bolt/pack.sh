@@ -25,9 +25,7 @@ pushd ../accelerator-home-ui
 
 npm install
 
-npm install -g @lightningjs/cli
-
-lng dist
+npx lng dist
 
 if [ ! -d "dist" ]; then
   echo "Dist was not created!"

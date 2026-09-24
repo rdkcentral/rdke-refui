@@ -39,13 +39,46 @@ export default class AppStore extends Lightning.Component {
                     scroll: {
                         after: 2
                     },
-                    spacing: 20
+                    spacing: 20,
+                    signals: { onIndexChanged: '_onGridIndexChanged' }
                 },
+            },
+            // Scroll Indicator
+            ScrollIndicator: {
+                x: 1890,
+                y: 270,
+                w: 6,
+                h: 680,
+                rect: true,
+                color: 0xFF333333,
+                shader: {
+                    type: Lightning.shaders.RoundedRectangle,
+                    radius: 3
+                },
+                ScrollThumb: {
+                    w: 6,
+                    h: 150,
+                    rect: true,
+                    color: CONFIG.theme.hex,
+                    shader: {
+                        type: Lightning.shaders.RoundedRectangle,
+                        radius: 3
+                    }
+                }
             },
         }
     }
 
     _firstEnable() {
+        this._loadingCatalog = false
+        this._loadGeneration = 0
+        this._detached = false
+        this._fullCatalog = []
+        this._catalogOffset = 0
+        this._columns = 5
+        this._pageSize = 10
+        this._visibleItemsCount = 0
+        this._gridInitialized = false
         this._onRefreshNeeded = () => {
             this.LOG('RefreshNeeded event received - reloading catalog')
             this._loadCatalog()
@@ -53,28 +86,200 @@ export default class AppStore extends Lightning.Component {
         eventTarget.addEventListener(RefreshNeeded.eventName, this._onRefreshNeeded)
     }
 
-    async _loadCatalog() {
-        let Catalog = []
-        try {
-            Catalog = await getAppCatalogInfo()
-        } catch (error) {
-            this.ERR("Failed to get App Catalog Info:" + JSON.stringify(error))
+    _attach() {
+        this._detached = false
+        // Re-register the RefreshNeeded listener removed in _detach(). Without
+        // this, RefreshNeeded events are ignored after the first navigation
+        // away from /apps. addEventListener dedupes the same handler reference,
+        // so this is safe even if it is somehow still registered.
+        if (this._onRefreshNeeded) {
+            eventTarget.addEventListener(RefreshNeeded.eventName, this._onRefreshNeeded)
         }
-        if (!Array.isArray(Catalog) || Catalog.length === 0) {
-            this.LOG('No apps available in catalog')
+    }
+
+    async _loadCatalog() {
+        if (this._loadingCatalog) {
+            this.LOG('Catalog load already in progress, skipping')
             return
         }
-        Catalog.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
-        this.tag('Catalog').clear()
-        this.tag('Catalog').add(Catalog.map((element) => {
-            return { h: AppCatalogItem.height + 90, w: AppCatalogItem.width, info: element }
-        }));
-        this._setState('Catalog')
+        this._loadingCatalog = true
+        const generation = ++this._loadGeneration
+        try {
+            let Catalog = []
+            try {
+                Catalog = await getAppCatalogInfo()
+            } catch (error) {
+                this.ERR("Failed to get App Catalog Info:" + JSON.stringify(error))
+                return
+            }
+            // Bail out if the view was detached or a newer load started while
+            // this request was in flight. Prevents patching tags on a detached
+            // view (a common source of UI crashes).
+            if (this._detached || generation !== this._loadGeneration) {
+                this.LOG('Stale or detached catalog response ignored')
+                return
+            }
+            if (!Array.isArray(Catalog) || Catalog.length === 0) {
+                this.LOG('No apps available in catalog')
+                return
+            }
+            Catalog.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+            this.LOG(`Catalog loaded: ${Catalog.length} apps`)
+            this._fullCatalog = Catalog
+            this._catalogOffset = 0
+            this._ensureGridPool()
+            this._renderCatalogPage(0, 0)
+            this._setState('Catalog')
+        } finally {
+            this._loadingCatalog = false
+        }
+    }
+
+    _ensureGridPool() {
+        if (this._gridInitialized) {
+            return
+        }
+
+        const grid = this.tag('Catalog')
+        const placeholders = []
+        for (let i = 0; i < this._pageSize; i++) {
+            placeholders.push({ h: AppCatalogItem.height + 90, w: AppCatalogItem.width, info: { name: '', icon: '/images/apps/DACApp_455_255.png' } })
+        }
+        grid.add(placeholders)
+        grid.index = 0
+        this._gridInitialized = true
+    }
+
+    _releaseGridTextures() {
+        // Drop only this view's references to its icon textures. Do NOT call
+        // texture.source.free(): Lightning shares texture sources by src URL, so
+        // freeing here would blank the same icons in other views (e.g. the
+        // MainView "My Apps"/"Recommended" rows). Lightning's texture manager
+        // reclaims GPU memory for sources no longer referenced by any element.
+        const grid = this.tag('Catalog')
+        if (grid && grid.items) {
+            grid.items.forEach((item) => {
+                try {
+                    const img = item.tag ? item.tag('Image') : null
+                    if (img) {
+                        img.texture = null
+                        img.src = undefined
+                    }
+                } catch (e) {
+                    // ignore cleanup errors
+                }
+            })
+        }
+    }
+
+    _forceGC() {
+        try {
+            if (this.stage && typeof this.stage.gc === 'function') {
+                this.stage.gc()
+            }
+            if (this.stage && this.stage.textureManager && typeof this.stage.textureManager.gc === 'function') {
+                this.stage.textureManager.gc()
+            }
+        } catch (e) {
+            // ignore
+        }
+    }
+
+    _renderCatalogPage(focusColumn = 0, focusRow = 0) {
+        if (this._detached) {
+            return
+        }
+        this._ensureGridPool()
+        const grid = this.tag('Catalog')
+        if (!grid) {
+            return
+        }
+        const page = this._fullCatalog.slice(this._catalogOffset, this._catalogOffset + this._pageSize)
+        this._visibleItemsCount = page.length
+
+        for (let i = 0; i < this._pageSize; i++) {
+            const item = grid.items && grid.items[i]
+            if (!item) {
+                continue
+            }
+
+            if (i < page.length) {
+                item.visible = true
+                item.alpha = 1
+                item.info = page[i]
+            } else {
+                item.visible = false
+                item.alpha = 0
+                item.info = { name: '', icon: '/images/apps/DACApp_455_255.png' }
+            }
+        }
+
+        const maxIndex = page.length - 1
+        if (maxIndex >= 0) {
+            const safeColumn = Math.max(0, Math.min(focusColumn, this._columns - 1))
+            const targetIndex = Math.min((focusRow * this._columns) + safeColumn, maxIndex)
+            grid.index = targetIndex
+        }
+
+        this.LOG(`Rendered catalog items ${this._catalogOffset} to ${this._catalogOffset + page.length} of ${this._fullCatalog.length}`)
+        this._updateScrollIndicator()
+    }
+
+    _loadMoreItems(focusColumn = 0) {
+        if (this._catalogOffset + this._pageSize < this._fullCatalog.length) {
+            this._catalogOffset += this._pageSize
+            this._renderCatalogPage(focusColumn, 0)
+        }
+    }
+
+    _loadPreviousItems(focusColumn = 0) {
+        if (this._catalogOffset - this._pageSize >= 0) {
+            this._catalogOffset -= this._pageSize
+            const page = this._fullCatalog.slice(this._catalogOffset, this._catalogOffset + this._pageSize)
+            const lastRow = Math.max(0, Math.ceil(page.length / this._columns) - 1)
+            this._renderCatalogPage(focusColumn, lastRow)
+        }
     }
 
     _detach() {
         if (this._onRefreshNeeded) {
             eventTarget.removeEventListener(RefreshNeeded.eventName, this._onRefreshNeeded)
+        }
+        // Invalidate any in-flight _loadCatalog() so its late response cannot
+        // render/patch tags on this now-detached view.
+        this._detached = true
+        this._loadGeneration++
+        this._loadingCatalog = false
+        this._releaseGridTextures()
+        this._fullCatalog = []
+        this._visibleItemsCount = 0
+        this._gridInitialized = false
+        this.tag('Catalog').clear()
+    }
+
+    _onGridIndexChanged() {
+        this._updateScrollIndicator()
+    }
+
+    _updateScrollIndicator() {
+        const totalItems = this._fullCatalog.length
+        const totalRows = Math.ceil(totalItems / this._columns)
+        const grid = this.tag('Catalog')
+        const currentIndex = grid.index || 0
+        // Calculate the absolute row position across all pages
+        const absoluteIndex = this._catalogOffset + currentIndex
+        const currentRow = Math.floor(absoluteIndex / this._columns)
+
+        if (totalRows > 0) {
+            const trackHeight = 680
+            const thumbHeight = Math.max(50, trackHeight / totalRows)
+            const maxY = trackHeight - thumbHeight
+            const thumbY = (currentRow / Math.max(1, totalRows - 1)) * maxY
+
+            this.tag('ScrollIndicator.ScrollThumb').patch({
+                h: thumbHeight,
+                smooth: { y: thumbY }
+            })
         }
     }
 
@@ -84,7 +289,7 @@ export default class AppStore extends Lightning.Component {
         Router.focusWidget('Menu')
     }
     _handleBack() {
-        Router.focusWidget('Menu');
+        Router.back();
     }
 
     pageTransition() {
@@ -134,7 +339,65 @@ export default class AppStore extends Lightning.Component {
                     return this.tag('Catalog')
                 }
                 _handleUp() {
-                    this.widgets.menu.notify('TopPanel')
+                    const grid = this.tag('Catalog')
+                    const currentIndex = grid.index || 0
+                    const currentColumn = currentIndex % this._columns
+
+                    if (currentIndex < this._columns) {
+                        if (this._catalogOffset > 0) {
+                            this._loadPreviousItems(currentColumn)
+                        } else {
+                            this.widgets.menu.notify('TopPanel')
+                        }
+                        return true
+                    }
+
+                    return false
+                }
+                _handleDown() {
+                    const grid = this.tag('Catalog')
+                    const currentIndex = grid.index || 0
+                    const totalItems = this._visibleItemsCount
+                    const currentColumn = currentIndex % this._columns
+                    const currentRow = Math.floor(currentIndex / this._columns)
+                    const lastRow = Math.floor(Math.max(0, totalItems - 1) / this._columns)
+
+                    // Only act when actually on the last visible row. Using row
+                    // math (not currentIndex >= totalItems - columns) avoids a
+                    // false positive when the last row is partially filled
+                    // (e.g. 6 items / 5 columns would otherwise trip at index 1).
+                    if (currentRow >= lastRow) {
+                        if (this._catalogOffset + this._pageSize < this._fullCatalog.length) {
+                            this._loadMoreItems(currentColumn)
+                        }
+                        // Consume the key regardless: on the last page there is
+                        // nowhere further down to go, so don't let focus escape
+                        // the grid.
+                        return true
+                    }
+
+                    // Not on the last row: a normal Down would move to
+                    // currentIndex + columns. If that target is a hidden
+                    // placeholder (partial last row), clamp to the last visible
+                    // item instead of letting focus land on a blank tile.
+                    const downIndex = currentIndex + this._columns
+                    if (downIndex >= totalItems) {
+                        grid.index = totalItems - 1
+                        return true
+                    }
+
+                    return false
+                }
+                _handleRight() {
+                    const grid = this.tag('Catalog')
+                    const currentIndex = grid.index || 0
+                    const totalItems = this._visibleItemsCount
+                    // Prevent moving right onto a hidden placeholder on a partial
+                    // last row (indices beyond the visible count).
+                    if (currentIndex + 1 >= totalItems) {
+                        return true
+                    }
+                    return false
                 }
             }
         ];

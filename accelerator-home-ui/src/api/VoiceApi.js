@@ -18,7 +18,6 @@
  **/
 import ThunderJS from 'ThunderJS';
 import { CONFIG } from '../Config/Config'
-import { Metrics } from '@firebolt-js/sdk';
 
 export default class VoiceApi {
   constructor() {
@@ -75,7 +74,6 @@ export default class VoiceApi {
         resolve(true);
       }).catch(err => {
         this.ERR('VoiceApi: Error Activation ' + JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER,"VoiceApiError", "Error while Thunder Controller VoiceApi activate "+JSON.stringify(err), false, null)
       })
     })
   }
@@ -86,7 +84,6 @@ export default class VoiceApi {
         resolve(true)
       }).catch(err => {
         this.ERR('VoiceApi: Error deactivation ' + JSON.stringify(err))
-        Metrics.error(Metrics.ErrorType.OTHER,"VoiceApiError", "Error while Thunder Controller VoiceApi deactivate "+JSON.stringify(err), false, null)
       })
     })
   }
@@ -98,7 +95,6 @@ export default class VoiceApi {
         resolve(result);
       }).catch(err => {
         this.ERR("VoiceApi: configureVoice error: " + JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER,"VoiceApiError", "Error while Thunder VoiceApi configureVoice "+JSON.stringify(err), false, null)
         resolve(false);
       });
     })
@@ -111,7 +107,6 @@ export default class VoiceApi {
         resolve(result);
       }).catch(err => {
         this.ERR("VoiceApi: sendVoiceMessage error: " + JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER,"VoiceApiError", "Error in Thunder VoiceApi sendVoiceMessage "+JSON.stringify(err), false, null)
         resolve(false);
       });
     })
@@ -124,7 +119,6 @@ export default class VoiceApi {
         resolve(result);
       }).catch(err => {
         this.ERR("VoiceApi: setVoiceInit error: " + JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER,"VoiceApiError", "Error in Thunder VoiceApi setVoiceInit "+JSON.stringify(err), false, null)
         resolve(false);
       });
     })
@@ -137,7 +131,6 @@ export default class VoiceApi {
         resolve(result);
       }).catch(err => {
         this.ERR("VoiceApi: voiceSessionByText error: " + JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER,"VoiceApiError", "Error in Thunder VoiceApi voiceSessionByText "+JSON.stringify(err), false, null)
         resolve(false);
       });
     })
@@ -149,7 +142,6 @@ export default class VoiceApi {
         resolve(result);
       }).catch(err => {
         this.ERR("VoiceApi: voiceSessionTypes error: " + JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER,"VoiceApiError", "Error in Thunder VoiceApi voiceSessionTypes "+JSON.stringify(err), false, null)
         resolve(false);
       });
     })
@@ -162,7 +154,6 @@ export default class VoiceApi {
         resolve(result);
       }).catch(err => {
         this.ERR("VoiceApi: voiceSessionRequest error: " + JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER,"VoiceApiError", "Error in Thunder VoiceApi voiceSessionRequest "+JSON.stringify(err), false, null)
         resolve(false);
       });
     })
@@ -175,7 +166,6 @@ export default class VoiceApi {
         resolve(result);
       }).catch(err => {
         this.ERR("VoiceApi: voiceSessionTerminate error: " + JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER,"VoiceApiError", "Error in Thunder VoiceApi voiceSessionTerminate "+JSON.stringify(err), false, null)
         resolve(false);
       });
     })
@@ -188,7 +178,6 @@ export default class VoiceApi {
         resolve(result);
       }).catch(err => {
         this.ERR("VoiceApi: voiceSessionAudioStreamStart error: " + JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER,"VoiceApiError", "Error in Thunder VoiceApi voiceSessionAudioStreamStart "+JSON.stringify(err), false, null)
         resolve(false);
       });
     })
@@ -201,7 +190,6 @@ export default class VoiceApi {
         resolve(result);
       }).catch(err => {
         this.ERR("VoiceApi: voiceStatus error: " + JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER,"VoiceApiError", "Error in Thunder VoiceApi voiceStatus "+JSON.stringify(err), false, null)
         resolve(false);
       });
     })

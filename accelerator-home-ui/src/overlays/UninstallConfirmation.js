@@ -222,6 +222,9 @@ export default class UninstallConfirmation extends Lightning.Component {
         _handleRight() {
           this._setState("Cancel");
         }
+        _handleLeft() { /* do nothing - already at leftmost button */ }
+        _handleUp() { /* do nothing - prevent focus escape */ }
+        _handleDown() { /* do nothing - prevent focus escape */ }
         _handleBack() {
           this.fireAncestors("$cancelUninstall");
         }
@@ -255,6 +258,9 @@ export default class UninstallConfirmation extends Lightning.Component {
         _handleLeft() {
           this._setState("Confirm");
         }
+        _handleRight() { /* do nothing - already at rightmost button */ }
+        _handleUp() { /* do nothing - prevent focus escape */ }
+        _handleDown() { /* do nothing - prevent focus escape */ }
         _handleBack() {
           this.fireAncestors("$cancelUninstall");
         }

@@ -19,11 +19,12 @@
 
 import { Lightning, Router, Language, Utils } from "@lightningjs/sdk";
 import { List } from "@lightningjs/ui";
-import { CONFIG, GLOBALS } from "../Config/Config";
+import { CONFIG } from "../Config/Config";
 import AppCard from "../items/AppCard";
 import { getInstalledDACApps, startDACApp, uninstallDACApp } from "../api/DACApi";
 import { filterExcludedApps } from "../helpers/DACAppPresentation";
 import UninstallConfirmation from "../overlays/UninstallConfirmation";
+import NetworkManager from "../api/NetworkManagerAPI";
 
 export default class AppInfoPage extends Lightning.Component {
 
@@ -33,7 +34,7 @@ export default class AppInfoPage extends Lightning.Component {
             h: 1080,
             w: 1920,
             color: CONFIG.theme.background,
-            
+
             Header: {
                 x: 200,
                 y: 120,
@@ -58,16 +59,16 @@ export default class AppInfoPage extends Lightning.Component {
             },
 
             ListContainer: {
-                x: 200,  
+                x: 200,
                 y: 280,
-                w: 1680, 
+                w: 1680,
                 h: 680,
                 clipping: true,
                 AppList: {
-                    x: 20,  
+                    x: 20,
                     type: List,
                     direction: 'column',
-                    w: 1640, 
+                    w: 1640,
                     h: 680,
                     scroll: {
                         after: 4
@@ -138,7 +139,7 @@ export default class AppInfoPage extends Lightning.Component {
                         y: 30,
                         mount: 0.5,
                         text: {
-                            text: 'OK',
+                            text: Language.translate('OK'),
                             fontSize: 32,
                             fontFace: CONFIG.language.font,
                             textColor: 0xFF000000
@@ -177,6 +178,55 @@ export default class AppInfoPage extends Lightning.Component {
     _init() {
         this._appList = this.tag('AppList');
         this._scrollThumb = this.tag('ScrollIndicator.ScrollThumb');
+        this._onInternetStatusChangeCB = NetworkManager.thunder.on('org.rdk.NetworkManager', 'onInternetStatusChange', notification => {
+            console.log('AppInfoPage onInternetStatusChange: ' + JSON.stringify(notification));
+            if (notification.status === 'FULLY_CONNECTED') {
+                this._updateAppCardsNetworkState(true);
+            } else {
+                this._updateAppCardsNetworkState(false);
+            }
+        });
+    }
+
+    _detach() {
+        if (this._onInternetStatusChangeCB) {
+            this._onInternetStatusChangeCB.dispose();
+            this._onInternetStatusChangeCB = null;
+        }
+    }
+
+    /**
+     * Update all AppCard items to show/hide the offline placeholder.
+     * When offline, every app icon is replaced with the placeholder;
+     * when back online, the original icon src is restored.
+     * @param {boolean} isOnline - true to restore images, false to show offline placeholder
+     */
+    _updateAppCardsNetworkState(isOnline) {
+        if (!this._appList) return;
+        const wrappers = this._appList.itemWrappers;
+        if (!wrappers || !wrappers.length) return;
+        for (let i = 0; i < wrappers.length; i++) {
+            const wrapper = wrappers[i];
+            if (!wrapper || !wrapper.component || !wrapper.component.isAlive) continue;
+            const card = wrapper.component;
+            const data = card.appInfo;
+            if (data) {
+                const iconImg = card.tag('AppIcon.IconImage');
+                const defaultImg = card.tag('AppIcon.DefaultImage');
+                if (!isOnline) {
+                    defaultImg.alpha = 1;
+                    iconImg.alpha = 0;
+                } else if (data.icon) {
+                    // Re-assign src to retrigger the texture load; the card's
+                    // txLoaded / txError handlers will toggle the placeholder.
+                    const src = data.icon.startsWith('/images')
+                        ? Utils.asset(data.icon)
+                        : data.icon;
+                    iconImg.patch({ src });
+                    iconImg.alpha = 1;
+                }
+            }
+        }
     }
 
     /**
@@ -186,7 +236,7 @@ export default class AppInfoPage extends Lightning.Component {
         try {
             const installedApps = filterExcludedApps(await getInstalledDACApps());
             console.log('Installed DAC Apps:', JSON.stringify(installedApps));
-            
+
             // Transform the data to match AppCard expected format
             const appData = installedApps.map(app => ({
                 id: app.id,
@@ -196,7 +246,7 @@ export default class AppInfoPage extends Lightning.Component {
                 installed: app.installed,
                 hasUpdate: false // Can be updated based on app catalog comparison if needed
             }));
-            
+
             this._loadAppData(appData);
         } catch (error) {
             console.error('Error fetching installed apps:', error);
@@ -266,17 +316,33 @@ export default class AppInfoPage extends Lightning.Component {
      * Launch the selected app
      */
     async _launchApp(appInfo) {
-        console.log(`Launching ${appInfo.name}...`);
+       console.log(`Launching ${appInfo.name}...`);
         try {
+            console.log("Before startDacApp call");
             const result = await startDACApp({ id: appInfo.id });
-            if (result) {
-                console.log(`${appInfo.name} launched successfully`);
-            } else {
-                console.error(`Failed to launch ${appInfo.name}`);
-            }
-        } catch (error) {
-            console.error(`Error launching ${appInfo.name}:`, error);
-        }
+                if (result) {
+                        console.log(`${appInfo.name} launched successfully`);
+                        const currentCard = this._appList.currentItem;
+                        // reset the in-progress state after app launched.
+                        if (currentCard && currentCard.resetActionInProgress) {
+                            setTimeout(() => {
+                            currentCard.resetActionInProgress();
+                            }, 10000); 
+                        }
+                } else {
+                        console.error(`Failed to launch ${appInfo.name}`);
+                         const currentCard = this._appList.currentItem;
+                         // reset the in-progress state after app launch failed.
+                         currentCard.resetActionInProgress();
+                         }
+                }
+        catch (error) {
+                console.error(`Error launching ${appInfo.name}:`, error);
+                const currentCard = this._appList.currentItem;
+                if (currentCard && currentCard.resetActionInProgress) {
+                    currentCard.resetActionInProgress();
+                    }
+                }
     }
 
     /**
@@ -293,22 +359,34 @@ export default class AppInfoPage extends Lightning.Component {
     /**
      * Uninstall the selected app
      */
-    async _uninstallApp(appInfo) {
+     async _uninstallApp(appInfo) {
         console.log(`Uninstalling ${appInfo.name}...`);
         try {
-            const result = await uninstallDACApp({ id: appInfo.id, version: appInfo.version, name: appInfo.name }, this);
-            if (result) {
-                console.log(`${appInfo.name} uninstalled successfully`);
-                return true;
-            } else {
-                console.error(`Failed to uninstall ${appInfo.name}`);
-                return false;
+                const result = await uninstallDACApp({ id: appInfo.id, version: appInfo.version, name: appInfo.name }, this);
+        if (result) {
+            console.log(`${appInfo.name} uninstalled successfully`);
+            const currentCard = this._appList.currentItem;
+            if (currentCard && currentCard.resetActionInProgress) {
+            currentCard.resetActionInProgress();
+            }
+            return true;
+        } else {
+            console.error(`Failed to uninstall ${appInfo.name}`);
+            const currentCard = this._appList.currentItem;
+            if (currentCard && currentCard.resetActionInProgress) {
+            currentCard.resetActionInProgress();
+            }
+            return false;
             }
         } catch (error) {
-            console.error(`Error uninstalling ${appInfo.name}:`, error);
-            return false;
+        console.error(`Error uninstalling ${appInfo.name}:`, error);
+        const currentCard = this._appList.currentItem;     
+        if (currentCard && currentCard.resetActionInProgress) {
+            currentCard.resetActionInProgress();
         }
-    }
+        return false;
+        }
+        }
 
     /**
      * Show the uninstall confirmation overlay
@@ -360,6 +438,10 @@ export default class AppInfoPage extends Lightning.Component {
      */
     $cancelUninstall() {
         console.log('Uninstall cancelled');
+        const currentCard = this._appList.currentItem;     
+        if (currentCard && currentCard.resetActionInProgress) {
+            currentCard.resetActionInProgress();
+        }
         this._hideUninstallConfirmation();
         // Data hasn't changed — restore previous page state
         if (this._appData.length > 0) {
@@ -379,7 +461,7 @@ export default class AppInfoPage extends Lightning.Component {
     _updateScrollIndicator() {
         const totalItems = this._appData.length;
         const currentIndex = this._appList.index || 0;
-        
+
         if (totalItems > 0) {
             const trackHeight = 680;
             const thumbHeight = Math.max(50, trackHeight / totalItems);
@@ -437,7 +519,7 @@ export default class AppInfoPage extends Lightning.Component {
                 _getFocused() {
                     return this.tag('AppList');
                 }
-                
+
                 _handleUp() {
                     if (this.tag('AppList').index === 0) {
                         this.widgets.menu.notify('TopPanel');

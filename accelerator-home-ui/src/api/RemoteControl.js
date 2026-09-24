@@ -18,7 +18,6 @@
  **/
 import ThunderJS from 'ThunderJS';
 import { CONFIG } from '../Config/Config'
-import { Metrics } from '@firebolt-js/sdk';
 
 let instance = null
 
@@ -29,6 +28,7 @@ export default class RCApi {
     this.LOG = console.log;
     this.ERR = console.error;
     this.WARN = console.warn;
+    this.callsign = 'org.rdk.RemoteControl';
   }
 
   static get() {
@@ -38,41 +38,14 @@ export default class RCApi {
     return instance
   }
 
-  activate() {
-    return new Promise((resolve, reject) => {
-      this.INFO("RCApi: activate.");
-      this.thunder.Controller.activate({ callsign: 'org.rdk.RemoteControl' }).then(() => {
-        resolve(true);
-      }).catch(err => {
-        this.ERR("RCApi: Error Activation " + JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER,"RemoteControlApiError", "Error while Thunder Controller RemoteControl activate "+JSON.stringify(err), false, null)
-        reject(err)
-      })
-    })
-  }
-
-  deactivate() {
-    return new Promise((resolve, reject) => {
-      this.thunder.Controller.deactivate({ callsign: 'org.rdk.RemoteControl' }).then(() => {
-        this.INFO("RCApi: deactivated org.rdk.RemoteControl")
-        resolve(true)
-      }).catch(err => {
-        this.ERR("RCApi: Error deactivation " + JSON.stringify(err))
-        Metrics.error(Metrics.ErrorType.OTHER,"RemoteControlApiError", "Error while Thunder Controller RemoteControl deactivate "+JSON.stringify(err), false, null)
-        reject(err)
-      })
-    })
-  }
-
   getApiVersionNumber() {
     return new Promise((resolve, reject) => {
       this.INFO("RCApi: getApiVersionNumber");
-      this.thunder.call('org.rdk.RemoteControl', 'getApiVersionNumber').then(result => {
+      this.thunder.call(this.callsign, 'getApiVersionNumber').then(result => {
         this.INFO("RCApi: getApiVersionNumber result: " + JSON.stringify(result))
         resolve(result);
       }).catch(err => {
         this.ERR("RCApi: getApiVersionNumber error: " + JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER,"RemoteControlApiError", "Error in Thunder RemoteControl getApiVersionNumber "+JSON.stringify(err), false, null)
         reject(err);
       });
     })
@@ -80,13 +53,15 @@ export default class RCApi {
 
   getNetStatus() {
     return new Promise((resolve, reject) => {
-      this.thunder.call('org.rdk.RemoteControl', 'getNetStatus').then(result => {
+      this.thunder.call(this.callsign, 'getNetStatus').then(result => {
         this.INFO("RCApi: getNetStatus result: " + JSON.stringify(result))
-        if (result.success) resolve(result);
-        reject(false);
+        if (result.success) {
+          resolve(result);
+        } else {
+          reject(false);
+        }
       }).catch(err => {
         this.ERR("RCApi: getNetStatus error: " + JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER,"RemoteControlApiError", "Error in Thunder RemoteControl getNetStatus "+JSON.stringify(err), false, null)
         reject(err);
       });
     })
@@ -94,12 +69,11 @@ export default class RCApi {
 
   startPairing(timeout = 30) {
     return new Promise((resolve, reject) => {
-      this.thunder.call('org.rdk.RemoteControl', 'startPairing', { timeout: timeout, screenBindEnable: false }).then(result => {
+      this.thunder.call(this.callsign, 'startPairing', { timeout: timeout, screenBindEnable: false }).then(result => {
         this.INFO("RCApi: startPairing result: " + JSON.stringify(result))
         resolve(result.success);
       }).catch(err => {
         this.ERR("RCApi: startPairing error: " + JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER,"RemoteControlApiError", "Error in Thunder RemoteControl startPairing "+JSON.stringify(err), false, null)
         reject(err);
       });
     })
@@ -108,12 +82,11 @@ export default class RCApi {
   stopPairing() {
     return new Promise((resolve, reject) => {
       this.INFO("RCApi: stopPairing");
-      this.thunder.call('org.rdk.RemoteControl', 'stopPairing', {scanDisable: true}).then(result => {
+      this.thunder.call(this.callsign, 'stopPairing', {scanDisable: true}).then(result => {
         this.INFO("RCApi: stopPairing result: " + JSON.stringify(result))
         resolve(result.success);
       }).catch(err => {
         this.ERR("RCApi: stopPairing error: " + JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER, "RemoteControlApiError", "Error in Thunder RemoteControl stopPairing " + JSON.stringify(err), false, null)
         reject(err);
       });
     });
@@ -122,7 +95,6 @@ export default class RCApi {
   initializeIRDB() {
     return new Promise((resolve, reject) => {
       /*TODO: implement when requirement comes.*/
-      Metrics.error(Metrics.ErrorType.OTHER,"RemoteControlApiError", "NotImplemented", false, null)
       reject("NotImplemented")
     });
   }
@@ -130,7 +102,6 @@ export default class RCApi {
   clearIRCodes() {
     return new Promise((resolve, reject) => {
       /*TODO: implement when requirement comes.*/
-      Metrics.error(Metrics.ErrorType.OTHER,"RemoteControlApiError", "NotImplemented", false, null)
       reject("NotImplemented")
     });
   }
@@ -138,7 +109,6 @@ export default class RCApi {
   setIRCode() {
     return new Promise((resolve, reject) => {
       /*TODO: implement when requirement comes.*/
-      Metrics.error(Metrics.ErrorType.OTHER,"RemoteControlApiError", "NotImplemented", false, null)
       reject("NotImplemented")
     });
   }
@@ -146,7 +116,6 @@ export default class RCApi {
   getIRCodesByAutoLookup() {
     return new Promise((resolve, reject) => {
       /*TODO: implement when requirement comes.*/
-      Metrics.error(Metrics.ErrorType.OTHER,"RemoteControlApiError", "NotImplemented", false, null)
       reject("NotImplemented")
     });
   }
@@ -154,7 +123,6 @@ export default class RCApi {
   getIRCodesByNames() {
     return new Promise((resolve, reject) => {
       /*TODO: implement when requirement comes.*/
-      Metrics.error(Metrics.ErrorType.OTHER,"RemoteControlApiError", "NotImplemented", false, null)
       reject("NotImplemented")
     });
   }
@@ -162,7 +130,6 @@ export default class RCApi {
   getIRDBManufacturers() {
     return new Promise((resolve, reject) => {
       /*TODO: implement when requirement comes.*/
-      Metrics.error(Metrics.ErrorType.OTHER,"RemoteControlApiError", "NotImplemented", false, null)
       reject("NotImplemented")
     });
   }
@@ -170,7 +137,6 @@ export default class RCApi {
   getIRDBModels() {
     return new Promise((resolve, reject) => {
       /*TODO: implement when requirement comes.*/
-      Metrics.error(Metrics.ErrorType.OTHER,"RemoteControlApiError", "NotImplemented", false, null)
       reject("NotImplemented")
     });
   }
@@ -178,7 +144,6 @@ export default class RCApi {
   getLastKeypressSource() {
     return new Promise((resolve, reject) => {
       /*TODO: implement when requirement comes.*/
-      Metrics.error(Metrics.ErrorType.OTHER,"RemoteControlApiError", "NotImplemented", false, null)
       reject("NotImplemented")
     });
   }
@@ -186,13 +151,12 @@ export default class RCApi {
   configureWakeupKeys(netType = 1, wakeupConfig = "custom", customKeys = "3,1") {
     return new Promise((resolve, reject) => {
       this.INFO("RCApi: configureWakeupKeys netType:" + JSON.stringify(netType) + " wakeupConfig:" + JSON.stringify(wakeupConfig) + " customKeys:" + JSON.stringify(customKeys));
-      this.thunder.call('org.rdk.RemoteControl', 'configureWakeupKeys',
+      this.thunder.call(this.callsign, 'configureWakeupKeys',
         { netType: netType, wakeupConfig: wakeupConfig, customKeys: customKeys }).then(result => {
           this.INFO("RCApi: configureWakeupKeys result: " + JSON.stringify(result))
           resolve(result.success);
         }).catch(err => {
           this.ERR("RCApi: configureWakeupKeys error: " + JSON.stringify(err));
-          Metrics.error(Metrics.ErrorType.OTHER,"RemoteControlApiError", "Error in Thunder RemoteControl configureWakeupKeys "+JSON.stringify(err), false, null)
           reject(err);
         });
     })
@@ -201,12 +165,11 @@ export default class RCApi {
   findMyRemote(level = "mid") {
     return new Promise((resolve, reject) => {
       this.INFO("RCApi: findMyRemote level:" + JSON.stringify(level));
-      this.thunder.call('org.rdk.RemoteControl', 'findMyRemote', { level: level }).then(result => {
+      this.thunder.call(this.callsign, 'findMyRemote', { level: level }).then(result => {
         this.INFO("RCApi: findMyRemote result: " + JSON.stringify(result))
         resolve(result.success);
       }).catch(err => {
         this.ERR("RCApi: findMyRemote error: " + JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER,"RemoteControlApiError", "Error in Thunder RemoteControl findMyRemote "+JSON.stringify(err), false, null)
         reject(err);
       });
     })
@@ -217,12 +180,11 @@ export default class RCApi {
   factoryReset() {
     return new Promise((resolve, reject) => {
       this.INFO("RCApi: factoryReset");
-      this.thunder.call('org.rdk.RemoteControl', 'factoryReset').then(result => {
+      this.thunder.call(this.callsign, 'factoryReset').then(result => {
         this.INFO("RCApi: factoryReset result: " + JSON.stringify(result))
         resolve(result.success);
       }).catch(err => {
         this.ERR("RCApi: factoryReset error: " + JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER,"RemoteControlApiError",  "Error in Thunder RemoteControl factoryReset "+JSON.stringify(err), false, null)
         reject(err);
       });
     })
@@ -231,12 +193,11 @@ export default class RCApi {
   unpair(macAddressList) {
     return new Promise((resolve, reject) => {
       this.INFO("RCApi: unpair macAddressList:" + JSON.stringify(macAddressList));
-      this.thunder.call('org.rdk.RemoteControl', 'unpair', { macAddressList: macAddressList }).then(result => {
+      this.thunder.call(this.callsign, 'unpair', { macAddressList: macAddressList }).then(result => {
         this.INFO("RCApi: unpair result: " + JSON.stringify(result))
         resolve(result.success);
       }).catch(err => {
         this.ERR("RCApi: unpair error: " + JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER, "RemoteControlApiError", "Error in Thunder RemoteControl unpair " + JSON.stringify(err), false, null)
         reject(err);
       });
     });

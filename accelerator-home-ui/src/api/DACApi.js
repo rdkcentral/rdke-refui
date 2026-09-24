@@ -17,12 +17,12 @@
  * limitations under the License.
  **/
 
+import { Language } from '@lightningjs/sdk';
 import DownloadManager from './DownloadManagerApi';
 import PackageManager from './PackageManagerApi';
 import AppManager from './AppManagerApi';
 import AppController from '../AppController';
 import { ThunderError } from './ThunderError';
-import { Metrics } from '@firebolt-js/sdk'
 import { SIDELOADED_APP_DEFAULT_ICON, deriveNameFromPackageId } from '../helpers/DACAppPresentation'
 import { getApps, getAppDetails, makeDownloadURL } from './AppCatalog';
 
@@ -48,7 +48,6 @@ function logWarning(call, err) {
 function logError(call, err) {
   let errMessage = makeLogMessage(call, err);
   console.error(errMessage);
-  Metrics.error(Metrics.ErrorType.OTHER, "DACApiError", errMessage, false, null);
 }
 
 class OperationLock {
@@ -68,6 +67,11 @@ class OperationLock {
 };
 
 let packageLock = new OperationLock();
+let activeInstallAppId = null;
+
+export function isDACOperationInProgress() {
+  return activeInstallAppId !== null;
+}
 
 export async function getAppCatalogInfo() {
   let result = [];
@@ -85,7 +89,6 @@ export async function getAppCatalogInfo() {
       }
       offset = result.length;
     } catch (err) {
-      Metrics.error(Metrics.ErrorType.OTHER, "DACApiError", err.toString(), false, null);
       break;
     }
   }
@@ -130,7 +133,7 @@ async function downloadAndInstall(pkg, downloadedSize, totalSize, progress) {
       await DownloadManager.get().download(downloadURL, (downloadId, percent, failReason) => {
         if (!failReason) {
           if (percent !== 100) {
-            progress((downloadedSize + pkg.size * percent / 100) / totalSize, "Downloading");
+            progress((downloadedSize + pkg.size * percent / 100) / totalSize, Language.translate("Downloading"));
           } else {
             resolve(downloadId);
           }
@@ -187,6 +190,20 @@ export async function installDACApp(app, progressElement) {
 
   console.log(`installDACApp ${JSON.stringify(app)}`);
 
+  if (activeInstallAppId && activeInstallAppId !== app.id) {
+    app.errorCode = -100;
+    logWarning(`installDACApp(${app.id})`, new Error(`Another install is already in progress for ${activeInstallAppId}`));
+    return false;
+  }
+
+  if (activeInstallAppId === app.id) {
+    app.errorCode = -101;
+    logWarning(`installDACApp(${app.id})`, new Error(`Install already in progress for ${app.id}`));
+    return false;
+  }
+
+  activeInstallAppId = app.id;
+
   const unlock = await packageLock.lock();
 
   function progress(percent, state) {
@@ -237,6 +254,7 @@ export async function installDACApp(app, progressElement) {
     app.errorCode = err?.cause?.code ?? -2;
     logError(`installDACApp(${app.id})`, err);
   } finally {
+    activeInstallAppId = null;
     unlock();
   }
 

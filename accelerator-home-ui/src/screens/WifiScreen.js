@@ -136,20 +136,12 @@ export default class WiFiScreen extends Lightning.Component {
     }
   }
 
-  async _init() {
-    await appApi.checkStatus(NetworkManager.callsign).then(result => {
-      if (result[0].state !== "activated") {
-        NetworkManager.activate()
-      }
-    })
-  }
-
   async _active() {
     this.renderSSIDS = this.ssids = []
     await NetworkManager.GetInterfaceState("wlan0").then(enabled => {
       this.wifiStatus = enabled
     });
-    this.onInterfaceStatusChangedCB = null
+    this.onInterfaceStatusChangeCB = null
     this.wifiEventHandlers();
   }
 
@@ -192,8 +184,8 @@ export default class WiFiScreen extends Lightning.Component {
         this.tag('Switch.Loader').visible = false
       }
     });
-    if (this.onInterfaceStatusChangedCB) {
-      this.onInterfaceStatusChangedCB.dispose()
+    if (this.onInterfaceStatusChangeCB) {
+      this.onInterfaceStatusChangeCB.dispose()
     }
   }
 
@@ -338,7 +330,7 @@ export default class WiFiScreen extends Lightning.Component {
             if (ssids.length) { // ispaired.result == 0 means saved SSID.
                 if (ssids.includes(selectedssid.ssid) ) {
                   this.LOG("WiFiScreen getPairedSSID matched with current selection; try auto connect.")
-                  NetworkManager.WiFiConnect(true).then(() => {
+                  NetworkManager.ConnectToKnownSSID(selectedssid.ssid).then(() => {
                     NetworkManager.thunder.on('onWiFiStateChange', notification => {
                       if (notification.state === WiFiState.WIFI_STATE_SSID_CHANGED || notification.state === WiFiState.WIFI_STATE_INVALID_CREDENTIALS || notification.state === WiFiState.WIFI_STATE_AUTHENTICATION_FAILED) {
                         NetworkManager.RemoveKnownSSID(selectedssid.ssid).then(() => {
@@ -455,9 +447,9 @@ export default class WiFiScreen extends Lightning.Component {
       this.LOG('Enabling Wi-Fi.')
       await NetworkManager.GetInterfaceState("wlan0").then(ifaceStatus => {
         if (!ifaceStatus) {
-          this.onInterfaceStatusChangedCB = NetworkManager.thunder.on(NetworkManager.callsign, 'onInterfaceStatusChange', ifaceStatus => {
+          this.onInterfaceStatusChangeCB = NetworkManager.thunder.on(NetworkManager.callsign, 'onInterfaceStatusChange', ifaceStatus => {
             if ((ifaceStatus.interface === "wlan0") && ifaceStatus.enabled) {
-              this.onInterfaceStatusChangedCB.dispose();
+              this.onInterfaceStatusChangeCB.dispose();
               this.wifiStatus = true
               this.tag('Networks').visible = true
               this.tag('JoinAnotherNetwork').visible = true

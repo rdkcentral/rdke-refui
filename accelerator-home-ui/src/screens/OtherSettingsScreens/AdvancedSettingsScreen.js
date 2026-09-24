@@ -182,32 +182,40 @@ export default class AdvanceSettingsScreen extends Lightning.Component {
 
     _init() {
         this.cecApi = new CECApi()
-        this.cecApi.activate()
-            .then(() => {
-                this.tag('CECControl.Button').src = Utils.asset('images/settings/ToggleOnOrange.png')
-                this.performOTPAction()
-            })
         this._setState('TTSOptions')
     }
+
+    _active() {
+        this.cecApi.getEnabled().then(res => {
+            this.LOG("cec getenabled result:" + JSON.stringify(res))
+            if (res.enabled) {
+                this.tag('CECControl.Button').src = Utils.asset('images/settings/ToggleOnOrange.png')
+            } else {
+                this.tag('CECControl.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
+            }
+        })
+    }
+
     _focus() {
         this._setState(this.state)
     }
 
     _handleBack() {
         if(!Router.isNavigating()){
-        Router.navigate('settings/other')
+            Router.navigate('settings/other')
         }
     }
 
     performOTPAction() {
-        this.cecApi.setEnabled().then(res => {
+        return this.cecApi.setEnabled().then(res => {
             if (res.success) {
-                this.cecApi.performOTP().then(otpRes => {
+                return this.cecApi.performOTP().then(otpRes => {
                     if (otpRes.success) {
                         this.LOG('Otp Action success full')
                     }
                 })
             }
+            return null;
         })
     }
 
@@ -216,16 +224,9 @@ export default class AdvanceSettingsScreen extends Lightning.Component {
             .then(res => {
                 this.LOG("cec getenabled result:" + JSON.stringify(res))
                 if (res.enabled) {
-                    this.cecApi.deactivate()
-                        .then(() => {
-                            this.tag('CECControl.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
-                        })
-                }
-                else {
-                    this.cecApi.activate()
-                        .then(() => {
-                            this.tag('CECControl.Button').src = Utils.asset('images/settings/ToggleOnOrange.png')
-                        })
+                    this.tag('CECControl.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
+                } else {
+                    this.tag('CECControl.Button').src = Utils.asset('images/settings/ToggleOnOrange.png')
                 }
             })
     }
@@ -333,7 +334,7 @@ export default class AdvanceSettingsScreen extends Lightning.Component {
                 }
                 _handleEnter() {
                     if(!Router.isNavigating()){
-                    Router.navigate('settings/advanced/device')
+                        Router.navigate('settings/advanced/device')
                     }
                 }
             },

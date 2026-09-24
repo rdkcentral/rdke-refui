@@ -17,8 +17,7 @@
  * limitations under the License.
  **/
 import ThunderJS from 'ThunderJS';
-import { CONFIG } from '../Config/Config'
-import { Metrics } from '@firebolt-js/sdk';
+import { CONFIG } from '../Config/Config';
 
 export default class PersistentStoreApi {
   constructor() {
@@ -43,47 +42,6 @@ export default class PersistentStoreApi {
     return PersistentStoreApi.instance;
   }
 
-  registerEvent(eventId, callback) {
-    this._events.set(eventId, callback)
-  }
-  activate() {
-    return new Promise((resolve, reject) => {
-      this.INFO("PersistentStoreApi: activate.");
-      this.thunder.Controller.activate({ callsign: this.callsign }).then(() => {
-        this.thunder.on(this.callsign, 'onStorageExceeded', notification => {
-          if (this._events.has('onStorageExceeded')) {
-            this._events.get('onStorageExceeded')(notification);
-          } else {
-            this.INFO('PersistentStoreApi: onStorageExceeded ' + JSON.stringify(notification));
-          }
-        });
-        this.thunder.on(this.callsign, 'onValueChanged', notification => {
-          if (this._events.has('onValueChanged')) {
-            this._events.get('onValueChanged')(notification);
-          } else {
-            this.INFO('PersistentStoreApi: onValueChanged ' + JSON.stringify(notification));
-          }
-        });
-        resolve(true);
-      }).catch(err => {
-        this.ERR('PersistentStoreApi: Error Activation ' + JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER,"PersistentStoreApiError", "Error while Thunder Controller PersistentStore activate "+JSON.stringify(err), false, null)
-        reject(err);
-      })
-    })
-  }
-  deactivate() {
-    return new Promise((resolve, reject) => {
-      this.thunder.Controller.deactivate({ callsign: this.callsign }).then(() => {
-        this.INFO("PersistentStoreApi: deactivated successfully.")
-        resolve(true)
-      }).catch(err => {
-        this.ERR('PersistentStoreApi: Error deactivation ' + JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER,"PersistentStoreApiError", "Error while Thunder Controller PersistentStore deactivate "+JSON.stringify(err), false, null)
-        reject(err);
-      })
-    })
-  }
   deleteKey(namespace, key) {
     return new Promise((resolve, reject) => {
       this.INFO("PersistentStoreApi: deleteKey:" + JSON.stringify(namespace) + " & " + JSON.stringify(key));
@@ -95,7 +53,6 @@ export default class PersistentStoreApi {
         resolve(result);
       }).catch(err => {
         this.ERR("PersistentStoreApi: deleteKey error:" + JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER,"PersistentStoreApiError", "Error in Thunder PersistentStore deleteKey "+JSON.stringify(err), false, null)
         reject(err);
       });
     })
@@ -108,7 +65,6 @@ export default class PersistentStoreApi {
         resolve(result);
       }).catch(err => {
         this.ERR("PersistentStoreApi: deleteNamespace error:" + JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER,"PersistentStoreApiError", "Error in Thunder PersistentStore deleteNamespace "+JSON.stringify(err), false, null)
         reject(err);
       });
     })
@@ -120,7 +76,6 @@ export default class PersistentStoreApi {
         resolve(result);
       }).catch(err => {
         this.ERR("PersistentStoreApi: flushCache error:" + JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER,"PersistentStoreApiError", "Error in Thunder PersistentStore flushCache "+JSON.stringify(err), false, null)
         reject(err);
       });
     })
@@ -133,7 +88,6 @@ export default class PersistentStoreApi {
         resolve(result);
       }).catch(err => {
         this.ERR("PersistentStoreApi: getKeys error:" + JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER,"PersistentStoreApiError", "Error in Thunder PersistentStore getKeys "+JSON.stringify(err), false, null)
         reject(err);
       });
     })
@@ -145,7 +99,6 @@ export default class PersistentStoreApi {
         resolve(result);
       }).catch(err => {
         this.ERR("PersistentStoreApi: getNamespaces error:" + JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER,"PersistentStoreApiError", "Error in Thunder PersistentStore getNamespaces "+JSON.stringify(err), false, null)
         reject(err);
       });
     })
@@ -157,7 +110,6 @@ export default class PersistentStoreApi {
         resolve(result);
       }).catch(err => {
         this.ERR("PersistentStoreApi: getStorageSize error:" + JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER,"PersistentStoreApiError", "Error in Thunder PersistentStore getStorageSize "+JSON.stringify(err), false, null)
         reject(err);
       });
     })
@@ -170,7 +122,6 @@ export default class PersistentStoreApi {
         resolve(result);
       }).catch(err => {
         this.ERR("PersistentStoreApi: getValue error:" + JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER,"PersistentStoreApiError", "Error in Thunder PersistentStore getValue "+JSON.stringify(err), false, null)
         reject(err);
       });
     })
@@ -183,7 +134,6 @@ export default class PersistentStoreApi {
         resolve(result);
       }).catch(err => {
         this.ERR("PersistentStoreApi: setValue error:" + JSON.stringify(err));
-        Metrics.error(Metrics.ErrorType.OTHER,"PersistentStoreApiError", "Error in Thunder PersistentStore setValue "+JSON.stringify(err), false, null)
         reject(err);
       });
     })

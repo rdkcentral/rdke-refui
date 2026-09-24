@@ -19,7 +19,6 @@
 
 import ThunderJS from 'ThunderJS';
 import { CONFIG } from '../Config/Config'
-import { Metrics } from "@firebolt-js/sdk"
 import { ThunderError } from './ThunderError';
 
 let instance = null;
@@ -49,28 +48,6 @@ export default class PackageManager {
     Metrics.error(Metrics.ErrorType.OTHER,this.metricsComponent, errString, false, null)
 
     throw err;
-  }
-
-  activate() {
-    return this.thunder.Controller.activate(
-      { callsign: this.callsign }
-    ).then(() => {
-      this.INFO(`${this.callsign} activated`);
-      return true;
-    }).catch(err => {
-      this.handleThunderError(`activate(${this.callsign})`, err);
-    });
-  }
-
-  deactivate() {
-    return this.thunder.Controller.deactivate(
-      { callsign: this.callsign }
-    ).then(() => {
-      this.INFO(`${this.callsign} deactivated`);
-      return true;
-    }).catch(err => {
-      this.handleThunderError(`deactivate(${this.callsign})`, err);
-    });
   }
 
   configuration() {

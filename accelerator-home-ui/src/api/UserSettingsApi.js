@@ -18,54 +18,16 @@
  **/
 import ThunderJS from 'ThunderJS';
 import { CONFIG } from '../Config/Config'
-import { Metrics } from '@firebolt-js/sdk';
 
 const thunder = ThunderJS(CONFIG.thunderConfig)
 const callsign = 'org.rdk.UserSettings'
-const errorName = 'UserSettingsError'
 
-let instance = null
-
-export default class UserSettingsApi {
+class UserSettingsApi {
     constructor() {
         this.INFO = console.info;
         this.LOG = console.log;
         this.ERR = console.error;
         this.WARN = console.warn;
-    }
-
-  static get() {
-    if (instance === null) {
-      instance = new UserSettingsApi()
-    }
-    return instance;
-  }
-
-    activate() {
-        return new Promise((resolve, reject) => {
-            thunder.Controller.activate({ callsign: callsign })
-                .then(() => {
-                    resolve(true)
-                })
-                .catch(err => {
-                    this.ERR("Error Activation " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, errorName, `Error while Thunder Controller ${callsign} activate ${JSON.stringify(err)}`, false, null)
-                    reject(err)
-                })
-        })
-    }
-    deactivate() {
-        return new Promise((resolve, reject) => {
-            thunder.Controller.deactivate({ callsign: callsign })
-                .then(() => {
-                    resolve(true)
-                })
-                .catch(err => {
-                    this.ERR("Error Deactivation " + JSON.stringify(err))
-                    Metrics.error(Metrics.ErrorType.OTHER, errorName, `Error while Thunder Controller ${callsign} deactivate ${JSON.stringify(err)}`, false, null)
-                    reject(err)
-                })
-        })
     }
 
     setVoiceGuidance(enable) {
@@ -79,11 +41,10 @@ export default class UserSettingsApi {
             })
             .catch(err => {
               this.ERR("Error enable " + JSON.stringify(err))
-              Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder UserSettings setVoiceGuidance " + JSON.stringify(err), false, null)
               resolve(false)
             })
         })
-      }
+    }
 
     getVoiceGuidance() {
         return new Promise((resolve) => {
@@ -94,7 +55,6 @@ export default class UserSettingsApi {
             })
             .catch(err => {
               this.ERR("Error enable " + JSON.stringify(err))
-              Metrics.error(Metrics.ErrorType.OTHER, "PluginError", "Error in Thunder UserSettings getVoiceGuidance " + JSON.stringify(err), false, null)
               resolve(false)
             })
         })
@@ -106,7 +66,6 @@ export default class UserSettingsApi {
           resolve(result)
         }).catch(err => {
           this.ERR('UserSettingsApi setPresentationLanguage failed:' + JSON.stringify(err))
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", 'Error in Thunder setPresentationLanguage of UserSettings' + JSON.stringify(err), false, null)
           resolve(false)
         })
       })
@@ -118,9 +77,11 @@ export default class UserSettingsApi {
           resolve(result)
         }).catch(err => {
           this.ERR('UserSettingsApi getPresentationLanguage failed:' + JSON.stringify(err))
-          Metrics.error(Metrics.ErrorType.OTHER, "PluginError", 'Error in Thunder getPresentationLanguage of UserSettings' +JSON.stringify(err), false, null)
           resolve(false)
         })
       })
     }
 }
+
+const userSettingsApi = new UserSettingsApi()
+export default userSettingsApi
