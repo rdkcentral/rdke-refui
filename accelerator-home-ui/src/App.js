@@ -561,10 +561,6 @@ export default class App extends Router.App {
 		appApi.getPluginStatus('org.rdk.MiracastPlayer').then(result => {
 			if (result[0].state === "activated") {
 				this.SubscribeToMiracastPlayer()
-			} else {
-				miracast.activatePlayer().then((res) => {
-					this.LOG("activating the miracst player from app.js " + JSON.stringify(res))
-				}).catch((err) => this.ERR(JSON.stringify(err)))
 			}
 		})
 		appApi.getPluginStatus('org.rdk.MiracastService').then(result => {
@@ -575,15 +571,6 @@ export default class App extends Router.App {
 					}
 				})
 				this.SubscribeToMiracastService()
-			} else {
-				miracast.activateService().then((res) => {
-					miracast.getEnable().then(async (res) => {
-						if (!res.enabled) {
-							await miracast.setEnable(true)
-						}
-					})
-					this.LOG("activating the miracst Service from app.js " + JSON.stringify(res))
-				}).catch((err) => this.ERR(JSON.stringify(err)))
 			}
 		})
 		/********************   RDKUI-303 - PAGE VISIBILITY API **************************/

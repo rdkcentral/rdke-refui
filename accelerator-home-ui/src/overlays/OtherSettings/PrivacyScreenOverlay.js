@@ -270,7 +270,6 @@ export default class PrivacyScreen extends Lightning.Component {
 
                     setTimeout(async () => {
                             try {
-                                await this.Warehouse.activate()
                                 await this.Warehouse.lightReset()
                             }
                             catch (err) {
