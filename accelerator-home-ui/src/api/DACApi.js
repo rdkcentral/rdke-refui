@@ -116,6 +116,7 @@ async function isPackageInstalled(id, version) {
 
   try {
     const packageState = await PackageManager.get().packageState(id, version);
+    console.log(`isPackageInstalled(${id}, ${version}) = ${packageState}`);
     result = (packageState === "INSTALLED");
   } catch (err) {
     logWarning(`isPackageInstalled()`, err);
@@ -192,12 +193,14 @@ export async function installDACApp(app, progressElement) {
 
   if (activeInstallAppId && activeInstallAppId !== app.id) {
     app.errorCode = -100;
+    console.log(`Another install is already in progress for ${activeInstallAppId}`);
     logWarning(`installDACApp(${app.id})`, new Error(`Another install is already in progress for ${activeInstallAppId}`));
     return false;
   }
 
   if (activeInstallAppId === app.id) {
     app.errorCode = -101;
+    console.log(`Install already in progress for ${app.id}`);
     logWarning(`installDACApp(${app.id})`, new Error(`Install already in progress for ${app.id}`));
     return false;
   }
@@ -217,15 +220,19 @@ export async function installDACApp(app, progressElement) {
   }
 
   try {
+    console.log(`Calling getAppDetails details for ${app.id}+${app.version}`);
     const appDetails = await getAppDetails(app.id, app.version);
     const packages = [];
     let totalSize = 0;
 
     if (typeof appDetails?.dependencies === "object") {
+      console.log(`Collecting dependencies for ${app.id}+${app.version}: ${JSON.stringify(appDetails.dependencies)}`);
       for (const id in appDetails.dependencies) {
         const version = appDetails.dependencies[id];
+        console.log(`Checking dependency ${id}+${version}`);
         if (!await isPackageInstalled(id, version)) {
           const depDetails = await getAppDetails(id, version);
+          console.log(`Collecting dependency depDetails: ${JSON.stringify(depDetails)}`);
           packages.push(Object.assign(
             retrieveURLAndSize(depDetails),
             { id, version, details: depDetails }
@@ -245,6 +252,7 @@ export async function installDACApp(app, progressElement) {
 
     let downloadedSize = 0;
     for (let pkg of packages) {
+      console.log(`Calling downloadAndInstall with pkg: ${pkg.id}+${pkg.version} from ${pkg.url} (${pkg.size} bytes)`);
       await downloadAndInstall(pkg, downloadedSize, totalSize, progress);
       downloadedSize += pkg.size;
     }

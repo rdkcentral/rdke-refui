@@ -29,7 +29,7 @@
 export const SIDELOADED_APP_DEFAULT_ICON = "/images/apps/DACApp_455_255.png";
 
 // Resolved names that should be excluded from the UI
-const EXCLUDED_RESOLVED_NAMES = ["base", "wpe-develop", "wpe", "wpe-rdk", "refui", "cobalt"];
+const EXCLUDED_RESOLVED_NAMES = ["base", "wpe-develop", "wpe", "wpe-rdk", "cobalt"];
 
 /**
  * Derive a human-readable display name from a reverse-domain packageId.

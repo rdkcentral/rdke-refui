@@ -115,7 +115,7 @@ export default class AppCard extends Lightning.Component {
                     strokeColor: 0xFF3D3D3D
                 }
             },
-            
+
             // Left: App Icon (40px from left edge)
             AppIcon: {
                 x: 40,
@@ -251,19 +251,19 @@ export default class AppCard extends Lightning.Component {
 
     set appInfo(data) {
         this._appInfo = data;
-        
+
         // Set app name
         const appName = data.name || data.appName || (data.installed && data.installed[0] && data.installed[0].appName) || 'Unknown App';
         this.tag('AppDetails.AppName').text.text = appName;
-        
+
         // Set version
         const version = data.version || (data.installed && data.installed[0] && data.installed[0].version) || '';
         this.tag('AppDetails.Version').text.text = version ? `${Language.translate('Version')}: ${version}` : '';
-        
+
         // Set base package version
         const baseVersion = data.basePackageVersion || (data.installed && data.installed[0] && data.installed[0].basePackageVersion) || '';
         this.tag('AppDetails.BasePackageVersion').text.text = baseVersion ? `${Language.translate('Base Package')}: ${baseVersion}` : '';
-        
+
         // Set icon
         if (data.icon) {
             if (data.icon.startsWith('/images')) {

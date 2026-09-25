@@ -19,12 +19,13 @@
 
 import { Lightning, Router, Language, Utils } from "@lightningjs/sdk";
 import { List } from "@lightningjs/ui";
-import { CONFIG } from "../Config/Config";
+import { CONFIG, GLOBALS } from "../Config/Config";
 import AppCard from "../items/AppCard";
-import { getInstalledDACApps, startDACApp, uninstallDACApp } from "../api/DACApi";
+import { getInstalledDACApps, startDACApp, uninstallDACApp, installDACApp } from "../api/DACApi";
 import { filterExcludedApps } from "../helpers/DACAppPresentation";
 import UninstallConfirmation from "../overlays/UninstallConfirmation";
 import NetworkManager from "../api/NetworkManagerAPI";
+import { getAppUpdateDetails } from "../api/AppCatalog.js";
 
 export default class AppInfoPage extends Lightning.Component {
 
@@ -175,7 +176,7 @@ export default class AppInfoPage extends Lightning.Component {
         this._appData = [];
     }
 
-    _init() {
+    async _init() {
         this._appList = this.tag('AppList');
         this._scrollThumb = this.tag('ScrollIndicator.ScrollThumb');
         this._onInternetStatusChangeCB = NetworkManager.thunder.on('org.rdk.NetworkManager', 'onInternetStatusChange', notification => {
@@ -235,7 +236,11 @@ export default class AppInfoPage extends Lightning.Component {
     async _fetchInstalledApps() {
         try {
             const installedApps = filterExcludedApps(await getInstalledDACApps());
-            console.log('Installed DAC Apps:', JSON.stringify(installedApps));
+            console.log('Installed DAC Apps:' + JSON.stringify(installedApps));
+            let updateAvailableApps = [];
+            if (GLOBALS.IsConnectedToInternet) {
+                updateAvailableApps = await getAppUpdateDetails(installedApps);
+            }
 
             // Transform the data to match AppCard expected format
             const appData = installedApps.map(app => ({
@@ -244,7 +249,7 @@ export default class AppInfoPage extends Lightning.Component {
                 version: app.version,
                 icon: app.icon || '/images/apps/DACApp_455_255.png',
                 installed: app.installed,
-                hasUpdate: false // Can be updated based on app catalog comparison if needed
+                hasUpdate: (!updateAvailableApps.length? false : updateAvailableApps.some(update => update.id === app.id && update.version !== app.version))
             }));
 
             this._loadAppData(appData);
@@ -300,7 +305,7 @@ export default class AppInfoPage extends Lightning.Component {
                 this._launchApp(appInfo);
                 break;
             case 'update':
-                console.log("Update app:", appInfo.name);
+                console.log("Update app:" + appInfo.name + ", hasUpdate:" + appInfo.hasUpdate);
                 this._updateApp(appInfo);
                 break;
             case 'uninstall':
@@ -327,7 +332,7 @@ export default class AppInfoPage extends Lightning.Component {
                         if (currentCard && currentCard.resetActionInProgress) {
                             setTimeout(() => {
                             currentCard.resetActionInProgress();
-                            }, 10000); 
+                            }, 10000);
                         }
                 } else {
                         console.error(`Failed to launch ${appInfo.name}`);
@@ -348,45 +353,59 @@ export default class AppInfoPage extends Lightning.Component {
     /**
      * Update the selected app
      */
-    _updateApp(appInfo) {
+    async _updateApp(appInfo) {
         if (!appInfo.hasUpdate) {
             console.log(`${appInfo.name} is already up to date`);
             return;
         }
         console.log(`Updating ${appInfo.name}...`);
+        // Show confirmation overlay with message "Update Available; needs app restart to apply."
+        if (GLOBALS.selfclientAppName === appInfo.id) {
+            console.log(`This app has update: ${appInfo.name}`);
+            Router.navigate('ErrorPage', {
+                title: Language.translate('Update Available'),
+                message: Language.translate('UI Update Available; needs app restart to apply. Press OK to begin.'),
+                buttonText: Language.translate('OK'),
+                onButtonPress: async () => {
+                    await installDACApp(appInfo, null);
+                }
+            });
+        } else {
+            console.log(`Update process implementation needed for ${appInfo.name}`);
+        }
     }
 
     /**
      * Uninstall the selected app
      */
-     async _uninstallApp(appInfo) {
+    async _uninstallApp(appInfo) {
         console.log(`Uninstalling ${appInfo.name}...`);
         try {
-                const result = await uninstallDACApp({ id: appInfo.id, version: appInfo.version, name: appInfo.name }, this);
-        if (result) {
-            console.log(`${appInfo.name} uninstalled successfully`);
-            const currentCard = this._appList.currentItem;
-            if (currentCard && currentCard.resetActionInProgress) {
-            currentCard.resetActionInProgress();
-            }
-            return true;
-        } else {
-            console.error(`Failed to uninstall ${appInfo.name}`);
-            const currentCard = this._appList.currentItem;
-            if (currentCard && currentCard.resetActionInProgress) {
-            currentCard.resetActionInProgress();
-            }
-            return false;
+            const result = await uninstallDACApp({ id: appInfo.id, version: appInfo.version, name: appInfo.name }, this);
+            if (result) {
+                console.log(`${appInfo.name} uninstalled successfully`);
+                const currentCard = this._appList.currentItem;
+                if (currentCard && currentCard.resetActionInProgress) {
+                currentCard.resetActionInProgress();
+                }
+                return true;
+            } else {
+                console.error(`Failed to uninstall ${appInfo.name}`);
+                const currentCard = this._appList.currentItem;
+                if (currentCard && currentCard.resetActionInProgress) {
+                currentCard.resetActionInProgress();
+                }
+                return false;
             }
         } catch (error) {
-        console.error(`Error uninstalling ${appInfo.name}:`, error);
-        const currentCard = this._appList.currentItem;     
-        if (currentCard && currentCard.resetActionInProgress) {
-            currentCard.resetActionInProgress();
+            console.error(`Error uninstalling ${appInfo.name}:`, error);
+            const currentCard = this._appList.currentItem;
+            if (currentCard && currentCard.resetActionInProgress) {
+                currentCard.resetActionInProgress();
+            }
+            return false;
         }
-        return false;
-        }
-        }
+    }
 
     /**
      * Show the uninstall confirmation overlay
@@ -438,7 +457,7 @@ export default class AppInfoPage extends Lightning.Component {
      */
     $cancelUninstall() {
         console.log('Uninstall cancelled');
-        const currentCard = this._appList.currentItem;     
+        const currentCard = this._appList.currentItem;
         if (currentCard && currentCard.resetActionInProgress) {
             currentCard.resetActionInProgress();
         }

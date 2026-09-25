@@ -309,5 +309,6 @@
   "Enabled": "Habilitado",
   "Please manually reset the remote control by following the instructions in its user manual.":"Por favor, restablezca manualmente el control remoto siguiendo las instrucciones de su manual de usuario.",
   "Pairing":"Emparejando",
-  "Reboot to complete the update":"Reinicie para completar la actualización"
+  "Reboot to complete the update":"Reinicie para completar la actualización",
+  "UI Update Available; needs app restart to apply. Press OK to begin.":"Actualización de la UI disponible; requiere reiniciar la aplicación para aplicarse. Presione OK para comenzar."
 }

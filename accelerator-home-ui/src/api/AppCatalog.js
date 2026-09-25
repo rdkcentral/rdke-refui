@@ -179,6 +179,7 @@ class LegacyAppCatalogHandler {
   }
 
   async fetchStoreObject(request) {
+    console.log(`fetchStoreObject(${request})`);
     let config = await this.getStoreConfig();
     let headers = new Headers();
 
@@ -201,6 +202,40 @@ class LegacyAppCatalogHandler {
   }
 
   getAppDetails(id, version) {
+    console.log(`From before returning hack getAppDetails(${id}, ${version}) before fetchStoreObject()`);
+    // TODO: added for local testing, remove when appstore has this.
+    if (id === "com.rdkcentral.refui") {
+      console.log(`Returning hardcoded details for ${id}:${version}`);
+      const refuiDetails = {
+        "header": {
+          "url": "file:///opt/com.rdkcentral.refui+6.0.38.bolt",
+          "size": 5285409,
+          "name": "refui",
+          "description": "",
+          "id": "com.rdkcentral.refui",
+          "version": "6.0.38",
+          "type": "application/dac.native",
+          "category": "application"
+        },
+        "versions": [
+          { "version": "6.0.38" },
+          { "version": "6.0.37" }
+        ],
+        "config": {
+          "id": "com.rdkcentral.refui",
+          "version": "6.0.38",
+          "versionName": "6.0.38",
+          "name": "refui",
+          "packageType": "application",
+          "entryPoint": "",
+          "dependencies": { "com.rdkcentral.base": "0.3.1", "com.rdkcentral.wpe": "0.4.2" },
+          "permissions": [],
+          "configuration": { "urn:rdk:config:platform": { "architecture": "arm", "os": "linux" } }
+        },
+        "dependencies": { "com.rdkcentral.base": "0.3.1", "com.rdkcentral.wpe": "0.4.2" }
+      };
+      return refuiDetails;
+    }
     return this.fetchStoreObject("/apps/" + id + ":" + version + "?arch=" + APP_DEFAULT_ARCH);
   }
 
@@ -230,6 +265,7 @@ class AppCatalogHandler {
   }
 
   async fetch(url, options) {
+    console.log(`AppCatalog 268 fetch(${url})`);
     const response = await this.queue.enqueue(() => fetch(url, { credentials: 'include', ...options }));
     if (response.status === 401 || response.status === 403) {
       this.cancelRefresh();
@@ -320,6 +356,39 @@ class AppCatalogHandler {
   }
 
   async getAppDetails(id, version) {
+    // TODO: test change to use local bundle
+    if (id === "com.rdkcentral.refui") {
+      console.log(`Returning hardcoded details for ${id}:${version}`);
+      const refuiDetails = {
+        "header": {
+          "url": "file:///opt/com.rdkcentral.refui+6.0.38.bolt",
+          "size": 5285409,
+          "name": "refui",
+          "description": "",
+          "id": "com.rdkcentral.refui",
+          "version": "6.0.38",
+          "type": "application/dac.native",
+          "category": "application"
+        },
+        "versions": [
+          { "version": "6.0.38" },
+          { "version": "6.0.37" }
+        ],
+        "config": {
+          "id": "com.rdkcentral.refui",
+          "version": "6.0.38",
+          "versionName": "6.0.38",
+          "name": "refui",
+          "packageType": "application",
+          "entryPoint": "",
+          "dependencies": { "com.rdkcentral.base": "0.3.1", "com.rdkcentral.wpe": "0.4.2" },
+          "permissions": [],
+          "configuration": { "urn:rdk:config:platform": { "architecture": "arm", "os": "linux" } }
+        },
+        "dependencies": { "com.rdkcentral.base": "0.3.1", "com.rdkcentral.wpe": "0.4.2" }
+      };
+      return refuiDetails;
+    }
     return this.fetchAppCatalogObject("/apps/" + id + ":" + version + "?arch=" + APP_DEFAULT_ARCH);
   }
 
@@ -437,6 +506,7 @@ export async function getApps(offset, limit) {
 }
 
 export async function getAppDetails(id, version) {
+  console.log(`getAppDetails(${id}, ${version}) before initAppCatalogHandler()`);
   await initAppCatalogHandler();
   const handler = appCatalogHandler;
   return callAndHandleAuthExpired(handler, () => handler.getAppDetails(id, version));
@@ -446,6 +516,106 @@ export async function makeDownloadURL(url) {
   await initAppCatalogHandler();
   const handler = appCatalogHandler;
   return callAndHandleAuthExpired(handler, () => handler.makeDownloadURL(url));
+}
+
+/**
+ * @brief returns the list of apps which has new versions available for update
+ * @param {Array} installedApps - list of installed apps with their current version
+ *       [{appId: "com.rdkcentral.mvt", version: "0.4.1"}, {appId: "com.rdkcentral.youtube", version: "0.3.0"}]
+ * @returns {Array} - list of apps which has new versions available for update
+ *       [{appId: "com.rdkcentral.mvt", version: "0.4.2"}, {appId: "com.rdkcentral.youtube", version: "0.3.1"}]
+ */
+export async function getAppUpdateDetails(installedApps) {
+  let offset = 0;
+  const limit = 10;
+  let updateAvailableApps = [];
+  await initAppCatalogHandler();
+  const handler = appCatalogHandler;
+  // call until all apps are fetched from the catalog
+  while (true) {
+    const catalogApps = await callAndHandleAuthExpired(handler, () => handler.getApps(offset, limit));
+    /**
+     * Sample response from the catalog
+{
+  "applications": [
+    {
+      "name": "mvt",
+      "description": "",
+      "id": "com.rdkcentral.mvt",
+      "version": "0.4.2",
+      "type": "application/dac.native",
+      "category": "application"
+    },
+    {
+      "name": "Wayland EGL Test",
+      "description": "",
+      "id": "com.rdkcentral.wayland-egl-test",
+      "version": "0.2.0",
+      "type": "application/dac.native",
+      "category": "application"
+    },
+    {
+      "name": "YouTube 2025 (exp)",
+      "description": "",
+      "id": "com.rdkcentral.youtube-exp",
+      "version": "0.3.1",
+      "type": "application/dac.native",
+      "category": "application",
+      "icon": "https://appcatalog.dev.rdkinnovation.com/appcatalog/icons/arm/com.rdkcentral.youtube-exp+default.png"
+    },
+    {
+      "name": "YouTube 2025",
+      "description": "",
+      "id": "com.rdkcentral.youtube",
+      "version": "0.3.1",
+      "type": "application/dac.native",
+      "category": "application",
+      "icon": "https://appcatalog.dev.rdkinnovation.com/appcatalog/icons/arm/com.rdkcentral.youtube+default.png"
+    },
+    {
+      "name": "ytlr-cert-2021",
+      "description": "",
+      "id": "com.rdkcentral.ytlr-cert-2021",
+      "version": "0.4.2",
+      "type": "application/dac.native",
+      "category": "application",
+      "icon": "https://appcatalog.dev.rdkinnovation.com/appcatalog/icons/arm/com.rdkcentral.ytlr-cert-2021+default.png"
+    }
+  ],
+  "meta": {
+    "resultSet": {
+      "count": 5,
+      "limit": 10,
+      "offset": 0,
+      "total": 5
+    }
+  }
+}
+     */
+    if (!catalogApps || !catalogApps.applications || catalogApps.meta.resultSet.total === 0 || installedApps.length === 0) {
+      break;
+    }
+    for (const catalogApp of catalogApps.applications) {
+      const installedApp = installedApps.find(app => app.appId === catalogApp.id);
+      if (installedApp && installedApp.version !== catalogApp.version) {
+        updateAvailableApps.push({ appId: catalogApp.id, version: catalogApp.version });
+      }
+    }
+    offset += limit;
+    if (offset >= catalogApps.meta.resultSet.total) {
+      break;
+    }
+  }
+  // Hack to test REFUI update locally.
+  let refuiapp = {
+      "name": "refui",
+      "description": "System Reference UI",
+      "id": "com.rdkcentral.refui",
+      "version": "6.0.34",
+      "type": "application/dac.native",
+      "category": "application"
+  };
+  return updateAvailableApps.concat(refuiapp);
 }
 
 export async function getCatalogServerURL() {
