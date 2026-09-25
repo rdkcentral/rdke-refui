@@ -24,6 +24,7 @@ import AppCard from "../items/AppCard";
 import { getInstalledDACApps, startDACApp, uninstallDACApp, installDACApp } from "../api/DACApi";
 import { filterExcludedApps } from "../helpers/DACAppPresentation";
 import UninstallConfirmation from "../overlays/UninstallConfirmation";
+import UpdateProgressOverlay from "../overlays/UpdateProgressOverlay";
 import NetworkManager from "../api/NetworkManagerAPI";
 import { getAppUpdateDetails } from "../api/AppCatalog.js";
 
@@ -168,12 +169,20 @@ export default class AppInfoPage extends Lightning.Component {
                 type: UninstallConfirmation,
                 visible: false,
                 zIndex: 10
+            },
+
+            // Update Progress Overlay
+            UpdateProgressOverlay: {
+                type: UpdateProgressOverlay,
+                visible: false,
+                zIndex: 11
             }
         }
     }
 
     _construct() {
         this._appData = [];
+        this._isOperationInProgress = false;
     }
 
     async _init() {
@@ -367,11 +376,71 @@ export default class AppInfoPage extends Lightning.Component {
                 message: Language.translate('UI Update Available; needs app restart to apply. Press OK to begin.'),
                 buttonText: Language.translate('OK'),
                 onButtonPress: async () => {
-                    await installDACApp(appInfo, null);
+                    await this._performUpdate(appInfo);
                 }
             });
         } else {
             console.log(`Update process implementation needed for ${appInfo.name}`);
+        }
+    }
+
+    /**
+     * Perform app update with progress overlay
+     * Locks user interaction until completion
+     */
+    async _performUpdate(appInfo) {
+        try {
+            this._isOperationInProgress = true;
+            const progressOverlay = this.tag('UpdateProgressOverlay');
+            progressOverlay.showProgress(appInfo.name);
+
+            // Create a wrapper object that implements the progress interface
+            const progressHandler = {
+                setProgress: (percent, state) => {
+                    progressOverlay.setProgress(percent, state);
+                },
+                fireAncestors: (eventName, success) => {
+                    if (eventName === '$fireDACOperationFinished') {
+                        // Operation finished, hide overlay and unlock interaction
+                        this._completeUpdate(success, appInfo);
+                    }
+                }
+            };
+
+            console.log(`Starting update for ${appInfo.name}...`);
+            const result = await installDACApp(appInfo, progressHandler);
+
+            if (result) {
+                console.log(`${appInfo.name} updated successfully`);
+            } else {
+                console.error(`Failed to update ${appInfo.name}`);
+                this._completeUpdate(false, appInfo);
+            }
+        } catch (error) {
+            console.error(`Error updating ${appInfo.name}:`, error);
+            this._completeUpdate(false, appInfo);
+        }
+    }
+
+    /**
+     * Complete the update operation and restore UI
+     */
+    _completeUpdate(success, appInfo) {
+        this._isOperationInProgress = false;
+        const progressOverlay = this.tag('UpdateProgressOverlay');
+        progressOverlay.hideProgress();
+
+        if (success) {
+            console.log(`${appInfo.name} update completed successfully`);
+            // Refresh the app list to reflect the updated version
+            this._fetchInstalledApps();
+        } else {
+            console.error(`Failed to update ${appInfo.name}`);
+            this.widgets.failok.notify({
+                title: Language.translate('Update Failed'),
+                msg: Language.translate('Failed to update') + ` "${appInfo.name}". ` + Language.translate('Please try again later.'),
+            });
+            Router.focusWidget('FailOk');
         }
     }
 
@@ -496,6 +565,9 @@ export default class AppInfoPage extends Lightning.Component {
 
     // Navigation handlers
     _handleLeft() {
+        if (this._isOperationInProgress) {
+            return true; // Block event
+        }
         const currentCard = this._appList.currentItem;
         if (currentCard && currentCard._handleLeft && currentCard._handleLeft()) {
             return true;
@@ -504,6 +576,9 @@ export default class AppInfoPage extends Lightning.Component {
     }
 
     _handleRight() {
+        if (this._isOperationInProgress) {
+            return true; // Block event
+        }
         const currentCard = this._appList.currentItem;
         if (currentCard && currentCard._handleRight) {
             return currentCard._handleRight();
@@ -512,10 +587,16 @@ export default class AppInfoPage extends Lightning.Component {
     }
 
     _handleBack() {
+        if (this._isOperationInProgress) {
+            return true; // Block event
+        }
         Router.back();
     }
 
     _handleUp() {
+        if (this._isOperationInProgress) {
+            return true; // Block event
+        }
         if (this._appList.index === 0) {
             this.widgets.menu.notify('TopPanel');
             return true;
