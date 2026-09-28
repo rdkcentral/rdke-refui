@@ -533,10 +533,10 @@ export async function getAppUpdateDetails(installedApps) {
   }
   // Hack to test REFUI update locally.
   let refuiapp = {
-      "name": "refui",
+      "name": "Refui",
       "description": "System Reference UI",
       "id": "com.rdkcentral.refui",
-      "version": "6.0.35",
+      "version": "6.0.34",
       "type": "application/dac.native",
       "category": "application"
   };
