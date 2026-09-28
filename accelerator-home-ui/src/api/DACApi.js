@@ -124,8 +124,8 @@ async function isPackageInstalled(id, version) {
   return result;
 }
 
-async function downloadAndInstall(pkg, downloadedSize, totalSize, progress) {
-  console.log(`downloadAndInstall(${pkg.url}, ${pkg.size})`);
+async function downloadAndInstall(pkg, downloadedSize, totalSize, progress, isRefui = false) {
+  console.log(`downloadAndInstall(${pkg.url}, ${pkg.size}, ${downloadedSize}, ${totalSize} , ${isRefui})`);
 
   const downloadId = await new Promise(async (resolve, reject) => {
     try {
@@ -153,33 +153,38 @@ async function downloadAndInstall(pkg, downloadedSize, totalSize, progress) {
     throw new Error(`Missing file locator for downloadId ${downloadId}`);
   }
 
-  try {
-    let installResult = await PackageManager.get().install(
-      pkg.id, pkg.version, fileLocator,
-    );
+  if (!isRefui) {
+    // RefUI bundle is managed by sceneset, no need to install & delete.
+    try {
+      let installResult = await PackageManager.get().install(
+        pkg.id, pkg.version, fileLocator,
+      );
 
-    if (installResult !== "NONE") {
-      errResult = new Error(installResult);
+      if (installResult !== "NONE") {
+        errResult = new Error(installResult);
+      }
+    } catch (err) {
+      logError(`install(${pkg.id}, ${pkg.version})`, err);
+      errResult = err;
     }
-  } catch (err) {
-    logError(`install(${pkg.id}, ${pkg.version})`, err);
-    errResult = err;
-  }
 
-  try {
-    await DownloadManager.get().delete(downloadId);
-  } catch (err) {
-    logWarning(`delete(${downloadId})`, err);
-  }
+    try {
+      await DownloadManager.get().delete(downloadId);
+    } catch (err) {
+      logWarning(`delete(${downloadId})`, err);
+    }
 
-  try {
-    await AppManager.get().setAppProperty(pkg.id, APP_DETAILS_KEY, JSON.stringify(pkg.details));
-  } catch (err) {
-    logWarning(`downloadAndInstall(${pkg.id})`, new ThunderError("setAppProperty()", err));
-  }
+    try {
+      await AppManager.get().setAppProperty(pkg.id, APP_DETAILS_KEY, JSON.stringify(pkg.details));
+    } catch (err) {
+      logWarning(`downloadAndInstall(${pkg.id})`, new ThunderError("setAppProperty()", err));
+    }
 
-  if (errResult) {
-    throw errResult;
+    if (errResult) {
+      throw errResult;
+    }
+  } else {
+    console.log(`RefUI bundle downloaded, no need to install & delete. downloadId: ${downloadId}`);
   }
 
   return true;
@@ -245,7 +250,7 @@ export async function installDACApp(app, progressElement) {
 
     let downloadedSize = 0;
     for (let pkg of packages) {
-      await downloadAndInstall(pkg, downloadedSize, totalSize, progress);
+      await downloadAndInstall(pkg, downloadedSize, totalSize, progress, ("com.rdkcentral.refui" === pkg.id));
       downloadedSize += pkg.size;
     }
     success();

@@ -412,7 +412,6 @@ export default class AppInfoPage extends Lightning.Component {
 
             console.log(`Starting update for ${appInfo.name}...`);
             const result = await installDACApp(appInfo, progressHandler);
-
             if (result) {
                 console.log(`${appInfo.name} updated successfully`);
             } else {
@@ -441,6 +440,12 @@ export default class AppInfoPage extends Lightning.Component {
             console.log(`${appInfo.name} update completed successfully`);
             // Refresh the app list to reflect the updated version
             this._fetchInstalledApps();
+            // Special case: Refui app updated, exit so that sceneset can complete the update and restart the app.
+            if (GLOBALS.selfclientAppName === appInfo.id) {
+                console.log("Refui app updated, exiting to allow restart.");
+                // Trigger browser exit to allow the updated app to restart.
+                window.close();
+            }
         } else {
             console.error(`Failed to update ${appInfo.name}${errorMsg ? ': ' + errorMsg : ''}`);
             let errorText = Language.translate('Failed to update') + ` "${appInfo.name}". `;
