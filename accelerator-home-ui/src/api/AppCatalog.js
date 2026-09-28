@@ -205,38 +205,6 @@ class LegacyAppCatalogHandler {
     // TODO: added for local testing, remove when appstore has this.
     if (id === "com.rdkcentral.refui") {
       console.log(`Returning hardcoded details for ${id}:${version}`);
-      // For the time being - load from local file system using http://10.0.0.35:8080/localcatalog.json
-      // which will have this:
-      /**
-      {
-        "header": {
-          "url": "file:///opt/com.rdkcentral.refui+6.0.38.bolt",
-          "size": 5285409,
-          "name": "refui",
-          "description": "",
-          "id": "com.rdkcentral.refui",
-          "version": "6.0.38",
-          "type": "application/dac.native",
-          "category": "application"
-        },
-        "versions": [
-          { "version": "6.0.38" },
-          { "version": "6.0.37" }
-        ],
-        "config": {
-          "id": "com.rdkcentral.refui",
-          "version": "6.0.38",
-          "versionName": "6.0.38",
-          "name": "refui",
-          "packageType": "application",
-          "entryPoint": "",
-          "dependencies": { "com.rdkcentral.base": "0.3.1", "com.rdkcentral.wpe": "0.4.2" },
-          "permissions": [],
-          "configuration": { "urn:rdk:config:platform": { "architecture": "arm", "os": "linux" } }
-        },
-        "dependencies": { "com.rdkcentral.base": "0.3.1", "com.rdkcentral.wpe": "0.4.2" }
-      };
-      */
       // fetch this json and return it as the app details.
       const refuiDetails = fetch("http://10.0.0.35:8080/localcatalog.json")
         .then(response => {
@@ -378,68 +346,6 @@ class AppCatalogHandler {
     // TODO: test change to use local bundle
     if (id === "com.rdkcentral.refui") {
       console.log(`Returning hardcoded details for ${id}:${version}`);
-      /**
-      const refuiDetails = {
-        "header": {
-          "url": "file:///opt/com.rdkcentral.refui+6.0.38.bolt",
-          "size": 5285409,
-          "name": "refui",
-          "description": "",
-          "id": "com.rdkcentral.refui",
-          "version": "6.0.38",
-          "type": "application/dac.native",
-          "category": "application"
-        },
-        "versions": [
-          { "version": "6.0.38" },
-          { "version": "6.0.37" }
-        ],
-        "config": {
-          "id": "com.rdkcentral.refui",
-          "version": "6.0.38",
-          "versionName": "6.0.38",
-          "name": "refui",
-          "packageType": "application",
-          "entryPoint": "",
-          "dependencies": { "com.rdkcentral.base": "0.3.1", "com.rdkcentral.wpe": "0.4.2" },
-          "permissions": [],
-          "configuration": { "urn:rdk:config:platform": { "architecture": "arm", "os": "linux" } }
-        },
-        "dependencies": { "com.rdkcentral.base": "0.3.1", "com.rdkcentral.wpe": "0.4.2" }
-      };
-      */
-      // For the time being - load from local file system using http://10.0.0.35:8080/localcatalog.json
-      // which will have this:
-      /**
-      {
-        "header": {
-          "url": "file:///opt/com.rdkcentral.refui+6.0.38.bolt",
-          "size": 5285409,
-          "name": "refui",
-          "description": "",
-          "id": "com.rdkcentral.refui",
-          "version": "6.0.38",
-          "type": "application/dac.native",
-          "category": "application"
-        },
-        "versions": [
-          { "version": "6.0.38" },
-          { "version": "6.0.37" }
-        ],
-        "config": {
-          "id": "com.rdkcentral.refui",
-          "version": "6.0.38",
-          "versionName": "6.0.38",
-          "name": "refui",
-          "packageType": "application",
-          "entryPoint": "",
-          "dependencies": { "com.rdkcentral.base": "0.3.1", "com.rdkcentral.wpe": "0.4.2" },
-          "permissions": [],
-          "configuration": { "urn:rdk:config:platform": { "architecture": "arm", "os": "linux" } }
-        },
-        "dependencies": { "com.rdkcentral.base": "0.3.1", "com.rdkcentral.wpe": "0.4.2" }
-      };
-      */
       // fetch this json and return it as the app details.
       const refuiDetails = fetch("http://10.0.0.35:8080/localcatalog.json")
         .then(response => {
