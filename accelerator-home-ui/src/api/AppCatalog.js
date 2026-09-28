@@ -179,7 +179,6 @@ class LegacyAppCatalogHandler {
   }
 
   async fetchStoreObject(request) {
-    console.log(`fetchStoreObject(${request})`);
     let config = await this.getStoreConfig();
     let headers = new Headers();
 
@@ -286,7 +285,6 @@ class AppCatalogHandler {
   }
 
   async fetch(url, options) {
-    console.log(`AppCatalog 268 fetch(${url})`);
     const response = await this.queue.enqueue(() => fetch(url, { credentials: 'include', ...options }));
     if (response.status === 401 || response.status === 403) {
       this.cancelRefresh();
@@ -578,7 +576,6 @@ export async function getApps(offset, limit) {
 }
 
 export async function getAppDetails(id, version) {
-  console.log(`getAppDetails(${id}, ${version}) before initAppCatalogHandler()`);
   await initAppCatalogHandler();
   const handler = appCatalogHandler;
   return callAndHandleAuthExpired(handler, () => handler.getAppDetails(id, version));

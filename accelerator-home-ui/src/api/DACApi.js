@@ -116,7 +116,6 @@ async function isPackageInstalled(id, version) {
 
   try {
     const packageState = await PackageManager.get().packageState(id, version);
-    console.log(`isPackageInstalled(${id}, ${version}) = ${packageState}`);
     result = (packageState === "INSTALLED");
   } catch (err) {
     logWarning(`isPackageInstalled()`, err);
@@ -223,7 +222,6 @@ export async function installDACApp(app, progressElement) {
     let totalSize = 0;
 
     if (typeof appDetails?.dependencies === "object") {
-      console.log(`Collecting dependencies for ${app.id}+${app.version}: ${JSON.stringify(appDetails.dependencies)}`);
       for (const id in appDetails.dependencies) {
         const version = appDetails.dependencies[id];
         if (!await isPackageInstalled(id, version)) {

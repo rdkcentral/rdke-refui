@@ -468,14 +468,14 @@ export default class AppInfoPage extends Lightning.Component {
                 console.log(`${appInfo.name} uninstalled successfully`);
                 const currentCard = this._appList.currentItem;
                 if (currentCard && currentCard.resetActionInProgress) {
-                currentCard.resetActionInProgress();
+                    currentCard.resetActionInProgress();
                 }
                 return true;
             } else {
                 console.error(`Failed to uninstall ${appInfo.name}`);
                 const currentCard = this._appList.currentItem;
                 if (currentCard && currentCard.resetActionInProgress) {
-                currentCard.resetActionInProgress();
+                    currentCard.resetActionInProgress();
                 }
                 return false;
             }
