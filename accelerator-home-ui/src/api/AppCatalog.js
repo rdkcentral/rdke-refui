@@ -504,76 +504,26 @@ export async function getAppUpdateDetails(installedApps) {
   let offset = 0;
   const limit = 10;
   let updateAvailableApps = [];
-  await initAppCatalogHandler();
+  try {
+    await initAppCatalogHandler();
+  } catch (err) {
+    console.error(`Failed to initialize app catalog handler: ${err}`);
+    return updateAvailableApps;
+  }
   const handler = appCatalogHandler;
   // call until all apps are fetched from the catalog
   while (true) {
     const catalogApps = await callAndHandleAuthExpired(handler, () => handler.getApps(offset, limit));
-    /**
-     * Sample response from the catalog
-{
-  "applications": [
-    {
-      "name": "mvt",
-      "description": "",
-      "id": "com.rdkcentral.mvt",
-      "version": "0.4.2",
-      "type": "application/dac.native",
-      "category": "application"
-    },
-    {
-      "name": "Wayland EGL Test",
-      "description": "",
-      "id": "com.rdkcentral.wayland-egl-test",
-      "version": "0.2.0",
-      "type": "application/dac.native",
-      "category": "application"
-    },
-    {
-      "name": "YouTube 2025 (exp)",
-      "description": "",
-      "id": "com.rdkcentral.youtube-exp",
-      "version": "0.3.1",
-      "type": "application/dac.native",
-      "category": "application",
-      "icon": "https://appcatalog.dev.rdkinnovation.com/appcatalog/icons/arm/com.rdkcentral.youtube-exp+default.png"
-    },
-    {
-      "name": "YouTube 2025",
-      "description": "",
-      "id": "com.rdkcentral.youtube",
-      "version": "0.3.1",
-      "type": "application/dac.native",
-      "category": "application",
-      "icon": "https://appcatalog.dev.rdkinnovation.com/appcatalog/icons/arm/com.rdkcentral.youtube+default.png"
-    },
-    {
-      "name": "ytlr-cert-2021",
-      "description": "",
-      "id": "com.rdkcentral.ytlr-cert-2021",
-      "version": "0.4.2",
-      "type": "application/dac.native",
-      "category": "application",
-      "icon": "https://appcatalog.dev.rdkinnovation.com/appcatalog/icons/arm/com.rdkcentral.ytlr-cert-2021+default.png"
-    }
-  ],
-  "meta": {
-    "resultSet": {
-      "count": 5,
-      "limit": 10,
-      "offset": 0,
-      "total": 5
-    }
-  }
-}
-     */
     if (!catalogApps || !catalogApps.applications || catalogApps.meta.resultSet.total === 0 || installedApps.length === 0) {
+      console.log("No apps found in catalog or no installed apps to compare.");
       break;
     }
     for (const catalogApp of catalogApps.applications) {
       const installedApp = installedApps.find(app => app.appId === catalogApp.id);
       if (installedApp && installedApp.version !== catalogApp.version) {
         updateAvailableApps.push({ appId: catalogApp.id, version: catalogApp.version });
+      } else if (!installedApp) {
+        console.log(`Installed app ${catalogApp.id} not found in catalog: ${JSON.stringify(catalogApp)}`);
       }
     }
     offset += limit;
@@ -586,7 +536,7 @@ export async function getAppUpdateDetails(installedApps) {
       "name": "refui",
       "description": "System Reference UI",
       "id": "com.rdkcentral.refui",
-      "version": "6.0.34",
+      "version": "6.0.35",
       "type": "application/dac.native",
       "category": "application"
   };
