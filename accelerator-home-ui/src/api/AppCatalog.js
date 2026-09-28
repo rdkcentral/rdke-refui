@@ -206,7 +206,10 @@ class LegacyAppCatalogHandler {
     // TODO: added for local testing, remove when appstore has this.
     if (id === "com.rdkcentral.refui") {
       console.log(`Returning hardcoded details for ${id}:${version}`);
-      const refuiDetails = {
+      // For the time being - load from local file system using http://10.0.0.35:8080/localcatalog.json
+      // which will have this:
+      /**
+      {
         "header": {
           "url": "file:///opt/com.rdkcentral.refui+6.0.38.bolt",
           "size": 5285409,
@@ -234,6 +237,24 @@ class LegacyAppCatalogHandler {
         },
         "dependencies": { "com.rdkcentral.base": "0.3.1", "com.rdkcentral.wpe": "0.4.2" }
       };
+      */
+      // fetch this json and return it as the app details.
+      const refuiDetails = fetch("http://10.0.0.35:8080/localcatalog.json")
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`Failed to fetch local catalog (HTTP ${response.status}: ${response.statusText})`);
+          }
+          return response.json();
+        })
+        .catch(err => {
+          const errorMsg = err?.message || String(err);
+          console.error(`Failed to fetch local localcatalog.json: ${errorMsg}`);
+          // Provide more specific error message for file access issues
+          if (errorMsg.includes('status 0') || errorMsg.includes('fetch')) {
+            throw new Error(`Catalog file not found or inaccessible at http://10.0.0.35:8080/localcatalog.json`);
+          }
+          throw err;
+        });
       return refuiDetails;
     }
     return this.fetchStoreObject("/apps/" + id + ":" + version + "?arch=" + APP_DEFAULT_ARCH);
@@ -359,6 +380,7 @@ class AppCatalogHandler {
     // TODO: test change to use local bundle
     if (id === "com.rdkcentral.refui") {
       console.log(`Returning hardcoded details for ${id}:${version}`);
+      /**
       const refuiDetails = {
         "header": {
           "url": "file:///opt/com.rdkcentral.refui+6.0.38.bolt",
@@ -387,6 +409,56 @@ class AppCatalogHandler {
         },
         "dependencies": { "com.rdkcentral.base": "0.3.1", "com.rdkcentral.wpe": "0.4.2" }
       };
+      */
+      // For the time being - load from local file system using http://10.0.0.35:8080/localcatalog.json
+      // which will have this:
+      /**
+      {
+        "header": {
+          "url": "file:///opt/com.rdkcentral.refui+6.0.38.bolt",
+          "size": 5285409,
+          "name": "refui",
+          "description": "",
+          "id": "com.rdkcentral.refui",
+          "version": "6.0.38",
+          "type": "application/dac.native",
+          "category": "application"
+        },
+        "versions": [
+          { "version": "6.0.38" },
+          { "version": "6.0.37" }
+        ],
+        "config": {
+          "id": "com.rdkcentral.refui",
+          "version": "6.0.38",
+          "versionName": "6.0.38",
+          "name": "refui",
+          "packageType": "application",
+          "entryPoint": "",
+          "dependencies": { "com.rdkcentral.base": "0.3.1", "com.rdkcentral.wpe": "0.4.2" },
+          "permissions": [],
+          "configuration": { "urn:rdk:config:platform": { "architecture": "arm", "os": "linux" } }
+        },
+        "dependencies": { "com.rdkcentral.base": "0.3.1", "com.rdkcentral.wpe": "0.4.2" }
+      };
+      */
+      // fetch this json and return it as the app details.
+      const refuiDetails = fetch("http://10.0.0.35:8080/localcatalog.json")
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`Failed to fetch local catalog (HTTP ${response.status}: ${response.statusText})`);
+          }
+          return response.json();
+        })
+        .catch(err => {
+          const errorMsg = err?.message || String(err);
+          console.error(`Failed to fetch local localcatalog.json: ${errorMsg}`);
+          // Provide more specific error message for file access issues
+          if (errorMsg.includes('status 0') || errorMsg.includes('fetch')) {
+            throw new Error(`Catalog file not found or inaccessible at http://10.0.0.35:8080/localcatalog.json`);
+          }
+          throw err;
+        });
       return refuiDetails;
     }
     return this.fetchAppCatalogObject("/apps/" + id + ":" + version + "?arch=" + APP_DEFAULT_ARCH);

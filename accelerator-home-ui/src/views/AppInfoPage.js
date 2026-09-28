@@ -183,6 +183,7 @@ export default class AppInfoPage extends Lightning.Component {
     _construct() {
         this._appData = [];
         this._isOperationInProgress = false;
+        this._pendingAction = null; // Store pending action from FailOk confirmation
     }
 
     async _init() {
@@ -248,9 +249,12 @@ export default class AppInfoPage extends Lightning.Component {
             console.log('Installed DAC Apps:' + JSON.stringify(installedApps));
             let updateAvailableApps = [];
             if (GLOBALS.IsConnectedToInternet) {
-                updateAvailableApps = await getAppUpdateDetails(installedApps);
+                try {
+                    updateAvailableApps = await getAppUpdateDetails(installedApps);
+                } catch (error) {
+                    console.error('Error fetching update details from catalog:', error);
+                }
             }
-
             // Transform the data to match AppCard expected format
             const appData = installedApps.map(app => ({
                 id: app.id,
@@ -260,7 +264,6 @@ export default class AppInfoPage extends Lightning.Component {
                 installed: app.installed,
                 hasUpdate: (!updateAvailableApps.length? false : updateAvailableApps.some(update => update.id === app.id && update.version !== app.version))
             }));
-
             this._loadAppData(appData);
         } catch (error) {
             console.error('Error fetching installed apps:', error);
@@ -368,17 +371,16 @@ export default class AppInfoPage extends Lightning.Component {
             return;
         }
         console.log(`Updating ${appInfo.name}...`);
-        // Show confirmation overlay with message "Update Available; needs app restart to apply."
+        // Show confirmation with message "Update Available; needs app restart to apply."
         if (GLOBALS.selfclientAppName === appInfo.id) {
             console.log(`This app has update: ${appInfo.name}`);
-            Router.navigate('ErrorPage', {
+            // Store the app info for pending update action
+            this._pendingAction = { type: 'update', appInfo };
+            this.widgets.failok.notify({
                 title: Language.translate('Update Available'),
-                message: Language.translate('UI Update Available; needs app restart to apply. Press OK to begin.'),
-                buttonText: Language.translate('OK'),
-                onButtonPress: async () => {
-                    await this._performUpdate(appInfo);
-                }
+                msg: Language.translate('UI Update Available; needs app restart to apply.')
             });
+            Router.focusWidget('FailOk');
         } else {
             console.log(`Update process implementation needed for ${appInfo.name}`);
         }
@@ -389,6 +391,7 @@ export default class AppInfoPage extends Lightning.Component {
      * Locks user interaction until completion
      */
     async _performUpdate(appInfo) {
+        console.log(`Performing update for ${appInfo.name}...`);
         try {
             this._isOperationInProgress = true;
             const progressOverlay = this.tag('UpdateProgressOverlay');
@@ -402,7 +405,7 @@ export default class AppInfoPage extends Lightning.Component {
                 fireAncestors: (eventName, success) => {
                     if (eventName === '$fireDACOperationFinished') {
                         // Operation finished, hide overlay and unlock interaction
-                        this._completeUpdate(success, appInfo);
+                        this._completeUpdate(success, appInfo, null);
                     }
                 }
             };
@@ -414,18 +417,22 @@ export default class AppInfoPage extends Lightning.Component {
                 console.log(`${appInfo.name} updated successfully`);
             } else {
                 console.error(`Failed to update ${appInfo.name}`);
-                this._completeUpdate(false, appInfo);
+                this._completeUpdate(false, appInfo, null);
             }
         } catch (error) {
             console.error(`Error updating ${appInfo.name}:`, error);
-            this._completeUpdate(false, appInfo);
+            const errorMsg = error?.message || String(error);
+            this._completeUpdate(false, appInfo, errorMsg);
         }
     }
 
     /**
      * Complete the update operation and restore UI
+     * @param {boolean} success - Whether the update succeeded
+     * @param {object} appInfo - App information
+     * @param {string} errorMsg - Optional error message to display
      */
-    _completeUpdate(success, appInfo) {
+    _completeUpdate(success, appInfo, errorMsg) {
         this._isOperationInProgress = false;
         const progressOverlay = this.tag('UpdateProgressOverlay');
         progressOverlay.hideProgress();
@@ -435,10 +442,16 @@ export default class AppInfoPage extends Lightning.Component {
             // Refresh the app list to reflect the updated version
             this._fetchInstalledApps();
         } else {
-            console.error(`Failed to update ${appInfo.name}`);
+            console.error(`Failed to update ${appInfo.name}${errorMsg ? ': ' + errorMsg : ''}`);
+            let errorText = Language.translate('Failed to update') + ` "${appInfo.name}". `;
+            if (errorMsg) {
+                errorText += `${Language.translate('Error')}: ${errorMsg}`;
+            } else {
+                errorText += Language.translate('Please try again later.');
+            }
             this.widgets.failok.notify({
                 title: Language.translate('Update Failed'),
-                msg: Language.translate('Failed to update') + ` "${appInfo.name}". ` + Language.translate('Please try again later.'),
+                msg: errorText
             });
             Router.focusWidget('FailOk');
         }
@@ -611,6 +624,17 @@ export default class AppInfoPage extends Lightning.Component {
     _focus() {
         // Fetch latest installed apps every time page is focused
         this._fetchInstalledApps();
+
+        // Execute any pending action from FailOk confirmation
+        if (this._pendingAction) {
+            const action = this._pendingAction;
+            this._pendingAction = null; // Clear immediately to avoid re-execution
+
+            if (action.type === 'update') {
+                console.log(`Executing pending update for ${action.appInfo.name}`);
+                this._performUpdate(action.appInfo);
+            }
+        }
     }
 
     static _states() {

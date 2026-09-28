@@ -53,7 +53,7 @@ export default class PackageManager {
 
     return this.thunder.Controller[thunderCall](
     ).then(result => {
-      this.LOG(thunderCall, " result:", JSON.stringify(result));
+      this.LOG(thunderCall, " result:" + JSON.stringify(result));
       return result;
     }).catch(err => {
       this.handleThunderError(thunderCall, err);
@@ -66,7 +66,7 @@ export default class PackageManager {
     return this.thunder.call(
       this.callsign, thunderCall
     ).then(result => {
-      this.LOG(thunderCall, " result:", JSON.stringify(result));
+      this.LOG(thunderCall, " result:" + JSON.stringify(result));
       return result.packages ?? result;
     }).catch(err => {
       this.handleThunderError(thunderCall, err);
@@ -82,7 +82,7 @@ export default class PackageManager {
          To forward a version to the remote function, use "versionAsParameter". */
       { packageId, "versionAsParameter": version }
     ).then(result => {
-      this.LOG(thunderCall, " result:", JSON.stringify(result));
+      this.LOG(thunderCall, " result:" + JSON.stringify(result));
       return result;
     }).catch(err => {
       this.handleThunderError(thunderCall, err);
@@ -98,7 +98,7 @@ export default class PackageManager {
          To forward a version to the remote function, use "versionAsParameter". */
       { packageId, "versionAsParameter": version }
     ).then(result => {
-      this.LOG(thunderCall, " result:", JSON.stringify(result));
+      this.LOG(thunderCall, " result:" + JSON.stringify(result));
       return result;
     }).catch(err => {
       this.handleThunderError(thunderCall, err);
@@ -112,7 +112,7 @@ export default class PackageManager {
       this.callsign, thunderCall,
       { packageId }
     ).then(result => {
-      this.LOG(thunderCall, " result:", JSON.stringify(result));
+      this.LOG(thunderCall, " result:" + JSON.stringify(result));
       return result;
     }).catch(err => {
       this.handleThunderError(thunderCall, err);
@@ -128,7 +128,7 @@ export default class PackageManager {
          To forward a version to the remote function, use "versionAsParameter". */
       { packageId, "versionAsParameter": version, fileLocator }
     ).then(result => {
-      this.LOG(thunderCall, " result:", JSON.stringify(result));
+      this.LOG(thunderCall, " result:" + JSON.stringify(result));
       return result;
     }).catch(err => {
       this.handleThunderError(thunderCall, err);
@@ -144,7 +144,7 @@ export default class PackageManager {
          To forward a version to the remote function, use "versionAsParameter". */
       { packageId, "versionAsParameter": version }
     ).then(result => {
-      this.LOG(thunderCall, " result:", JSON.stringify(result));
+      this.LOG(thunderCall, " result:" + JSON.stringify(result));
       return result;
     }).catch(err => {
       this.handleThunderError(thunderCall, err);
