@@ -246,16 +246,13 @@ export default class AppInfoPage extends Lightning.Component {
     async _fetchInstalledApps() {
         try {
             const installedApps = filterExcludedApps(await getInstalledDACApps());
-            // Hack: refui is not present in appcatalog/appstore yet.
-            let refuiapp = { "id": "com.rdkcentral.refui", "version": "6.0.35", "name": "refui", "installed": [{ "appName": "Refui", "version": "6.0.35" }], "icon": "/images/apps/DACApp_455_255.png" }
-            installedApps.push(refuiapp);
-            console.log('Installed DAC Apps:' + JSON.stringify(installedApps));
+            console.log('Filtered Installed DAC Apps:' + JSON.stringify(installedApps));
             let updateAvailableApps = [];
             if (GLOBALS.IsConnectedToInternet) {
                 try {
                     updateAvailableApps = await getAppUpdateDetails(installedApps);
                 } catch (error) {
-                    console.error('Error fetching update details from catalog:', error);
+                    console.error('Error fetching update details from catalog:' + JSON.stringify(error));
                 }
             }
             // Transform the data to match AppCard expected format
