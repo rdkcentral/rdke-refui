@@ -37,6 +37,7 @@ export default class DownloadManager {
     this.thunder = ThunderJS(CONFIG.thunderConfig);
     this.callsign = 'org.rdk.DownloadManager';
     this.downloadIdToStatus = new Map();
+    this.downloadIdToLastPercent = new Map();
     this.listeners = new Map();
     this.tickTimeout = null;
     this.INFO = console.info;
@@ -56,6 +57,7 @@ export default class DownloadManager {
               const listener = this.listeners.get(downloadId);
               if (listener) {
                 this.listeners.delete(downloadId);
+                this.downloadIdToLastPercent.delete(downloadId);
                 if (this.listeners.size === 0) {
                   clearTimeout(this.tickTimeout);
                   this.tickTimeout = null;
@@ -129,6 +131,7 @@ export default class DownloadManager {
     }).then(result => {
       this.LOG(`download(${url}) result: ${JSON.stringify(result)}`);
       const downloadId = result.downloadId ?? result;
+      this.downloadIdToLastPercent.set(downloadId, -1);
       const downloadStatus = this.downloadIdToStatus.get(downloadId);
 
       if (!downloadStatus) {
@@ -150,8 +153,12 @@ export default class DownloadManager {
     return this.thunder.call(this.callsign, 'progress', {
       downloadId,
     }).then(result => {
-      this.LOG(`progress(${downloadId}) result: ${JSON.stringify(result)}`);
       if (typeof result === "number") {
+        const last = this.downloadIdToLastPercent.get(downloadId);
+        if (result === 0 || result === 100 || result - (last ?? -1) >= 10) {
+          this.downloadIdToLastPercent.set(downloadId, result);
+          this.LOG(`progress(${downloadId}) result: ${result}`);
+        }
         return {
           percent: result,
         };
@@ -174,6 +181,7 @@ export default class DownloadManager {
         fileLocator,
       }).then(result => {
         this.downloadIdToStatus.delete(downloadId);
+        this.downloadIdToLastPercent.delete(downloadId);
         this.LOG(`delete(${fileLocator}) result: ${JSON.stringify(result)}`);
         return result;
       }).catch(err => {
