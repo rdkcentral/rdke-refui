@@ -35,20 +35,54 @@ export default class AppManager {
     return instance;
   }
 
-    launchApp(appId) {
-        return new Promise((resolve, reject) => {
-        this.INFO("launchApp called with appId: " + appId );
-            this.thunder.call(this.callsign, 'launchApp', { "appId":appId })
-                .then(response => {
-                    resolve(response)
-                    this.INFO("launchApp response: " + JSON.stringify(response));
-                })
-                .catch(err => {
-                    this.ERR("Error launchApp: " + JSON.stringify(err))
-                    reject(err)
-                })
-        })
+  handleThunderError(thunderCall, thunderErr) {
+    const err = new ThunderError(thunderCall, thunderErr);
+    const errString = err.toString();
+    this.ERR(errString);
+    Metrics.error(Metrics.ErrorType.OTHER, "AppManager", errString, false, null)
+
+    throw err;
+  }
+
+  async activate() {
+    return this.thunder.Controller.activate(
+      { callsign: this.callsign }
+    ).then(() => {
+      this.INFO("AppManager activated");
+      return true;
+    }).catch(err => {
+      this.handleThunderError(`activate(${this.callsign})`, err);
+    });
+  }
+
+  async deactivate() {
+    return this.thunder.Controller.deactivate(
+      { callsign: this.callsign }
+    ).then(() => {
+      this.INFO("AppManager deactivated");
+      return true;
+    }).catch(err => {
+      this.handleThunderError(`deactivate(${this.callsign})`, err);
+    });
+  }
+
+  launchApp(appId,intent) {      
+    const thunderCall = "launchApp";
+    const params = { appId };
+    if (typeof intent === "string") {
+      params.intent = intent;
     }
+    return this.thunder.call(
+      this.callsign, thunderCall, params,
+    ).then(result => {
+      this.LOG(thunderCall, " result:", JSON.stringify(result));
+      return result;
+    }).catch(err => {
+      this.handleThunderError(thunderCall, err);
+    });
+  }
+
+  
     getLoadedApps() {
         return new Promise((resolve, reject) => {
         this.thunder.call(this.callsign, 'getLoadedApps', {}).then(response => {
