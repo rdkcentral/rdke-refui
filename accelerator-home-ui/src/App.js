@@ -63,6 +63,7 @@ import RuntimeManager from './api/RuntimeManagerApi.js';
 import AppController from './AppController.js';
 import DIALManager from './DIALManager.js';
 import userSettingsApi from './api/UserSettingsApi.js';
+import XcastApi from './api/XcastApi.js';
 
 var thunder = ThunderJS(CONFIG.thunderConfig);
 var appApi = new AppApi();
