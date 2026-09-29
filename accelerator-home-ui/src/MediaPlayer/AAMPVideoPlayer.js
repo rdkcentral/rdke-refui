@@ -273,13 +273,13 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 		if (this._nativeServiceReady) {
 			try {
 				const priority = await AppManager.get().getAppProperty(nativePlayerServiceBolt, 'priority');
-				console.log('Native player service priority: ' + priority);
-				if (priority !== 0) {
+				if (0 !== priority) {
 					await AppManager.get().setAppProperty(nativePlayerServiceBolt, 'priority', 0)
 				}
 			} catch (error) {
 				await AppManager.get().setAppProperty(nativePlayerServiceBolt, 'priority', 0)
-			return;
+				return;
+			}
 		}
 		if (!this._nativeServiceLaunchPromise) {
 			this._nativeServiceLaunchPromise = (async () => {
