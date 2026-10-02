@@ -699,43 +699,45 @@ export default class App extends Router.App {
 					this.ERR("Xcast setEnabled error:" + JSON.stringify(err))
 				});
 				await this.xcastApi.setStandbyBehavior("active").then(async res => {
-					this.LOG("XcastApi setStandbyBehavior result:" + JSON.stringify(res));
+					this.LOG("Xcast setStandbyBehavior result:" + JSON.stringify(res));
 					let params = {
 						"applications": []
 					};
 					try {
 						try {
-							installedApps = await AppManager.get().getInstalledApps();
-							installedApps.forEach(app => {
-								const appId = app?.id || app?.appId;
-								if (!appId) {
+							await AppManager.get().getInstalledApps().then(async installedApps => {
+								console.warn("Xcast installed apps: " + JSON.stringify(installedApps));
+								installedApps.forEach(app => {
+									const appId = app?.id || app?.appId;
+									if (!appId) {
+										this.WARN("Skipping app with missing appId: " + JSON.stringify(app));
+										return;
+									}
+									if (appId.toLowerCase().includes("youtube")) {
+										this._registerXcastApplication(params, "YouTube", "myYouTube", ".youtube.com", appId, "source_type=12", "youtube_payload", 1);
+									} else if (appId.toLowerCase().includes("amazon")) {
+										this._registerXcastApplication(params, "AmazonInstantVideo", "myPrimeVideo", ".amazon.com", appId, "source_type=12", "amazon_payload", 1);
+									} else if (appId.toLowerCase().includes("netflix")) {
+										this._registerXcastApplication(params, "Netflix", "myNetflix", ".netflix.com", appId, "source_type=12", "netflix_payload", 0);
+									}
+								});
+								console.warn("Xcast register app param " + JSON.stringify(params));
+								if (params.applications.length === 0) {
+									this.LOG("No supported applications found for Xcast registration");
 									return;
 								}
-								if (appId.toLowerCase().includes("youtube")) {
-									this._registerXcastApplication(params, "YouTube", "myYouTube", ".youtube.com", appId, "source_type=12", "youtube_payload", 1);
-								} else if (appId.toLowerCase().includes("amazon")) {
-									this._registerXcastApplication(params, "AmazonInstantVideo", "myPrimeVideo", ".amazon.com", appId, "source_type=12", "amazon_payload", 1);
-								} else if (appId.toLowerCase().includes("netflix")) {
-									this._registerXcastApplication(params, "Netflix", "myNetflix", ".netflix.com", appId, "source_type=12", "netflix_payload", 0);
-								}
+								await this.xcastApi.registerApplications(params).then(async res => {
+									console.warn("Xcast registerApplications success" + JSON.stringify(res));
+								}).catch(err => {
+									this.ERR("Xcast registerApplications error:" + JSON.stringify(err))
+								});
 							});
 						} catch (err) {
 							this.ERR("Error fetching installed apps: " + JSON.stringify(err));
-							return;
 						}
 					} catch (e) {
 						this.ERR("getPluginStatus error :" + JSON.stringify(e))
 					}
-					console.warn("Xcast register app param " + JSON.stringify(params));
-					if (params.applications.length === 0) {
-						this.LOG("No supported applications found for Xcast registration");
-						return;
-					}
-					await this.xcastApi.registerApplications(params).then(async res => {
-						console.warn("Xcast registerApplications success" + JSON.stringify(res));
-					}).catch(err => {
-						this.ERR("Xcast registerApplications error:" + JSON.stringify(err))
-					});
 				}).catch(error => {
 					this.ERR("XcastApi setStandbyBehavior error:" + JSON.stringify(error));
 				});
@@ -761,37 +763,30 @@ export default class App extends Router.App {
 		return this.xcastApi.setApplicationState(params);
 	}
 
-	_handleXcastAppLifecycle(applicationName, appId, action) {
+	async _handleXcastAppLifecycle(applicationName, action, appId = null) {
 		const targetApp = appId || this._getXcastAppId(applicationName) || applicationName;
-		if (!targetApp) {
-			return Promise.resolve(false);
+		if (!targetApp) return false;
+
+		const actionMap = {
+			launch: { method: 'launchApp',    success: 'running', error: 'stopped' },
+			resume: { method: 'launchApp',    success: 'running', error: 'stopped' },
+			hide:   { method: 'closeApp',     success: 'hidden',  error: 'hidden'  },
+			stop:   { method: 'terminateApp', success: 'stopped', error: 'stopped' }
+		};
+
+		const config = actionMap[action];
+		if (!config) return false;
+
+		console.log(`Arun: Performing '${action}' on Xcast app: ${targetApp} using method: ${config.method}`);
+		try {
+			await AppManager.get()[config.method](targetApp);
+			return this._registerXcastState(applicationName, config.success, targetApp);
+		} catch (err) {
+			this.ERR(`Error performing '${action}' on Xcast app: ${JSON.stringify(err)}`);
+			return this._registerXcastState(applicationName, config.error, targetApp);
 		}
-		if (action === 'launch') {
-			return AppManager.get().launchApp(targetApp).then(() => this._registerXcastState(applicationName, 'running', targetApp)).catch(err => {
-				this.ERR("Error launching Xcast app: " + JSON.stringify(err));
-				return this._registerXcastState(applicationName, 'stopped', targetApp);
-			});
-		}
-		if (action === 'hide') {
-			return AppManager.get().closeApp(targetApp).then(() => this._registerXcastState(applicationName, 'hidden', targetApp)).catch(err => {
-				this.ERR("Error hiding Xcast app: " + JSON.stringify(err));
-				return this._registerXcastState(applicationName, 'hidden', targetApp);
-			});
-		}
-		if (action === 'resume') {
-			return AppManager.get().launchApp(targetApp).then(() => this._registerXcastState(applicationName, 'running', targetApp)).catch(err => {
-				this.ERR("Error resuming Xcast app: " + JSON.stringify(err));
-				return this._registerXcastState(applicationName, 'stopped', targetApp);
-			});
-		}
-		if (action === 'stop') {
-			return AppManager.get().terminateApp(targetApp).then(() => this._registerXcastState(applicationName, 'stopped', targetApp)).catch(err => {
-				this.ERR("Error stopping Xcast app: " + JSON.stringify(err));
-				return this._registerXcastState(applicationName, 'stopped', targetApp);
-			});
-		}
-		return Promise.resolve(false);
 	}
+
 	SubscribeToNetworkManager() {
 		thunder.on('org.rdk.NetworkManager', 'onInternetStatusChange', data => {
 			if (data.status === "FULLY_CONNECTED") {
@@ -1416,23 +1411,17 @@ export default class App extends Router.App {
 		this.onActionStartRequest = thunder.on("org.rdk.AppActions", "onActionStartRequest", notification => {
 			const LOGTAG = "Arun:NEWDIAL: "
 			this.LOG(LOGTAG + 'onActionStartRequest: ' + JSON.stringify(notification));
-			if (notification && notification.initiator === "Xcast" && notification.intent) {
-				switch (notification.intent.toLowerCase()) {
-					case "launch":
-						this._handleXcastAppLifecycle(notification.applicationName || notification.appName, notification.applicationId || notification.appId, 'launch');
-						break;
-					case "hide":
-						this._handleXcastAppLifecycle(notification.applicationName || notification.appName, notification.applicationId || notification.appId, 'hide');
-						break;
-					case "resume":
-						this._handleXcastAppLifecycle(notification.applicationName || notification.appName, notification.applicationId || notification.appId, 'resume');
-						break;
-					case "stop":
-						this._handleXcastAppLifecycle(notification.applicationName || notification.appName, notification.applicationId || notification.appId, 'stop');
-						break;
-					default:
-						this.LOG(LOGTAG + "onActionStartRequest: intent " + notification.intent + " is not supported.");
+			if (notification && notification.initiator?.toLowerCase() === "xcast" && notification.intent && notification.handlerAppId) {
+				const intent = notification.intent.toLowerCase();
+				const validIntents = ["launch", "hide", "resume", "stop"];
+				if (validIntents.includes(intent)) {
+					const appName = notification.handlerAppId;
+					this._handleXcastAppLifecycle(appName, intent);
+				} else {
+					this.LOG(`${LOGTAG}onActionStartRequest: intent ${notification.intent} is not supported.`);
 				}
+			} else {
+				this.LOG(`${LOGTAG}onActionStartRequest: notification is not from xcast or missing required fields.`);
 			}
 		});
 	}
