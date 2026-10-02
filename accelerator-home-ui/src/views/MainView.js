@@ -482,6 +482,13 @@ export default class MainView extends Lightning.Component {
     // Refresh My Apps row when apps are installed/uninstalled (including sideloaded via curl)
     this._onPackageChanged = (action, data) => {
       this.LOG('onPackageChanged: ' + action + ' ' + JSON.stringify(data))
+      // TODO: check version match as well.
+      if (('installed' === action) && (data && data.appId === GLOBALS._selfclientAppName)) {
+        this.LOG('Version change detected for RefUI, close to restart.')
+        setTimeout(() => {
+          window.close();
+        }, 6000);
+      }
       this._scheduleMyAppsRefresh()
     }
     // Refresh DAC apps row when app catalog authentication changes

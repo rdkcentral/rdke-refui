@@ -259,10 +259,10 @@ export default class AppInfoPage extends Lightning.Component {
             const appData = installedApps.map(app => ({
                 id: app.id,
                 name: app.name,
-                version: app.version,
+                version: updateAvailableApps.find(update => update.id === app.id && update.version !== app.version)?.version || app.version,
                 icon: app.icon || '/images/apps/DACApp_455_255.png',
                 installed: app.installed,
-                hasUpdate: (!updateAvailableApps.length? false : updateAvailableApps.some(update => update.id === app.id && update.version !== app.version))
+                hasUpdate: updateAvailableApps.some(update => update.id === app.id && update.version !== app.version)
             }));
             this._loadAppData(appData);
         } catch (error) {
@@ -391,7 +391,7 @@ export default class AppInfoPage extends Lightning.Component {
      * Locks user interaction until completion
      */
     async _performUpdate(appInfo) {
-        console.log(`Performing update for ${appInfo.name}...`);
+        console.log(`Performing update for appInfo: ${JSON.stringify(appInfo)}...`);
         try {
             this._isOperationInProgress = true;
             const progressOverlay = this.tag('UpdateProgressOverlay');
@@ -410,7 +410,7 @@ export default class AppInfoPage extends Lightning.Component {
                 }
             };
 
-            console.log(`Starting update for ${appInfo.name}...`);
+            console.log(`Starting update for appInfo: ${JSON.stringify(appInfo)}`);
             const result = await installDACApp(appInfo, progressHandler);
             if (result) {
                 console.log(`${appInfo.name} updated successfully`);
@@ -444,7 +444,9 @@ export default class AppInfoPage extends Lightning.Component {
             if (GLOBALS.selfclientAppName === appInfo.id) {
                 console.log("Refui app updated, exiting to allow restart.");
                 // Trigger browser exit to allow the updated app to restart.
-                window.close();
+                setTimeout(() => {
+                    window.close();
+                }, 5000);
             }
         } else {
             console.error(`Failed to update ${appInfo.name}${errorMsg ? ': ' + errorMsg : ''}`);
@@ -636,7 +638,7 @@ export default class AppInfoPage extends Lightning.Component {
             this._pendingAction = null; // Clear immediately to avoid re-execution
 
             if (action.type === 'update') {
-                console.log(`Executing pending update for ${action.appInfo.name}`);
+                console.log(`Executing pending update for ${action.appInfo.name} after FailOk confirmation with ${JSON.stringify(action.appInfo)}`);
                 this._performUpdate(action.appInfo);
             }
         }

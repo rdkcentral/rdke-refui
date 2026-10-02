@@ -153,38 +153,33 @@ async function downloadAndInstall(pkg, downloadedSize, totalSize, progress, isRe
     throw new Error(`Missing file locator for downloadId ${downloadId}`);
   }
 
-  if (!isRefui) {
-    // RefUI bundle is managed by sceneset, no need to install & delete.
-    try {
-      let installResult = await PackageManager.get().install(
-        pkg.id, pkg.version, fileLocator,
-      );
+  try {
+    let installResult = await PackageManager.get().install(
+      pkg.id, pkg.version, fileLocator,
+    );
 
-      if (installResult !== "NONE") {
-        errResult = new Error(installResult);
-      }
-    } catch (err) {
-      logError(`install(${pkg.id}, ${pkg.version})`, err);
-      errResult = err;
+    if (installResult !== "NONE") {
+      errResult = new Error(installResult);
     }
+  } catch (err) {
+    logError(`install(${pkg.id}, ${pkg.version})`, err);
+    errResult = err;
+  }
 
-    try {
-      await DownloadManager.get().delete(downloadId);
-    } catch (err) {
-      logWarning(`delete(${downloadId})`, err);
-    }
+  try {
+    await DownloadManager.get().delete(downloadId);
+  } catch (err) {
+    logWarning(`delete(${downloadId})`, err);
+  }
 
-    try {
-      await AppManager.get().setAppProperty(pkg.id, APP_DETAILS_KEY, JSON.stringify(pkg.details));
-    } catch (err) {
-      logWarning(`downloadAndInstall(${pkg.id})`, new ThunderError("setAppProperty()", err));
-    }
+  try {
+    await AppManager.get().setAppProperty(pkg.id, APP_DETAILS_KEY, JSON.stringify(pkg.details));
+  } catch (err) {
+    logWarning(`downloadAndInstall(${pkg.id})`, new ThunderError("setAppProperty()", err));
+  }
 
-    if (errResult) {
-      throw errResult;
-    }
-  } else {
-    console.log(`RefUI bundle downloaded, no need to install & delete. downloadId: ${downloadId}`);
+  if (errResult) {
+    throw errResult;
   }
 
   return true;
@@ -247,10 +242,11 @@ export async function installDACApp(app, progressElement) {
       { id: app.id, version: app.version, details: appDetails }
     ));
     totalSize += packages.at(-1).size;
+    console.log(`Starting download and install for ${JSON.stringify(packages)}`);
 
     let downloadedSize = 0;
     for (let pkg of packages) {
-      await downloadAndInstall(pkg, downloadedSize, totalSize, progress, ("com.rdkcentral.refui" === pkg.id));
+      await downloadAndInstall(pkg, downloadedSize, totalSize, progress);
       downloadedSize += pkg.size;
     }
     success();

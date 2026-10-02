@@ -201,29 +201,6 @@ class LegacyAppCatalogHandler {
   }
 
   getAppDetails(id, version) {
-    console.log(`From before returning hack getAppDetails(${id}, ${version}) before fetchStoreObject()`);
-    // TODO: added for local testing, remove when appstore has this.
-    if (id === "com.rdkcentral.refui") {
-      console.log(`Returning hardcoded details for ${id}:${version}`);
-      // fetch this json and return it as the app details.
-      const refuiDetails = fetch("http://10.0.0.35:8080/localcatalog.json")
-        .then(response => {
-          if (!response.ok) {
-            throw new Error(`Failed to fetch local catalog (HTTP ${response.status}: ${response.statusText})`);
-          }
-          return response.json();
-        })
-        .catch(err => {
-          const errorMsg = err?.message || String(err);
-          console.error(`Failed to fetch local localcatalog.json: ${errorMsg}`);
-          // Provide more specific error message for file access issues
-          if (errorMsg.includes('status 0') || errorMsg.includes('fetch')) {
-            throw new Error(`Catalog file not found or inaccessible at http://10.0.0.35:8080/localcatalog.json`);
-          }
-          throw err;
-        });
-      return refuiDetails;
-    }
     return this.fetchStoreObject("/apps/" + id + ":" + version + "?arch=" + APP_DEFAULT_ARCH);
   }
 
@@ -532,11 +509,12 @@ export async function getAppUpdateDetails(installedApps) {
     }
   }
   // Hack to test REFUI update locally - report a higher version availability.
+  // This need to match the version in localcatalog.json for REFUI app.
   let refuiapp = {
       "name": "refui",
       "description": "Refui",
       "id": "com.rdkcentral.refui",
-      "version": "6.0.40",
+      "version": "6.0.45",
       "type": "application/dac.native",
       "category": "application"
   };
