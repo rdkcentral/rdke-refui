@@ -747,22 +747,6 @@ export default class App extends Router.App {
 		})
 	}
 
-	_registerXcastState(applicationName, state, appId = null) {
-		const targetAppId = appId || this._getXcastAppId(applicationName);
-		if (!targetAppId) {
-			this.LOG("App Xcast state update skipped for unsupported app: " + JSON.stringify(applicationName));
-			return Promise.resolve(false);
-		}
-		const params = {
-			applicationName: applicationName,
-			applicationId: targetAppId,
-			state,
-			error: 'none',
-			success: true
-		};
-		return this.xcastApi.setApplicationState(params);
-	}
-
 	async _handleXcastAppLifecycle(applicationName, action, appId = null) {
 		const targetApp = appId || this._getXcastAppId(applicationName) || applicationName;
 		if (!targetApp) return false;
@@ -780,10 +764,8 @@ export default class App extends Router.App {
 		console.log(`Arun: Performing '${action}' on Xcast app: ${targetApp} using method: ${config.method}`);
 		try {
 			await AppManager.get()[config.method](targetApp);
-			return this._registerXcastState(applicationName, config.success, targetApp);
 		} catch (err) {
 			this.ERR(`Error performing '${action}' on Xcast app: ${JSON.stringify(err)}`);
-			return this._registerXcastState(applicationName, config.error, targetApp);
 		}
 	}
 
