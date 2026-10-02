@@ -81,6 +81,36 @@ export default class App extends Router.App {
 		this.LOG = console.log;
 		this.ERR = console.error;
 		this.WARN = console.warn;
+		this.xcastAppIdMap = new Map();
+	}
+
+	_getXcastAppId(applicationName) {
+		if (!applicationName) {
+			return null;
+		}
+		const appName = String(applicationName).trim();
+		if (this.xcastAppIdMap.has(appName)) {
+			return this.xcastAppIdMap.get(appName);
+		}
+		for (const [registeredName, appId] of this.xcastAppIdMap.entries()) {
+			if (registeredName.toLowerCase() === appName.toLowerCase()) {
+				return appId;
+			}
+		}
+		return null;
+	}
+
+	_registerXcastApplication(params, name, prefix, cors, appId, query = 'source_type=12', payload = `${name.toLowerCase()}_payload`, allowStop = 1) {
+		params.applications.push({
+			name,
+			appId,
+			prefix,
+			cors,
+			query,
+			payload,
+			allowStop
+		});
+		this.xcastAppIdMap.set(name, appId);
 	}
 
 	_handleAppClose() {
@@ -674,43 +704,33 @@ export default class App extends Router.App {
 						"applications": []
 					};
 					try {
-						await appApi.getPluginStatus("Cobalt").then(async res => {
-							params.applications.push({
-								"cors": ".youtube.com",
-								"name": "YouTube",
-								"prefix": "myYoutube"
-							}, {
-								"cors": ".youtube.com",
-								"name": "YouTubeTV",
-								"prefix": "myYouTubeTV"
+						try {
+							installedApps = await AppManager.get().getInstalledApps();
+							installedApps.forEach(app => {
+								const appId = app?.id || app?.appId;
+								if (!appId) {
+									return;
+								}
+								if (appId.toLowerCase().includes("youtube")) {
+									this._registerXcastApplication(params, "YouTube", "myYouTube", ".youtube.com", appId, "source_type=12", "youtube_payload", 1);
+								} else if (appId.toLowerCase().includes("amazon")) {
+									this._registerXcastApplication(params, "AmazonInstantVideo", "myPrimeVideo", ".amazon.com", appId, "source_type=12", "amazon_payload", 1);
+								} else if (appId.toLowerCase().includes("netflix")) {
+									this._registerXcastApplication(params, "Netflix", "myNetflix", ".netflix.com", appId, "source_type=12", "netflix_payload", 0);
+								}
 							});
-						});
+						} catch (err) {
+							this.ERR("Error fetching installed apps: " + JSON.stringify(err));
+							return;
+						}
 					} catch (e) {
 						this.ERR("getPluginStatus error :" + JSON.stringify(e))
 					}
-					try {
-						await appApi.getPluginStatus("Amazon").then(async res => {
-							params.applications.push({
-								"name": "AmazonInstantVideo",
-								"prefix": "myPrimeVideo",
-								"cors": ".amazon.com"
-							})
-						});
-					} catch (e) {
-						this.ERR("Amazon getPluginStatus error :" + JSON.stringify(e))
-					}
-					try {
-						await appApi.getPluginStatus("Netflix").then(async res => {
-							params.applications.push({
-								"name": "Netflix",
-								"prefix": "myNetflix",
-								"cors": ".netflix.com"
-							})
-						});
-					} catch (e) {
-						this.ERR("Amazon getPluginStatus error :" + JSON.stringify(e))
-					}
 					console.warn("Xcast register app param " + JSON.stringify(params));
+					if (params.applications.length === 0) {
+						this.LOG("No supported applications found for Xcast registration");
+						return;
+					}
 					await this.xcastApi.registerApplications(params).then(async res => {
 						console.warn("Xcast registerApplications success" + JSON.stringify(res));
 					}).catch(err => {
@@ -725,6 +745,53 @@ export default class App extends Router.App {
 		})
 	}
 
+	_registerXcastState(applicationName, state, appId = null) {
+		const targetAppId = appId || this._getXcastAppId(applicationName);
+		if (!targetAppId) {
+			this.LOG("App Xcast state update skipped for unsupported app: " + JSON.stringify(applicationName));
+			return Promise.resolve(false);
+		}
+		const params = {
+			applicationName: applicationName,
+			applicationId: targetAppId,
+			state,
+			error: 'none',
+			success: true
+		};
+		return this.xcastApi.setApplicationState(params);
+	}
+
+	_handleXcastAppLifecycle(applicationName, appId, action) {
+		const targetApp = appId || this._getXcastAppId(applicationName) || applicationName;
+		if (!targetApp) {
+			return Promise.resolve(false);
+		}
+		if (action === 'launch') {
+			return AppManager.get().launchApp(targetApp).then(() => this._registerXcastState(applicationName, 'running', targetApp)).catch(err => {
+				this.ERR("Error launching Xcast app: " + JSON.stringify(err));
+				return this._registerXcastState(applicationName, 'stopped', targetApp);
+			});
+		}
+		if (action === 'hide') {
+			return AppManager.get().closeApp(targetApp).then(() => this._registerXcastState(applicationName, 'hidden', targetApp)).catch(err => {
+				this.ERR("Error hiding Xcast app: " + JSON.stringify(err));
+				return this._registerXcastState(applicationName, 'hidden', targetApp);
+			});
+		}
+		if (action === 'resume') {
+			return AppManager.get().launchApp(targetApp).then(() => this._registerXcastState(applicationName, 'running', targetApp)).catch(err => {
+				this.ERR("Error resuming Xcast app: " + JSON.stringify(err));
+				return this._registerXcastState(applicationName, 'stopped', targetApp);
+			});
+		}
+		if (action === 'stop') {
+			return AppManager.get().terminateApp(targetApp).then(() => this._registerXcastState(applicationName, 'stopped', targetApp)).catch(err => {
+				this.ERR("Error stopping Xcast app: " + JSON.stringify(err));
+				return this._registerXcastState(applicationName, 'stopped', targetApp);
+			});
+		}
+		return Promise.resolve(false);
+	}
 	SubscribeToNetworkManager() {
 		thunder.on('org.rdk.NetworkManager', 'onInternetStatusChange', data => {
 			if (data.status === "FULLY_CONNECTED") {
@@ -1344,63 +1411,28 @@ export default class App extends Router.App {
 	registerXcastListeners() {
 		console.warn("Registering Xcast Listeners");
 		let self = this;
-		this.xcastApi.registerEvent('onApplicationLaunchRequest', notification => {
-			this.LOG('App onApplicationLaunchRequest: ' + JSON.stringify(notification));
-			appApi.getPowerState().then(res => {
-				if (res.currentState != PowerState.POWER_STATE_ON) {
-					appApi.setPowerState(PowerState.POWER_STATE_ON)
+		// xdial now emits app lifecycle intents through org.rdk.AppActions.onActionStartRequest.
+		// Do not handle the legacy XCast onApplication* notifications directly here.
+		this.onActionStartRequest = thunder.on("org.rdk.AppActions", "onActionStartRequest", notification => {
+			const LOGTAG = "Arun:NEWDIAL: "
+			this.LOG(LOGTAG + 'onActionStartRequest: ' + JSON.stringify(notification));
+			if (notification && notification.initiator === "Xcast" && notification.intent) {
+				switch (notification.intent.toLowerCase()) {
+					case "launch":
+						this._handleXcastAppLifecycle(notification.applicationName || notification.appName, notification.applicationId || notification.appId, 'launch');
+						break;
+					case "hide":
+						this._handleXcastAppLifecycle(notification.applicationName || notification.appName, notification.applicationId || notification.appId, 'hide');
+						break;
+					case "resume":
+						this._handleXcastAppLifecycle(notification.applicationName || notification.appName, notification.applicationId || notification.appId, 'resume');
+						break;
+					case "stop":
+						this._handleXcastAppLifecycle(notification.applicationName || notification.appName, notification.applicationId || notification.appId, 'stop');
+						break;
+					default:
+						this.LOG(LOGTAG + "onActionStartRequest: intent " + notification.intent + " is not supported.");
 				}
-			})
-			if (this.xcastApps(notification.applicationName)) {
-				// FIXME: Implement DIAL launch functionality.
-				this.WARN("App onApplicationLaunchRequest: not implemented.");
-			} else {
-				this.LOG("App onApplicationLaunchRequest: " + JSON.stringify(notification.applicationName) + " is not supported.")
-			}
-		});
-
-		this.xcastApi.registerEvent('onApplicationHideRequest', notification => {
-			this.LOG('App onApplicationHideRequest: ' + JSON.stringify(notification));
-			if (this.xcastApps(notification.applicationName)) {
-				// FIXME: Implement hide logic for xcast apps if needed.
-				this.WARN("App onApplicationHideRequest: not implemented.");
-			} else {
-				this.LOG("App onApplicationHideRequest: " + JSON.stringify(notification.applicationName) + " is not supported.")
-			}
-		});
-
-		this.xcastApi.registerEvent('onApplicationResumeRequest', notification => {
-			this.LOG('App onApplicationResumeRequest: ' + JSON.stringify(notification));
-			appApi.getPowerState().then(res => {
-				if (res.currentState != PowerState.POWER_STATE_ON) {
-					appApi.setPowerState(PowerState.POWER_STATE_ON)
-				}
-			})
-			if (this.xcastApps(notification.applicationName)) {
-				// FIXME: Implement DIAL resume functionality.
-				this.WARN("App onApplicationResumeRequest: not implemented.");
-			} else {
-				this.LOG("App onApplicationResumeRequest: " + JSON.stringify(notification.applicationName) + " is not supported.")
-			}
-		});
-
-		this.xcastApi.registerEvent('onApplicationStopRequest', notification => {
-			this.LOG('App onApplicationStopRequest: ' + JSON.stringify(notification));
-			if (this.xcastApps(notification.applicationName)) {
-				// FIXME: Implement DIAL stop functionality.
-				this.WARN("App onApplicationStopRequest: not implemented.");
-			} else {
-				this.LOG("App onApplicationStopRequest: " + JSON.stringify(notification.applicationName) + " is not supported.")
-			}
-		});
-
-		this.xcastApi.registerEvent('onApplicationStateRequest', notification => {
-			console.log("App onApplicationStateRequest: " + JSON.stringify(notification));
-			if (this.xcastApps(notification.applicationName)) {
-				// FIXME: Implement DIAL state functionality.
-				this.WARN("App onApplicationStateRequest: not implemented.");
-			} else {
-				this.LOG("App onApplicationStateRequest: " + JSON.stringify(notification.applicationName) + " is not supported.")
 			}
 		});
 	}
@@ -1574,7 +1606,8 @@ export default class App extends Router.App {
 			Router.navigate(route);
 		} else {
 			if (!Router.isNavigating()) {
-				if (Router.getActiveHash() === "dtvplayer") { //exit scenario for dtv player
+				if (Router.getActiveHash() === "dtvplayer") //exit scenario for dtv player
+				{
 					dtvApi
 						.exitChannel()
 						.then((res) => {
