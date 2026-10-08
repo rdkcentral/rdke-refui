@@ -25,7 +25,7 @@ import Keymap from './Config/Keymap.js';
 import { keyIntercept } from './keyIntercept/keyIntercept.js';
 
 const INVALID_APP_ID = "";
-const APP_ID_YOUTUBE = "com.rdkcentral.youtube-exp";
+const APP_ID_YOUTUBE = "com.rdkcentral.cobalt27";
 
 let instance = null;
 
