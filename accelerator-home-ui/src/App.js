@@ -659,8 +659,7 @@ export default class App extends Router.App {
 		this._activatePlugin(
 			"org.rdk.AppManager",
 			"AppManager",
-			() => AppManager.get().activate(),
-			() => this._SubscribeToAppManagerNotifications()
+			() => AppManager.get().activate()
 		);
 
 		this._activatePlugin(
