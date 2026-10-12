@@ -304,4 +304,21 @@ export default class AppController {
   async launch(id) {
     await AppManager.get().launchApp(id);
   }
+
+  isLaunched(id) {
+    return id === this.launchedAppId;
+  }
+
+  async sendIntent(id, intent) {
+    await AppManager.get().sendIntent(id, intent);
+  }
+
+  async close(id) {
+    await AppManager.get().closeApp(id);
+  }
+
+  async terminate(id) {
+    await AppManager.get().terminateApp(id);
+  }
+
 }
