@@ -19,7 +19,9 @@
 
 import { Lightning, Registry, Utils, Storage } from "@lightningjs/sdk";
 import AppApi from "../../api/AppApi";
+import CECApi, { CEC_KEYCODES } from "../../api/CECApi";
 import { CONFIG, GLOBALS } from "../../Config/Config";
+import Keymap from "../../Config/Keymap";
 
 export default class Volume extends Lightning.Component {
     constructor(...args) {
@@ -69,127 +71,196 @@ export default class Volume extends Lightning.Component {
         }
     }
 
-    _firstEnable() {
+    _init() {
         this.appApi = new AppApi()
+        this.cecApi = new CECApi()
         this.volTimeout = null
         this.volume = 0
+        // Prime the shared CEC device-list cache (see CECApi.getCachedDeviceList)
+        // so it's warm by the time a fallback key needs to be sent.
+        this.cecApi.getCachedDeviceList();
         this.getMuteStatus();
-        this.LOG("_firstEnable this.mute-" + JSON.stringify(this.mute));
+        this.LOG("_init this.mute-" + JSON.stringify(this.mute));
     }
 
     async onVolumeKeyDown() {
-        this.volume = await this.getVolume();
-        this.focus();
-        this.LOG("onVolumeKeyDown this.mute-" + JSON.stringify(this.mute));
-        this._updateIcon(this.mute)
-        this._updateText(this.volume);
-        this.volTimeout && Registry.clearTimeout(this.volTimeout)
-        this.volTimeout = Registry.setTimeout(() => {
-            this.unfocus()
-        }, 2000)
-        if (this.volume > 0) {
-            this.volume -= 5;
-            if (this.setVolume(this.volume)) {
-                if(this.mute) {
-                    this._updateIcon((!this.mute))
-                    this.setMute(!this.mute)
+        try {
+            this.volume = await this.getVolume();
+            this.LOG("onVolumeKeyDown this.mute-" + JSON.stringify(this.mute));
+            if (this.volume > 0) {
+                const newVolume = this.volume - 5;
+                if (!await this.setVolume(newVolume)) {
+                    throw new Error('setVolume failed for value:' + newVolume);
                 }
+                this.volume = newVolume;
+            } else if (!await this.setVolume(this.volume)) {
+                throw new Error('setVolume failed for value:' + this.volume);
+            }
+            // Only show the overlay once the IP call has actually succeeded,
+            // to avoid a brief flash-in/flash-out when it fails and we fall
+            // back to CEC instead.
+            this.focus();
+            this._updateIcon(this.mute)
+            this._updateText(this.volume);
+            this.volTimeout && Registry.clearTimeout(this.volTimeout)
+            this.volTimeout = Registry.setTimeout(() => {
+                this.unfocus()
+            }, 2000)
+            if (this.mute) {
+                this._updateIcon((!this.mute))
+                this.setMute(!this.mute)
                 this._updateText(this.volume)
             }
+        } catch (err) {
+            this._onVolumeError(err, CEC_KEYCODES.VOLUME_DOWN);
         }
     }
 
     async onVolumeKeyUp() {
-        this.volume = await this.getVolume();
-        this.focus();
-        this.LOG("onVolumeKeyUp this.mute-" + JSON.stringify(this.mute));
-        this._updateIcon(this.mute)
-        this._updateText(this.volume);
-        this.volTimeout && Registry.clearTimeout(this.volTimeout)
-        this.volTimeout = Registry.setTimeout(() => {
-            this.unfocus()
-        }, 2000)
-        if (this.volume < 100) {
-            this.volume += 5;
-            if (this.setVolume(this.volume)) {
-                if(this.mute) {
-                    this._updateIcon((!this.mute))
-                    this.setMute(!this.mute)
+        try {
+            this.volume = await this.getVolume();
+            this.LOG("onVolumeKeyUp this.mute-" + JSON.stringify(this.mute));
+            if (this.volume < 100) {
+                const newVolume = this.volume + 5;
+                if (!await this.setVolume(newVolume)) {
+                    throw new Error('setVolume failed for value:' + newVolume);
                 }
+                this.volume = newVolume;
+            } else if (!await this.setVolume(this.volume)) {
+                throw new Error('setVolume failed for value:' + this.volume);
+            }
+            // Only show the overlay once the IP call has actually succeeded,
+            // to avoid a brief flash-in/flash-out when it fails and we fall
+            // back to CEC instead.
+            this.focus();
+            this._updateIcon(this.mute)
+            this._updateText(this.volume);
+            this.volTimeout && Registry.clearTimeout(this.volTimeout)
+            this.volTimeout = Registry.setTimeout(() => {
+                this.unfocus()
+            }, 2000)
+            if (this.mute) {
+                this._updateIcon((!this.mute))
+                this.setMute(!this.mute)
                 this._updateText(this.volume)
             }
-        }
-        else{
-            this.setVolume(this.volume)
-            if(this.mute) {
-                    this._updateIcon((!this.mute))
-                    this.setMute(!this.mute)
-                }
+        } catch (err) {
+            this._onVolumeError(err, CEC_KEYCODES.VOLUME_UP);
+            if (this.mute) {
+                this.focus();
+                this._updateIcon((!this.mute))
+                this.setMute(!this.mute)
+            }
         }
     }
 
     async onVolumeMute(requestedState = undefined) {
-        this.volume = await this.getVolume();
-        await this.getMuteStatus(); // to update this.mute
-        this.focus();
-        this._updateText(this.volume);
-        this.volTimeout && Registry.clearTimeout(this.volTimeout)
-        this.volTimeout = Registry.setTimeout(() => {
-            this.unfocus()
-        }, 2000)
-        if (this.setMute(((requestedState != undefined) ? requestedState : !this.mute))) {
-            this._updateIcon(((requestedState != undefined) ? requestedState : !this.mute))
+        try {
+            this.volume = await this.getVolume();
+            await this.getMuteStatus(); // to update this.mute
+            const newMuteState = (requestedState != undefined) ? requestedState : !this.mute;
+            if (!await this.setMute(newMuteState)) {
+                throw new Error('setMute failed for value:' + newMuteState);
+            }
+            // Only show the overlay once the IP call has actually succeeded,
+            // to avoid a brief flash-in/flash-out when it fails and we fall
+            // back to CEC instead.
+            this.focus();
+            this._updateText(this.volume);
+            this._updateIcon(newMuteState)
+            this.volTimeout && Registry.clearTimeout(this.volTimeout)
+            this.volTimeout = Registry.setTimeout(() => {
+                this.unfocus()
+            }, 2000)
+        } catch (err) {
+            this._onVolumeError(err, CEC_KEYCODES.MUTE);
         }
     }
 
     async onVolumeChanged(v= false) {
-        this.volume = await this.getVolume();
-        this.getMuteStatus()
-        this.focus();
-        this.LOG("onVolumeChanged v-" + JSON.stringify(v));
-        if(v) {
-            this._updateIcon(!v)
-            this.setMute(!v)
+        try {
+            this.volume = await this.getVolume();
+            this.getMuteStatus()
+            this.focus();
+            this.LOG("onVolumeChanged v-" + JSON.stringify(v));
+            if(v) {
+                this._updateIcon(!v)
+                this.setMute(!v)
+            }
+            this._updateText(this.volume);
+            this.volTimeout && Registry.clearTimeout(this.volTimeout)
+            this.volTimeout = Registry.setTimeout(() => {
+                this.unfocus()
+            }, 2000)
+            this._updateText(this.volume)
+        } catch (err) {
+            this._onVolumeError(err);
         }
-        this._updateText(this.volume);
-        this.volTimeout && Registry.clearTimeout(this.volTimeout)
-        this.volTimeout = Registry.setTimeout(() => {
-            this.unfocus()
-        }, 2000)
-        this._updateText(this.volume)
     }
 
-    setVolume = (val) => {
+    setVolume = async (val) => {
         const safeVolume = Number.parseInt(val, 10);
         if (Number.isNaN(safeVolume)) {
             this.WARN('Volume setVolume called with invalid value:' + JSON.stringify(val));
             return false;
         }
 
-        this.getAudioPorts()
-            .then(audioport => {
-                for (let i = 0; i < audioport.length; i++) {
-                    if ((GLOBALS.deviceType == "IpTv" && audioport[i].startsWith("SPEAKER")) ||
-                        (GLOBALS.deviceType != "IpTv" && audioport[i].startsWith("HDMI"))) {
-                        this.appApi.setVolumeLevel(audioport[i], safeVolume)
-                    }
-                }
-            })
-            .catch(err => {
-                this.ERR('Volume setVolume getConnectedAudioPorts error:' + JSON.stringify(err, null, 3))
-            })
-        return true;
-    }
+        let audioport;
+        try {
+            audioport = await this.getAudioPorts();
+        } catch (err) {
+            this.ERR('Volume setVolume getConnectedAudioPorts error:' + JSON.stringify(err, null, 3))
+            return false;
+        }
 
-    setMute = async (val) => {
-        let audioport = await this.getAudioPorts()
+        let allSucceeded = true;
         for (let i = 0; i < audioport.length; i++) {
             if ((GLOBALS.deviceType == "IpTv" && audioport[i].startsWith("SPEAKER")) ||
                 (GLOBALS.deviceType != "IpTv" && audioport[i].startsWith("HDMI"))) {
-                this.appApi.audio_mute(audioport[i], val)
+                try {
+                    const result = await this.appApi.setVolumeLevel(audioport[i], safeVolume);
+                    if (!result || !result.success) {
+                        this.ERR('Volume setVolume setVolumeLevel failed for port ' + audioport[i] + ':' + JSON.stringify(result));
+                        allSucceeded = false;
+                    }
+                } catch (err) {
+                    this.ERR('Volume setVolume setVolumeLevel error for port ' + audioport[i] + ':' + JSON.stringify(err, null, 3))
+                    allSucceeded = false;
+                }
             }
         }
-        return true;
+        return allSucceeded;
+    }
+
+    setMute = async (val) => {
+        let audioport;
+        try {
+            audioport = await this.getAudioPorts();
+        } catch (err) {
+            this.ERR('Volume setMute getConnectedAudioPorts error:' + JSON.stringify(err, null, 3))
+            return false;
+        }
+
+        let allSucceeded = true;
+        for (let i = 0; i < audioport.length; i++) {
+            if ((GLOBALS.deviceType == "IpTv" && audioport[i].startsWith("SPEAKER")) ||
+                (GLOBALS.deviceType != "IpTv" && audioport[i].startsWith("HDMI"))) {
+                try {
+                    const result = await this.appApi.audio_mute(audioport[i], val)
+                    if (!result || !result.success) {
+                        this.ERR('Volume setMute audio_mute failed for port ' + audioport[i] + ':' + JSON.stringify(result));
+                        allSucceeded = false;
+                    }
+                } catch (err) {
+                    this.ERR('Volume setMute audio_mute error for port ' + audioport[i] + ':' + JSON.stringify(err, null, 3))
+                    allSucceeded = false;
+                }
+            }
+        }
+        if (allSucceeded) {
+            this.mute = val;
+        }
+        return allSucceeded;
     }
 
     getMuteStatus = async () => {
@@ -209,6 +280,25 @@ export default class Volume extends Lightning.Component {
 
     _updateText(val) {
         this.tag('Text').text.text = val
+    }
+
+    _onVolumeError(err, keyCode) {
+        this.ERR('Volume getVolume/setVolume failed:' + (err && err.message ? err.message : JSON.stringify(err, null, 3)));
+        // IP volume control failed, so the overlay would be showing a volume/mute
+        // state that was never actually applied. Hide it immediately instead of
+        // leaving a stale/incorrect overlay on screen while we fall back to CEC.
+        this.volTimeout && Registry.clearTimeout(this.volTimeout)
+        this.unfocus();
+        if (keyCode != undefined) {
+            this._sendCecFallbackKey(keyCode);
+        }
+    }
+
+    // Common method: on IP volume control failure, replay the key press to
+    // every known CEC device. Device-list fetching/caching is handled
+    // centrally in CECApi so all consumers share the same cache.
+    _sendCecFallbackKey = async (keyCode) => {
+        await this.cecApi.sendKeyPressEventToAllDevices(keyCode);
     }
 
     _updateIcon(check) {
