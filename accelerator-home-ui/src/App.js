@@ -1259,14 +1259,6 @@ export default class App extends Router.App {
 		})
 	}
 
-	updateAlexaTimeZone(updatedTimeZone) {
-		if (updatedTimeZone.length) {
-			this.LOG("App: updateDeviceTimeZoneInAlexa with zone:" + JSON.stringify(updatedTimeZone))
-			AlexaApi.get().updateDeviceTimeZoneInAlexa(updatedTimeZone);
-		} else {
-			this.ERR("App getTimezoneDST returned: " + JSON.stringify(updatedTimeZone))
-		}
-	}
 
 	deactivateChildApp(plugin) { //#needToBeRemoved
 		switch (plugin) {
