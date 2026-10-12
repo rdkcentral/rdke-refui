@@ -18,7 +18,7 @@
  **/
 import ThunderJS from 'ThunderJS';
 import { CONFIG } from '../Config/Config'
-
+import { ThunderError } from './ThunderError.js';
 let instance = null
 export default class AppManager {
   constructor() {
