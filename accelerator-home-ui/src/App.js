@@ -246,6 +246,48 @@ export default class App extends Router.App {
 		return this._performKeyPressOPerations(key)
 	}
 
+	_normalizeCecKeyCode(keyCode) {
+		const value = Number(keyCode);
+		if (Number.isNaN(value)) {
+			return null;
+		}
+
+		switch (value) {
+			case 0x41: return Keymap.AudioVolumeUp;
+			case 0x42: return Keymap.AudioVolumeDown;
+			case 0x43: return Keymap.AudioVolumeMute;
+			case 0x01: return Keymap.ArrowUp;
+			case 0x02: return Keymap.ArrowDown;
+			case 0x03: return Keymap.ArrowLeft;
+			case 0x04: return Keymap.ArrowRight;
+			case 0x00: return Keymap.Enter;
+			case 0x09: return Keymap.Home;
+			case 0x0D: return Keymap.Escape;
+			case 0x20: return 48; // 0
+			case 0x21: return 49; // 1
+			case 0x22: return 50; // 2
+			case 0x23: return 51; // 3
+			case 0x24: return 52; // 4
+			case 0x25: return 53; // 5
+			case 0x26: return 54; // 6
+			case 0x27: return 55; // 7
+			case 0x28: return 56; // 8
+			case 0x29: return 57; // 9
+			default: return null;
+		}
+	}
+
+	_handleHdmiCecKeyPress(notification) {
+		const rawKeyCode = notification && (notification.keyCode ?? notification.keycode ?? notification.keycodeValue ?? notification.code);
+		const mappedKeyCode = this._normalizeCecKeyCode(rawKeyCode);
+		if (mappedKeyCode === null || mappedKeyCode === undefined) {
+			this.WARN('Ignoring unsupported HdmiCecSource keyCode: ' + JSON.stringify(notification));
+			return;
+		}
+		this.LOG('HdmiCecSource key press mapped to UI keyCode: ' + mappedKeyCode + ' from raw keyCode: ' + JSON.stringify(rawKeyCode));
+		this._captureKey({ keyCode: mappedKeyCode });
+	}
+
 	_performKeyPressOPerations(key) {
 		let self = this;
 			if(GLOBALS.MiracastNotificationstatus && key.keyCode !== Keymap.Power && key.keyCode !== Keymap.Home ){
@@ -956,9 +998,26 @@ export default class App extends Router.App {
 						this.WARN("App HdmiCecSource onActiveSourceStatusUpdated discarding.");
 					}
 				})
+
+				this.hdmiCecSourceKeyPressListener = thunder.on("org.rdk.HdmiCecSource", "onKeyPressEvent", notification => {
+					this.LOG(new Date().toISOString() + " HdmiCecSource onKeyPressEvent " + JSON.stringify(notification));
+					this._handleHdmiCecKeyPress(notification);
+				});
+
+				this.hdmiCecSourceKeyReleaseListener = thunder.on("org.rdk.HdmiCecSource", "onKeyReleaseEvent", notification => {
+					this.LOG(new Date().toISOString() + " HdmiCecSource onKeyReleaseEvent " + JSON.stringify(notification));
+				});
 				break;
 			case "deactivated":
-				this.onApplicationStateChanged.dispose()
+				if (this.onApplicationStateChanged) {
+					this.onApplicationStateChanged.dispose();
+				}
+				if (this.hdmiCecSourceKeyPressListener) {
+					this.hdmiCecSourceKeyPressListener.dispose();
+				}
+				if (this.hdmiCecSourceKeyReleaseListener) {
+					this.hdmiCecSourceKeyReleaseListener.dispose();
+				}
 				break;
 		}
 	}
