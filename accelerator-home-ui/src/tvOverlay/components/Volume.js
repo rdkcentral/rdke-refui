@@ -88,7 +88,7 @@ export default class Volume extends Lightning.Component {
             this.volume = await this.getVolume();
             this.LOG("onVolumeKeyDown this.mute-" + JSON.stringify(this.mute));
             if (this.volume > 0) {
-                const newVolume = this.volume - 5;
+                const newVolume = Math.max(0, this.volume - 5);
                 if (!await this.setVolume(newVolume)) {
                     throw new Error('setVolume failed for value:' + newVolume);
                 }
@@ -112,7 +112,7 @@ export default class Volume extends Lightning.Component {
                 this._updateText(this.volume)
             }
         } catch (err) {
-            this._onVolumeError(err, CEC_KEYCODES.VOLUME_DOWN);
+            this._onVolumeError(err, CEC_KEYCODES.VOLUME_DOWN, 'onVolumeKeyDown');
         }
     }
 
@@ -121,7 +121,7 @@ export default class Volume extends Lightning.Component {
             this.volume = await this.getVolume();
             this.LOG("onVolumeKeyUp this.mute-" + JSON.stringify(this.mute));
             if (this.volume < 100) {
-                const newVolume = this.volume + 5;
+                const newVolume = Math.min(100, this.volume + 5);
                 if (!await this.setVolume(newVolume)) {
                     throw new Error('setVolume failed for value:' + newVolume);
                 }
@@ -139,18 +139,25 @@ export default class Volume extends Lightning.Component {
             this.volTimeout = Registry.setTimeout(() => {
                 this.unfocus()
             }, 2000)
+            // Pressing volume up while muted should also unmute. The overlay is
+            // already on screen with its auto-hide timeout running, so only the
+            // icon needs to flip - and only once setMute has actually applied,
+            // so we never show an unmuted icon for a device still muted.
             if (this.mute) {
-                this._updateIcon((!this.mute))
-                this.setMute(!this.mute)
-                this._updateText(this.volume)
+                if (await this.setMute(false)) {
+                    this._updateIcon(false)
+                    this._updateText(this.volume)
+                } else {
+                    this.ERR('Volume onVolumeKeyUp unmute failed; keeping muted icon');
+                }
             }
         } catch (err) {
-            this._onVolumeError(err, CEC_KEYCODES.VOLUME_UP);
-            if (this.mute) {
-                this.focus();
-                this._updateIcon((!this.mute))
-                this.setMute(!this.mute)
-            }
+            // Nothing was applied, so do not re-show the overlay here: the mute
+            // handling above only runs on the success path. _onVolumeError
+            // hides the overlay before handing control to the CEC fallback, and
+            // re-focusing would leave a stale overlay (default 0 / last known
+            // level) on screen with no auto-hide timeout.
+            this._onVolumeError(err, CEC_KEYCODES.VOLUME_UP, 'onVolumeKeyUp');
         }
     }
 
@@ -173,7 +180,7 @@ export default class Volume extends Lightning.Component {
                 this.unfocus()
             }, 2000)
         } catch (err) {
-            this._onVolumeError(err, CEC_KEYCODES.MUTE);
+            this._onVolumeError(err, CEC_KEYCODES.MUTE, 'onVolumeMute');
         }
     }
 
@@ -194,7 +201,7 @@ export default class Volume extends Lightning.Component {
             }, 2000)
             this._updateText(this.volume)
         } catch (err) {
-            this._onVolumeError(err);
+            this._onVolumeError(err, undefined, 'onVolumeChanged');
         }
     }
 
@@ -214,9 +221,11 @@ export default class Volume extends Lightning.Component {
         }
 
         let allSucceeded = true;
+        let handledAnyPort = false;
         for (let i = 0; i < audioport.length; i++) {
             if ((GLOBALS.deviceType == "IpTv" && audioport[i].startsWith("SPEAKER")) ||
                 (GLOBALS.deviceType != "IpTv" && audioport[i].startsWith("HDMI"))) {
+                handledAnyPort = true;
                 try {
                     const result = await this.appApi.setVolumeLevel(audioport[i], safeVolume);
                     if (!result || !result.success) {
@@ -228,6 +237,13 @@ export default class Volume extends Lightning.Component {
                     allSucceeded = false;
                 }
             }
+        }
+        // An empty port list, or one with no port matching this device type,
+        // means no volume command was ever sent. Report failure so the caller
+        // does not show a state it never applied and still falls back to CEC.
+        if (!handledAnyPort) {
+            this.ERR('Volume setVolume found no compatible audio port in:' + JSON.stringify(audioport));
+            return false;
         }
         return allSucceeded;
     }
@@ -242,9 +258,11 @@ export default class Volume extends Lightning.Component {
         }
 
         let allSucceeded = true;
+        let handledAnyPort = false;
         for (let i = 0; i < audioport.length; i++) {
             if ((GLOBALS.deviceType == "IpTv" && audioport[i].startsWith("SPEAKER")) ||
                 (GLOBALS.deviceType != "IpTv" && audioport[i].startsWith("HDMI"))) {
+                handledAnyPort = true;
                 try {
                     const result = await this.appApi.audio_mute(audioport[i], val)
                     if (!result || !result.success) {
@@ -257,6 +275,12 @@ export default class Volume extends Lightning.Component {
                 }
             }
         }
+        // No matching port means no mute command was sent, so this.mute must not
+        // be updated and the caller must treat it as a failure.
+        if (!handledAnyPort) {
+            this.ERR('Volume setMute found no compatible audio port in:' + JSON.stringify(audioport));
+            return false;
+        }
         if (allSucceeded) {
             this.mute = val;
         }
@@ -264,16 +288,37 @@ export default class Volume extends Lightning.Component {
     }
 
     getMuteStatus = async () => {
-        let audioport = await this.getAudioPorts()
+        let audioport;
+        try {
+            audioport = await this.getAudioPorts()
+        } catch (err) {
+            this.ERR('Volume getMuteStatus getConnectedAudioPorts error:' + JSON.stringify(err, null, 3))
+            return false;
+        }
+        let handledAnyPort = false;
         for (let i = 0; i < audioport.length; i++) {
             if ((GLOBALS.deviceType == "IpTv" && audioport[i].startsWith("SPEAKER")) ||
                 (GLOBALS.deviceType != "IpTv" && audioport[i].startsWith("HDMI"))) {
-                this.appApi.getMuted(audioport[i]).then(result => {
-                    if (result.success) {
+                handledAnyPort = true;
+                // Awaited so callers that rely on this.mute being fresh (e.g.
+                // onVolumeMute) do not read a stale value from a race.
+                try {
+                    const result = await this.appApi.getMuted(audioport[i]);
+                    if (result && result.success) {
                         this.mute = result.muted;
+                    } else {
+                        this.ERR('Volume getMuteStatus getMuted unsuccessful for port ' + audioport[i] + ':' + JSON.stringify(result));
+                        return false;
                     }
-                });
+                } catch (err) {
+                    this.ERR('Volume getMuteStatus getMuted error for port ' + audioport[i] + ':' + JSON.stringify(err, null, 3))
+                    return false;
+                }
             }
+        }
+        if (!handledAnyPort) {
+            this.ERR('Volume getMuteStatus found no compatible audio port in:' + JSON.stringify(audioport));
+            return false;
         }
         return true;
     }
@@ -282,9 +327,12 @@ export default class Volume extends Lightning.Component {
         this.tag('Text').text.text = val
     }
 
-    _onVolumeError(err, keyCode) {
-        this.ERR('Volume getVolume/setVolume failed:' + (err && err.message ? err.message : JSON.stringify(err, null, 3)));
-        // IP volume control failed, so the overlay would be showing a volume/mute
+    // Shared failure handler for every IP audio control path (volume read,
+    // volume write, mute read and mute write), so the message stays neutral and
+    // the caller supplies the operation label that identifies what really failed.
+    _onVolumeError(err, keyCode, operation = 'IP audio control') {
+        this.ERR('Volume ' + operation + ' failed:' + (err && err.message ? err.message : JSON.stringify(err, null, 3)));
+        // The IP call failed, so the overlay would be showing a volume/mute
         // state that was never actually applied. Hide it immediately instead of
         // leaving a stale/incorrect overlay on screen while we fall back to CEC.
         this.volTimeout && Registry.clearTimeout(this.volTimeout)
@@ -350,6 +398,11 @@ export default class Volume extends Lightning.Component {
         })
     }
 
+    // Rejects on any failure (port lookup, read error, unparsable level or no
+    // matching port) instead of returning 0. 0 is a valid volume level, so it
+    // must never be used as an error sentinel: callers rely on the rejection to
+    // tell a genuine "volume is 0" apart from "we could not read the volume",
+    // and to trigger the CEC fallback instead of writing a bogus value.
     getVolume() {
         return new Promise(async (resolve, reject) => {
             let audioport = []
@@ -357,7 +410,7 @@ export default class Volume extends Lightning.Component {
                 audioport = await this.getAudioPorts()
             } catch (err) {
                 this.ERR('Volume getAudioPorts error:' + JSON.stringify(err, null, 3))
-                resolve(0)
+                reject(new Error('getVolume failed: unable to read connected audio ports'))
                 return
             }
             /* Returns an array. */
@@ -365,21 +418,31 @@ export default class Volume extends Lightning.Component {
                 if ((GLOBALS.deviceType == "IpTv" && audioport[i].startsWith("SPEAKER")) ||
                     (GLOBALS.deviceType != "IpTv" && audioport[i].startsWith("HDMI"))) {
                     this.appApi.getVolumeLevel(audioport[i]).then(async res1 => {
-                        await this.updateIcon(audioport[i])
-                        if (res1 && res1.success) {
-                            const level = Number.parseInt(res1.volumeLevel, 10);
-                            resolve(Number.isNaN(level) ? 0 : level);
-                        } else {
-                            resolve(0);
+                        if (!res1 || !res1.success) {
+                            reject(new Error('getVolume failed: getVolumeLevel unsuccessful for port ' + audioport[i]));
+                            return;
                         }
+                        const level = Number.parseInt(res1.volumeLevel, 10);
+                        if (Number.isNaN(level)) {
+                            reject(new Error('getVolume failed: invalid volumeLevel for port ' + audioport[i] + ':' + JSON.stringify(res1.volumeLevel)));
+                            return;
+                        }
+                        // Icon refresh is best effort; a failure here must not
+                        // invalidate an otherwise valid volume read.
+                        try {
+                            await this.updateIcon(audioport[i])
+                        } catch (err) {
+                            this.WARN('Volume getVolume updateIcon failed for port ' + audioport[i] + ':' + JSON.stringify(err, null, 3))
+                        }
+                        resolve(level);
                     }).catch(err => {
                         this.ERR('Volume getVolumeLevel error:' + JSON.stringify(err, null, 3))
-                        resolve(0)
+                        reject(new Error('getVolume failed: getVolumeLevel error for port ' + audioport[i]))
                     })
                     return;
                 }
             }
-            resolve(0);
+            reject(new Error('getVolume failed: no matching audio port found'));
         })
     }
 }
