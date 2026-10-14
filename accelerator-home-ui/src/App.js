@@ -63,6 +63,7 @@ import RDKWindowManager from './api/RDKWindowManagerApi.js';
 import RuntimeManager from './api/RuntimeManagerApi.js';
 import AppController from './AppController.js';
 import userSettingsApi from './api/UserSettingsApi.js';
+var packageManager = new PackageManager();
 
 var thunder = ThunderJS(CONFIG.thunderConfig);
 var appApi = new AppApi();
@@ -640,9 +641,17 @@ export default class App extends Router.App {
 		})
 		this._subscribeToIOPortNotifications();
 		this._updateLanguageToDefault();
+		this._activatePlugin(
+			"org.rdk.AppPackageManager",
+			"AppPackageManager",
+			() => packageManager.activate()
+		);
 		this._SubscribeToAppManagerNotifications();
 		this._SubscribeToRDKWindowManagerNotifications();
 		this._SubscribeToRuntimeManagerNotifications();
+		DIALManager.get().start().catch(err => {
+			console.error(`DIALManager.start() failed: ${err}`);
+		});
 
 		this.xcastApi = new XcastApi()
 		this.xcastApi.activate().then(async result => {
