@@ -677,54 +677,8 @@ export default class App extends Router.App {
 					GLOBALS.LocalDeviceDiscoveryStatus = false;
 					this.ERR("Xcast setEnabled error:" + JSON.stringify(err))
 				});
-				await this.xcastApi.setStandbyBehavior("active").then(async res => {
+				await this.xcastApi.setStandbyBehavior("active").then(res => {
 					this.LOG("XcastApi setStandbyBehavior result:" + JSON.stringify(res));
-					let params = {
-						"applications": []
-					};
-					try {
-						await appApi.getPluginStatus("Cobalt").then(async res => {
-							params.applications.push({
-								"cors": ".youtube.com",
-								"name": "YouTube",
-								"prefix": "myYoutube"
-							}, {
-								"cors": ".youtube.com",
-								"name": "YouTubeTV",
-								"prefix": "myYouTubeTV"
-							});
-						});
-					} catch (e) {
-						this.ERR("getPluginStatus error :" + JSON.stringify(e))
-					}
-					try {
-						await appApi.getPluginStatus("Amazon").then(async res => {
-							params.applications.push({
-								"name": "AmazonInstantVideo",
-								"prefix": "myPrimeVideo",
-								"cors": ".amazon.com"
-							})
-						});
-					} catch (e) {
-						this.ERR("Amazon getPluginStatus error :" + JSON.stringify(e))
-					}
-					try {
-						await appApi.getPluginStatus("Netflix").then(async res => {
-							params.applications.push({
-								"name": "Netflix",
-								"prefix": "myNetflix",
-								"cors": ".netflix.com"
-							})
-						});
-					} catch (e) {
-						this.ERR("Amazon getPluginStatus error :" + JSON.stringify(e))
-					}
-					console.warn("Xcast register app param " + JSON.stringify(params));
-					await this.xcastApi.registerApplications(params).then(async res => {
-						console.warn("Xcast registerApplications success" + JSON.stringify(res));
-					}).catch(err => {
-						this.ERR("Xcast registerApplications error:" + JSON.stringify(err))
-					});
 				}).catch(error => {
 					this.ERR("XcastApi setStandbyBehavior error:" + JSON.stringify(error));
 				});

@@ -275,6 +275,20 @@ export default class AppManager {
                 })
         })
     }
+    getAppMetaData(appId) {
+        return new Promise((resolve, reject) => {
+        this.INFO("getAppMetaData called with appId: " + appId );
+            this.thunder.call(this.callsign, 'getAppMetaData', { "appId":appId })
+                .then(response => {
+                    resolve(response)
+                    this.INFO("getAppMetaData response: " + JSON.stringify(response));
+                })
+                .catch(err => {
+                    this.ERR("Error getAppMetaData: " + JSON.stringify(err))
+                    reject(err)
+                })
+        })
+    }
     getAppProperty(appId,key) {
         return new Promise((resolve, reject) => {
         this.INFO("getAppProperty called with appId: " + appId + " and key: " + key );

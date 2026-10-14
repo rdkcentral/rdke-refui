@@ -19,25 +19,13 @@
 
 import XcastApi from '../src/api/XcastApi';
 import AppApi from '../src/api/AppApi.js';
+import AppManager from './api/AppManagerApi.js';
 import { GLOBALS } from './Config/Config.js';
 import AppController from './AppController.js';
 import { ThunderError } from './api/ThunderError.js';
 
 const appApi = new AppApi();
 let instance = null;
-
-const DIAL_APPS = {
-  "YouTube": {
-    id: "com.rdkcentral.youtube-exp",
-    url: "https://www.youtube.com/tv",
-    cors: ".youtube.com",
-  },
-  "Netflix": {
-    id: "com.rdkcentral.Netflix",
-    url: "",
-    cors: ".netflix.com",
-  }
-};
 
 export default class DIALManager {
   /**
@@ -58,6 +46,8 @@ export default class DIALManager {
   xcastApi = new XcastApi();
   /** @private */
   started = false;
+  /** @private */
+  dialApps = new Map();
 
   /** @private */
   constructor() {
@@ -147,6 +137,8 @@ export default class DIALManager {
 
     await this.configureStandby();
 
+    this.registerPackageChangedListener();
+
     await this.registerDialApplications();
 
     this.registerLifecycleListener();
@@ -206,54 +198,92 @@ export default class DIALManager {
   }
 
   async registerDialApplications() {
-
-    const params = {
-        applications: []
-    };
-
-    for (const appName in DIAL_APPS) {
-        try {
-            const app =DIAL_APPS[appName];
-
-            if (await this.appController.isPackageInstalled(app.id)) {
-                params.applications.push({
-                    name: appName,
-                    cors: app.cors
-                });
-            }
-        } catch (err) {
-            this.ERR(
-                `registerDialApplications(): ${err}`
-            );
-        }
+    let installedApps;
+    try {
+      installedApps = await AppManager.get().getInstalledApps();
+    } catch (err) {
+      this.ERR(`registerDialApplications(): failed to get installed apps: ${err}`);
+      return;
     }
 
-    this.INFO(`Register DIAL apps: ${JSON.stringify(params)}`);
+    if (!Array.isArray(installedApps)) {
+      this.ERR('registerDialApplications(): getInstalledApps() did not return an array');
+      return;
+    }
 
-    await this.xcastApi
-        .registerApplications(params)
-        .catch(err => {
-            const terr =
-                new ThunderError(
-                    `xcastApi.registerApplications()`,
-                    err
-                );
-            this.ERR(
-                `registerDialApplications(): ${terr}`
-            );
-        });
+    const dialApps = new Map();
+    for (const installedApp of installedApps) {
+      const installedAppId = installedApp?.appId;
+      if (typeof installedAppId !== 'string' || installedAppId.length === 0) {
+        this.WARN(`registerDialApplications(): skipping app with invalid appId: ${JSON.stringify(installedApp)}`);
+        continue;
+      }
+
+      let metadata;
+      try {
+        metadata = await AppManager.get().getAppMetaData(installedAppId);
+      } catch (err) {
+        this.ERR(`registerDialApplications(): failed to get metadata for ${installedAppId}: ${err}`);
+        continue;
+      }
+
+      if (!metadata || typeof metadata !== 'object' ||
+          !Object.prototype.hasOwnProperty.call(metadata, 'cors')) {
+        continue;
+      }
+
+      if (metadata.appId !== installedAppId ||
+          typeof metadata.name !== 'string' || metadata.name.trim().length === 0 ||
+          typeof metadata.url !== 'string' ||
+          typeof metadata.cors !== 'string' || metadata.cors.trim().length === 0) {
+        this.WARN(`registerDialApplications(): skipping ${installedAppId} due to invalid DIAL metadata`);
+        continue;
+      }
+
+      if (dialApps.has(metadata.name)) {
+        this.WARN(`registerDialApplications(): skipping duplicate DIAL application name ${metadata.name}`);
+        continue;
+      }
+
+      dialApps.set(metadata.name, {
+        id: metadata.appId,
+        url: metadata.url,
+        cors: metadata.cors
+      });
+    }
+
+    const params = {
+      applications: Array.from(dialApps, ([name, app]) => ({
+        name,
+        cors: app.cors
+      }))
+    };
+
+    try {
+      await this.xcastApi.registerApplications(params);
+      this.dialApps = dialApps;
+      this.INFO(`Register DIAL apps: ${JSON.stringify(params)}`);
+    } catch (err) {
+      const terr = new ThunderError('xcastApi.registerApplications()', err);
+      this.ERR(`registerDialApplications(): ${terr}`);
+    }
+  }
+
+  registerPackageChangedListener() {
+    this.appController.addPackageChangedListener(async (action, data) => {
+      this.INFO(`Refreshing DIAL applications after package ${action}: ${JSON.stringify(data)}`);
+      await this.registerDialApplications();
+    });
   }
 
   registerLifecycleListener() {
     this.appController.addAppLifecycleStateListener((id, state) => {
-                for (const appName in DIAL_APPS) {
-                    const app = DIAL_APPS[appName];
-
-                  if (id === app.id) {
-                      this.setApplicationState(appName, state);
-                  }
-                }
-            });
+      for (const [appName, app] of this.dialApps) {
+        if (id === app.id) {
+          this.setApplicationState(appName, state);
+        }
+      }
+    });
   }
 
   /**
@@ -265,7 +295,7 @@ export default class DIALManager {
   async handleXcastEvent(event, notification) {
     this.INFO(`${event}: ${JSON.stringify(notification)}`);
 
-    const desc = DIAL_APPS[notification.applicationName];
+    const desc = this.dialApps.get(notification.applicationName);
     if (!desc) {
       this.INFO(`${event}: ${JSON.stringify(notification.applicationName)} is not supported.`);
       return;
