@@ -136,10 +136,12 @@ export default class FirmwareScreen extends Lightning.Component {
         this.FWUpdateIsRebootDeferred = false;
         this.FWUpdateRebooting = false;
         this.autoRebootStartedCB = null;
+        this.onFirmwareUpdateStateChangeCB = null;
+        this.onFirmwareUpdateInfoReceivedCB = null;
     }
 
     _active() {
-        this.onFirmwareUpdateStateChangeCB = SysSrvApi.on('onFirmwareUpdateStateChange', notification => {
+        this.onFirmwareUpdateStateChangeCB = SysSrvApi.thunder.on('onFirmwareUpdateStateChange', notification => {
             this.tag('State.Title').text.text = Language.translate("Firmware State: ") + SysSrvApi.getFirmwareUpdateStateString(notification.firmwareUpdateStateChange);
             this.LOG('onFirmwareUpdateStateChange:' + JSON.stringify(notification));
             if (FWUpdateState.FWUpdateStateDownloading === notification.firmwareUpdateStateChange) {
@@ -172,7 +174,7 @@ export default class FirmwareScreen extends Lightning.Component {
             }
         });
         // TODO: This need to be in _init() as it should be system wide.
-        this.onFirmwareUpdateInfoReceivedCB = SysSrvApi.on('onFirmwareUpdateInfoReceived', params => {
+        this.onFirmwareUpdateInfoReceivedCB = SysSrvApi.thunder.on('onFirmwareUpdateInfoReceived', params => {
             this.LOG("onFirmwareUpdateInfoReceived" + JSON.stringify(params))
             if (params.success) {
                 if (params.updateAvailable) {
@@ -241,10 +243,12 @@ export default class FirmwareScreen extends Lightning.Component {
 
     _disable() {
         if (this.onFirmwareUpdateStateChangeCB) {
-            SysSrvApi.off('onFirmwareUpdateStateChange', this.onFirmwareUpdateStateChangeCB);
+            this.onFirmwareUpdateStateChangeCB.dispose();
+            this.onFirmwareUpdateStateChangeCB = null;
         }
         if (this.onFirmwareUpdateInfoReceivedCB) {
-            SysSrvApi.off('onFirmwareUpdateInfoReceived', this.onFirmwareUpdateInfoReceivedCB);
+            this.onFirmwareUpdateInfoReceivedCB.dispose();
+            this.onFirmwareUpdateInfoReceivedCB = null;
         }
     }
 
