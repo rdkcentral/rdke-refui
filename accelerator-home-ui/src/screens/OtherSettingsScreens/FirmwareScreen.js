@@ -142,6 +142,7 @@ export default class FirmwareScreen extends Lightning.Component {
 
     _active() {
         this.onFirmwareUpdateStateChangeCB = SysSrvApi.thunder.on('onFirmwareUpdateStateChange', notification => {
+            this.LOG("onFirmwareUpdateStateChange" + JSON.stringify(notification))
             this.tag('State.Title').text.text = Language.translate("Firmware State: ") + SysSrvApi.getFirmwareUpdateStateString(notification.firmwareUpdateStateChange);
             this.LOG('onFirmwareUpdateStateChange:' + JSON.stringify(notification));
             if (FWUpdateState.FWUpdateStateDownloading === notification.firmwareUpdateStateChange) {
@@ -155,9 +156,12 @@ export default class FirmwareScreen extends Lightning.Component {
                 this.showDownloadFirmwareInfo()
                 if (FWUpdateState.FWUpdateStatePreparingReboot === notification.firmwareUpdateStateChange) {
                     this.FWUpdateRebooting = true;
+                    this.LOG("FWUpdateRebootImmediately: " + this.FWUpdateRebootImmediately + " FWUpdateIsRebootDeferred: " + this.FWUpdateIsRebootDeferred)
                     if (true === this.FWUpdateRebootImmediately === !this.FWUpdateIsRebootDeferred) {
+                        this.LOG("Starting auto reboot countdown")
                         this.autoRebootStartedCB = this.startAutoRebootCountdown();
                     } else {
+                        this.LOG("Rebooting device to complete the update")
                         this.tag('State.Title').text.text = Language.translate("Firmware State: ") + Language.translate("Reboot to complete the update");
                         setTimeout(() => {
                             if (!Router.isNavigating()) Router.navigate('settings/advanced/device/reboot')
@@ -168,6 +172,7 @@ export default class FirmwareScreen extends Lightning.Component {
                 this.tag('DownloadedPercent.Title').visible = false;
                 this.showUpdateButton(notification.firmwareUpdateStateChange)
                 if (this.downloadInterval) {
+                    this.LOG("Clearing download interval timer")
                     clearInterval(this.downloadInterval);
                     this.downloadInterval = null
                 }
@@ -195,6 +200,7 @@ export default class FirmwareScreen extends Lightning.Component {
                             this._setState('Idle')
                             break;
                     }
+                    this.LOG("FWUpdateRebootImmediately: " + this.FWUpdateRebootImmediately + " FWUpdateIsRebootDeferred: " + this.FWUpdateIsRebootDeferred)
                 }
             }
         });
@@ -296,7 +302,6 @@ export default class FirmwareScreen extends Lightning.Component {
         });
         await SysSrvApi.getDownloadedFirmwareInfo().then(result => {
             this.LOG("getDownloadedFirmwareInfo : " + JSON.stringify(result.downloadedFWVersion));
-
             this.tag('Version.Title').text.text = Language.translate("Firmware Versions: ") + result.currentFWVersion
             this.tag('DownloadedVersion.Title').text.text = Language.translate('Downloaded Firmware Version: ') + `${result.downloadedFWVersion ? result.downloadedFWVersion : 'NA'}`
 
@@ -306,6 +311,7 @@ export default class FirmwareScreen extends Lightning.Component {
             } else {
                 this.FWUpdateIsRebootDeferred = false;
             }
+            this.LOG("FWUpdateRebootImmediately: " + this.FWUpdateRebootImmediately + " FWUpdateIsRebootDeferred: " + this.FWUpdateIsRebootDeferred)
         }).catch(err => {
             this.ERR("Error: " + JSON.stringify(err));
         });
