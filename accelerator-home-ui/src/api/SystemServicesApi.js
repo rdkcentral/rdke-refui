@@ -115,12 +115,10 @@ class SystemServices {
         if (!this.eventListeners[event]) {
             this.eventListeners[event] = [];
         }
-        this.eventListeners[event].push(callback);
 
-        // Subscribe to the event via Thunder
-        this.thunder.subscribe({
-            event: `${this.callsign}.${event}`
-        }, callback);
+        const listener = this.thunder.on(this.callsign, event, callback);
+        this.eventListeners[event].push({ callback, listener });
+        return listener;
     }
 
     /**
@@ -129,14 +127,21 @@ class SystemServices {
      * @param {function} callback - Callback function
      */
     off(event, callback) {
-        if (this.eventListeners[event]) {
-            this.eventListeners[event] = this.eventListeners[event].filter(cb => cb !== callback);
+        if (!this.eventListeners[event]) {
+            return;
         }
 
-        // Unsubscribe from the event via Thunder
-        this.thunder.unsubscribe({
-            event: `${this.callsign}.${event}`
-        }, callback);
+        const index = this.eventListeners[event].findIndex(entry => entry.callback === callback);
+        if (index === -1) {
+            return;
+        }
+
+        const { listener } = this.eventListeners[event][index];
+        if (listener && typeof listener.dispose === 'function') {
+            listener.dispose();
+        }
+
+        this.eventListeners[event].splice(index, 1);
     }
 
     /************************** Methods *********************/
