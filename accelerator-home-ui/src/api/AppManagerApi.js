@@ -21,34 +21,26 @@ import { CONFIG } from '../Config/Config'
 
 let instance = null
 export default class AppManager {
-  constructor() {
-    this.thunder = ThunderJS(CONFIG.thunderConfig);
-    this.callsign = 'org.rdk.AppManager';
-    this.INFO = console.info;
-    this.LOG = console.log;
-    this.ERR = console.error;
-  }
-  static get() {
-    if (instance === null) {
-      instance = new AppManager()
+    constructor() {
+        this.thunder = ThunderJS(CONFIG.thunderConfig);
+        this.callsign = 'org.rdk.AppManager';
+        this.INFO = console.info;
+        this.LOG = console.log;
+        this.ERR = console.error;
     }
-    return instance;
-  }
+    static get() {
+        if (instance === null) {
+            instance = new AppManager()
+        }
+        return instance;
+    }
 
-    launchApp(appId) {
-        return new Promise((resolve, reject) => {
-        this.INFO("launchApp called with appId: " + appId );
-            this.thunder.call(this.callsign, 'launchApp', { "appId":appId })
-                .then(response => {
-                    resolve(response)
-                    this.INFO("launchApp response: " + JSON.stringify(response));
-                })
-                .catch(err => {
-                    this.ERR("Error launchApp: " + JSON.stringify(err))
-                    reject(err)
-                })
-        })
+    launchApp(appId, intent = null, launchArgs = null) {
+        this.INFO(`launchApp called with appId: ${appId}`);
+        const params = { appId, ...(intent && { intent }), ...(launchArgs && { launchArgs }) };
+        return this.thunder.call(this.callsign, 'launchApp', params);
     }
+
     getLoadedApps() {
         return new Promise((resolve, reject) => {
         this.thunder.call(this.callsign, 'getLoadedApps', {}).then(response => {

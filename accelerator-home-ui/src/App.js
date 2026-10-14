@@ -747,7 +747,7 @@ export default class App extends Router.App {
 		})
 	}
 
-	async _handleXcastAppLifecycle(applicationName, action, appId = null) {
+	async _handleXcastAppLifecycle(applicationName, intent, appId = null) {
 		const targetApp = appId || this._getXcastAppId(applicationName) || applicationName;
 		if (!targetApp) return false;
 
@@ -758,14 +758,28 @@ export default class App extends Router.App {
 			stop:   { method: 'terminateApp', success: 'stopped', error: 'stopped' }
 		};
 
-		const config = actionMap[action];
+		const config = actionMap[intent.action];
 		if (!config) return false;
 
-		console.log(`Arun: Performing '${action}' on Xcast app: ${targetApp} using method: ${config.method}`);
+		/*
+		intent = {
+			"action": "launch",
+			"context": {
+				"source": "DIAL"
+			},
+			"data": {
+				"dialPayload": "pairingCode=11a993b7-1fce-4896-a973-68bdc63ca3f9&theme=cl&dialLaunch=watch",
+				"additionalDataUrl": "http%3A%2F%2Flocalhost%3A56889%2Fa32f2332-df81-43cf-b97e-eb1a90eae698%2Fdial_data"
+			}
+		}
+		*/
+
+		this.LOG(`Arun: Performing '${intent.action}' on Xcast app: ${targetApp} using method: ${config.method}`);
 		try {
-			await AppManager.get()[config.method](targetApp);
+			if ("launchApp" === config.method) await AppManager.get()[config.method](targetApp, intent);
+			else await AppManager.get()[config.method](targetApp);
 		} catch (err) {
-			this.ERR(`Error performing '${action}' on Xcast app: ${JSON.stringify(err)}`);
+			this.ERR(`Error performing '${intent.action}' on Xcast app: ${JSON.stringify(err)}`);
 		}
 	}
 
@@ -1388,22 +1402,35 @@ export default class App extends Router.App {
 	registerXcastListeners() {
 		console.warn("Registering Xcast Listeners");
 		let self = this;
-		// xdial now emits app lifecycle intents through org.rdk.AppActions.onActionStartRequest.
-		// Do not handle the legacy XCast onApplication* notifications directly here.
 		this.onActionStartRequest = thunder.on("org.rdk.AppActions", "onActionStartRequest", notification => {
-			const LOGTAG = "Arun:NEWDIAL: "
-			this.LOG(LOGTAG + 'onActionStartRequest: ' + JSON.stringify(notification));
-			if (notification && notification.initiator?.toLowerCase() === "xcast" && notification.intent && notification.handlerAppId) {
-				const intent = notification.intent.toLowerCase();
+			this.LOG("onActionStartRequest: " + JSON.stringify(notification));
+			/*
+			{"initiator":"DIAL","intent":"{\"action\":\"launch\",\"context\":{\"source\":\"DIAL\"},\"data\":{\"dialPayload\":\"pairingCode=abcdefgh-1fce-4896-a973-abcdefgha3f9&theme=cl&dialLaunch=watch\",\"additionalDataUrl\":\"http%3A%2F%2Flocalhost%3A56889%2Fa32f2332-df81-43cf-b97e-eb1a90eae698%2Fdial_data\"}}","handlerAppId":"YouTube"}
+			 */
+			if (notification && "DIAL" === notification.initiator?.toUpperCase() && notification.intent && notification.handlerAppId) {
+				let parsedIntent = {};
+				try {
+					parsedIntent = JSON.parse(notification.intent);
+					/*
+					  parsedIntent eg: {"action":"launch","context":{"source":"DIAL"},"data":{"dialPayload":"pairingCode=abcdefgh-1fce-4896-a973-abcdefgha3f9&theme=cl&dialLaunch=watch","additionalDataUrl":"http%3A%2F%2Flocalhost%3A56889%2Fa32f2332-df81-43cf-b97e-eb1a90eae698%2Fdial_data"}}
+					 */
+					this.LOG("onActionStartRequest: Successfully parsed nested intent string: " + JSON.stringify(parsedIntent));
+				} catch (err) {
+					this.ERR("onActionStartRequest: Failed to parse nested intent string: " + err);
+					return false;
+				}
+				const intentAction = parsedIntent.action?.toLowerCase();
 				const validIntents = ["launch", "hide", "resume", "stop"];
-				if (validIntents.includes(intent)) {
+
+				if (validIntents.includes(intentAction)) {
 					const appName = notification.handlerAppId;
-					this._handleXcastAppLifecycle(appName, intent);
+					// LaunchApp argument - intent is of string type, pass it as received.
+					this._handleXcastAppLifecycle(appName, notification.intent);
 				} else {
-					this.LOG(`${LOGTAG}onActionStartRequest: intent ${notification.intent} is not supported.`);
+					this.LOG("onActionStartRequest: intent " + parsedIntent.action + " is not supported.");
 				}
 			} else {
-				this.LOG(`${LOGTAG}onActionStartRequest: notification is not from xcast or missing required fields.`);
+				this.LOG("onActionStartRequest: notification is not from xcast or missing required fields.");
 			}
 		});
 	}
