@@ -130,9 +130,18 @@ export default class FirmwareScreen extends Lightning.Component {
             clearInterval(this.downloadInterval);
             this.downloadInterval = null
         }
+        if (this.onFirmwareUpdateStateChangeCB) {
+            SysSrvApi.off('onFirmwareUpdateStateChange', this.onFirmwareUpdateStateChangeCB);
+            this.onFirmwareUpdateStateChangeCB = null;
+        }
     }
 
     _active() {
+        if (this.onFirmwareUpdateStateChangeCB) {
+            SysSrvApi.off('onFirmwareUpdateStateChange', this.onFirmwareUpdateStateChangeCB);
+            this.onFirmwareUpdateStateChangeCB = null;
+        }
+
         this.onFirmwareUpdateStateChangeCB = SysSrvApi.on('onFirmwareUpdateStateChange', notification => {
             this.tag('State.Title').text.text = Language.translate("Firmware State: ") + SysSrvApi.getFirmwareUpdateStateString(notification.firmwareUpdateStateChange)
             this.LOG("onFirmwareUpdateStateChange:" + JSON.stringify(notification));
@@ -157,11 +166,21 @@ export default class FirmwareScreen extends Lightning.Component {
     }
 
     _disable() {
-        if (this.onFirmwareUpdateStateChangeCB) this.onFirmwareUpdateStateChangeCB.dispose();
+        if (this.onFirmwareUpdateStateChangeCB) {
+            SysSrvApi.off('onFirmwareUpdateStateChange', this.onFirmwareUpdateStateChangeCB);
+            this.onFirmwareUpdateStateChangeCB = null;
+        }
+        if (this.downloadInterval) {
+            clearInterval(this.downloadInterval);
+            this.downloadInterval = null;
+        }
     }
 
     async _focus() {
-        this.downloadInterval = null;
+        if (this.downloadInterval) {
+            clearInterval(this.downloadInterval);
+            this.downloadInterval = null;
+        }
         await SysSrvApi.getFirmwareUpdateState().then(res => {
             this.LOG("FirmwareOverlay: getFirmwareUpdateState " + JSON.stringify(res))
             this.tag('State.Title').text.text = Language.translate("Firmware State: ") + SysSrvApi.getFirmwareUpdateStateString(res.firmwareUpdateState)

@@ -124,7 +124,23 @@ export default class FirmwareScreen extends Lightning.Component {
         }
     }
 
+    clearFirmwareUpdateCallbacks() {
+        if (this.autoRebootStartedCB) {
+            clearInterval(this.autoRebootStartedCB);
+            this.autoRebootStartedCB = null;
+        }
+        if (this.onFirmwareUpdateStateChangeCB) {
+            SysSrvApi.off('onFirmwareUpdateStateChange', this.onFirmwareUpdateStateChangeCB);
+            this.onFirmwareUpdateStateChangeCB = null;
+        }
+        if (this.onFirmwareUpdateInfoReceivedCB) {
+            SysSrvApi.off('onFirmwareUpdateInfoReceived', this.onFirmwareUpdateInfoReceivedCB);
+            this.onFirmwareUpdateInfoReceivedCB = null;
+        }
+    }
+
     _unfocus() {
+        this.clearFirmwareUpdateCallbacks();
         if (this.downloadInterval) {
             clearInterval(this.downloadInterval);
             this.downloadInterval = null
@@ -141,7 +157,8 @@ export default class FirmwareScreen extends Lightning.Component {
     }
 
     _active() {
-        this.onFirmwareUpdateStateChangeCB = SysSrvApi.thunder.on('onFirmwareUpdateStateChange', notification => {
+        this.clearFirmwareUpdateCallbacks();
+        this.onFirmwareUpdateStateChangeCB = SysSrvApi.on('onFirmwareUpdateStateChange', notification => {
             this.LOG("onFirmwareUpdateStateChange" + JSON.stringify(notification))
             this.tag('State.Title').text.text = Language.translate("Firmware State: ") + SysSrvApi.getFirmwareUpdateStateString(notification.firmwareUpdateStateChange);
             this.LOG('onFirmwareUpdateStateChange:' + JSON.stringify(notification));
@@ -179,7 +196,7 @@ export default class FirmwareScreen extends Lightning.Component {
             }
         });
         // TODO: This need to be in _init() as it should be system wide.
-        this.onFirmwareUpdateInfoReceivedCB = SysSrvApi.thunder.on('onFirmwareUpdateInfoReceived', params => {
+        this.onFirmwareUpdateInfoReceivedCB = SysSrvApi.on('onFirmwareUpdateInfoReceived', params => {
             this.LOG("onFirmwareUpdateInfoReceived" + JSON.stringify(params))
             if (params.success) {
                 if (params.updateAvailable) {
@@ -248,13 +265,10 @@ export default class FirmwareScreen extends Lightning.Component {
     }
 
     _disable() {
-        if (this.onFirmwareUpdateStateChangeCB) {
-            this.onFirmwareUpdateStateChangeCB.dispose();
-            this.onFirmwareUpdateStateChangeCB = null;
-        }
-        if (this.onFirmwareUpdateInfoReceivedCB) {
-            this.onFirmwareUpdateInfoReceivedCB.dispose();
-            this.onFirmwareUpdateInfoReceivedCB = null;
+        this.clearFirmwareUpdateCallbacks();
+        if (this.downloadInterval) {
+            clearInterval(this.downloadInterval);
+            this.downloadInterval = null
         }
     }
 
@@ -318,6 +332,11 @@ export default class FirmwareScreen extends Lightning.Component {
     }
 
     _handleBack() {
+        this.clearFirmwareUpdateCallbacks();
+        if (this.downloadInterval) {
+            clearInterval(this.downloadInterval);
+            this.downloadInterval = null;
+        }
         if(!Router.isNavigating() && !this.FWUpdateRebooting) {
            Router.navigate('settings/advanced/device')
         }

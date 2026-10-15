@@ -142,6 +142,9 @@ class SystemServices {
         }
 
         this.eventListeners[event].splice(index, 1);
+        if (this.eventListeners[event].length === 0) {
+            delete this.eventListeners[event];
+        }
     }
 
     /************************** Methods *********************/
