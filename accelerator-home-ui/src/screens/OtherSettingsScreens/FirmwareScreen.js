@@ -18,7 +18,7 @@
  **/
 import { Lightning, Language, Router } from '@lightningjs/sdk'
 import { COLORS } from '../../colors/Colors'
-import { CONFIG } from '../../Config/Config'
+import { GLOBALS, CONFIG } from '../../Config/Config'
 import SysSrvApi, { FWUpdateState, FWUpdateAvailableEnum } from '../../api/SystemServicesApi';
 import PowerManagerApi from '../../api/PowerManagerApi';
 
@@ -43,7 +43,6 @@ export default class FirmwareScreen extends Lightning.Component {
         return [
             FWUpdateState.FWUpdateStateRequesting,
             FWUpdateState.FWUpdateStateDownloading,
-            FWUpdateState.FWUpdateStateFailed,
             FWUpdateState.FWUpdateStateDownloadComplete,
             FWUpdateState.FWUpdateStateValidationComplete,
             FWUpdateState.FWUpdateStatePreparingReboot,
@@ -181,11 +180,24 @@ export default class FirmwareScreen extends Lightning.Component {
 
     _active() {
         this.clearFirmwareUpdateCallbacks();
+        // If Maintenance update is in progress, then do not allow user to check for firmware update.
+        if (GLOBALS.maintenanceIsCriticalMaintenance === true && GLOBALS.maintenanceIsRebootPending === true) {
+            this.LOG("Maintenance update is in progress; ignoring firmware update check.");
+            this.tag("FirmwareUpdate").alpha = 0
+            this._setState('Idle')
+            this.tag('State.Title').text.text = Language.translate("Firmware State: ") + Language.translate("Maintenance update in progress")
+            return;
+        }
         this.onFirmwareUpdateStateChangeCB = SysSrvApi.on('onFirmwareUpdateStateChange', notification => {
             this.LOG("onFirmwareUpdateStateChange" + JSON.stringify(notification))
             const nextState = notification && notification.firmwareUpdateStateChange;
             this.setUpdateInProgressState(nextState);
-            this.tag('State.Title').text.text = Language.translate("Firmware State: ") + SysSrvApi.getFirmwareUpdateStateString(nextState);
+            if (FWUpdateState.FWUpdateStateDownloading !== nextState && this.downloadInterval) {
+                this.LOG("Clearing download interval timer")
+                clearInterval(this.downloadInterval);
+                this.downloadInterval = null;
+            }
+            this.tag('State.Title').text.text = Language.translate("Firmware State: ") + SysSrvApi.getFirmwareUpdateStateString(nextState, CONFIG.language);
             this.LOG('onFirmwareUpdateStateChange:' + JSON.stringify(notification));
             if (FWUpdateState.FWUpdateStateDownloading === nextState) {
                 this.showUpdateButton(nextState)
@@ -274,6 +286,10 @@ export default class FirmwareScreen extends Lightning.Component {
     }
 
     startDownloadPercentageTimer() {
+        if (this.downloadInterval) {
+            clearInterval(this.downloadInterval);
+            this.downloadInterval = null
+        }
         this.downloadInterval = setInterval(() => {
             this.showDownloadPercent();
         }, 1000)
@@ -299,11 +315,18 @@ export default class FirmwareScreen extends Lightning.Component {
 
     async _focus() {
         this.downloadInterval = null;
-        await SysSrvApi.getFirmwareUpdateState().then(res => {
+        await SysSrvApi.getFirmwareUpdateState().then(async res => {
             if (res.success) {
                 this.LOG("getFirmwareUpdateState from firmware screen " + JSON.stringify(res))
                 this.setUpdateInProgressState(res.firmwareUpdateState);
-                this.tag('State.Title').text.text = Language.translate("Firmware State: ") + SysSrvApi.getFirmwareUpdateStateString(res.firmwareUpdateState)
+                this.tag('State.Title').text.text = Language.translate("Firmware State: ") + SysSrvApi.getFirmwareUpdateStateString(res.firmwareUpdateState, CONFIG.language);
+                if (FWUpdateState.FWUpdateStatePreparingReboot < res.firmwareUpdateState) {
+                    await SysSrvApi.getSystemVersions().then(res => {
+                        if (res.success && res?.stbVersion === res?.downloadedFWVersion) {
+                            this.tag('State.Title').text.text = Language.translate("Firmware State: ") + Language.translate("System is up to date");
+                        }
+                    });
+                }
                 this.showUpdateButton(res.firmwareUpdateState)
                 if (FWUpdateState.FWUpdateStateDownloading === res.firmwareUpdateState) {
                     this.startDownloadPercentageTimer();
@@ -388,7 +411,7 @@ export default class FirmwareScreen extends Lightning.Component {
                 }
             },
             class Idle extends this {
-                //
+                // No specific behavior for Idle state; just a placeholder.
             }
         ]
     }

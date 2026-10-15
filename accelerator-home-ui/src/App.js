@@ -63,6 +63,8 @@ import RDKWindowManager from './api/RDKWindowManagerApi.js';
 import RuntimeManager from './api/RuntimeManagerApi.js';
 import AppController from './AppController.js';
 import userSettingsApi from './api/UserSettingsApi.js';
+import SysSrvApi, { FWUpdateState, FWUpdateAvailableEnum } from './api/SystemServicesApi';
+import MaintMgrApi, { MaintenanceStatus, UpgradeOutOutMode, MaintenanceMode } from './api/MaintenanceMgrApi';
 
 var thunder = ThunderJS(CONFIG.thunderConfig);
 var appApi = new AppApi();
@@ -250,7 +252,6 @@ export default class App extends Router.App {
 		const activePage = Router.activePage && Router.activePage();
 		if (activePage && activePage.updateInProgress && key.keyCode !== Keymap.Power) {
 			this.LOG("Ignoring hotkey while firmware update is in progress: " + JSON.stringify(key.keyCode));
-			return true;
 		}
 		let self = this;
 		if(GLOBALS.MiracastNotificationstatus && key.keyCode !== Keymap.Power && key.keyCode !== Keymap.Home ) {
@@ -728,6 +729,110 @@ export default class App extends Router.App {
 				this.ERR("XcastApi activate failed");
 			}
 		})
+
+		this.startMaintenanceHandling();
+	}
+
+	async startMaintenanceHandling() {
+		this._lastMaintenanceNotificationState = this._lastMaintenanceNotificationState ?? null;
+		this._lastMaintenanceStatusLog = this._lastMaintenanceStatusLog ?? null;
+		this._lastFirmwareStateLog = this._lastFirmwareStateLog ?? null;
+		this._lastPrepareRebootGateLog = this._lastPrepareRebootGateLog ?? null;
+
+		// Note: this is of global scope and will be effect on all pages.
+		if (!this.onMaintenanceStatusChangeCB) {
+			this.onMaintenanceStatusChangeCB = MaintMgrApi.on('onMaintenanceStatusChange', notification => {
+				const nextState = notification && notification.maintenanceStatus;
+				if (this._lastMaintenanceNotificationState !== nextState) {
+					this.LOG("App Init onMaintenanceStatusChange: " + JSON.stringify(notification));
+					this._lastMaintenanceNotificationState = nextState;
+				}
+				GLOBALS.maintenanceIsCriticalMaintenance = notification && notification?.isCriticalMaintenance ? true : false;
+				GLOBALS.maintenanceIsRebootPending = notification && notification?.isRebootPending ? true : false;
+				if (nextState !== MaintenanceStatus.MAINTENANCE_IDLE) {
+					MaintMgrApi.getMaintenanceActivityStatus().then(res => {
+						const maintenanceStatus = res && res.maintenanceStatus;
+						if (this._lastMaintenanceStatusLog !== maintenanceStatus) {
+							this.LOG("App init MaintenanceActivityStatus: " + JSON.stringify(res));
+							this._lastMaintenanceStatusLog = maintenanceStatus;
+						}
+						if (res.success) {
+							GLOBALS.maintenanceIsCriticalMaintenance = res?.isCriticalMaintenance ? true : false;
+							GLOBALS.maintenanceIsRebootPending = res?.isRebootPending ? true : false;
+						}
+					});
+				}
+			});
+		}
+
+		await MaintMgrApi.getMaintenanceActivityStatus().then(async res => {
+			const maintenanceStatus = res && res.maintenanceStatus;
+			if (this._lastMaintenanceStatusLog !== maintenanceStatus) {
+				this.LOG("App init MaintenanceActivityStatus: " + JSON.stringify(res));
+				this._lastMaintenanceStatusLog = maintenanceStatus;
+			}
+			if (res.success && maintenanceStatus >= MaintenanceStatus.MAINTENANCE_STARTED) {
+				GLOBALS.maintenanceIsCriticalMaintenance = res?.isCriticalMaintenance ? true : false;
+				GLOBALS.maintenanceIsRebootPending = res?.isRebootPending ? true : false;
+				await MaintMgrApi.getMaintenanceStartTime().then(res => {
+					if (res?.startTime !== this._lastMaintenanceStartTime) {
+						this.LOG("App init MaintenanceStartTime: " + JSON.stringify(res));
+						this._lastMaintenanceStartTime = res?.startTime;
+					}
+				});
+				if (!this.maintenanceRebootIntervalTimer) {
+					this.maintenanceRebootIntervalTimer = setInterval(async () => {
+						await SysSrvApi.getFirmwareUpdateState().then(async res => {
+							let percent = {};
+							if (res.success && res.firmwareUpdateState === FWUpdateState.FWUpdateStateDownloading) {
+								await SysSrvApi.getFirmwareDownloadPercent().then(p => { percent = p; });
+							} else {
+								percent = { downloadPercent: 100 };
+							}
+							const firmwareStateKey = `${res?.firmwareUpdateState ?? 'unknown'}:${percent?.downloadPercent ?? 'n/a'}`;
+							if (this._lastFirmwareStateLog !== firmwareStateKey) {
+								this.LOG("App init FirmwareUpdateState: " + SysSrvApi.getFirmwareUpdateStateString(res?.firmwareUpdateState) + ", dwnld %: " + JSON.stringify(percent?.downloadPercent) + ", IsCriticalMaintenance=" + GLOBALS.maintenanceIsCriticalMaintenance + ", IsRebootPending=" + GLOBALS.maintenanceIsRebootPending);
+								this._lastFirmwareStateLog = firmwareStateKey;
+							}
+							if (res.success &&
+								res.firmwareUpdateState === FWUpdateState.FWUpdateStatePreparingReboot &&
+								(!GLOBALS.maintenanceIsRebootPending || !GLOBALS.maintenanceIsCriticalMaintenance)) {
+								const skipKey = `prepareRebootGate:${GLOBALS.maintenanceIsCriticalMaintenance}:${GLOBALS.maintenanceIsRebootPending}`;
+								if (this._lastPrepareRebootGateLog !== skipKey) {
+									this.LOG("App init Skip reboot: firmware update is Preparing to Reboot but IsCriticalMaintenance=" + GLOBALS.maintenanceIsCriticalMaintenance + " IsRebootPending=" + GLOBALS.maintenanceIsRebootPending);
+									this._lastPrepareRebootGateLog = skipKey;
+								}
+							}
+							if (res.success &&
+								res.firmwareUpdateState === FWUpdateState.FWUpdateStatePreparingReboot &&
+								GLOBALS.maintenanceIsRebootPending && GLOBALS.maintenanceIsCriticalMaintenance) {
+								if (this.maintenanceRebootIntervalTimer) {
+									clearInterval(this.maintenanceRebootIntervalTimer);
+									this.maintenanceRebootIntervalTimer = null;
+									this.LOG("App init Cleared maintenanceRebootIntervalTimer to avoid duplicate reboot handling.");
+								}
+								this.LOG("App init Rebooting device to complete the maintenance update.")
+								// Make this app in foreground to show the reboot screen.
+								let timeoutMs = 100;
+								if (GLOBALS.topmostApp !== GLOBALS.selfClientName) {
+									timeoutMs = 6000;
+									this.LOG("App init Exiting topmost app " + GLOBALS.topmostApp + ", UI to foreground for reboot.")
+									appApi.exitApp(GLOBALS.topmostApp).then(() => {
+										GLOBALS.topmostApp = GLOBALS.selfClientName;
+									}).catch(err => {
+										this.ERR("App init exitApp err: " + JSON.stringify(err))
+									});
+								}
+								setTimeout(() => {
+									while (Router.isNavigating()) { /* Nothing to do here. */ }
+									Router.navigate('settings/advanced/device/reboot');
+								}, timeoutMs);
+							}
+						});
+					}, 3000);
+				}
+			}
+		});
 	}
 
 	SubscribeToNetworkManager() {
@@ -1084,31 +1189,31 @@ export default class App extends Router.App {
 	}
 
 	initializeInactivity() {
-        this.LOG('Into initialize');
+		this.LOG('Into initialize');
 
-        const { energySaver, screenSaver, sleepTimer } = inactivityHelper.getInactivityConfig();
+		const { energySaver, screenSaver, sleepTimer } = inactivityHelper.getInactivityConfig();
 		this.LOG(`Loaded config: energySaver=${energySaver}, screenSaver=${screenSaver}, sleep=${sleepTimer}`)
 
 		const hasValidTimer = inactivityHelper.isValidTimeout(screenSaver) || inactivityHelper.isValidTimeout(energySaver) || inactivityHelper.isValidTimeout(sleepTimer);
 
-        if (!hasValidTimer) {
-            this.LOG('No valid inactivity timers found. Disabling inactivity reporting.');
+		if (!hasValidTimer) {
+			this.LOG('No valid inactivity timers found. Disabling inactivity reporting.');
 			appApi.enableInactivityReporting(false)
-            .catch(err => this.ERR('Error disabling inactivity: ' + JSON.stringify(err)));
+			.catch(err => this.ERR('Error disabling inactivity: ' + JSON.stringify(err)));
 			return;
-        }
+		}
 
 		// Set initial interval based on valid timers
 		if (inactivityHelper.isValidTimeout(screenSaver)) {
-            this.$setInactivityIntervalStage('ScreenSaver', screenSaver);
-        } else if (inactivityHelper.isValidTimeout(sleepTimer)) {
-            this.$setInactivityIntervalStage('SleepTimer', sleepTimer);
-        } else if(inactivityHelper.isValidTimeout(energySaver)) {
-            this.$setInactivityIntervalStage('EnergySaver', energySaver);
-        } else {
-            this.LOG('No valid inactivity timers found. Engine will not start.');
-        }
-    }
+			this.$setInactivityIntervalStage('ScreenSaver', screenSaver);
+		} else if (inactivityHelper.isValidTimeout(sleepTimer)) {
+			this.$setInactivityIntervalStage('SleepTimer', sleepTimer);
+		} else if(inactivityHelper.isValidTimeout(energySaver)) {
+			this.$setInactivityIntervalStage('EnergySaver', energySaver);
+		} else {
+			this.LOG('No valid inactivity timers found. Engine will not start.');
+		}
+	}
 
 	async registerOnUserInactivityListener() {
 		try {
@@ -1176,7 +1281,7 @@ export default class App extends Router.App {
 		this.currentStage = stage;
 		this.currentInterval = minutes;
 
-        const { energySaver, screenSaver, sleepTimer } = inactivityHelper.getInactivityConfig();
+		const { energySaver, screenSaver, sleepTimer } = inactivityHelper.getInactivityConfig();
 		if (inactivityHelper.isValidTimeout(screenSaver)) {
 			this.currentStage = 'ScreenSaver';
 			this.currentInterval = screenSaver;
@@ -1201,13 +1306,13 @@ export default class App extends Router.App {
 	}
 
 	$resetInactivityStage(stage) {
-        this.LOG(`Reset request for stage=${stage}`);
-        if (this.currentStage === stage) {
-            this.currentStage = null;
-            this.currentInterval = null;
-        }
+		this.LOG(`Reset request for stage=${stage}`);
+		if (this.currentStage === stage) {
+			this.currentStage = null;
+			this.currentInterval = null;
+		}
 		inactivityHelper.$resetInactivity(stage);
-    }
+	}
 
 	async listenToVoiceControl() {
 		this.LOG("App listenToVoiceControl method got called, configuring VoiceControl Plugin")
@@ -1433,7 +1538,7 @@ export default class App extends Router.App {
 
 	$setEnergySaverMode(time) {
 		var timeoutInMinutes = inactivityHelper.$setEnergySaver(time);
-        this.LOG("Final timeout (minutes): " + timeoutInMinutes);
+		this.LOG("Final timeout (minutes): " + timeoutInMinutes);
 		try {
 			Storage.set('EnergySaverInterval', timeoutInMinutes);
 			this.$setInactivityIntervalStage("EnergySaver", parseInt(timeoutInMinutes));

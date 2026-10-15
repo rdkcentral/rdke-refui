@@ -44,20 +44,19 @@ const FWUpdateState = Object.freeze({
     FWUpdateStateNoUpgradeNeeded: 7,
 });
 
-// 2. Map the enum values to human-readable strings
 const FirmwareUpdateStateStr = Object.freeze({
-    [FWUpdateState.FWUpdateStateUninitialized]: 'Uninitialized',
-    [FWUpdateState.FWUpdateStateRequesting]: 'Requesting',
-    [FWUpdateState.FWUpdateStateDownloading]: 'Downloading',
-    [FWUpdateState.FWUpdateStateFailed]: 'Failed',
-    [FWUpdateState.FWUpdateStateDownloadComplete]: 'Download Complete',
-    [FWUpdateState.FWUpdateStateValidationComplete]: 'Validation Complete',
-    [FWUpdateState.FWUpdateStatePreparingReboot]: 'Preparing to Reboot',
-    [FWUpdateState.FWUpdateStateNoUpgradeNeeded]: 'No Upgrade Needed',
+    [FWUpdateState.FWUpdateStateUninitialized]: { en: 'Uninitialized', es: 'Sin inicializar' },
+    [FWUpdateState.FWUpdateStateRequesting]: { en: 'Requesting', es: 'Solicitando' },
+    [FWUpdateState.FWUpdateStateDownloading]: { en: 'Downloading', es: 'Descargando' },
+    [FWUpdateState.FWUpdateStateFailed]: { en: 'Failed', es: 'Error' },
+    [FWUpdateState.FWUpdateStateDownloadComplete]: { en: 'Download Complete', es: 'Descarga completa' },
+    [FWUpdateState.FWUpdateStateValidationComplete]: { en: 'Validation Complete', es: 'Validación completa' },
+    [FWUpdateState.FWUpdateStatePreparingReboot]: { en: 'Preparing to Reboot', es: 'Preparando para reiniciar' },
+    [FWUpdateState.FWUpdateStateNoUpgradeNeeded]: { en: 'System is up to date.', es: 'El sistema está actualizado.' },
 });
 
-function getFirmwareUpdateStateString(state) {
-    return FirmwareUpdateStateStr[state] ?? 'Unknown State';
+function getFirmwareUpdateStateString(state, lang = 'en') {
+    return FirmwareUpdateStateStr[state]?.[lang] ?? 'Unknown State';
 }
 
 class SystemServices {
@@ -69,7 +68,7 @@ class SystemServices {
         this.callsign = 'org.rdk.System';
         this.logtag = 'SysSrv: ';
         this.thunder = ThunderJS(CONFIG.thunderConfig);
-        this.INFO = console.info;
+        this.INFO = function () { };
         this.LOG = console.log;
         this.ERR = console.error;
         this.WARN = console.warn;
@@ -97,6 +96,7 @@ class SystemServices {
                 if (result) {
                     resolve(result);
                 } else {
+                    this.ERR(this.logtag + `${method} error: No result returned`);
                     reject(false);
                 }
             }).catch(err => {
