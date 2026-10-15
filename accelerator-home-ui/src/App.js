@@ -63,6 +63,7 @@ import RDKWindowManager from './api/RDKWindowManagerApi.js';
 import RuntimeManager from './api/RuntimeManagerApi.js';
 import AppController from './AppController.js';
 import userSettingsApi from './api/UserSettingsApi.js';
+import DIALManager from './DIALManager.js';
 var packageManager = new PackageManager();
 
 var thunder = ThunderJS(CONFIG.thunderConfig);
@@ -645,6 +646,25 @@ export default class App extends Router.App {
 			"org.rdk.AppPackageManager",
 			"AppPackageManager",
 			() => packageManager.activate()
+		);
+		this._activatePlugin(
+			"org.rdk.AppManager",
+			"AppManager",
+			() => AppManager.get().activate()
+		);
+
+		this._activatePlugin(
+			"org.rdk.RDKWindowManager",
+			"RDKWindowManager",
+			() => RDKWindowManager.get().activate(),
+			() => this._SubscribeToRDKWindowManagerNotifications()
+		);
+
+		this._activatePlugin(
+			"org.rdk.RuntimeManager",
+			"RuntimeManager",
+			() => RuntimeManager.get().activate(),
+			() => this._SubscribeToRuntimeManagerNotifications()
 		);
 		this._SubscribeToAppManagerNotifications();
 		this._SubscribeToRDKWindowManagerNotifications();
