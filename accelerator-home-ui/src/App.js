@@ -247,16 +247,21 @@ export default class App extends Router.App {
 	}
 
 	_performKeyPressOPerations(key) {
+		const activePage = Router.activePage && Router.activePage();
+		if (activePage && activePage.updateInProgress && key.keyCode !== Keymap.Power) {
+			this.LOG("Ignoring hotkey while firmware update is in progress: " + JSON.stringify(key.keyCode));
+			return true;
+		}
 		let self = this;
-			if(GLOBALS.MiracastNotificationstatus && key.keyCode !== Keymap.Power && key.keyCode !== Keymap.Home ){
-				return false
-			} else if ((key.keyCode == Keymap.Home || key.keyCode == Keymap.Escape) && !Router.isNavigating()) {
-				if (Router.getActiveHash().startsWith("splash")) {
-					if (Router.getActiveHash() !== "splash/language") {
-						Router.navigate("splash/language");
-					}
-					return true;
+		if(GLOBALS.MiracastNotificationstatus && key.keyCode !== Keymap.Power && key.keyCode !== Keymap.Home ) {
+			return false
+		} else if ((key.keyCode == Keymap.Home || key.keyCode == Keymap.Escape) && !Router.isNavigating()) {
+			if (Router.getActiveHash().startsWith("splash")) {
+				if (Router.getActiveHash() !== "splash/language") {
+					Router.navigate("splash/language");
 				}
+				return true;
+			}
 			if (GLOBALS.topmostApp.includes("dac.native")) {
 				this.jumpToRoute("apps");
 			} else if (GLOBALS.Miracastclientdevicedetails.state === "INITIATED" || GLOBALS.Miracastclientdevicedetails.state === "INPROGRESS ") {
@@ -268,7 +273,7 @@ export default class App extends Router.App {
 				miracast.acceptClientConnection("Reject").then(res=>{
 					if(res.success){Router.focusPage()}
 				})
-		    } else {
+			} else {
 				this.jumpToRoute("menu"); //method to exit the current app(if any) and route to home screen
 			}
 			return true
