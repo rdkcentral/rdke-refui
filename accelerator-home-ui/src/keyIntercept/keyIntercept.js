@@ -43,8 +43,9 @@ export function keyIntercept(clientId) {
                 "intercepts": JSON.stringify(intercepts)
             }
         ).then(result => {
-            if (result.success) {
-                resolve(result.success);
+            // RDKWindowManager.addKeyIntercepts has no output: a successful call returns null
+            if (result === null || result === undefined || result.success) {
+                resolve(true);
             } else {
                 reject(result);
             }
