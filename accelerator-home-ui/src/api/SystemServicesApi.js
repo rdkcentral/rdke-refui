@@ -44,20 +44,19 @@ const FWUpdateState = Object.freeze({
     FWUpdateStateNoUpgradeNeeded: 7,
 });
 
-// 2. Map the enum values to human-readable strings
 const FirmwareUpdateStateStr = Object.freeze({
-    [FWUpdateState.FWUpdateStateUninitialized]: 'Uninitialized',
-    [FWUpdateState.FWUpdateStateRequesting]: 'Requesting',
-    [FWUpdateState.FWUpdateStateDownloading]: 'Downloading',
-    [FWUpdateState.FWUpdateStateFailed]: 'Failed',
-    [FWUpdateState.FWUpdateStateDownloadComplete]: 'Download Complete',
-    [FWUpdateState.FWUpdateStateValidationComplete]: 'Validation Complete',
-    [FWUpdateState.FWUpdateStatePreparingReboot]: 'Preparing to Reboot',
-    [FWUpdateState.FWUpdateStateNoUpgradeNeeded]: 'No Upgrade Needed',
+    [FWUpdateState.FWUpdateStateUninitialized]: { en: 'Uninitialized', es: 'Sin inicializar' },
+    [FWUpdateState.FWUpdateStateRequesting]: { en: 'Requesting', es: 'Solicitando' },
+    [FWUpdateState.FWUpdateStateDownloading]: { en: 'Downloading', es: 'Descargando' },
+    [FWUpdateState.FWUpdateStateFailed]: { en: 'Failed', es: 'Error' },
+    [FWUpdateState.FWUpdateStateDownloadComplete]: { en: 'Download Complete', es: 'Descarga completa' },
+    [FWUpdateState.FWUpdateStateValidationComplete]: { en: 'Validation Complete', es: 'Validación completa' },
+    [FWUpdateState.FWUpdateStatePreparingReboot]: { en: 'Preparing to Reboot', es: 'Preparando para reiniciar' },
+    [FWUpdateState.FWUpdateStateNoUpgradeNeeded]: { en: 'System is up to date.', es: 'El sistema está actualizado.' },
 });
 
-function getFirmwareUpdateStateString(state) {
-    return FirmwareUpdateStateStr[state] ?? 'Unknown State';
+function getFirmwareUpdateStateString(state, lang = 'en') {
+    return FirmwareUpdateStateStr[state]?.[lang] ?? 'Unknown State';
 }
 
 class SystemServices {
@@ -69,7 +68,7 @@ class SystemServices {
         this.callsign = 'org.rdk.System';
         this.logtag = 'SysSrv: ';
         this.thunder = ThunderJS(CONFIG.thunderConfig);
-        this.INFO = console.info;
+        this.INFO = function () { };
         this.LOG = console.log;
         this.ERR = console.error;
         this.WARN = console.warn;
@@ -97,6 +96,7 @@ class SystemServices {
                 if (result) {
                     resolve(result);
                 } else {
+                    this.ERR(this.logtag + `${method} error: No result returned`);
                     reject(false);
                 }
             }).catch(err => {
@@ -115,12 +115,10 @@ class SystemServices {
         if (!this.eventListeners[event]) {
             this.eventListeners[event] = [];
         }
-        this.eventListeners[event].push(callback);
 
-        // Subscribe to the event via Thunder
-        this.thunder.subscribe({
-            event: `${this.callsign}.${event}`
-        }, callback);
+        const listener = this.thunder.on(this.callsign, event, callback);
+        this.eventListeners[event].push({ callback, listener });
+        return listener;
     }
 
     /**
@@ -129,14 +127,24 @@ class SystemServices {
      * @param {function} callback - Callback function
      */
     off(event, callback) {
-        if (this.eventListeners[event]) {
-            this.eventListeners[event] = this.eventListeners[event].filter(cb => cb !== callback);
+        if (!this.eventListeners[event]) {
+            return;
         }
 
-        // Unsubscribe from the event via Thunder
-        this.thunder.unsubscribe({
-            event: `${this.callsign}.${event}`
-        }, callback);
+        const index = this.eventListeners[event].findIndex(entry => entry.callback === callback);
+        if (index === -1) {
+            return;
+        }
+
+        const { listener } = this.eventListeners[event][index];
+        if (listener && typeof listener.dispose === 'function') {
+            listener.dispose();
+        }
+
+        this.eventListeners[event].splice(index, 1);
+        if (this.eventListeners[event].length === 0) {
+            delete this.eventListeners[event];
+        }
     }
 
     /************************** Methods *********************/

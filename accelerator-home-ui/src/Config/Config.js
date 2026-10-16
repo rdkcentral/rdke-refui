@@ -82,6 +82,21 @@ export const GLOBALS = {
   _EnergySaverMode:false,
   _selfclientAppName: 'com.rdkcentral.refui',
   _selfClientId: null,
+  _maintenanceIsCriticalMaintenance: false,
+  _maintenanceIsRebootPending: false,
+
+  set maintenanceIsCriticalMaintenance(value) {
+    this._maintenanceIsCriticalMaintenance = value;
+  },
+  get maintenanceIsCriticalMaintenance() {
+    return this._maintenanceIsCriticalMaintenance;
+  },
+  set maintenanceIsRebootPending(value) {
+    this._maintenanceIsRebootPending = value;
+  },
+  get maintenanceIsRebootPending() {
+    return this._maintenanceIsRebootPending;
+  },
   set selfclientAppName(name)
   {
     this._selfclientAppName = name

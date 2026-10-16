@@ -18,7 +18,7 @@
  **/
 import { Lightning, Utils, Router, Language } from '@lightningjs/sdk'
 import AppApi from '../../api/AppApi'
-import { CONFIG } from '../../Config/Config'
+import { GLOBALS, CONFIG } from '../../Config/Config'
 
 const appApi = new AppApi()
 /**
@@ -120,24 +120,38 @@ export default class RebootConfirmationScreen extends Lightning.Component {
     }
 
     _focus() {
-        this._setState('Confirm')
-
+        if (GLOBALS.maintenanceIsCriticalMaintenance === true && GLOBALS.maintenanceIsRebootPending === true) {
+            // Display user message and auto reboot the device without user confirmation.
+            this.tag("Info").text.text = Language.translate("Maintenance Update Finished, Rebooting") + "..."
+            this.tag('Buttons').visible = false
+            setTimeout(() => {
+                while (Router.isNavigating()) { /* Nothing to do here. */ }
+                appApi.reboot("Maintenance UI Trigger").then(result => {
+                    this.LOG('device rebooting' + JSON.stringify(result))
+                    this._setState('Rebooting')
+                })
+            }, 2000)
+        } else {
+            this._setState('Confirm')
+        }
         this.loadingAnimation = this.tag('Loader').animation({
             duration: 3, repeat: -1, stopMethod: 'immediate', stopDelay: 0.2,
             actions: [{ p: 'rotation', v: { sm: 0, 0: 0, 1: 2 * Math.PI } }]
         });
-
     }
 
     _handleBack() {
+        if (GLOBALS.maintenanceIsCriticalMaintenance === true && GLOBALS.maintenanceIsRebootPending === true) {
+            this.INFO("Back button is disabled during critical maintenance with pending reboot.")
+            return;
+        }
         if(!Router.isNavigating()){
-        Router.navigate('settings/advanced/device')
+            Router.navigate('settings/advanced/device')
         }
     }
 
     static _states() {
         return [
-
             class Confirm extends this {
                 $enter() {
                     this._focus()
@@ -181,7 +195,7 @@ export default class RebootConfirmationScreen extends Lightning.Component {
                 }
                 _handleEnter() {
                     if(!Router.isNavigating()){
-                    Router.back()
+                        Router.back()
                     }
                 }
                 _handleLeft() {
@@ -215,7 +229,11 @@ export default class RebootConfirmationScreen extends Lightning.Component {
                 $enter() {
                     this.loadingAnimation.start()
                     this.tag("Loader").visible = true
-                    this.tag("Title").text.text = Language.translate("Rebooting")+"..."
+                    if (GLOBALS.maintenanceIsCriticalMaintenance === true && GLOBALS.maintenanceIsRebootPending === true) {
+                        this.tag("Title").text.text = Language.translate("Maintenance Update Finished, Rebooting") + "..."
+                    } else {
+                        this.tag("Title").text.text = Language.translate("Rebooting") + "..."
+                    }
                     this.tag('Buttons').visible = false
                     this.tag('Info').visible = false
                 }

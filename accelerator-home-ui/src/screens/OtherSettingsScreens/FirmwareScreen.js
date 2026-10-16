@@ -18,7 +18,7 @@
  **/
 import { Lightning, Language, Router } from '@lightningjs/sdk'
 import { COLORS } from '../../colors/Colors'
-import { CONFIG } from '../../Config/Config'
+import { GLOBALS, CONFIG } from '../../Config/Config'
 import SysSrvApi, { FWUpdateState, FWUpdateAvailableEnum } from '../../api/SystemServicesApi';
 import PowerManagerApi from '../../api/PowerManagerApi';
 
@@ -33,6 +33,27 @@ export default class FirmwareScreen extends Lightning.Component {
         this.LOG = console.log;
         this.ERR = console.error;
         this.WARN = console.warn;
+    }
+
+    isFirmwareUpdateIncomplete(state) {
+        if (state === undefined || state === null) {
+            return false;
+        }
+
+        return [
+            FWUpdateState.FWUpdateStateRequesting,
+            FWUpdateState.FWUpdateStateDownloading,
+            FWUpdateState.FWUpdateStateDownloadComplete,
+            FWUpdateState.FWUpdateStateValidationComplete,
+            FWUpdateState.FWUpdateStatePreparingReboot,
+        ].includes(state);
+    }
+
+    setUpdateInProgressState(state) {
+        this.updateInProgress = this.isFirmwareUpdateIncomplete(state);
+        if (this.updateInProgress) {
+            this.LOG('Firmware update is in progress; navigation is blocked. state=' + state);
+        }
     }
 
     _onChanged() {
@@ -124,7 +145,23 @@ export default class FirmwareScreen extends Lightning.Component {
         }
     }
 
+    clearFirmwareUpdateCallbacks() {
+        if (this.autoRebootStartedCB) {
+            clearInterval(this.autoRebootStartedCB);
+            this.autoRebootStartedCB = null;
+        }
+        if (this.onFirmwareUpdateStateChangeCB) {
+            SysSrvApi.off('onFirmwareUpdateStateChange', this.onFirmwareUpdateStateChangeCB);
+            this.onFirmwareUpdateStateChangeCB = null;
+        }
+        if (this.onFirmwareUpdateInfoReceivedCB) {
+            SysSrvApi.off('onFirmwareUpdateInfoReceived', this.onFirmwareUpdateInfoReceivedCB);
+            this.onFirmwareUpdateInfoReceivedCB = null;
+        }
+    }
+
     _unfocus() {
+        this.clearFirmwareUpdateCallbacks();
         if (this.downloadInterval) {
             clearInterval(this.downloadInterval);
             this.downloadInterval = null
@@ -136,36 +173,60 @@ export default class FirmwareScreen extends Lightning.Component {
         this.FWUpdateIsRebootDeferred = false;
         this.FWUpdateRebooting = false;
         this.autoRebootStartedCB = null;
+        this.onFirmwareUpdateStateChangeCB = null;
+        this.onFirmwareUpdateInfoReceivedCB = null;
+        this.updateInProgress = false;
     }
 
     _active() {
+        this.clearFirmwareUpdateCallbacks();
+        // If Maintenance update is in progress, then do not allow user to check for firmware update.
+        if (GLOBALS.maintenanceIsCriticalMaintenance === true && GLOBALS.maintenanceIsRebootPending === true) {
+            this.LOG("Maintenance update is in progress; ignoring firmware update check.");
+            this.tag("FirmwareUpdate").alpha = 0
+            this._setState('Idle')
+            this.tag('State.Title').text.text = Language.translate("Firmware State: ") + Language.translate("Maintenance update in progress")
+            return;
+        }
         this.onFirmwareUpdateStateChangeCB = SysSrvApi.on('onFirmwareUpdateStateChange', notification => {
-            this.tag('State.Title').text.text = Language.translate("Firmware State: ") + SysSrvApi.getFirmwareUpdateStateString(notification.firmwareUpdateStateChange);
+            this.LOG("onFirmwareUpdateStateChange" + JSON.stringify(notification))
+            const nextState = notification && notification.firmwareUpdateStateChange;
+            this.setUpdateInProgressState(nextState);
+            if (FWUpdateState.FWUpdateStateDownloading !== nextState && this.downloadInterval) {
+                this.LOG("Clearing download interval timer")
+                clearInterval(this.downloadInterval);
+                this.downloadInterval = null;
+            }
+            this.tag('State.Title').text.text = Language.translate("Firmware State: ") + SysSrvApi.getFirmwareUpdateStateString(nextState, CONFIG.language);
             this.LOG('onFirmwareUpdateStateChange:' + JSON.stringify(notification));
-            if (FWUpdateState.FWUpdateStateDownloading === notification.firmwareUpdateStateChange) {
-                this.showUpdateButton(notification.firmwareUpdateStateChange)
+            if (FWUpdateState.FWUpdateStateDownloading === nextState) {
+                this.showUpdateButton(nextState)
                 this.downloadInterval = setInterval(() => {
                     this.LOG("Downloading...");
                     this.showDownloadPercent();
                 }, 1000)
-            } else if (notification.firmwareUpdateStateChange > FWUpdateState.FWUpdateStateFailed) {
-                this.showUpdateButton(notification.firmwareUpdateStateChange)
+            } else if (nextState > FWUpdateState.FWUpdateStateFailed) {
+                this.showUpdateButton(nextState)
                 this.showDownloadFirmwareInfo()
-                if (FWUpdateState.FWUpdateStatePreparingReboot === notification.firmwareUpdateStateChange) {
+                if (FWUpdateState.FWUpdateStatePreparingReboot === nextState) {
                     this.FWUpdateRebooting = true;
+                    this.LOG("FWUpdateRebootImmediately: " + this.FWUpdateRebootImmediately + " FWUpdateIsRebootDeferred: " + this.FWUpdateIsRebootDeferred)
                     if (true === this.FWUpdateRebootImmediately === !this.FWUpdateIsRebootDeferred) {
+                        this.LOG("Starting auto reboot countdown")
                         this.autoRebootStartedCB = this.startAutoRebootCountdown();
                     } else {
+                        this.LOG("Rebooting device to complete the update")
                         this.tag('State.Title').text.text = Language.translate("Firmware State: ") + Language.translate("Reboot to complete the update");
                         setTimeout(() => {
                             if (!Router.isNavigating()) Router.navigate('settings/advanced/device/reboot')
                         }, 1000)
                     }
                 }
-            } else if (FWUpdateState.FWUpdateStateDownloading !== notification.firmwareUpdateStateChange) {
+            } else if (FWUpdateState.FWUpdateStateDownloading !== nextState) {
                 this.tag('DownloadedPercent.Title').visible = false;
-                this.showUpdateButton(notification.firmwareUpdateStateChange)
+                this.showUpdateButton(nextState)
                 if (this.downloadInterval) {
+                    this.LOG("Clearing download interval timer")
                     clearInterval(this.downloadInterval);
                     this.downloadInterval = null
                 }
@@ -193,6 +254,7 @@ export default class FirmwareScreen extends Lightning.Component {
                             this._setState('Idle')
                             break;
                     }
+                    this.LOG("FWUpdateRebootImmediately: " + this.FWUpdateRebootImmediately + " FWUpdateIsRebootDeferred: " + this.FWUpdateIsRebootDeferred)
                 }
             }
         });
@@ -224,6 +286,10 @@ export default class FirmwareScreen extends Lightning.Component {
     }
 
     startDownloadPercentageTimer() {
+        if (this.downloadInterval) {
+            clearInterval(this.downloadInterval);
+            this.downloadInterval = null
+        }
         this.downloadInterval = setInterval(() => {
             this.showDownloadPercent();
         }, 1000)
@@ -240,24 +306,33 @@ export default class FirmwareScreen extends Lightning.Component {
     }
 
     _disable() {
-        if (this.onFirmwareUpdateStateChangeCB) {
-            SysSrvApi.off('onFirmwareUpdateStateChange', this.onFirmwareUpdateStateChangeCB);
-        }
-        if (this.onFirmwareUpdateInfoReceivedCB) {
-            SysSrvApi.off('onFirmwareUpdateInfoReceived', this.onFirmwareUpdateInfoReceivedCB);
+        this.clearFirmwareUpdateCallbacks();
+        if (this.downloadInterval) {
+            clearInterval(this.downloadInterval);
+            this.downloadInterval = null
         }
     }
 
     async _focus() {
         this.downloadInterval = null;
-        await SysSrvApi.getFirmwareUpdateState().then(res => {
+        await SysSrvApi.getFirmwareUpdateState().then(async res => {
             if (res.success) {
                 this.LOG("getFirmwareUpdateState from firmware screen " + JSON.stringify(res))
-                this.tag('State.Title').text.text = Language.translate("Firmware State: ") + SysSrvApi.getFirmwareUpdateStateString(res.firmwareUpdateState)
+                this.setUpdateInProgressState(res.firmwareUpdateState);
+                this.tag('State.Title').text.text = Language.translate("Firmware State: ") + SysSrvApi.getFirmwareUpdateStateString(res.firmwareUpdateState, CONFIG.language);
+                if (FWUpdateState.FWUpdateStatePreparingReboot < res.firmwareUpdateState) {
+                    await SysSrvApi.getSystemVersions().then(res => {
+                        if (res.success && res?.stbVersion === res?.downloadedFWVersion) {
+                            this.tag('State.Title').text.text = Language.translate("Firmware State: ") + Language.translate("System is up to date");
+                        }
+                    });
+                }
                 this.showUpdateButton(res.firmwareUpdateState)
                 if (FWUpdateState.FWUpdateStateDownloading === res.firmwareUpdateState) {
                     this.startDownloadPercentageTimer();
                 }
+            } else {
+                this.updateInProgress = false;
             }
         });
         await SysSrvApi.getDownloadedFirmwareInfo().then(res => {
@@ -282,17 +357,19 @@ export default class FirmwareScreen extends Lightning.Component {
             }
         }).catch(err => {
             this.ERR("Error: " + JSON.stringify(err));
+            this.updateInProgress = false;
         })
     }
 
     async showDownloadFirmwareInfo() {
         this.tag('DownloadedVersion.Title').text.text = Language.translate('Check for Firmware Update') + ":" + Language.translate('Please wait');
+        this.setUpdateInProgressState(FWUpdateState.FWUpdateStateRequesting);
         await SysSrvApi.updateFirmware().catch(err => {
             this.ERR("Error: " + JSON.stringify(err));
+            this.updateInProgress = false;
         });
         await SysSrvApi.getDownloadedFirmwareInfo().then(result => {
             this.LOG("getDownloadedFirmwareInfo : " + JSON.stringify(result.downloadedFWVersion));
-
             this.tag('Version.Title').text.text = Language.translate("Firmware Versions: ") + result.currentFWVersion
             this.tag('DownloadedVersion.Title').text.text = Language.translate('Downloaded Firmware Version: ') + `${result.downloadedFWVersion ? result.downloadedFWVersion : 'NA'}`
 
@@ -302,12 +379,24 @@ export default class FirmwareScreen extends Lightning.Component {
             } else {
                 this.FWUpdateIsRebootDeferred = false;
             }
+            this.LOG("FWUpdateRebootImmediately: " + this.FWUpdateRebootImmediately + " FWUpdateIsRebootDeferred: " + this.FWUpdateIsRebootDeferred)
+            this.updateInProgress = false;
         }).catch(err => {
             this.ERR("Error: " + JSON.stringify(err));
+            this.updateInProgress = false;
         });
     }
 
     _handleBack() {
+        if (this.updateInProgress || this.FWUpdateRebooting) {
+            this.LOG("Firmware update in progress; ignoring back navigation");
+            return;
+        }
+        this.clearFirmwareUpdateCallbacks();
+        if (this.downloadInterval) {
+            clearInterval(this.downloadInterval);
+            this.downloadInterval = null;
+        }
         if(!Router.isNavigating() && !this.FWUpdateRebooting) {
            Router.navigate('settings/advanced/device')
         }
@@ -322,7 +411,7 @@ export default class FirmwareScreen extends Lightning.Component {
                 }
             },
             class Idle extends this {
-                //
+                // No specific behavior for Idle state; just a placeholder.
             }
         ]
     }
