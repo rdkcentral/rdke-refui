@@ -193,6 +193,8 @@ export default class FirmwareScreen extends Lightning.Component {
             const nextState = notification && notification.firmwareUpdateStateChange;
             this.setUpdateInProgressState(nextState);
             if (FWUpdateState.FWUpdateStateDownloading !== nextState && this.downloadInterval) {
+                this.tag('DownloadedPercent.Title').visible = false;
+                this.tag('DownloadedPercent.Title').text.text = "";
                 this.LOG("Clearing download interval timer")
                 clearInterval(this.downloadInterval);
                 this.downloadInterval = null;
@@ -344,11 +346,11 @@ export default class FirmwareScreen extends Lightning.Component {
 
     showDownloadPercent() {
         SysSrvApi.getFirmwareDownloadPercent().then(res => {
-            if (res.downloadPercent < 0) {
+            if (res.success && res?.downloadPercent < 0) {
                 this.tag('DownloadedPercent.Title').visible = false;
                 this.tag('DownloadedPercent.Title').text.text = "";
             }
-            else {
+            else if (res.success && res?.downloadPercent > 0) {
                 this.tag('DownloadedPercent.Title').visible = true;
                 this.tag('DownloadedPercent.Title').text.text = Language.translate("Download Progress: ") + res.downloadPercent + "%";
                 if (this.downloadInterval === null) {

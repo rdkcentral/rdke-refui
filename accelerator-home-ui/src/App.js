@@ -64,7 +64,7 @@ import RuntimeManager from './api/RuntimeManagerApi.js';
 import AppController from './AppController.js';
 import userSettingsApi from './api/UserSettingsApi.js';
 import SysSrvApi, { FWUpdateState, FWUpdateAvailableEnum } from './api/SystemServicesApi';
-import MaintMgrApi, { MaintenanceStatus, UpgradeOutOutMode, MaintenanceMode } from './api/MaintenanceMgrApi';
+import MaintMgrApi, { MaintenanceStatus, UpgradeOptOutMode, MaintenanceMode } from './api/MaintenanceMgrApi';
 
 var thunder = ThunderJS(CONFIG.thunderConfig);
 var appApi = new AppApi();

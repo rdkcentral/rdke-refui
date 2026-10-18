@@ -28,9 +28,9 @@ const MaintenanceStatus = Object.freeze({
     MAINTENANCE_INCOMPLETE: 'MAINTENANCE_INCOMPLETE'
 });
 
-const UpgradeOutOutMode = Object.freeze({
+const UpgradeOptOutMode = Object.freeze({
     NONE: 'NONE',
-    ENFORCE_OPTPOUT: 'ENFORCE_OPTPOUT',
+    ENFORCE_OPTOUT: 'ENFORCE_OPTOUT',
     BYPASS_OPTOUT: 'BYPASS_OPTOUT',
     IGNORE_UPDATE: 'IGNORE_UPDATE'
 });
@@ -156,4 +156,4 @@ class MaintenanceMgrApi {
 }
 
 export default MaintenanceMgrApi.getInstance();
-export { MaintenanceStatus, UpgradeOutOutMode, MaintenanceMode };
+export { MaintenanceStatus, UpgradeOptOutMode, MaintenanceMode };
