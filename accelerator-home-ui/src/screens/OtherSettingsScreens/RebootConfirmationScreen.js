@@ -195,6 +195,7 @@ export default class RebootConfirmationScreen extends Lightning.Component {
                 }
                 _handleEnter() {
                     if(!Router.isNavigating()){
+                        GLOBALS.skipFirmwareUpdateRetry = true;
                         Router.back()
                     }
                 }

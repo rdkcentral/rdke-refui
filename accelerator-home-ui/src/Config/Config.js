@@ -85,6 +85,7 @@ export const GLOBALS = {
   _maintenanceIsCriticalMaintenance: false,
   _maintenanceIsRebootPending: false,
   _lastFirmwareUpdateState: null,
+  _skipFirmwareUpdateRetry: false,
 
   set maintenanceIsCriticalMaintenance(value) {
     this._maintenanceIsCriticalMaintenance = value;
@@ -103,6 +104,12 @@ export const GLOBALS = {
   },
   get lastFirmwareUpdateState() {
     return this._lastFirmwareUpdateState;
+  },
+  set skipFirmwareUpdateRetry(value) {
+    this._skipFirmwareUpdateRetry = value;
+  },
+  get skipFirmwareUpdateRetry() {
+    return this._skipFirmwareUpdateRetry;
   },
   set selfclientAppName(name)
   {

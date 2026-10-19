@@ -62,6 +62,14 @@ export default class FirmwareScreen extends Lightning.Component {
             return;
         }
 
+        GLOBALS.lastFirmwareUpdateState = state;
+
+        if (GLOBALS.skipFirmwareUpdateRetry && state === FWUpdateState.FWUpdateStatePreparingReboot) {
+            this.LOG('Skipping firmware update retry because the user canceled the reboot confirmation flow.');
+            this.tag('State.Title').text.text = Language.translate('Firmware State: ') + Language.translate('Reboot to complete the update');
+            return;
+        }
+
         const stateText = SysSrvApi.getFirmwareUpdateStateString(state, CONFIG.language);
         this.tag('State.Title').text.text = Language.translate('Firmware State: ') + stateText;
         this.setUpdateInProgressState(state);
@@ -232,6 +240,7 @@ export default class FirmwareScreen extends Lightning.Component {
         this.onFirmwareUpdateStateChangeCB = null;
         this.onFirmwareUpdateInfoReceivedCB = null;
         this.updateInProgress = false;
+        GLOBALS.skipFirmwareUpdateRetry = false;
     }
 
     _active() {
