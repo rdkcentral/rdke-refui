@@ -81,6 +81,7 @@ export default class App extends Router.App {
 		this.LOG = console.log;
 		this.ERR = console.error;
 		this.WARN = console.warn;
+		this.xcastAppIdMap = new Map();
 	}
 
 	_handleAppClose() {
@@ -670,52 +671,7 @@ export default class App extends Router.App {
 				});
 				await this.xcastApi.setStandbyBehavior("active").then(async res => {
 					this.LOG("XcastApi setStandbyBehavior result:" + JSON.stringify(res));
-					let params = {
-						"applications": []
-					};
-					try {
-						await appApi.getPluginStatus("Cobalt").then(async res => {
-							params.applications.push({
-								"cors": ".youtube.com",
-								"name": "YouTube",
-								"prefix": "myYoutube"
-							}, {
-								"cors": ".youtube.com",
-								"name": "YouTubeTV",
-								"prefix": "myYouTubeTV"
-							});
-						});
-					} catch (e) {
-						this.ERR("getPluginStatus error :" + JSON.stringify(e))
-					}
-					try {
-						await appApi.getPluginStatus("Amazon").then(async res => {
-							params.applications.push({
-								"name": "AmazonInstantVideo",
-								"prefix": "myPrimeVideo",
-								"cors": ".amazon.com"
-							})
-						});
-					} catch (e) {
-						this.ERR("Amazon getPluginStatus error :" + JSON.stringify(e))
-					}
-					try {
-						await appApi.getPluginStatus("Netflix").then(async res => {
-							params.applications.push({
-								"name": "Netflix",
-								"prefix": "myNetflix",
-								"cors": ".netflix.com"
-							})
-						});
-					} catch (e) {
-						this.ERR("Amazon getPluginStatus error :" + JSON.stringify(e))
-					}
-					console.warn("Xcast register app param " + JSON.stringify(params));
-					await this.xcastApi.registerApplications(params).then(async res => {
-						console.warn("Xcast registerApplications success" + JSON.stringify(res));
-					}).catch(err => {
-						this.ERR("Xcast registerApplications error:" + JSON.stringify(err))
-					});
+					await this._registerXcastApplications();
 				}).catch(error => {
 					this.ERR("XcastApi setStandbyBehavior error:" + JSON.stringify(error));
 				});
@@ -723,6 +679,111 @@ export default class App extends Router.App {
 				this.ERR("XcastApi activate failed");
 			}
 		})
+	}
+
+	_getXcastAppId(applicationName) {
+		if (!applicationName) {
+			return null;
+		}
+		const appName = String(applicationName).trim();
+		if (this.xcastAppIdMap.has(appName)) {
+			return this.xcastAppIdMap.get(appName);
+		}
+		for (const [registeredName, appId] of this.xcastAppIdMap.entries()) {
+			if (registeredName.toLowerCase() === appName.toLowerCase()) {
+				return appId;
+			}
+		}
+		return null;
+	}
+
+	_updateDialAppList(params, name, prefix, cors, appId, query = 'source_type=12', payload = `${name.toLowerCase()}_payload`, allowStop = 1) {
+		params.applications.push({
+			name,
+			appId,
+			prefix,
+			cors,
+			query,
+			payload,
+			allowStop
+		});
+		this.xcastAppIdMap.set(name, appId);
+	}
+
+	async _registerXcastApplications() {
+		await packageManager.getConfigListForInstalledPackages("dial").then(async res => {
+			if (res && res.length > 0) {
+				// TODO: implement when app metadata exposes these.
+			}
+			// FIXME: remove when app metadata exposes these.
+			try {
+				await AppManager.get().getInstalledApps().then(async installedApps => {
+					console.warn("Xcast installed apps: " + JSON.stringify(installedApps));
+					installedApps.forEach(app => {
+						const appId = app?.id || app?.appId;
+						if (!appId) {
+							this.WARN("Skipping app with missing appId: " + JSON.stringify(app));
+							return;
+						}
+						if (appId.toLowerCase().includes("youtube")) {
+							this._updateDialAppList(params, "YouTube", "myYouTube", ".youtube.com", appId, "source_type=12", "youtube_payload", 1);
+						} else if (appId.toLowerCase().includes("amazon")) {
+							this._updateDialAppList(params, "AmazonInstantVideo", "myPrimeVideo", ".amazon.com", appId, "source_type=12", "amazon_payload", 1);
+						} else if (appId.toLowerCase().includes("netflix")) {
+							this._updateDialAppList(params, "Netflix", "myNetflix", ".netflix.com", appId, "source_type=12", "netflix_payload", 0);
+						}
+					});
+					console.warn("Xcast register app param " + JSON.stringify(params));
+					if (params.applications.length === 0) {
+						this.LOG("No supported applications found for Xcast registration");
+						return;
+					}
+					await this.xcastApi.registerApplications(params).then(async res => {
+						console.warn("Xcast registerApplications success" + JSON.stringify(res));
+					}).catch(err => {
+						this.ERR("Xcast registerApplications error:" + JSON.stringify(err))
+					});
+				});
+			} catch (err) {
+				this.ERR("Error fetching installed apps: " + JSON.stringify(err));
+			}
+		}).catch(err => {
+			this.ERR("Error while fetching dial config list for installed packages: " + JSON.stringify(err));
+		});
+	}
+
+	async _handleXcastAppLifecycle(applicationName, intent, appId = null) {
+		const targetApp = appId || this._getXcastAppId(applicationName) || applicationName;
+		if (!targetApp) return false;
+
+		const actionMap = {
+			launch: { method: 'launchApp',    success: 'running', error: 'stopped' },
+			resume: { method: 'launchApp',    success: 'running', error: 'stopped' },
+			hide:   { method: 'closeApp',     success: 'hidden',  error: 'hidden'  },
+			stop:   { method: 'terminateApp', success: 'stopped', error: 'stopped' }
+		};
+
+		const config = actionMap[intent.action];
+		if (!config) return false;
+		/*
+		intent = {
+			"action": "launch",
+			"context": {
+				"source": "DIAL"
+			},
+			"data": {
+				"dialPayload": "pairingCode=11a993b7-1fce-4896-a973-68bdc63ca3f9&theme=cl&dialLaunch=watch",
+				"additionalDataUrl": "http%3A%2F%2Flocalhost%3A56889%2Fa32f2332-df81-43cf-b97e-eb1a90eae698%2Fdial_data"
+			}
+		}
+		*/
+		this.LOG(`Performing '${intent.action}' on Xcast app: ${targetApp} using method: ${config.method}`);
+		try {
+			if ("launchApp" === config.method) await AppManager.get()[config.method](targetApp, intent);
+			else await AppManager.get()[config.method](targetApp);
+		} catch (err) {
+			this.ERR(`Error performing '${intent.action}' on Xcast app: ${JSON.stringify(err)}`);
+		}
 	}
 
 	SubscribeToNetworkManager() {
@@ -1343,64 +1404,33 @@ export default class App extends Router.App {
 	 */
 	registerXcastListeners() {
 		console.warn("Registering Xcast Listeners");
-		let self = this;
-		this.xcastApi.registerEvent('onApplicationLaunchRequest', notification => {
-			this.LOG('App onApplicationLaunchRequest: ' + JSON.stringify(notification));
-			appApi.getPowerState().then(res => {
-				if (res.currentState != PowerState.POWER_STATE_ON) {
-					appApi.setPowerState(PowerState.POWER_STATE_ON)
+		this.onActionStartRequest = thunder.on("org.rdk.AppActions", "onActionStartRequest", notification => {
+			this.LOG("onActionStartRequest: " + JSON.stringify(notification));
+			/*
+			{"initiator":"DIAL","intent":"{\"action\":\"launch\",\"context\":{\"source\":\"DIAL\"},\"data\":{\"dialPayload\":\"pairingCode=abcdefgh-1fce-4896-a973-abcdefgha3f9&theme=cl&dialLaunch=watch\",\"additionalDataUrl\":\"http%3A%2F%2Flocalhost%3A56889%2Fa32f2332-df81-43cf-b97e-eb1a90eae698%2Fdial_data\"}}","handlerAppId":"YouTube"}
+			 */
+			if (notification && "DIAL" === notification.initiator?.toUpperCase() && notification.intent && notification.handlerAppId) {
+				let parsedIntent = {};
+				try {
+					parsedIntent = JSON.parse(notification.intent);
+					/*
+					  parsedIntent eg: {"action":"launch","context":{"source":"DIAL"},"data":{"dialPayload":"pairingCode=abcdefgh-1fce-4896-a973-abcdefgha3f9&theme=cl&dialLaunch=watch","additionalDataUrl":"http%3A%2F%2Flocalhost%3A56889%2Fa32f2332-df81-43cf-b97e-eb1a90eae698%2Fdial_data"}}
+					 */
+					this.LOG("onActionStartRequest: Successfully parsed nested intent string: " + JSON.stringify(parsedIntent));
+				} catch (err) {
+					this.ERR("onActionStartRequest: Failed to parse nested intent string: " + err);
+					return false;
 				}
-			})
-			if (this.xcastApps(notification.applicationName)) {
-				// FIXME: Implement DIAL launch functionality.
-				this.WARN("App onApplicationLaunchRequest: not implemented.");
-			} else {
-				this.LOG("App onApplicationLaunchRequest: " + JSON.stringify(notification.applicationName) + " is not supported.")
-			}
-		});
-
-		this.xcastApi.registerEvent('onApplicationHideRequest', notification => {
-			this.LOG('App onApplicationHideRequest: ' + JSON.stringify(notification));
-			if (this.xcastApps(notification.applicationName)) {
-				// FIXME: Implement hide logic for xcast apps if needed.
-				this.WARN("App onApplicationHideRequest: not implemented.");
-			} else {
-				this.LOG("App onApplicationHideRequest: " + JSON.stringify(notification.applicationName) + " is not supported.")
-			}
-		});
-
-		this.xcastApi.registerEvent('onApplicationResumeRequest', notification => {
-			this.LOG('App onApplicationResumeRequest: ' + JSON.stringify(notification));
-			appApi.getPowerState().then(res => {
-				if (res.currentState != PowerState.POWER_STATE_ON) {
-					appApi.setPowerState(PowerState.POWER_STATE_ON)
+				const intentAction = parsedIntent.action?.toLowerCase();
+				const validIntents = ["launch", "hide", "resume", "stop"];
+				if (validIntents.includes(intentAction)) {
+					const appName = notification.handlerAppId;
+					// LaunchApp argument - intent is of string type, pass it as received.
+					this._handleXcastAppLifecycle(appName, notification.intent);
+				} else {
+					this.LOG("onActionStartRequest: intent " + parsedIntent.action + " is not supported.");
 				}
-			})
-			if (this.xcastApps(notification.applicationName)) {
-				// FIXME: Implement DIAL resume functionality.
-				this.WARN("App onApplicationResumeRequest: not implemented.");
-			} else {
-				this.LOG("App onApplicationResumeRequest: " + JSON.stringify(notification.applicationName) + " is not supported.")
-			}
-		});
-
-		this.xcastApi.registerEvent('onApplicationStopRequest', notification => {
-			this.LOG('App onApplicationStopRequest: ' + JSON.stringify(notification));
-			if (this.xcastApps(notification.applicationName)) {
-				// FIXME: Implement DIAL stop functionality.
-				this.WARN("App onApplicationStopRequest: not implemented.");
-			} else {
-				this.LOG("App onApplicationStopRequest: " + JSON.stringify(notification.applicationName) + " is not supported.")
-			}
-		});
-
-		this.xcastApi.registerEvent('onApplicationStateRequest', notification => {
-			console.log("App onApplicationStateRequest: " + JSON.stringify(notification));
-			if (this.xcastApps(notification.applicationName)) {
-				// FIXME: Implement DIAL state functionality.
-				this.WARN("App onApplicationStateRequest: not implemented.");
-			} else {
-				this.LOG("App onApplicationStateRequest: " + JSON.stringify(notification.applicationName) + " is not supported.")
+				this.LOG("onActionStartRequest: notification is not from xcast or missing required fields.");
 			}
 		});
 	}
@@ -1550,18 +1580,26 @@ export default class App extends Router.App {
 		if (targetApp != GLOBALS.selfclientAppName) {
 			AppManager.get().closeApp(targetApp).then(() => {
 				this.LOG("closeApp success for: " + targetApp)
-				AppManager.get().terminateApp(targetApp).then(() => {
-					this.LOG("terminateApp success after closeApp for: " + targetApp)
-				}).catch(err => {
-					this.ERR("terminateApp err after closeApp: " + JSON.stringify(err))
-				});
+				// FIXME: Remove this workaround once YouTube is aligned to LifeCycle.
+				if (targetApp && targetApp.toLowerCase().includes("youtube")) {
+					console.log("Calling Terminate on YouTUbe since app is not aligned to LifeCycle yet.")
+					AppManager.get().terminateApp(targetApp).then(() => {
+						this.LOG("terminateApp success after closeApp for: " + targetApp)
+					}).catch(err => {
+						this.ERR("terminateApp err after closeApp: " + JSON.stringify(err))
+					});
+				}
 			}).catch(err => {
 				this.ERR("closeApp err for " + targetApp + ": " + JSON.stringify(err))
-				AppManager.get().terminateApp(targetApp).then(() => {
-					this.LOG("terminateApp success after closeApp failure for: " + targetApp)
-				}).catch(termErr => {
-					this.ERR("terminateApp err after closeApp failure for " + targetApp + ": " + JSON.stringify(termErr))
-				});
+				// FIXME: Remove this workaround once YouTube is aligned to LifeCycle.
+				if (targetApp && targetApp.toLowerCase().includes("youtube")) {
+					console.log("Calling Terminate on YouTUbe since app is not aligned to LifeCycle yet.")
+					AppManager.get().terminateApp(targetApp).then(() => {
+						this.LOG("terminateApp success after closeApp failure for: " + targetApp)
+					}).catch(termErr => {
+						this.ERR("terminateApp err after closeApp failure for " + targetApp + ": " + JSON.stringify(termErr))
+					});
+				}
 			});
 			Storage.set("lastVisitedRoute", route); // incase any state change event tries to navigate, it need to be navigated to alexa requested route
 			GLOBALS.LastvisitedRoute = route
