@@ -317,5 +317,6 @@
   "Reboot to complete the update":"Reinicie para completar la actualización",
   "Maintenance Update Finished, Rebooting": "Actualización de mantenimiento finalizada, reiniciando",
   "System is up to date":"El sistema está actualizado",
-  "Maintenance update in progress":"Actualización en curso"
+  "Maintenance update in progress":"Actualización en curso",
+  "Updating the system, please wait": "Actualizando el sistema, por favor espere"
 }

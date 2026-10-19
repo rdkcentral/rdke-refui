@@ -392,6 +392,8 @@ export default class FirmwareScreen extends Lightning.Component {
     _handleBack() {
         if (this.updateInProgress || this.FWUpdateRebooting) {
             this.LOG("Firmware update in progress; ignoring back navigation");
+            this.tag('DownloadedPercent.Title').visible = true;
+            this.tag('DownloadedPercent.Title').text.text = Language.translate("Updating the system, please wait") + "...";
             return;
         }
         this.clearFirmwareUpdateCallbacks();
