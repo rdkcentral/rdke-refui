@@ -84,6 +84,7 @@ export const GLOBALS = {
   _selfClientId: null,
   _maintenanceIsCriticalMaintenance: false,
   _maintenanceIsRebootPending: false,
+  _lastFirmwareUpdateState: null,
 
   set maintenanceIsCriticalMaintenance(value) {
     this._maintenanceIsCriticalMaintenance = value;
@@ -96,6 +97,12 @@ export const GLOBALS = {
   },
   get maintenanceIsRebootPending() {
     return this._maintenanceIsRebootPending;
+  },
+  set lastFirmwareUpdateState(value) {
+    this._lastFirmwareUpdateState = value;
+  },
+  get lastFirmwareUpdateState() {
+    return this._lastFirmwareUpdateState;
   },
   set selfclientAppName(name)
   {
