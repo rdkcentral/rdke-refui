@@ -66,6 +66,13 @@ export default class FirmwareScreen extends Lightning.Component {
         this.tag('State.Title').text.text = Language.translate('Firmware State: ') + stateText;
         this.setUpdateInProgressState(state);
 
+        // No event for 'Updating', set State text to 'Updating' after 250ms.
+        if (state === FWUpdateState.FWUpdateStateValidationComplete) {
+            setTimeout(() => {
+                this.tag('State.Title').text.text = Language.translate('Firmware State: ') + Language.translate('Updating') + '...';
+            }, 250);
+        }
+
         if (this.downloadInterval && state !== FWUpdateState.FWUpdateStateDownloading) {
             this.tag('DownloadedPercent.Title').visible = false;
             this.tag('DownloadedPercent.Title').text.text = '';

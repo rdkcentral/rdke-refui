@@ -56,7 +56,7 @@ const FirmwareUpdateStateStr = Object.freeze({
 });
 
 function getFirmwareUpdateStateString(state, lang = 'en') {
-    return FirmwareUpdateStateStr[state]?.[lang] ?? 'Unknown State';
+    return FirmwareUpdateStateStr[state]?.[lang] ?? ((lang === 'en') ? 'Unknown state' : 'Estado desconocido');
 }
 
 class SystemServices {
