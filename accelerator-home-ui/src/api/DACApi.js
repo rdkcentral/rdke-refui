@@ -332,6 +332,11 @@ export async function getInstalledDACApps() {
         continue;
       }
 
+      // Only display real application packages in My Apps.
+      if (pkg.packageType && pkg.packageType !== "application") {
+        continue;
+      }
+
       const key = pkg.packageId + ":" + pkg.version;
       let storedAppInfo = storedAppInfoCache.get(key);
 

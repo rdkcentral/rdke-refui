@@ -737,7 +737,7 @@ export default class App extends Router.App {
 							console.warn("Arun: Xcast configResult for " + appId + ": " + JSON.stringify(configResult));
 							const packageInfo = configResult?.result ?? configResult;
 							console.warn("Arun: Xcast packageInfo for " + appId + ": " + JSON.stringify(packageInfo));
-							if (!packageInfo || packageInfo.packageType !== "application") {
+							if (!packageInfo || (packageInfo.packageType !== "application" && packageInfo.packageType !== "service")) {
 								this.LOG("Arun: Skipping non-application package for Xcast: " + appId + " packageType=" + (packageInfo?.packageType ?? "unknown"));
 								continue;
 							}
