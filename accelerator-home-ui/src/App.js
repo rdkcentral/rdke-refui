@@ -269,7 +269,7 @@ export default class App extends Router.App {
 				miracast.acceptClientConnection("Reject").then(res=>{
 					if(res.success){Router.focusPage()}
 				})
-		    } else {
+			} else {
 				this.jumpToRoute("menu"); //method to exit the current app(if any) and route to home screen
 			}
 			return true
@@ -707,48 +707,69 @@ export default class App extends Router.App {
 			payload,
 			allowStop
 		});
+		if (this.xcastAppIdMap.has(appId)) {
+			this.xcastAppIdMap.delete(appId);
+		}
 		this.xcastAppIdMap.set(name, appId);
 	}
 
 	async _registerXcastApplications() {
+		const params = { applications: [] };
 		await packageManager.getConfigListForInstalledPackages("dial").then(async res => {
+			console.warn("Arun: Xcast getConfigListForInstalledPackages dial res: " + JSON.stringify(res));
 			if (res && res.length > 0) {
 				// TODO: implement when app metadata exposes these.
 			}
-			// FIXME: remove when app metadata exposes these.
+			// FIXME: remove when app metadata exposes dial configuration details.
 			try {
 				await AppManager.get().getInstalledApps().then(async installedApps => {
-					console.warn("Xcast installed apps: " + JSON.stringify(installedApps));
-					installedApps.forEach(app => {
+					console.warn("Arun: Xcast installed apps: " + JSON.stringify(installedApps));
+					const appList = Array.isArray(installedApps) ? installedApps : [];
+					for (const app of appList) {
 						const appId = app?.id || app?.appId;
 						if (!appId) {
-							this.WARN("Skipping app with missing appId: " + JSON.stringify(app));
-							return;
+							this.WARN("Arun: Skipping app with missing appId: " + JSON.stringify(app));
+							continue;
 						}
-						if (appId.toLowerCase().includes("youtube")) {
-							this._updateDialAppList(params, "YouTube", "myYouTube", ".youtube.com", appId, "source_type=12", "youtube_payload", 1);
-						} else if (appId.toLowerCase().includes("amazon")) {
-							this._updateDialAppList(params, "AmazonInstantVideo", "myPrimeVideo", ".amazon.com", appId, "source_type=12", "amazon_payload", 1);
-						} else if (appId.toLowerCase().includes("netflix")) {
-							this._updateDialAppList(params, "Netflix", "myNetflix", ".netflix.com", appId, "source_type=12", "netflix_payload", 0);
+
+						try {
+							const configResult = await packageManager.getConfigForInstalledPackage(appId);
+							console.warn("Arun: Xcast configResult for " + appId + ": " + JSON.stringify(configResult));
+							const packageInfo = configResult?.result ?? configResult;
+							console.warn("Arun: Xcast packageInfo for " + appId + ": " + JSON.stringify(packageInfo));
+							if (!packageInfo || packageInfo.packageType !== "application") {
+								this.LOG("Arun: Skipping non-application package for Xcast: " + appId + " packageType=" + (packageInfo?.packageType ?? "unknown"));
+								continue;
+							}
+
+							const appIdLower = String(appId).toLowerCase();
+							if (appIdLower.includes("youtube")) {
+								this._updateDialAppList(params, "YouTube", "myYouTube", ".youtube.com", appId, "source_type=12", "youtube_payload", 1);
+							} else if (appIdLower.includes("amazon")) {
+								this._updateDialAppList(params, "AmazonInstantVideo", "myPrimeVideo", ".amazon.com", appId, "source_type=12", "amazon_payload", 1);
+							} else if (appIdLower.includes("netflix")) {
+								this._updateDialAppList(params, "Netflix", "myNetflix", ".netflix.com", appId, "source_type=12", "netflix_payload", 0);
+							}
+						} catch (err) {
+							this.ERR("Arun: Error fetching package config for appId " + appId + ": " + JSON.stringify(err));
 						}
-					});
-					console.warn("Xcast register app param " + JSON.stringify(params));
+					}
+					console.warn("Arun: Xcast register app param " + JSON.stringify(params));
 					if (params.applications.length === 0) {
 						this.LOG("No supported applications found for Xcast registration");
 						return;
 					}
 					await this.xcastApi.registerApplications(params).then(async res => {
-						console.warn("Xcast registerApplications success" + JSON.stringify(res));
+						console.warn("Arun: Xcast registerApplications success" + JSON.stringify(res));
 					}).catch(err => {
-						this.ERR("Xcast registerApplications error:" + JSON.stringify(err))
+						this.ERR("Arun: Xcast registerApplications error:" + JSON.stringify(err))
 					});
 				});
 			} catch (err) {
-				this.ERR("Error fetching installed apps: " + JSON.stringify(err));
+				this.ERR("Arun: Error fetching installed apps: " + JSON.stringify(err));
 			}
 		}).catch(err => {
-			this.ERR("Error while fetching dial config list for installed packages: " + JSON.stringify(err));
+			this.ERR("Arun: Error while fetching dial config list for installed packages: " + JSON.stringify(err));
 		});
 	}
 
@@ -777,12 +798,12 @@ export default class App extends Router.App {
 			}
 		}
 		*/
-		this.LOG(`Performing '${intent.action}' on Xcast app: ${targetApp} using method: ${config.method}`);
+		this.LOG(`Arun: Performing '${intent.action}' on Xcast app: ${targetApp} using method: ${config.method}`);
 		try {
 			if ("launchApp" === config.method) await AppManager.get()[config.method](targetApp, intent);
 			else await AppManager.get()[config.method](targetApp);
 		} catch (err) {
-			this.ERR(`Error performing '${intent.action}' on Xcast app: ${JSON.stringify(err)}`);
+			this.ERR(`Arun: Error performing '${intent.action}' on Xcast app: ${JSON.stringify(err)}`);
 		}
 	}
 
@@ -1580,6 +1601,7 @@ export default class App extends Router.App {
 		if (targetApp != GLOBALS.selfclientAppName) {
 			AppManager.get().closeApp(targetApp).then(() => {
 				this.LOG("closeApp success for: " + targetApp)
+
 				// FIXME: Remove this workaround once YouTube is aligned to LifeCycle.
 				if (targetApp && targetApp.toLowerCase().includes("youtube")) {
 					console.log("Calling Terminate on YouTUbe since app is not aligned to LifeCycle yet.")
