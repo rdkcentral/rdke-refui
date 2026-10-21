@@ -732,13 +732,12 @@ export default class App extends Router.App {
 
 			console.warn("Xcast: Xcast register app param " + JSON.stringify(params));
 			if (params.applications.length === 0) {
-				this.LOG("Xcast No supported applications found for Xcast registration");
+				this.WARN("Xcast No supported applications found for Xcast registration");
 				return;
 			}
 
 			try {
 				const result = await this.xcastApi.registerApplications(params);
-				console.warn("Xcast: Xcast registerApplications success" + JSON.stringify(result));
 			} catch (err) {
 				this.ERR("Xcast: Xcast registerApplications error:" + JSON.stringify(err));
 			}
@@ -749,7 +748,6 @@ export default class App extends Router.App {
 
 	async _handleXcastAppLifecycle(applicationName, intent, action) {
 		const targetApp = this._getXcastAppId(applicationName) || applicationName;
-		this.LOG("Xcast targetApp:" + JSON.stringify(targetApp));
 		if (!targetApp) return false;
 
 		const actionMap = {
@@ -760,7 +758,6 @@ export default class App extends Router.App {
 		};
 
 		const config = actionMap[action];
-		this.LOG("Xcast: config - " + JSON.stringify(config));
 		if (!config) return false;
 		this.LOG(`Xcast: Performing '${action}' on Xcast app: ${targetApp} using method: ${config.method}`);
 		try {
