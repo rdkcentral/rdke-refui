@@ -693,12 +693,12 @@ export default class App extends Router.App {
 
 	_updateDialAppList(params, name, prefix, cors, appId, query = 'source_type=12', allowStop = 1, _payload = null) {
 		params.applications.push({
-			name,
-			appId,
-			prefix,
-			cors,
-			query,
-			allowStop,
+			name : name,
+			appid: appId,
+			prefix: prefix,
+			cors: cors,
+			query: query,
+			allowStop: allowStop,
 			payload: _payload
 		});
 		if (this.xcastAppIdMap.has(appId)) {
@@ -727,10 +727,9 @@ export default class App extends Router.App {
 				const query = "source_type=12";
 				const allowStop = 1;
 
-				this._updateDialAppList(params, appName, "my" + appName, corsDomains.join(","), appId, query, allowStop);
+				this._updateDialAppList(params, appName, "my" + appName, corsDomains.join(" "), appId, query, allowStop);
 			}
 
-			console.warn("Xcast: Xcast register app param " + JSON.stringify(params));
 			if (params.applications.length === 0) {
 				this.WARN("Xcast No supported applications found for Xcast registration");
 				return;
