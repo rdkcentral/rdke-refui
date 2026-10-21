@@ -682,10 +682,10 @@ export default class App extends Router.App {
 	}
 
 	_getXcastAppId(applicationName) {
-		this.LOG("Arun: _getXcastAppId " + JSON.stringify(applicationName));
+		this.LOG("Xcast: _getXcastAppId " + JSON.stringify(applicationName));
 		if (this.xcastAppIdMap.has(applicationName)) {
 			const appId = this.xcastAppIdMap.get(applicationName);
-			this.LOG("Arun: _getXcastAppId found appId " + JSON.stringify(appId));
+			this.LOG("Xcast: _getXcastAppId found appId " + JSON.stringify(appId));
 			return appId;
 		}
 		return null;
@@ -705,8 +705,8 @@ export default class App extends Router.App {
 			this.xcastAppIdMap.delete(appId);
 		}
 		this.xcastAppIdMap.set(name, appId);
-		this.LOG("Arun: _updateDialAppList params: " + JSON.stringify(params));
-		this.LOG("Arun: _updateDialAppList xcastAppIdMap: " + JSON.stringify(Array.from(this.xcastAppIdMap.entries())));
+		this.LOG("Xcast: _updateDialAppList params: " + JSON.stringify(params));
+		this.LOG("Xcast: _updateDialAppList xcastAppIdMap: " + JSON.stringify(Array.from(this.xcastAppIdMap.entries())));
 	}
 
 	async _registerXcastApplications() {
@@ -719,7 +719,7 @@ export default class App extends Router.App {
 				const appName = config?.name;
 
 				if (!appId || !appName) {
-					this.WARN("Arun: Skipping config with missing appId or name: " + JSON.stringify(config));
+					this.WARN("Xcast: Skipping config with missing appId or name: " + JSON.stringify(config));
 					continue;
 				}
 
@@ -730,26 +730,26 @@ export default class App extends Router.App {
 				this._updateDialAppList(params, appName, "my" + appName, corsDomains.join(","), appId, query, allowStop);
 			}
 
-			console.warn("Arun: Xcast register app param " + JSON.stringify(params));
+			console.warn("Xcast: Xcast register app param " + JSON.stringify(params));
 			if (params.applications.length === 0) {
-				this.LOG("Arun No supported applications found for Xcast registration");
+				this.LOG("Xcast No supported applications found for Xcast registration");
 				return;
 			}
 
 			try {
 				const result = await this.xcastApi.registerApplications(params);
-				console.warn("Arun: Xcast registerApplications success" + JSON.stringify(result));
+				console.warn("Xcast: Xcast registerApplications success" + JSON.stringify(result));
 			} catch (err) {
-				this.ERR("Arun: Xcast registerApplications error:" + JSON.stringify(err));
+				this.ERR("Xcast: Xcast registerApplications error:" + JSON.stringify(err));
 			}
 		}).catch(err => {
-			this.ERR("Arun: Error while fetching dial config list for installed packages: " + JSON.stringify(err));
+			this.ERR("Xcast: Error while fetching dial config list for installed packages: " + JSON.stringify(err));
 		});
 	}
 
 	async _handleXcastAppLifecycle(applicationName, intent, action) {
 		const targetApp = this._getXcastAppId(applicationName) || applicationName;
-		this.LOG("Arun targetApp:" + JSON.stringify(targetApp));
+		this.LOG("Xcast targetApp:" + JSON.stringify(targetApp));
 		if (!targetApp) return false;
 
 		const actionMap = {
@@ -760,14 +760,14 @@ export default class App extends Router.App {
 		};
 
 		const config = actionMap[action];
-		this.LOG("Arun: config - " + JSON.stringify(config));
+		this.LOG("Xcast: config - " + JSON.stringify(config));
 		if (!config) return false;
-		this.LOG(`Arun: Performing '${action}' on Xcast app: ${targetApp} using method: ${config.method}`);
+		this.LOG(`Xcast: Performing '${action}' on Xcast app: ${targetApp} using method: ${config.method}`);
 		try {
 			if ("launchApp" === config.method) await AppManager.get()[config.method](targetApp, intent);
 			else await AppManager.get()[config.method](targetApp);
 		} catch (err) {
-			this.ERR(`Arun: Error performing '${action}' on Xcast app: ${JSON.stringify(err)}`);
+			this.ERR(`Xcast: Error performing '${action}' on Xcast app: ${JSON.stringify(err)}`);
 		}
 	}
 
@@ -1390,31 +1390,27 @@ export default class App extends Router.App {
 	registerXcastListeners() {
 		console.warn("Registering Xcast Listeners");
 		this.onActionStartRequest = thunder.on("org.rdk.AppActions", "onActionStartRequest", notification => {
-			this.LOG("Arun onActionStartRequest: " + JSON.stringify(notification));
+			this.LOG("Xcast onActionStartRequest: " + JSON.stringify(notification));
 			if (notification && "DIAL" === notification.initiator && notification.intent && notification.handlerAppId) {
 				let parsedIntent = {};
 				try {
 					parsedIntent = JSON.parse(notification.intent);
-					this.LOG("Arun onActionStartRequest: Successfully parsed nested intent string: " + JSON.stringify(parsedIntent));
+					this.LOG("Xcast onActionStartRequest: Successfully parsed nested intent string: " + JSON.stringify(parsedIntent));
 				} catch (err) {
-					this.ERR("Arun onActionStartRequest: Failed to parse nested intent string: " + err);
+					this.ERR("Xcast onActionStartRequest: Failed to parse nested intent string: " + err);
 					return false;
 				}
-				const intentAction = parsedIntent.action?.toLowerCase();
+				const intentAction = parsedIntent?.action;
 				const validIntents = ["launch", "hide", "resume", "stop"];
 				if (validIntents.includes(intentAction)) {
 					const appName = notification.handlerAppId;
 					// LaunchApp argument - intent is of string type, pass it as received.
 					this._handleXcastAppLifecycle(appName, notification.intent, parsedIntent.action);
 				} else {
-					this.LOG("Arun onActionStartRequest: intent " + parsedIntent.action + " is not supported.");
+					this.LOG("Xcast onActionStartRequest: intent " + parsedIntent.action + " is not supported.");
 				}
 			} else {
-				this.LOG("Arun onActionStartRequest: notification is not from DIAL or missing required fields.");
-				this.LOG("Arun onActionStartRequest: notification:" + JSON.stringify(notification));
-				this.LOG("Arun onActionStartRequest: notification.initiator:" + JSON.stringify(notification.initiator));
-				this.LOG("Arun onActionStartRequest: notification.intent:" + JSON.stringify(notification.intent));
-				this.LOG("Arun onActionStartRequest: notification.handlerAppId:"+ JSON.stringify(notification.handlerAppId));
+				this.LOG("Xcast onActionStartRequest: notification is not from DIAL or missing required fields.");
 			}
 		});
 	}
