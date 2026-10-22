@@ -63,6 +63,7 @@ import RDKWindowManager from './api/RDKWindowManagerApi.js';
 import RuntimeManager from './api/RuntimeManagerApi.js';
 import AppController from './AppController.js';
 import userSettingsApi from './api/UserSettingsApi.js';
+import AppActionApi from './api/AppActionApi.js';
 
 var thunder = ThunderJS(CONFIG.thunderConfig);
 var appApi = new AppApi();
@@ -644,12 +645,12 @@ export default class App extends Router.App {
 		this._SubscribeToAppManagerNotifications();
 		this._SubscribeToRDKWindowManagerNotifications();
 		this._SubscribeToRuntimeManagerNotifications();
+		this.registerAppActionEvent();
 
 		this.xcastApi = new XcastApi()
 		this.xcastApi.activate().then(async result => {
 			console.warn("Xcast plugin activate");
 			if (result) {
-				this.registerXcastListeners();
 				let serialnumber = "DefaultSLNO";
 				let modelName = "RDK" + GLOBALS.deviceType;
 				const serialRes = await appApi.getSerialNumber();
@@ -701,8 +702,8 @@ export default class App extends Router.App {
 			allowStop: allowStop,
 			payload: _payload
 		});
-		if (this.xcastAppIdMap.has(appId)) {
-			this.xcastAppIdMap.delete(appId);
+		if (this.xcastAppIdMap.has(name)) {
+			this.xcastAppIdMap.delete(name);
 		}
 		this.xcastAppIdMap.set(name, appId);
 		this.LOG("Xcast: _updateDialAppList params: " + JSON.stringify(params));
@@ -724,6 +725,8 @@ export default class App extends Router.App {
 				}
 
 				const corsDomains = config?.configuration?.["urn:rdk:config:dial"]?.corsDomains || [];
+				// FIXME: temporary hardcode to add the app specific
+				corsDomains.push("package:com.google.android.youtube", "package:com.google.ios.youtube");
 				const query = "source_type=12";
 				const allowStop = 1;
 
@@ -750,18 +753,18 @@ export default class App extends Router.App {
 		if (!targetApp) return false;
 
 		const actionMap = {
-			launch: { method: 'launchApp',    success: 'running', error: 'stopped' },
-			resume: { method: 'launchApp',    success: 'running', error: 'stopped' },
-			hide:   { method: 'closeApp',     success: 'hidden',  error: 'hidden'  },
-			stop:   { method: 'terminateApp', success: 'stopped', error: 'stopped' }
+			launch: 'launchApp',
+			resume: 'launchApp',
+			hide: 'closeApp',
+			stop: 'terminateApp'
 		};
 
-		const config = actionMap[action];
-		if (!config) return false;
-		this.LOG(`Xcast: Performing '${action}' on Xcast app: ${targetApp} using method: ${config.method}`);
+		const method = actionMap[action];
+		if (!method) return false;
+		this.LOG(`Xcast: Performing '${action}' on Xcast app: ${targetApp} using method: ${method}`);
 		try {
-			if ("launchApp" === config.method) await AppManager.get()[config.method](targetApp, intent);
-			else await AppManager.get()[config.method](targetApp);
+			if ("launchApp" === method) await AppManager.get()[method](targetApp, intent);
+			else await AppManager.get()[method](targetApp);
 		} catch (err) {
 			this.ERR(`Xcast: Error performing '${action}' on Xcast app: ${JSON.stringify(err)}`);
 		}
@@ -1383,30 +1386,36 @@ export default class App extends Router.App {
 	/**
 	 * Function to register event listeners for Xcast plugin.
 	 */
-	registerXcastListeners() {
-		console.warn("Registering Xcast Listeners");
+	registerAppActionEvent() {
 		this.onActionStartRequest = thunder.on("org.rdk.AppActions", "onActionStartRequest", notification => {
-			this.LOG("Xcast onActionStartRequest: " + JSON.stringify(notification));
+			this.LOG("onActionStartRequest: " + JSON.stringify(notification));
 			if (notification && "DIAL" === notification.initiator && notification.intent && notification.handlerAppId) {
 				let parsedIntent = {};
 				try {
 					parsedIntent = JSON.parse(notification.intent);
-					this.LOG("Xcast onActionStartRequest: Successfully parsed nested intent string: " + JSON.stringify(parsedIntent));
+					this.LOG("onActionStartRequest: Successfully parsed nested intent string: " + JSON.stringify(parsedIntent));
 				} catch (err) {
-					this.ERR("Xcast onActionStartRequest: Failed to parse nested intent string: " + err);
+					this.ERR("onActionStartRequest: Failed to parse nested intent string: " + err);
 					return false;
 				}
 				const intentAction = parsedIntent?.action;
 				const validIntents = ["launch", "hide", "resume", "stop"];
 				if (validIntents.includes(intentAction)) {
+					PowerManagerApi.get().getPowerState().then(res => {
+						if (res.currentState !== PowerState.POWER_STATE_ON) {
+							PowerManagerApi.get().setPowerState(PowerState.POWER_STATE_ON);
+						}
+					}).catch(err => {
+						this.ERR("onActionStartRequest: Error getting power state: " + JSON.stringify(err));
+					});
 					const appName = notification.handlerAppId;
 					// LaunchApp argument - intent is of string type, pass it as received.
-					this._handleXcastAppLifecycle(appName, notification.intent, parsedIntent.action);
+					this._handleXcastAppLifecycle(appName, notification.intent, intentAction);
 				} else {
-					this.LOG("Xcast onActionStartRequest: intent " + parsedIntent.action + " is not supported.");
+					this.LOG("onActionStartRequest: intent " + (intentAction || "undefined") + " is not supported.");
 				}
 			} else {
-				this.LOG("Xcast onActionStartRequest: notification is not from DIAL or missing required fields.");
+				this.LOG("onActionStartRequest: notification is not from DIAL or missing required fields.");
 			}
 		});
 	}
