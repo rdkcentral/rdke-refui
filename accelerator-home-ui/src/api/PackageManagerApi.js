@@ -150,4 +150,24 @@ export default class PackageManager {
       this.handleThunderError(thunderCall, err);
     });
   }
+
+  getConfigForInstalledPackage(packageId) {
+    const thunderCall = "getConfigForInstalledPackage";
+    return this.thunder.call(this.callsign, thunderCall, { packageId }).then(result => {
+      this.LOG(thunderCall, " result:" + JSON.stringify(result));
+      return result;
+    }).catch(err => {
+      this.handleThunderError(thunderCall, err);
+    });
+  }
+
+  getConfigListForInstalledPackages(filter = "dial") {
+    const thunderCall = "getConfigListForInstalledPackages";
+    return this.thunder.call(this.callsign, thunderCall, { filter }).then(result => {
+      this.LOG(thunderCall, " result:" + JSON.stringify(result));
+      return result;
+    }).catch(err => {
+      this.handleThunderError(thunderCall, err);
+    });
+  }
 }
