@@ -38,7 +38,15 @@ export default class AppManager {
     launchApp(appId, intent = null, launchArgs = null) {
         this.INFO(`launchApp called with appId: ${appId}`);
         const params = { appId, ...(intent && { intent }), ...(launchArgs && { launchArgs }) };
-        return this.thunder.call(this.callsign, 'launchApp', params);
+        return new Promise((resolve, reject) => {
+            this.thunder.call(this.callsign, 'launchApp', params).then(response => {
+                resolve(response)
+                this.INFO("launchApp response: " + JSON.stringify(response));
+            }).catch(err => {
+                this.ERR("Error launchApp: " + JSON.stringify(err))
+                reject(err)
+            })
+        })
     }
     getLoadedApps() {
         return new Promise((resolve, reject) => {

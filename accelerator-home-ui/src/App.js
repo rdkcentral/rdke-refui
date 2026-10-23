@@ -26,7 +26,6 @@ import {
 import ThunderJS from 'ThunderJS';
 import routes from './routes/routes';
 import AppApi from '../src/api/AppApi.js';
-import XcastApi from '../src/api/XcastApi';
 import {
 	CONFIG,
 	GLOBALS,
@@ -63,7 +62,7 @@ import RDKWindowManager from './api/RDKWindowManagerApi.js';
 import RuntimeManager from './api/RuntimeManagerApi.js';
 import AppController from './AppController.js';
 import userSettingsApi from './api/UserSettingsApi.js';
-import AppActionApi from './api/AppActionApi.js';
+import XcastApi from '../src/api/XcastApi.js';
 
 var thunder = ThunderJS(CONFIG.thunderConfig);
 var appApi = new AppApi();
@@ -442,12 +441,19 @@ export default class App extends Router.App {
 		this.tag("VideoScreen").alpha = alpha;
 		// this.tag("ScreenSaver").alpha = alpha;
 	}
-	_init() {
+	async _init() {
 		let self = this;
 		this.inactivityEngineInitialized = false;
 		this.thunderListenerRegistered = false;
 		this.currentStage = null;
 		this.currentInterval = null;
+		this._xcastPackageChangeListener = (action, data) => {
+			if (action === 'installed' || action === 'uninstalled') {
+				this.LOG(`Xcast: package changed (${action}), refreshing app registrations: ` + JSON.stringify(data));
+				this._registerXcastApplications();
+			}
+		};
+		AppController.get().addPackageChangedListener(this._xcastPackageChangeListener);
 		self.appIdentifiers = {
 			"YouTubeTV": "n:4",
 			"YouTube": "n:3",
@@ -481,10 +487,10 @@ export default class App extends Router.App {
 		Storage.set("lastVisitedRoute", "menu"); //setting to menu so that it will be always defaulted to #menu
 		GLOBALS.LastvisitedRoute = "menu";
 		NetworkManager.IsConnectedToInternet().then(result => {
-		if (result.connected)
-			GLOBALS.IsConnectedToInternet = true;
-		else
-			GLOBALS.IsConnectedToInternet = false;
+			if (result.connected)
+				GLOBALS.IsConnectedToInternet = true;
+			else
+				GLOBALS.IsConnectedToInternet = false;
 		});
 		appApi.enableDisplaySettings().then(res => {
 			this.LOG("results : " + JSON.stringify(res))
@@ -519,8 +525,8 @@ export default class App extends Router.App {
 					this.subscribeToPowerChangeNotifications()
 				}
 			}
-			if( noti.callsign === "org.rdk.AppManager")	{
-				if(noti.data.state === "activated")	{
+			if (noti.callsign === "org.rdk.AppManager") {
+				if (noti.data.state === "activated") {
 					this._SubscribeToAppManagerNotifications();
 				}
 			}
@@ -636,7 +642,7 @@ export default class App extends Router.App {
 					cecApi.getActiveSourceStatus().then((res) => {
 						Storage.set("UICacheCECActiveSourceStatus", res);
 						this.LOG("App getActiveSourceStatus: " + JSON.stringify(res) + " UICacheCECActiveSourceStatus:" + JSON.stringify(Storage.get("UICacheCECActiveSourceStatus")));
-			});
+					});
 				}).catch((err) => this.ERR(JSON.stringify(err)))
 			}
 		})
@@ -646,40 +652,40 @@ export default class App extends Router.App {
 		this._SubscribeToRDKWindowManagerNotifications();
 		this._SubscribeToRuntimeManagerNotifications();
 		this.registerAppActionEvent();
+		await this.setupDial();
+	}
 
-		this.xcastApi = new XcastApi()
-		this.xcastApi.activate().then(async result => {
-			console.warn("Xcast plugin activate");
-			if (result) {
-				let serialnumber = "DefaultSLNO";
-				let modelName = "RDK" + GLOBALS.deviceType;
-				const serialRes = await appApi.getSerialNumber();
-				serialnumber = (serialRes.length < 6) ? serialRes : serialRes.slice(-6);
-				const model = await this.xcastApi.getModelName();
-				modelName = (model || modelName) + serialnumber;
-				this.LOG("Xcast friendly name to be set: " + JSON.stringify(modelName));
-				try {
-					await appApi.setFriendlyName(modelName);
-				} catch (err) {
-					this.ERR("AppApi setFriendlyName error: " + JSON.stringify(err) + " - continuing Xcast activation");
-				}
-				await this.xcastApi.setEnabled(true).then(res => {
-					GLOBALS.LocalDeviceDiscoveryStatus = true;
-					console.warn("Xcast setEnabled success" + JSON.stringify(res));
-				}).catch(err => {
-					GLOBALS.LocalDeviceDiscoveryStatus = false;
-					this.ERR("Xcast setEnabled error:" + JSON.stringify(err))
-				});
-				await this.xcastApi.setStandbyBehavior("active").then(async res => {
-					this.LOG("XcastApi setStandbyBehavior result:" + JSON.stringify(res));
-					await this._registerXcastApplications();
-				}).catch(error => {
-					this.ERR("XcastApi setStandbyBehavior error:" + JSON.stringify(error));
-				});
-			} else {
-				this.ERR("XcastApi activate failed");
-			}
-		})
+	async setupDial() {
+		let serialnumber = "DefaultSLNO";
+		let modelName = "RDK" + GLOBALS.deviceType;
+
+		try {
+			const serialRes = await appApi.getSerialNumber();
+			serialnumber = (serialRes && serialRes.length >= 6) ? serialRes.slice(-6) : (serialRes || serialnumber);
+		} catch (err) {
+			this.ERR("Failed to fetch serial number: " + JSON.stringify(err));
+		}
+
+		const model = await XcastApi.getModelName();
+		modelName = (model || modelName) + serialnumber;
+		this.LOG("Xcast friendly name to be set: " + JSON.stringify(modelName));
+
+		try {
+			await appApi.setFriendlyName(modelName);
+
+			const standbyRes = await XcastApi.setStandbyBehavior("active");
+			this.LOG("Xcast setStandbyBehavior result: " + JSON.stringify(standbyRes));
+
+			await this._registerXcastApplications();
+
+			const enabledRes = await XcastApi.setEnabled(true);
+			GLOBALS.LocalDeviceDiscoveryStatus = true;
+			console.warn("Xcast setEnabled success: " + JSON.stringify(enabledRes));
+
+		} catch (pipelineError) {
+			GLOBALS.LocalDeviceDiscoveryStatus = false;
+			this.ERR("Critical exception during sequential Xcast activation pipeline: " + JSON.stringify(pipelineError));
+		}
 	}
 
 	_getXcastAppId(applicationName) {
@@ -711,9 +717,9 @@ export default class App extends Router.App {
 	}
 
 	async _registerXcastApplications() {
+		this.xcastAppIdMap.clear();
 		await packageManager.getConfigListForInstalledPackages("dial").then(async res => {
 			const params = { applications: [] };
-
 			const configs = Array.isArray(res) ? res : [];
 			for (const config of configs) {
 				const appId = config?.id || config?.appId;
@@ -739,7 +745,9 @@ export default class App extends Router.App {
 			}
 
 			try {
-				const result = await this.xcastApi.registerApplications(params);
+				await XcastApi.registerApplications(params).catch(err => {
+					this.ERR("Xcast: Xcast registerApplications error:" + JSON.stringify(err));
+				});
 			} catch (err) {
 				this.ERR("Xcast: Xcast registerApplications error:" + JSON.stringify(err));
 			}
@@ -1387,6 +1395,7 @@ export default class App extends Router.App {
 	 * Function to register event listeners for Xcast plugin.
 	 */
 	registerAppActionEvent() {
+		this.LOG("Registering onActionStartRequest event listener for org.rdk.AppActions");
 		this.onActionStartRequest = thunder.on("org.rdk.AppActions", "onActionStartRequest", notification => {
 			this.LOG("onActionStartRequest: " + JSON.stringify(notification));
 			if (notification && "DIAL" === notification.initiator && notification.intent && notification.handlerAppId) {
@@ -1592,7 +1601,8 @@ export default class App extends Router.App {
 			Router.navigate(route);
 		} else {
 			if (!Router.isNavigating()) {
-				if (Router.getActiveHash() === "dtvplayer") { //exit scenario for dtv player
+				if (Router.getActiveHash() === "dtvplayer") //exit scenario for dtv player
+				{
 					dtvApi
 						.exitChannel()
 						.then((res) => {
