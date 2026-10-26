@@ -738,14 +738,6 @@ export default class App extends Router.App {
 				const rdkDialCfg = config?.configuration?.["urn:rdk:config:dial"];
 				const corsDomains = Array.isArray(rdkDialCfg?.corsDomains) ? [...rdkDialCfg.corsDomains] : [];
 
-				// FIXME: temporary hardcode, it need to be in app package configuration.
-				if (!corsDomains.includes("package:com.google.android.youtube")) {
-					corsDomains.push("package:com.google.android.youtube");
-				}
-				if (!corsDomains.includes("package:com.google.ios.youtube")) {
-					corsDomains.push("package:com.google.ios.youtube");
-				}
-
 				const query = "source_type=12";
 				const allowStop = 1;
 				this._updateDialAppList(params, appName, "my" + appName, corsDomains.join(" "), appId, query, allowStop);
