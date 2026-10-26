@@ -20,6 +20,7 @@
 import AppManager from './api/AppManagerApi.js';
 import RDKWindowManager from './api/RDKWindowManagerApi.js';
 import { ThunderError } from './api/ThunderError.js';
+import { isCatalogInitiatedInstall } from './api/DACApi.js';
 import { GLOBALS } from './Config/Config.js';
 import Keymap from './Config/Keymap.js';
 import { keyIntercept } from './keyIntercept/keyIntercept.js';
@@ -123,15 +124,33 @@ export default class AppController {
   }
 
   async subscribe(thunder) {
-    thunder.on('org.rdk.AppManager', 'onAppInstalled', data => {
+   thunder.on('org.rdk.AppManager', 'onAppInstalled', async data => {
       this.LOG('onAppInstallStatus ' + JSON.stringify(data));
+      const listenerResults = [];
       this._packageChangedListeners.forEach(listener => {
         try {
-          listener('installed', data);
+          listenerResults.push(listener('installed', data));
         } catch (err) {
           this.ERR('packageChangedListener error (installed): ' + err);
         }
       });
+      // Auto-launch apps installed outside the catalog UI flow (e.g.
+      // sideloaded via curl). Catalog-initiated installs (AppCatalogItem /
+      // DacAppItem) already auto-launch themselves once the green tick is
+      // shown, so skip those here to avoid launching the app twice.
+      if (data?.appId && !isCatalogInitiatedInstall(data.appId)) {
+        try {
+          // Wait for the My Apps row (and any other listeners) to finish
+          // updating before launching, so the app's tile/state is reflected
+          // in the UI by the time it comes to foreground.
+          await Promise.allSettled(listenerResults);
+        } catch (err) {
+          this.ERR('Error awaiting packageChangedListeners before auto-launch: ' + err);
+        }
+        this.launch(data.appId).catch(err => {
+          this.ERR(`Failed to auto-launch sideloaded app ${data.appId}: ${err}`);
+        });
+      }
     });
 
     thunder.on('org.rdk.AppManager', 'onAppUninstalled', data => {

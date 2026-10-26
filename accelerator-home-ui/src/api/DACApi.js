@@ -68,9 +68,20 @@ class OperationLock {
 
 let packageLock = new OperationLock();
 let activeInstallAppId = null;
+// Tracks app ids currently being installed (or very recently finished
+// installing) via the in-app catalog UI. Used by AppController to tell apart
+// catalog-initiated installs (which already auto-launch the app themselves,
+// see AppCatalogItem/DacAppItem) from sideloaded installs (e.g. via curl),
+// which should be auto-launched from the onAppInstalled Thunder event since
+// there is no UI flow driving them.
+const catalogInstallIds = new Set();
 
 export function isDACOperationInProgress() {
   return activeInstallAppId !== null;
+}
+
+export function isCatalogInitiatedInstall(appId) {
+  return catalogInstallIds.has(appId);
 }
 
 export async function getAppCatalogInfo() {
@@ -203,6 +214,7 @@ export async function installDACApp(app, progressElement) {
   }
 
   activeInstallAppId = app.id;
+  catalogInstallIds.add(app.id);
 
   const unlock = await packageLock.lock();
 
@@ -255,6 +267,11 @@ export async function installDACApp(app, progressElement) {
     logError(`installDACApp(${app.id})`, err);
   } finally {
     activeInstallAppId = null;
+    // Keep the catalog-initiated marker for a short grace period so the
+    // onAppInstalled Thunder event (fired asynchronously by the package
+    // manager) is still recognized as catalog-initiated and AppController
+    // does not also auto-launch the app, causing a double-launch.
+    setTimeout(() => catalogInstallIds.delete(app.id), 5000);
     unlock();
   }
 

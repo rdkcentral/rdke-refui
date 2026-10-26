@@ -58,7 +58,15 @@ export const DACAppMixin = (Base) => class extends Base {
             if (Object.prototype.hasOwnProperty.call(this._app, "errorCode")) delete this._app.errorCode;
             this.updateDACStatus(statusProgressTag, overlayTag)
             if (success) {
-                this._showGreenTick(statusProgressTag)
+                // Snapshot the generation so the delayed launch (fired after the
+                // tick animation) can detect detach/pool-reuse in the meantime.
+                const installGeneration = this._installGeneration
+                this._showGreenTick(statusProgressTag, () => {
+                    if (!this._itemActive || this._installGeneration !== installGeneration) {
+                        return
+                    }
+                    this._launchDACApp(overlayTag)
+                })
             } else {
                 this.tag(statusProgressTag).setProgress(1.0, 'Error: ' + msg)
                 this.fireAncestors('$showInstallError', { name: this._app.name, errorCode: errorCode })
@@ -96,7 +104,7 @@ export const DACAppMixin = (Base) => class extends Base {
         }
     }
 
-    _showGreenTick(statusProgressTag) {
+    _showGreenTick(statusProgressTag, onComplete) {
         const tickMarkTag = statusProgressTag.replace('StatusProgress', 'TickMark')
         const tickOverlayTag = statusProgressTag.replace('StatusProgress', 'TickOverlay')
         const tickMark = this.tag(tickMarkTag)
@@ -107,44 +115,57 @@ export const DACAppMixin = (Base) => class extends Base {
             setTimeout(() => {
                 tickMark.setSmooth('alpha', 0, { duration: 0.5 })
                 if (tickOverlay) tickOverlay.setSmooth('alpha', 0, { duration: 0.5 })
+                // Fire the callback (e.g. auto-launch) once the tick has fully
+                // faded out, so the launch happens after the user has seen it.
+                if (typeof onComplete === 'function') {
+                    setTimeout(onComplete, 500)
+                }
             }, 2000)
+        } else if (typeof onComplete === 'function') {
+            // No tick mark tag present (e.g. a variant without one); don't block
+            // the auto-launch forever.
+            onComplete()
         }
+    }
+
+    async _launchDACApp(overlayTag) {
+        this.LOG("Launching app: " + this._app.name)
+        this.tag(overlayTag).alpha = 0.7
+        this.tag(overlayTag + '.OverlayText').alpha = 1
+        this.tag(overlayTag + '.OverlayText').text.text = Language.translate('Launching') + "...";
+        // Snapshot the current install generation; _detach()/pool reuse via
+        // set info() bumps it. _itemActive alone is insufficient because
+        // _attach() flips it back to true, so a launch that resolves after
+        // detach+reattach or pool-reuse would otherwise sneak through.
+        const launchGeneration = this._installGeneration
+        const launchAppName = this._app.name
+        try {
+            const launched = await startDACApp({ id: this._app.id })
+            if (!this._itemActive || this._installGeneration !== launchGeneration) {
+                return
+            }
+            if (launched) {
+                this.LOG("App launched successfully: " + launchAppName)
+                this.tag(overlayTag + '.OverlayText').text.text = Language.translate('Running') + "!";
+            } else {
+                this.ERR("Failed to launch app: " + launchAppName)
+                this.tag(overlayTag + '.OverlayText').text.text = Language.translate('Launch failed');
+                this.fireAncestors('$showLaunchError', { name: launchAppName });
+            }
+        } catch (err) {
+            if (!this._itemActive || this._installGeneration !== launchGeneration) {
+                return
+            }
+            this.ERR("Error launching app: " + JSON.stringify(err))
+            this.tag(overlayTag + '.OverlayText').text.text = Language.translate('Launch failed');
+            this.fireAncestors('$showLaunchError', { name: launchAppName, error: err.message || err });
+        }
+        this.tag(overlayTag).setSmooth('alpha', 0, { duration: 5 })
     }
 
     async performDACInstall(statusProgressTag, overlayTag) {
         if (this._app.isInstalled) {
-            this.LOG("App is already installed, launching: " + this._app.name)
-            this.tag(overlayTag).alpha = 0.7
-            this.tag(overlayTag + '.OverlayText').alpha = 1
-            this.tag(overlayTag + '.OverlayText').text.text = Language.translate('Launching') + "...";
-            // Snapshot the current install generation; _detach()/pool reuse via
-            // set info() bumps it. _itemActive alone is insufficient because
-            // _attach() flips it back to true, so a launch that resolves after
-            // detach+reattach or pool-reuse would otherwise sneak through.
-            const launchGeneration = this._installGeneration
-            const launchAppName = this._app.name
-            try {
-                const launched = await startDACApp({ id: this._app.id })
-                if (!this._itemActive || this._installGeneration !== launchGeneration) {
-                    return true
-                }
-                if (launched) {
-                    this.LOG("App launched successfully: " + launchAppName)
-                    this.tag(overlayTag + '.OverlayText').text.text = Language.translate('Running') + "!";
-                } else {
-                    this.ERR("Failed to launch app: " + launchAppName)
-                    this.tag(overlayTag + '.OverlayText').text.text = Language.translate('Launch failed');
-                    this.fireAncestors('$showLaunchError', { name: launchAppName });
-                }
-            } catch (err) {
-                if (!this._itemActive || this._installGeneration !== launchGeneration) {
-                    return true
-                }
-                this.ERR("Error launching app: " + JSON.stringify(err))
-                this.tag(overlayTag + '.OverlayText').text.text = Language.translate('Launch failed');
-                this.fireAncestors('$showLaunchError', { name: launchAppName, error: err.message || err });
-            }
-            this.tag(overlayTag).setSmooth('alpha', 0, { duration: 5 })
+            await this._launchDACApp(overlayTag)
             return true; // Already installed
         } else if (this._app.isInstalling) {
             this.LOG(`App installation is in progress`);

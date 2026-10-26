@@ -482,7 +482,10 @@ export default class MainView extends Lightning.Component {
     // Refresh My Apps row when apps are installed/uninstalled (including sideloaded via curl)
     this._onPackageChanged = (action, data) => {
       this.LOG('onPackageChanged: ' + action + ' ' + JSON.stringify(data))
-      this._scheduleMyAppsRefresh()
+      // Return the promise so callers (e.g. AppController's auto-launch for
+      // sideloaded installs) can await the My Apps row actually reflecting
+      // the new app before launching it.
+      return this._scheduleMyAppsRefresh(true)
     }
     // Refresh DAC apps row when app catalog authentication changes
     this._onCatalogRefreshNeeded = () => {
@@ -567,37 +570,51 @@ export default class MainView extends Lightning.Component {
 
   _scheduleMyAppsRefresh(force = false) {
     if (!this._myAppsActive) {
-      return
+      return Promise.resolve()
     }
     const isMainViewActive = Router.getActiveHash() === 'menu'
     if (!isMainViewActive && !force) {
       this._pendingMyAppsRefresh = true
-      return
+      return Promise.resolve()
     }
 
     this._pendingMyAppsRefresh = true
+    // If a refresh is already scheduled/running, piggyback on its completion
+    // promise rather than creating a second one, so all callers in the same
+    // debounce window resolve together once the row is actually updated.
+    if (this._myAppsRefreshPromise) {
+      return this._myAppsRefreshPromise
+    }
     if (this._refreshMyAppsTimer) {
-      return
+      return this._myAppsRefreshPromise || Promise.resolve()
     }
 
-    this._refreshMyAppsTimer = setTimeout(async () => {
-      this._refreshMyAppsTimer = null
-      if (this._isRefreshingMyApps || !this._pendingMyAppsRefresh) {
-        return
-      }
-
-      this._isRefreshingMyApps = true
-      this._pendingMyAppsRefresh = false
-      try {
-        await this.$refreshMyAppsRow()
-      } finally {
-        this._isRefreshingMyApps = false
-        // Do not reschedule if the view was detached while awaiting.
-        if (this._myAppsActive && this._pendingMyAppsRefresh) {
-          this._scheduleMyAppsRefresh(true)
+    this._myAppsRefreshPromise = new Promise(resolve => {
+      this._refreshMyAppsTimer = setTimeout(async () => {
+        this._refreshMyAppsTimer = null
+        if (this._isRefreshingMyApps || !this._pendingMyAppsRefresh) {
+          this._myAppsRefreshPromise = null
+          resolve()
+          return
         }
-      }
-    }, 300)
+
+        this._isRefreshingMyApps = true
+        this._pendingMyAppsRefresh = false
+        try {
+          await this.$refreshMyAppsRow()
+        } finally {
+          this._isRefreshingMyApps = false
+          this._myAppsRefreshPromise = null
+          // Do not reschedule if the view was detached while awaiting.
+          if (this._myAppsActive && this._pendingMyAppsRefresh) {
+            this._scheduleMyAppsRefresh(true).then(resolve)
+          } else {
+            resolve()
+          }
+        }
+      }, 300)
+    })
+    return this._myAppsRefreshPromise
   }
 
   _firstActive() {
