@@ -404,7 +404,7 @@ export default class RCInformationScreen extends Lightning.Component {
             if ("success" in cbData ? cbData.success : true) {
                 cbDatastatus = Array.isArray(cbData.status) ? cbData.status[0] || {} : (cbData.status && typeof cbData.status === 'object' ? cbData.status : {});
             }
-            const pairingTriggerableStates = ["IDLE", "FAILED"];
+            const pairingTriggerableStates = ["FAILED", "IDLE"];
             const doNotDisturbStates = ["SEARCHING", "PAIRING", "COMPLETE"];
             if (cbDatastatus.pairingState && doNotDisturbStates.includes(cbDatastatus.pairingState)) {
                 if ("COMPLETE" === cbDatastatus.pairingState && cbDatastatus.remoteData && Array.isArray(cbDatastatus.remoteData)) {
@@ -434,10 +434,41 @@ export default class RCInformationScreen extends Lightning.Component {
                         this.showPairingStatus(Language.translate('Pairing') + '...', true);
                     }
                 }
-            } else if (cbDatastatus.pairingState && pairingTriggerableStates.includes(cbDatastatus.pairingState)) {
+            } else if (
+                cbDatastatus.pairingState &&
+                pairingTriggerableStates.includes(cbDatastatus.pairingState) &&
+                (
+                    !cbDatastatus.remoteData ||
+                    !Array.isArray(cbDatastatus.remoteData) ||
+                    cbDatastatus.remoteData.length === 0 ||
+                    !cbDatastatus.remoteData[0].connected
+                )
+            ) {
                 this.showDeviceInfo(false)
                 // trigger pairing call with a delay to avoid choking.
                 this.startPairingAttemptTimeout(3)
+            } else if (
+                cbDatastatus.pairingState &&
+                pairingTriggerableStates.includes(cbDatastatus.pairingState) &&
+                cbDatastatus.remoteData &&
+                Array.isArray(cbDatastatus.remoteData) &&
+                cbDatastatus.remoteData.length > 0 &&
+                cbDatastatus.remoteData[0].connected
+            ) {
+                // pairingState is IDLE/FAILED but remoteData already reports a connected remote
+                // (e.g. after reboot). Show its info instead of triggering a new pairing attempt.
+                const item = cbDatastatus.remoteData[0]
+                this.tag("Status.Value").text.text = Language.translate('Connected')
+                this.tag("MacAddress.Value").text.text = item.macAddress
+                this.tag("SwVersion.Value").text.text = item.swVersion
+                this.tag("BatteryPercent.Value").text.text = item.batteryPercent
+                this.tag("RCUName.Value").text.text = item.name
+                this.showDeviceInfo(true)
+                this.clearPairingAttemptTimeout()
+                if (this.queryStatusTimeout) {
+                    Registry.clearTimeout(this.queryStatusTimeout)
+                    this.queryStatusTimeout = null
+                }
             }
         }
     }
