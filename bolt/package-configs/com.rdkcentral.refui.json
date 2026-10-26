@@ -19,5 +19,13 @@
     "urn:rdk:permission:compositor"
   ],
   "configuration": {
+    "urn:rdk:config:network": [
+      {
+        "name": "com.rdkcentral.nativeplayer",
+        "port": 10101,
+        "protocol": "tcp",
+        "type": "imported"
+      }
+    ]
   }
 }
