@@ -450,7 +450,9 @@ export default class App extends Router.App {
 		this._xcastPackageChangeListener = (action, data) => {
 			if (action === 'installed' || action === 'uninstalled') {
 				this.LOG(`Xcast: package changed (${action}), refreshing app registrations: ` + JSON.stringify(data));
-				this._registerXcastApplications();
+				this._registerXcastApplications(true).catch(err => {
+					this.ERR("Error refreshing Xcast app registrations: " + JSON.stringify(err));
+				});
 			}
 		};
 		AppController.get().addPackageChangedListener(this._xcastPackageChangeListener);
@@ -716,11 +718,14 @@ export default class App extends Router.App {
 		this.LOG("Xcast: _updateDialAppList xcastAppIdMap: " + JSON.stringify(Array.from(this.xcastAppIdMap.entries())));
 	}
 
-	async _registerXcastApplications() {
-		this.xcastAppIdMap.clear();
-		await packageManager.getConfigListForInstalledPackages("dial").then(async res => {
-			const params = { applications: [] };
+	async _registerXcastApplications(refresh = false)
+	{
+		try {
+			const res = await packageManager.getConfigListForInstalledPackages("dial");
 			const configs = Array.isArray(res) ? res : [];
+			const nextAppIdMap = new Map();
+			const params = { applications: [] };
+
 			for (const config of configs) {
 				const appId = config?.id || config?.appId;
 				const appName = config?.name;
@@ -730,30 +735,48 @@ export default class App extends Router.App {
 					continue;
 				}
 
-				const corsDomains = config?.configuration?.["urn:rdk:config:dial"]?.corsDomains || [];
-				// FIXME: temporary hardcode to add the app specific
-				corsDomains.push("package:com.google.android.youtube", "package:com.google.ios.youtube");
+				const rdkDialCfg = config?.configuration?.["urn:rdk:config:dial"];
+				const corsDomains = Array.isArray(rdkDialCfg?.corsDomains) ? [...rdkDialCfg.corsDomains] : [];
+
+				// FIXME: temporary hardcode, it need to be in app package configuration.
+				if (!corsDomains.includes("package:com.google.android.youtube")) {
+					corsDomains.push("package:com.google.android.youtube");
+				}
+				if (!corsDomains.includes("package:com.google.ios.youtube")) {
+					corsDomains.push("package:com.google.ios.youtube");
+				}
+
 				const query = "source_type=12";
 				const allowStop = 1;
-
 				this._updateDialAppList(params, appName, "my" + appName, corsDomains.join(" "), appId, query, allowStop);
+				nextAppIdMap.set(appName, appId);
 			}
 
 			if (params.applications.length === 0) {
-				this.WARN("Xcast No supported applications found for Xcast registration");
+				this.WARN("Xcast: No supported applications isolated for registration pipeline");
 				return;
 			}
 
-			try {
-				await XcastApi.registerApplications(params).catch(err => {
-					this.ERR("Xcast: Xcast registerApplications error:" + JSON.stringify(err));
-				});
-			} catch (err) {
-				this.ERR("Xcast: Xcast registerApplications error:" + JSON.stringify(err));
+			if (refresh && this.xcastAppIdMap) {
+				const isSame = this.xcastAppIdMap.size === nextAppIdMap.size &&
+							[...this.xcastAppIdMap.entries()].every(([key, value]) => nextAppIdMap.get(key) === value);
+
+				if (isSame) {
+					this.LOG("Xcast: App configuration identities match cached baseline; skipping platform registration update");
+					return;
+				}
 			}
-		}).catch(err => {
-			this.ERR("Xcast: Error while fetching dial config list for installed packages: " + JSON.stringify(err));
-		});
+
+			this.xcastAppIdMap = nextAppIdMap;
+
+			const success = await XcastApi.registerApplications(params);
+			if (!success) {
+				throw new Error("Platform plugin interface rejected the application registration parameters payload");
+			}
+			this.LOG("Xcast: Applications registered successfully");
+		} catch (err) {
+			this.ERR("Xcast: Core registration lifecycle pipeline failed: " + (err?.message || JSON.stringify(err)));
+		}
 	}
 
 	async _handleXcastAppLifecycle(applicationName, intent, action) {
