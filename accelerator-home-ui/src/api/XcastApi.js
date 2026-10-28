@@ -76,7 +76,6 @@ class XcastApi {
     if (payload && payload.applications.length > 0) {
       for (const app of payload.applications) {
         let updated = false;
-        // app = {"name":"YouTube","appid":"com.rdkcentral.youtube-exp","prefix":"myYouTube","cors":".youtube.com","allowStop":true,"query":"source_type=12"}
         // replace this._registeredApps if it has the same name & appid
         this._registeredApps.forEach(element => {
           this.LOG(this.logtag + " updateRegisteredApps: comparing " + JSON.stringify(element) + " with " + JSON.stringify(app));
@@ -136,13 +135,12 @@ class XcastApi {
     return res?.standbybehavior || null;
   }
 
-  /**
-   * @param {"applications":[{"name":"YouTube","appid":"com.rdkcentral.youtube-exp","prefix":"myYouTube","cors":".youtube.com","allowStop":true,"query":"source_type=12"}]}
-   */
   registerApplications(params) {
     return this._call('registerApplications', params)
       .then((result) => {
-        this.updateRegisteredApps(params);
+        if (result && result?.success) {
+          this.updateRegisteredApps(params);
+        }
         return result;
       })
       .catch(() => false);
@@ -179,7 +177,9 @@ class XcastApi {
   unregisterApplications(appNames = []) {
     return this._call('unregisterApplications', { appNames })
       .then((result) => {
-        this.removeRegisteredApps(appNames);
+        if (result && result?.success) {
+          this.removeRegisteredApps(appNames);
+        }
         return result;
       })
       .catch(() => false);

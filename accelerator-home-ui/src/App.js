@@ -771,6 +771,7 @@ export default class App extends Router.App {
 					}
 
 					const rdkDialCfg = config?.configuration?.["urn:rdk:config:dial"];
+					if (!rdkDialCfg) return;
 					const corsDomains = Array.isArray(rdkDialCfg?.corsDomains) ? [...rdkDialCfg.corsDomains] : [];
 
 					const query = "source_type=12";
