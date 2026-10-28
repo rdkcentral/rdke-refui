@@ -28,8 +28,12 @@ class XcastApi {
 
     this._thunder = ThunderJS(CONFIG.thunderConfig);
     this.logtag = "XcastApi:";
+    this.LOG = console.log;
+    this.ERR = console.error;
+    this.INFO = console.info;
     this.callsign = "org.rdk.Xcast";
     this._events = new Map();
+    this._registeredApps = [];
 
     XcastApi._instance = this;
   }
@@ -48,15 +52,57 @@ class XcastApi {
   async _call(method, params = {}) {
     try {
       const result = await this._thunder.call(this.callsign, method, params);
-      console.info(`${this.logtag} ${method} result: ${JSON.stringify(result)}`);
+      this.INFO(`${this.logtag} ${method} result: ${JSON.stringify(result)}`);
       if (result !== undefined && result !== null) {
         return result;
       }
       throw new Error("Empty or invalid payload received");
     } catch (err) {
-      console.error(`${this.logtag} ${method} error: ${JSON.stringify(err)}`);
+      this.ERR(`${this.logtag} ${method} error: ${JSON.stringify(err)}`);
       throw err;
     }
+  }
+
+  // --- XCast Registered App List ---
+  getRegisteredApps() {
+    return Promise.resolve(this._registeredApps);
+  }
+
+  resetRegisteredApps() {
+    this._registeredApps = [];
+  }
+
+  updateRegisteredApps(payload) {
+    if (payload && payload.applications.length > 0) {
+      for (const app of payload.applications) {
+        let updated = false;
+        // app = {"name":"YouTube","appid":"com.rdkcentral.youtube-exp","prefix":"myYouTube","cors":".youtube.com","allowStop":true,"query":"source_type=12"}
+        // replace this._registeredApps if it has the same name & appid
+        this._registeredApps.forEach(element => {
+          this.LOG(this.logtag + " updateRegisteredApps: comparing " + JSON.stringify(element) + " with " + JSON.stringify(app));
+          if (element.name === app.name && element.appid === app.appid) {
+            element = app;
+            updated = true;
+          }
+        });
+        if (!updated) {
+          this._registeredApps.push(app);
+        }
+      }
+    }
+    this.LOG(this.logtag + " updateRegisteredApps: _registeredApps is " + JSON.stringify(this._registeredApps));
+  }
+
+  removeRegisteredApps(appNames = []) {
+    if (appNames && appNames.length > 0) {
+      this._registeredApps.forEach((element, index) => {
+        this.LOG(this.logtag + " removeRegisteredApps: comparing " + JSON.stringify(element) + " with " + JSON.stringify(appNames));
+        if (appNames.includes(element.name)) {
+          this._registeredApps.splice(index, 1);
+        }
+      });
+    }
+    this.LOG(this.logtag + " removeRegisteredApps: _registeredApps is " + JSON.stringify(this._registeredApps));
   }
 
   // --- Core API Abstractions ---
@@ -90,8 +136,16 @@ class XcastApi {
     return res?.standbybehavior || null;
   }
 
+  /**
+   * @param {"applications":[{"name":"YouTube","appid":"com.rdkcentral.youtube-exp","prefix":"myYouTube","cors":".youtube.com","allowStop":true,"query":"source_type=12"}]}
+   */
   registerApplications(params) {
-    return this._call('registerApplications', params).catch(() => false);
+    return this._call('registerApplications', params)
+      .then((result) => {
+        this.updateRegisteredApps(params);
+        return result;
+      })
+      .catch(() => false);
   }
 
   setApplicationState(params) {
@@ -118,8 +172,17 @@ class XcastApi {
     return this._call('setStandbyBehavior', { standbybehavior }).catch(() => false);
   }
 
-  unregisterApplications(params) {
-    return this._call('unregisterApplications', params).catch(() => false);
+  /**
+   * @param {string[]} appNames
+   * @returns
+   */
+  unregisterApplications(appNames = []) {
+    return this._call('unregisterApplications', { appNames })
+      .then((result) => {
+        this.removeRegisteredApps(appNames);
+        return result;
+      })
+      .catch(() => false);
   }
 
   static supportedApps() {

@@ -450,7 +450,7 @@ export default class App extends Router.App {
 		this._xcastPackageChangeListener = (action, data) => {
 			if (action === 'installed' || action === 'uninstalled') {
 				this.LOG(`Xcast: package changed (${action}), refreshing app registrations: ` + JSON.stringify(data));
-				this._registerXcastApplications(true).catch(err => {
+				this._registerXcastApplications(action, data?.appId).catch(err => {
 					this.ERR("Error refreshing Xcast app registrations: " + JSON.stringify(err));
 				});
 			}
@@ -710,62 +710,90 @@ export default class App extends Router.App {
 			allowStop: allowStop,
 			payload: _payload
 		});
-		if (this.xcastAppIdMap.has(name)) {
-			this.xcastAppIdMap.delete(name);
-		}
 		this.xcastAppIdMap.set(name, appId);
 		this.LOG("Xcast: _updateDialAppList params: " + JSON.stringify(params));
 		this.LOG("Xcast: _updateDialAppList xcastAppIdMap: " + JSON.stringify(Array.from(this.xcastAppIdMap.entries())));
 	}
 
-	async _registerXcastApplications(refresh = false)
+	async _registerXcastApplications(action = null, dataAppId = null)
 	{
 		try {
-			const res = await packageManager.getConfigListForInstalledPackages("dial");
-			const configs = Array.isArray(res) ? res : [];
-			const nextAppIdMap = new Map();
-			const params = { applications: [] };
+			// Package manager related trigger.
+			if (action && dataAppId) {
+				const registered = await XcastApi.getRegisteredApps();
+				this.LOG("Xcast: Currently registered applications: " + JSON.stringify(registered));
+				if (Array.isArray(registered) && dataAppId) {
+					const appNameToUnregister = registered.find(app => app?.appId === dataAppId || app?.appid === dataAppId);
+					if (appNameToUnregister && "uninstalled" === action) {
+						this.LOG("Xcast: Unregistering application with appId: " + dataAppId + " and name: " + appNameToUnregister.name);
+						return XcastApi.unregisterApplications([appNameToUnregister.name]);
+					} else if (!appNameToUnregister && "installed" === action) {
+						this.LOG("Xcast: Application: " + dataAppId + " installed, register now");
+						const config = await packageManager.getConfigForInstalledPackage(dataAppId);
+						const appName = config?.name || config?.applicationName;
+						if (!appName) {
+							this.WARN("Xcast: Missing app name for package registration: " + JSON.stringify(config));
+							return;
+						}
+						const params = { applications: [] };
+						const rdkDialCfg = config?.configuration?.["urn:rdk:config:dial"];
+						const corsDomains = Array.isArray(rdkDialCfg?.corsDomains) ? [...rdkDialCfg.corsDomains] : [];
+						const query = "source_type=12";
+						const allowStop = 1;
+						this._updateDialAppList(params, appName, "my" + appName, corsDomains.join(" "), dataAppId, query, allowStop);
+						if (params.applications.length > 0) {
+							const success = await XcastApi.registerApplications(params);
+							if (!success) {
+								throw new Error("Platform plugin interface rejected the application registration parameters payload");
+							} else {
+								this.LOG("Xcast: Application registered successfully");
+							}
+							return;
+						}
+					} else {
+						this.LOG("Xcast: No action required for application with appId: " + dataAppId + " and name: " + (appNameToUnregister?.name || "unknown"));
+					}
+				}
+			} else {
+				// Initial startup.
+				const res = await packageManager.getConfigListForInstalledPackages("dial");
+				const configs = Array.isArray(res) ? res : [];
+				const nextAppIdMap = new Map();
+				const params = { applications: [] };
 
-			for (const config of configs) {
-				const appId = config?.id || config?.appId;
-				const appName = config?.name;
+				for (const config of configs) {
+					const appId = config?.id || config?.appId;
+					const appName = config?.name;
 
-				if (!appId || !appName) {
-					this.WARN("Xcast: Skipping config with missing appId or name: " + JSON.stringify(config));
-					continue;
+					if (!appId || !appName) {
+						this.WARN("Xcast: Skipping config with missing appId or name: " + JSON.stringify(config));
+						continue;
+					}
+
+					const rdkDialCfg = config?.configuration?.["urn:rdk:config:dial"];
+					const corsDomains = Array.isArray(rdkDialCfg?.corsDomains) ? [...rdkDialCfg.corsDomains] : [];
+
+					const query = "source_type=12";
+					const allowStop = 1;
+					this._updateDialAppList(params, appName, "my" + appName, corsDomains.join(" "), appId, query, allowStop);
+					nextAppIdMap.set(appName, appId);
 				}
 
-				const rdkDialCfg = config?.configuration?.["urn:rdk:config:dial"];
-				const corsDomains = Array.isArray(rdkDialCfg?.corsDomains) ? [...rdkDialCfg.corsDomains] : [];
-
-				const query = "source_type=12";
-				const allowStop = 1;
-				this._updateDialAppList(params, appName, "my" + appName, corsDomains.join(" "), appId, query, allowStop);
-				nextAppIdMap.set(appName, appId);
-			}
-
-			if (params.applications.length === 0) {
-				this.WARN("Xcast: No supported applications isolated for registration pipeline");
-				return;
-			}
-
-			if (refresh && this.xcastAppIdMap) {
-				const isSame = this.xcastAppIdMap.size === nextAppIdMap.size &&
-							[...this.xcastAppIdMap.entries()].every(([key, value]) => nextAppIdMap.get(key) === value);
-
-				if (isSame) {
-					this.LOG("Xcast: App configuration identities match cached baseline; skipping platform registration update");
+				if (params.applications.length === 0) {
+					this.WARN("Xcast: No supported applications isolated for registration pipeline");
 					return;
 				}
-			}
 
-			this.xcastAppIdMap = nextAppIdMap;
+				this.xcastAppIdMap = nextAppIdMap;
 
-			const success = await XcastApi.registerApplications(params);
-			if (!success) {
-				throw new Error("Platform plugin interface rejected the application registration parameters payload");
+				const success = await XcastApi.registerApplications(params);
+				if (!success) {
+					throw new Error("Platform plugin interface rejected the application registration parameters payload");
+				} else {
+					this.LOG("Xcast: Application registration pipeline completed successfully");
+				}
+				this.LOG("Xcast: Applications registered successfully");
 			}
-			this.LOG("Xcast: Applications registered successfully");
 		} catch (err) {
 			this.ERR("Xcast: Core registration lifecycle pipeline failed: " + (err?.message || JSON.stringify(err)));
 		}
@@ -1425,13 +1453,15 @@ export default class App extends Router.App {
 				const intentAction = parsedIntent?.action;
 				const validIntents = ["launch", "hide", "resume", "stop"];
 				if (validIntents.includes(intentAction)) {
-					PowerManagerApi.get().getPowerState().then(res => {
-						if (res.currentState !== PowerState.POWER_STATE_ON) {
-							PowerManagerApi.get().setPowerState(PowerState.POWER_STATE_ON);
-						}
-					}).catch(err => {
-						this.ERR("onActionStartRequest: Error getting power state: " + JSON.stringify(err));
-					});
+					if ("launch" === intentAction || "resume" === intentAction) {
+						PowerManagerApi.get().getPowerState().then(res => {
+							if (res.currentState !== PowerState.POWER_STATE_ON) {
+								PowerManagerApi.get().setPowerState(PowerState.POWER_STATE_ON);
+							}
+						}).catch(err => {
+							this.ERR("onActionStartRequest: Error getting power state: " + JSON.stringify(err));
+						});
+					}
 					const appName = notification.handlerAppId;
 					// LaunchApp argument - intent is of string type, pass it as received.
 					this._handleXcastAppLifecycle(appName, notification.intent, intentAction);
@@ -1589,27 +1619,20 @@ export default class App extends Router.App {
 		if (targetApp != GLOBALS.selfclientAppName) {
 			AppManager.get().closeApp(targetApp).then(() => {
 				this.LOG("closeApp success for: " + targetApp)
-
-				// FIXME: Remove this workaround once YouTube is aligned to LifeCycle.
-				if (targetApp && targetApp.toLowerCase().includes("youtube")) {
-					console.log("Calling Terminate on YouTUbe since app is not aligned to LifeCycle yet.")
-					AppManager.get().terminateApp(targetApp).then(() => {
-						this.LOG("terminateApp success after closeApp for: " + targetApp)
-					}).catch(err => {
-						this.ERR("terminateApp err after closeApp: " + JSON.stringify(err))
-					});
-				}
+				// FIXME: Remove this workaround once App is aligned to LifeCycle.\
+				AppManager.get().terminateApp(targetApp).then(() => {
+					this.LOG("terminateApp success after closeApp for: " + targetApp)
+				}).catch(err => {
+					this.ERR("terminateApp err after closeApp: " + JSON.stringify(err))
+				});
 			}).catch(err => {
 				this.ERR("closeApp err for " + targetApp + ": " + JSON.stringify(err))
-				// FIXME: Remove this workaround once YouTube is aligned to LifeCycle.
-				if (targetApp && targetApp.toLowerCase().includes("youtube")) {
-					console.log("Calling Terminate on YouTUbe since app is not aligned to LifeCycle yet.")
-					AppManager.get().terminateApp(targetApp).then(() => {
-						this.LOG("terminateApp success after closeApp failure for: " + targetApp)
-					}).catch(termErr => {
-						this.ERR("terminateApp err after closeApp failure for " + targetApp + ": " + JSON.stringify(termErr))
-					});
-				}
+				// FIXME: Remove this workaround once App is aligned to LifeCycle.
+				AppManager.get().terminateApp(targetApp).then(() => {
+					this.LOG("terminateApp success after closeApp failure for: " + targetApp)
+				}).catch(termErr => {
+					this.ERR("terminateApp err after closeApp failure for " + targetApp + ": " + JSON.stringify(termErr))
+				});
 			});
 			Storage.set("lastVisitedRoute", route); // incase any state change event tries to navigate, it need to be navigated to alexa requested route
 			GLOBALS.LastvisitedRoute = route
