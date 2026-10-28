@@ -18,228 +18,195 @@
  **/
 
 import ThunderJS from 'ThunderJS';
-import { CONFIG } from '../Config/Config'
+import { CONFIG } from '../Config/Config';
 
-/**
- * Class for Xcast thunder plugin apis.
- */
-export default class XcastApi {
+class XcastApi {
+  static _instance = null;
+
   constructor() {
+    if (XcastApi._instance) return XcastApi._instance;
+
     this._thunder = ThunderJS(CONFIG.thunderConfig);
-    this.INFO = console.info;
+    this.logtag = "XcastApi:";
     this.LOG = console.log;
     this.ERR = console.error;
-    this.WARN = console.warn;
+    this.INFO = console.info;
     this.callsign = "org.rdk.Xcast";
-    this.LOG("Xcast constructor");
     this._events = new Map();
+    this._registeredApps = [];
+
+    XcastApi._instance = this;
+  }
+
+  static getInstance() {
+    if (!XcastApi._instance) {
+      XcastApi._instance = new XcastApi();
+    }
+    return XcastApi._instance;
   }
 
   /**
-   * Function to activate the Xcast plugin
+   * Universal optimized call wrapper.
+   * Leverages ThunderJS native Promise chains.
    */
-  activate() {
-    return new Promise((resolve, reject) => {
-      this._thunder
-        .call('Controller', 'activate', { callsign: this.callsign })
-        .then(result => {
-          this.LOG("Xcast activation success " + JSON.stringify(result));
-          this._thunder
-            .call(this.callsign, 'setEnabled', { enabled: true })
-            .then(result => {
-              if (result.success) {
-                this.LOG("Xcast enabled");
-                this._thunder.on(this.callsign, 'onApplicationLaunchRequest', notification => {
-                  this.LOG("onApplicationLaunchRequest " + JSON.stringify(notification));
-                  if (this._events.has('onApplicationLaunchRequest')) {
-                    this._events.get('onApplicationLaunchRequest')(notification);
-                  }
-                });
-                this._thunder.on(this.callsign, 'onApplicationHideRequest', notification => {
-                  this.LOG("onApplicationHideRequest " + JSON.stringify(notification));
-                  if (this._events.has('onApplicationHideRequest')) {
-                    this._events.get('onApplicationHideRequest')(notification);
-                  }
-                });
-                this._thunder.on(this.callsign, 'onApplicationResumeRequest', notification => {
-                  this.LOG("onApplicationResumeRequest " + JSON.stringify(notification));
-                  if (this._events.has('onApplicationResumeRequest')) {
-                    this._events.get('onApplicationResumeRequest')(notification);
-                  }
-                });
-                this._thunder.on(this.callsign, 'onApplicationStopRequest', notification => {
-                  this.LOG("onApplicationStopRequest " + JSON.stringify(notification));
-                  if (this._events.has('onApplicationStopRequest')) {
-                    this._events.get('onApplicationStopRequest')(notification);
-                  }
-                });
-                this._thunder.on(this.callsign, 'onApplicationStateRequest', notification => {
-                  // this.LOG("onApplicationStateRequest " + JSON.stringify(notification));
-                  if (this._events.has('onApplicationStateRequest')) {
-                    this._events.get('onApplicationStateRequest')(notification);
-                  }
-                });
-                resolve(true);
-              } else {
-                this.LOG("Xcast enabled failed");
-              }
-            })
-            .catch(err => {
-              this.ERR("Enabling failure: " + JSON.stringify(err));
-              reject('Xcast enabling failed', err);
-            });
-        })
-        .catch(err => {
-          this.ERR("Activation failure: " + JSON.stringify(err));
-          reject('Xcast activation failed', err);
-        });
-    });
+  async _call(method, params = {}) {
+    try {
+      const result = await this._thunder.call(this.callsign, method, params);
+      this.INFO(`${this.logtag} ${method} result: ${JSON.stringify(result)}`);
+      if (result !== undefined && result !== null) {
+        return result;
+      }
+      throw new Error("Empty or invalid payload received");
+    } catch (err) {
+      this.ERR(`${this.logtag} ${method} error: ${JSON.stringify(err)}`);
+      throw err;
+    }
   }
 
-   setEnabled(enable) {
-    return new Promise((resolve, reject) => {
-      this._thunder.call(this.callsign, 'setEnabled', { enabled: enable })
-        .then(res => {
-          resolve(res)
-        })
-        .catch(err => {
-          this.ERR("Xdial setEnabled error: " + JSON.stringify(err))
-          reject(err)
-        })
-    })
-   }
+  // --- XCast Registered App List ---
+  getRegisteredApps() {
+    return Promise.resolve(this._registeredApps);
+  }
+
+  resetRegisteredApps() {
+    this._registeredApps = [];
+  }
+
+  updateRegisteredApps(payload) {
+    if (payload && payload.applications.length > 0) {
+      for (const app of payload.applications) {
+        let updated = false;
+        // replace this._registeredApps if it has the same name & appid
+        this._registeredApps.forEach(element => {
+          this.LOG(this.logtag + " updateRegisteredApps: comparing " + JSON.stringify(element) + " with " + JSON.stringify(app));
+          if (element.name === app.name && element.appid === app.appid) {
+            element = app;
+            updated = true;
+          }
+        });
+        if (!updated) {
+          this._registeredApps.push(app);
+        }
+      }
+    }
+    this.LOG(this.logtag + " updateRegisteredApps: _registeredApps is " + JSON.stringify(this._registeredApps));
+  }
+
+  removeRegisteredApps(appNames = []) {
+    if (appNames && appNames.length > 0) {
+      this._registeredApps.forEach((element, index) => {
+        this.LOG(this.logtag + " removeRegisteredApps: comparing " + JSON.stringify(element) + " with " + JSON.stringify(appNames));
+        if (appNames.includes(element.name)) {
+          this._registeredApps.splice(index, 1);
+        }
+      });
+    }
+    this.LOG(this.logtag + " removeRegisteredApps: _registeredApps is " + JSON.stringify(this._registeredApps));
+  }
+
+  // --- Core API Abstractions ---
 
   getEnabled() {
-    return new Promise((resolve, reject) => {
-      this._thunder.call(this.callsign, 'getEnabled')
-        .then(res => {
-          resolve(res)
-        })
-        .catch(err => {
-          this.ERR("Xdial error: " + JSON.stringify(err))
-          reject(err)
-        })
-    })
+    return this._call('getEnabled');
   }
-  getFriendlyName() {
-    return new Promise((resolve, reject) => {
-      this._thunder.call(this.callsign, 'getFriendlyName')
-        .then(res => {
-          resolve(res)
-        })
-        .catch(err => {
-          this.ERR("Xdial getFriendlyName error: " + JSON.stringify(err));
-          reject(err)
-        })
-    })
+
+  async getFriendlyName() {
+    const res = await this._call('getFriendlyName').catch(() => null);
+    return res?.friendlyname || null;
   }
-  getModelName() {
-    return new Promise((resolve, reject) => {
-      this._thunder.call(this.callsign, 'getModelName')
-        .then(res => {
-          this.LOG("Xcast getModelName success: " + JSON.stringify(res));
-          resolve(res.model)
-        })
-        .catch(err => {
-          this.ERR("Xdial getModelName error: " + JSON.stringify(err));
-          reject(err)
-        })
-    })
+
+  async getManufacturerName() {
+    const res = await this._call('getManufacturerName').catch(() => null);
+    return res?.manufacturer || null;
   }
-  setStandbyBehavior(state) {
-    return new Promise((resolve, reject) => {
-      this._thunder.call(this.callsign, 'setStandbyBehavior',{ standbybehavior : state})
-		  .then(res => {
-			console.warn("Xcast setStandbyBehavior success: " + JSON.stringify(res));
-          resolve(res)
-        })
-        .catch(err => {
-          this.ERR("Xdial setStandbyBehavior error: " + JSON.stringify(err))
-          reject(err)
-        })
-    })
+
+  async getModelName() {
+    const res = await this._call('getModelName').catch(() => null);
+    return res?.model || null;
   }
-  setFriendlyName(name) {
-    return new Promise((resolve) => {
-      this._thunder.call(this.callsign, 'setFriendlyName', { friendlyname: name }).then(result => {
-        this.LOG("Xcast setFriendlyName: " + name + " result: " + JSON.stringify(result))
-        resolve(result);
-      }).catch(err => {
-        this.ERR(JSON.stringify(err)); resolve(false);
-      });
-    }).then(val => {
-      this.LOG("The resolved value is: " + JSON.stringify(val));
-    })
-      .catch(error => {
-        this.ERR("An error occurred: " + JSON.stringify(error));
-      });
+
+  async getProtocolVersion() {
+    const res = await this._call('getProtocolVersion').catch(() => null);
+    return res?.version || null;
   }
-  /**
-   *
-   * @param {string} eventId
-   * @param {function} callback
-   * Function to register the events for the Xcast plugin.
-   */
-  registerEvent(eventId, callback) {
-    this._events.set(eventId, callback);
+
+  async getStandbyBehavior() {
+    const res = await this._call('getStandbyBehavior').catch(() => null);
+    return res?.standbybehavior || null;
+  }
+
+  registerApplications(params) {
+    return this._call('registerApplications', params)
+      .then((result) => {
+        if (result && result?.success) {
+          this.updateRegisteredApps(params);
+        }
+        return result;
+      })
+      .catch(() => false);
+  }
+
+  setApplicationState(params) {
+    return this._call('setApplicationState', params).catch(() => false);
+  }
+
+  setEnabled(enable) {
+    return this._call('setEnabled', { enabled: !!enable });
+  }
+
+  setFriendlyName(friendlyname) {
+    return this._call('setFriendlyName', { friendlyname }).catch(() => false);
+  }
+
+  setManufacturerName(manufacturer) {
+    return this._call('setManufacturerName', { manufacturer }).catch(() => false);
+  }
+
+  setModelName(model) {
+    return this._call('setModelName', { model }).catch(() => false);
+  }
+
+  setStandbyBehavior(standbybehavior) {
+    return this._call('setStandbyBehavior', { standbybehavior }).catch(() => false);
   }
 
   /**
-   * Function to deactivate the Xcast plugin.
+   * @param {string[]} appNames
+   * @returns
    */
-  deactivate() {
-	return new Promise((resolve) => {
-		this._thunder.call('Controller', 'deactivate', { callsign: this.callsign }).then(res => {
-			resolve(res);
-		}).catch(err => {
-			this.ERR("Failed to deactivate Xcast: " + JSON.stringify(err))
-		})
-	})
-  }
-
-	setApplicationState(params) {
-    params.error = 'none';
-		return new Promise((resolve) => {
-			this._thunder.call(this.callsign, 'setApplicationState', params).then(result => {
-        this.LOG("XcastAPI setApplicationState Updating: " + JSON.stringify(params) + " result: " + JSON.stringify(result))
-				resolve(true);
-			}).catch(err => {
-				this.ERR("setApplicationState failed trying older API. error is: " + JSON.stringify(err));
-				resolve(false);
-			});
-		});
-	}
-
-
-  /**
-   * Function to notify the state of the app.
-   */
-  onApplicationStateChanged(params) {
-    return new Promise((resolve) => {
-      this._thunder.call(this.callsign, 'onApplicationStateChanged', params).then(result => {
-        this.LOG("XCastAPI onApplicationStateChanged Updating: " + JSON.stringify(params) + " result: " + JSON.stringify(result))
-        resolve(result);
-      }).catch(err => {
-        this.ERR(JSON.stringify(err)); resolve(false);
-      });
-    });
-  }
-  registerApplications(params){
-    this.LOG("Register Application Params" + JSON.stringify(params))
-    return new Promise((resolve,reject) => {
-    this._thunder.call('org.rdk.Xcast', 'registerApplications',params )
-        .then(res => {
-          resolve(res)
-        })
-        .catch(err => {
-          this.ERR("Xdial registerApplications error: " + JSON.stringify(err));
-          reject(err)
-        })
-    })
+  unregisterApplications(appNames = []) {
+    return this._call('unregisterApplications', { appNames })
+      .then((result) => {
+        if (result && result?.success) {
+          this.removeRegisteredApps(appNames);
+        }
+        return result;
+      })
+      .catch(() => false);
   }
 
   static supportedApps() {
-    let xcastApps = { AmazonInstantVideo: 'Amazon', YouTube: 'YouTube', Netflix: 'Netflix', YouTubeTV: "YouTubeTV" };
-    return xcastApps;
+    return { AmazonInstantVideo: 'Amazon', YouTube: 'YouTube', Netflix: 'Netflix', YouTubeTV: "YouTubeTV" };
   }
 }
+
+// Instantiate Singleton Base Instance
+const instance = XcastApi.getInstance();
+
+/**
+ * Proxy Wrapper over the instance default export.
+ * Dynamically resolves class level static method calls without boilerplate mapping code.
+ */
+const proxyHandler = {
+  get(target, prop) {
+    if (typeof target[prop] === 'function') {
+      return target[prop].bind(target);
+    }
+    if (target.constructor && typeof target.constructor[prop] === 'function') {
+      return target.constructor[prop].bind(target.constructor);
+    }
+    return target[prop];
+  }
+};
+
+export default new Proxy(instance, proxyHandler);
