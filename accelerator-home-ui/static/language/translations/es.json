@@ -314,5 +314,10 @@
   "Enabled": "Habilitado",
   "Please manually reset the remote control by following the instructions in its user manual.":"Por favor, restablezca manualmente el control remoto siguiendo las instrucciones de su manual de usuario.",
   "Pairing":"Emparejando",
-  "Reboot to complete the update":"Reinicie para completar la actualización"
+  "Reboot to complete the update":"Reinicie para completar la actualización",
+  "Maintenance Update Finished, Rebooting": "Actualización de mantenimiento finalizada, reiniciando",
+  "System is up to date":"El sistema está actualizado",
+  "Maintenance update in progress":"Actualización en curso",
+  "Updating the system, please wait": "Actualizando el sistema, por favor espere",
+  "Updating": "Actualizando"
 }
