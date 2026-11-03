@@ -743,7 +743,7 @@ export default class App extends Router.App {
 						this._updateDialAppList(params, appName, "my" + appName, corsDomains.join(" "), dataAppId, query, allowStop);
 						if (params.applications.length > 0) {
 							const success = await XcastApi.registerApplications(params);
-							if (!success) {
+							if (true !== success?.success) {
 								throw new Error("Platform plugin interface rejected the application registration parameters payload");
 							} else {
 								this.LOG("Xcast: Application registered successfully");
@@ -771,7 +771,7 @@ export default class App extends Router.App {
 					}
 
 					const rdkDialCfg = config?.configuration?.["urn:rdk:config:dial"];
-					if (!rdkDialCfg) return;
+					if (!rdkDialCfg) continue;
 					const corsDomains = Array.isArray(rdkDialCfg?.corsDomains) ? [...rdkDialCfg.corsDomains] : [];
 
 					const query = "source_type=12";
@@ -797,6 +797,7 @@ export default class App extends Router.App {
 			}
 		} catch (err) {
 			this.ERR("Xcast: Core registration lifecycle pipeline failed: " + (err?.message || JSON.stringify(err)));
+			throw err;
 		}
 	}
 
@@ -1440,7 +1441,7 @@ export default class App extends Router.App {
 	 */
 	registerAppActionEvent() {
 		this.LOG("Registering onActionStartRequest event listener for org.rdk.AppActions");
-		this.onActionStartRequest = thunder.on("org.rdk.AppActions", "onActionStartRequest", notification => {
+		this.onActionStartRequest = thunder.on("org.rdk.AppActions", "onActionStartRequest", async notification => {
 			this.LOG("onActionStartRequest: " + JSON.stringify(notification));
 			if (notification && "DIAL" === notification.initiator && notification.intent && notification.handlerAppId) {
 				let parsedIntent = {};
@@ -1455,17 +1456,18 @@ export default class App extends Router.App {
 				const validIntents = ["launch", "hide", "resume", "stop"];
 				if (validIntents.includes(intentAction)) {
 					if ("launch" === intentAction || "resume" === intentAction) {
-						PowerManagerApi.get().getPowerState().then(res => {
-							if (res.currentState !== PowerState.POWER_STATE_ON) {
-								PowerManagerApi.get().setPowerState(PowerState.POWER_STATE_ON);
+						try {
+							const powerState = await PowerManagerApi.get().getPowerState();
+							if (powerState?.currentState !== PowerState.POWER_STATE_ON) {
+								await PowerManagerApi.get().setPowerState(PowerState.POWER_STATE_ON);
 							}
-						}).catch(err => {
-							this.ERR("onActionStartRequest: Error getting power state: " + JSON.stringify(err));
-						});
+						} catch (err) {
+							this.ERR("onActionStartRequest: Error getting/setting power state: " + JSON.stringify(err));
+						}
 					}
 					const appName = notification.handlerAppId;
 					// LaunchApp argument - intent is of string type, pass it as received.
-					this._handleXcastAppLifecycle(appName, notification.intent, intentAction);
+					await this._handleXcastAppLifecycle(appName, notification.intent, intentAction);
 				} else {
 					this.LOG("onActionStartRequest: intent " + (intentAction || "undefined") + " is not supported.");
 				}

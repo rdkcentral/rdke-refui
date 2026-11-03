@@ -77,10 +77,10 @@ class XcastApi {
       for (const app of payload.applications) {
         let updated = false;
         // replace this._registeredApps if it has the same name & appid
-        this._registeredApps.forEach(element => {
+        this._registeredApps.forEach((element, index) => {
           this.LOG(this.logtag + " updateRegisteredApps: comparing " + JSON.stringify(element) + " with " + JSON.stringify(app));
           if (element.name === app.name && element.appid === app.appid) {
-            element = app;
+            this._registeredApps[index] = app;
             updated = true;
           }
         });
@@ -94,12 +94,9 @@ class XcastApi {
 
   removeRegisteredApps(appNames = []) {
     if (appNames && appNames.length > 0) {
-      this._registeredApps.forEach((element, index) => {
-        this.LOG(this.logtag + " removeRegisteredApps: comparing " + JSON.stringify(element) + " with " + JSON.stringify(appNames));
-        if (appNames.includes(element.name)) {
-          this._registeredApps.splice(index, 1);
-        }
-      });
+      this._registeredApps = this._registeredApps.filter(
+        (element) => !appNames.includes(element.name)
+      );
     }
     this.LOG(this.logtag + " removeRegisteredApps: _registeredApps is " + JSON.stringify(this._registeredApps));
   }
