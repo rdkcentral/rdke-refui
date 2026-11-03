@@ -1,7 +1,7 @@
 {
   "id": "com.rdkcentral.refui",
-  "version": "6.0.46",
-  "versionName": "6.0.46",
+  "version": "6.0.47",
+  "versionName": "6.0.47",
   "name": "RDK Ref UI Home Screen",
   "packageType": "application",
   "entryPoint": "--lightning --dev file:///usr/share/refui/index.html",
