@@ -22,7 +22,6 @@ import DacAppItem from '../items/DacAppItem.js'
 import ThunderJS from 'ThunderJS'
 import AppApi from '../api/AppApi.js'
 import { CONFIG, GLOBALS } from '../Config/Config.js'
-import XcastApi from '../api/XcastApi'
 import HomeApi from '../api/HomeApi.js'
 import GracenoteItem from '../items/GracenoteItem.js'
 import HDMIApi from '../api/HDMIApi.js'
@@ -329,7 +328,6 @@ export default class MainView extends Lightning.Component {
     this.myAppsEmpty = true // Will be updated when appItems is set
     this.indexVal = 0
     this.homeApi = new HomeApi();
-    this.xcastApi = new XcastApi();
     this.hdmiApi = new HDMIApi()
     this.appApi = new AppApi()
     this._isRefreshingMyApps = false

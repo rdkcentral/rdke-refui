@@ -1,7 +1,7 @@
 {
   "id": "com.rdkcentral.refui",
-  "version": "6.0.40",
-  "versionName": "6.0.40",
+  "version": "6.0.47",
+  "versionName": "6.0.47",
   "name": "RDK Ref UI Home Screen",
   "packageType": "application",
   "entryPoint": "--lightning --dev file:///usr/share/refui/index.html",
@@ -10,7 +10,7 @@
   },
   "permissions": [
     "urn:rdk:permission:home-app",
-    "urn:rdk:permission.internet",
+    "urn:rdk:permission:internet",
     "urn:rdk:permission:firebolt",
     "urn:rdk:permission:thunder",
     "urn:rdk:permission:rialto",
@@ -19,5 +19,13 @@
     "urn:rdk:permission:compositor"
   ],
   "configuration": {
+    "urn:rdk:config:network": [
+      {
+        "name": "com.rdkcentral.nativeplayer",
+        "port": 10101,
+        "protocol": "tcp",
+        "type": "imported"
+      }
+    ]
   }
 }
