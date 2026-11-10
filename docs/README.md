@@ -67,7 +67,7 @@ classDef VL stroke:#808080,fill:#F2F2F2,stroke-width:2px;
 - **Network Management**: Interfaces with `org.rdk.NetworkManager` for Wi-Fi scanning, connecting, IP configuration, and internet connectivity checks. Displays network setup screens during the splash/onboarding flow.
 - **Media Playback**: Embeds an integrated video player (`AAMPVideoPlayer`) for VOD and live content playback, with an info overlay.
 - **Settings Management**: Provides screens and overlays for picture settings, audio settings, sleep timer, screen saver, language, and time zone. User preferences are persisted via `org.rdk.PersistentStore` and `org.rdk.UserSettings`.
-- **Voice & Alexa Integration**: Activates `org.rdk.VoiceControl` for keyword detection and voice session lifecycle, and extends voice handling to manage SmartScreen activation and application state reporting to the Alexa cloud.
+- **Voice Control Integration**: Activates `org.rdk.VoiceControl` through `VoiceApi`, queries the voice status and enables voice configuration when push-to-talk is not ready, and registers voice session events (server message, session begin, session end).
 - **Miracast Screen Mirroring**: Activates `org.rdk.MiracastService` and `org.rdk.MiracastPlayer`, presents the connection notification overlay, and manages accept/reject flows for incoming Miracast client connections.
 - **Application Package Management**: Uses `org.rdk.AppPackageManager` (via `PackageManagerApi`) to list, install, and remove application packages, and relays install/uninstall events from `org.rdk.AppManager` to registered UI listeners.
 - **Inactivity & Energy Saving**: Monitors user inactivity through `org.rdk.RDKWindowManager` inactivity reporting, and applies configurable screen saver, energy saver, and sleep timer timeouts stored in browser-side `localStorage`/`Storage`.
@@ -115,7 +115,6 @@ graph TD
             XcastApi["XcastApi\n(org.rdk.Xcast)"]
             MiracastApi["Miracast\n(org.rdk.MiracastService/Player)"]
             VoiceApi["VoiceApi\n(org.rdk.VoiceControl)"]
-            SmartScreenApi["SmartScreen Handler\n(VoiceApi)"]
             PackageMgrApi["PackageManagerApi\n(org.rdk.AppPackageManager)"]
             PictureSettingsApi["PictureSettingsApi"]
         end
@@ -165,15 +164,15 @@ graph TD
 | `id`                      | `com.rdkcentral.refui`                                                                                                                                                                                                                                              |
 | `name`                    | `RDK Ref UI Home Screen`                                                                                                                                                                                                                                            |
 | `packageType`             | `application`                                                                                                                                                                                                                                                       |
-| `version` / `versionName` | `6.0.41`                                                                                                                                                                                                                                                            |
+| `version` / `versionName` | `6.0.47`                                                                                                                                                                                                                                                            |
 | `entryPoint`              | `--lightning --dev file:///usr/share/refui/index.html`                                                                                                                                                                                                              |
 | `dependencies`            | `com.rdkcentral.wpe` (`~0.5.0`) — the WPE runtime package that hosts the app                                                                                                                                                                                        |
 | `permissions`             | `urn:rdk:permission:home-app`, `urn:rdk:permission.internet`, `urn:rdk:permission:firebolt`, `urn:rdk:permission:thunder`, `urn:rdk:permission:rialto`, `urn:rdk:permission:game-controller`, `urn:rdk:permission:display-overlay`, `urn:rdk:permission:compositor` |
 
 **Build and deployment flow:**
 
-1. Run `bolt/pack.sh` to produce `packages/refui.tgz` (the rootfs layer containing the application `dist`).
-2. From the `packages` directory, create the bolt package with `bolt pack ../package-configs/com.rdkcentral.refui.json refui.tgz`.
+1. From the repository root, run `cd bolt` followed by `./pack.sh` to produce `packages/refui.tgz` under `bolt/` (the rootfs layer containing the application `dist`).
+2. Run `cd packages` and then `bolt pack ../package-configs/com.rdkcentral.refui.json refui.tgz` to create the bolt package.
 3. Ensure the `gpu-layer`, `base`, and `wpe` (for example `wpe-develop`) packages are available on the device, then push the package with `bolt push <STB_IP> <package>` and start it with `bolt run <STB_IP> <package>`.
 
 **Runtime relationship with the WPE runtime and middleware:**
@@ -188,7 +187,8 @@ graph TD
 #### Platform and Integration Requirements
 
 - **Build Dependencies**: Defined in `accelerator-home-ui/package.json` and `accelerator-home-ui/package-lock.json`; refer to these files directly for the exact dependency set and resolved versions.
-- **Plugin Dependencies**: `org.rdk.AppManager`, `org.rdk.RDKWindowManager`, `org.rdk.NetworkManager`, `org.rdk.PowerManager`, `org.rdk.PersistentStore`, `org.rdk.UserSettings`, `org.rdk.Bluetooth`, `org.rdk.HdmiInput`, `org.rdk.HdmiCecSource`, `org.rdk.Xcast`, `org.rdk.VoiceControl`, `org.rdk.MiracastService`, `org.rdk.MiracastPlayer`, `org.rdk.TextToSpeech`, `org.rdk.AppPackageManager`, `org.rdk.System`, `SmartScreen`.
+- **Plugin Dependencies**: `org.rdk.AppManager`, `org.rdk.RDKWindowManager`, `org.rdk.NetworkManager`, `org.rdk.PowerManager`, `org.rdk.PersistentStore`, `org.rdk.UserSettings`, `org.rdk.Bluetooth`, `org.rdk.HdmiInput`, `org.rdk.HdmiCecSource`, `org.rdk.Xcast`, `org.rdk.VoiceControl`, `org.rdk.MiracastService`, `org.rdk.MiracastPlayer`, `org.rdk.TextToSpeech`, `org.rdk.AppPackageManager`, `org.rdk.AppActions`, `org.rdk.System`.
+- **Media Playback Dependency**: The `com.rdkcentral.nativeplayer` package must be installed on the device. `AAMPVideoPlayer` launches it through AppManager and uses `src/api/NativePlayerApis.js` for JSON-RPC playback sessions over `ws://localhost:10101`.
 - **Configuration Files**:
   - `accelerator-home-ui/settings.json` — Lightning SDK platform and stage settings, loaded at application startup from the static directory.
   - `bolt/package-configs/com.rdkcentral.refui.json` — Application manifest used by the package manager to describe entry point, version, and required permissions.
@@ -247,7 +247,7 @@ sequenceDiagram
 - **Power state change** (`onPowerModeChanged` from `org.rdk.PowerManager`): `GLOBALS.powerState` is refreshed from the plugin. When the device leaves `ON` (for example to `LIGHT_SLEEP` or `DEEP_SLEEP`), the new state is cached in `Storage`, the topmost third-party app (if any) is exited, and the router navigates to `menu`. While in `LIGHT_SLEEP` or `DEEP_SLEEP`, all non-Power key presses are ignored and only the Power key is passed to the power-key handler; the Power key toggles the state (see below). If the device moves from `DEEP_SLEEP` to `LIGHT_SLEEP`, the UI sets the power state to `ON`. When the device returns to `ON`, the cached sleep state is cleared.
 - **Power key handling**: The Power key (`Keymap.Power`) is intercepted for the main client window. When the current state is `ON`, a Power key press requests `DEEP_SLEEP` if the energy saver timeout is configured (falling back to `LIGHT_SLEEP` if that fails), otherwise `LIGHT_SLEEP`; in any other state it sets the power state to `ON`. In non-sleep states other than `ON` (for example `STANDBY`), any key press sets the power state to `ON`.
 - **App lifecycle change** (`onAppLifecycleStateChanged` from `org.rdk.AppManager`): `AppController` records the `appId` of the app being launched from `onAppLaunchRequest`. When that app transitions to `APP_STATE_ACTIVE`, `AppController` updates `GLOBALS.topmostApp`, makes the app window visible and focused, registers app-specific key intercepts (YouTube only: volume, mute, and the YouTube key), and hides the main UI window. When the focused app leaves `APP_STATE_ACTIVE`, `GLOBALS.topmostApp` is reset to the main app and the main UI window is made visible and focused again.
-- **HDMI source change** (`onInputStatusChanged` from `org.rdk.HdmiInput`): The TV overlay is updated to reflect the active HDMI input and triggers navigation to the HDMI input overlay route.
+- **HDMI input status change** (`onInputStatusChanged` from `org.rdk.HdmiInput`): `HDMIApi` forwards the event to `MainView`, whose handler hides the screen saver and logs the notification; it does not update the TV overlay or navigate. Input-overlay navigation (`tv-overlay/inputs`) is triggered separately by the Inputs shortcut key in `App`.
 - **Network state change** (events from `org.rdk.NetworkManager`): The `IsConnectedToInternet` flag in `GLOBALS` is updated, and network status is reflected in the settings overlay and top panel.
 - **Miracast connection request** (events from `org.rdk.MiracastService`): The `MiracastNotification` overlay is displayed with accept/reject options. The Miracast state in `GLOBALS.Miracastclientdevicedetails` is updated through the connection lifecycle.
 
@@ -366,37 +366,35 @@ Key file paths in the table below are relative to `accelerator-home-ui/`.
 | `org.rdk.RDKWindowManager`  | Set window visibility and focus, register key intercepts, query running apps, inactivity reporting | `setFocus()`, `setVisible()`, `getApps()`, `addKeyIntercepts()`, `enableInactivityReporting()`, `setInactivityInterval()`, `onUserInactivity`                               |
 | `org.rdk.NetworkManager`    | Wi-Fi scan and connect, IP settings, internet connectivity check                                   | `GetAvailableInterfaces()`, `SetInterfaceState()`, `GetIPSettings()`, `IsConnectedToInternet()`, `StartConnectivityMonitoring()`                                            |
 | `org.rdk.PowerManager`      | Read and set device power state, subscribe to power mode changes, configure wakeup sources         | `setPowerState()`, `setWakeupSourceConfig()`, `onPowerModeChanged`                                                                                                          |
-| `org.rdk.PersistentStore`   | Read and write persistent key-value pairs for user preferences                                     | `getValue()`, `setValue()`, `deleteKey()`, `onValueChanged`, `onStorageExceeded`                                                                                            |
+| `org.rdk.PersistentStore`   | Read and write persistent key-value pairs for user preferences                                     | `getValue()`, `setValue()`, `deleteKey()`                                                                                                                                   |
 | `org.rdk.UserSettings`      | Get/set voice guidance and presentation language preferences                                       | `setVoiceGuidance()`, `getVoiceGuidance()`, `setPresentationLanguage()`, `getPresentationLanguage()`                                                                        |
 | `org.rdk.Bluetooth`         | Device discovery, pairing, connection for remote controls and audio devices                        | `startScan()`, `pair()`, `connect()`, `onDiscoveredDevice`, `onStatusChanged`, `onPairingRequest`                                                                           |
-| `org.rdk.HdmiInput`         | Query and switch HDMI input sources                                                                | `getHDMIInputDevices()`, `setHDMIInput()`, `stopHDMIInput()`, `onInputStatusChanged`, `onSignalChanged`                                                                     |
-| `org.rdk.HdmiCecSource`     | Enable CEC and manage TV control actions via HDMI-CEC                                              | `getEnabled()`, `setEnabled()`, `performOTP()`, `getActiveSourceStatus()`                                                                                                   |
-| `org.rdk.Xcast`             | Enable cast discovery, receive cast application launch/stop/hide requests                          | `setEnabled()`, `onApplicationLaunchRequest`, `onApplicationStopRequest`, `onApplicationHideRequest`                                                                        |
+| `org.rdk.HdmiInput`         | Query and switch HDMI input sources                                                                | `getHDMIInputDevices()`, `startHdmiInput()`, `stopHdmiInput()`, `onInputStatusChanged`, `onSignalChanged`                                                                   |
+| `org.rdk.HdmiCecSource`     | Enable CEC and manage TV control actions via HDMI-CEC                                              | `getEnabled()`, `setEnabled()`, `performOTPAction()`, `getActiveSourceStatus()`                                                                                             |
+| `org.rdk.Xcast`             | Enable cast discovery, set standby behavior, and register/unregister DIAL applications             | `setEnabled()`, `setStandbyBehavior()`, `registerApplications()`, `unregisterApplications()`                                                                                |
+| `org.rdk.AppActions`        | Receive DIAL launch, hide, resume, and stop intents for cast applications                          | `onActionStartRequest`                                                                                                                                                      |
 | `org.rdk.VoiceControl`      | Activate voice session, subscribe to keyword and stream events                                     | `configureVoice()`, `onKeywordVerification`, `onSessionBegin`, `onSessionEnd`                                                                                               |
-| `SmartScreen`               | Display Alexa smart screen overlay during voice interactions                                       | `Controller.activate()`, `Controller.deactivate()`                                                                                                                          |
-| `org.rdk.MiracastService`   | Enable/disable Miracast, accept/reject incoming connections                                        | `setEnable()`, `getEnable()`, `acceptClientConnection()`, `stopClientConnection()`, `stopRequest()`                                                                         |
-| `org.rdk.MiracastPlayer`    | Start/stop Miracast media playback                                                                 | `activate()`, `deactivate()`                                                                                                                                                |
+| `org.rdk.MiracastService`   | Enable/disable Miracast, accept/reject incoming connections                                        | `setEnable()`, `getEnable()`, `acceptClientConnection()`, `stopClientConnection()`                                                                                          |
+| `org.rdk.MiracastPlayer`    | Start/stop Miracast media playback (plugin activation/deactivation is done through `Controller`)   | `playRequest()`, `stopRequest()`                                                                                                                                            |
 | `org.rdk.TextToSpeech`      | Enable/disable TTS and speak UI text                                                               | `enabletts()`, `isttsenabled()`, `speak()`                                                                                                                                  |
 | `org.rdk.AppPackageManager` | List, install, and remove application packages                                                     | `listPackages()`, `install()`, `uninstall()`                                                                                                                                |
 | `org.rdk.System`            | Query and set time zone                                                                            | `getTimeZones()`, `getTimeZoneDST()`, `setTimeZoneDST()`                                                                                                                    |
 
 ### Events Subscribed
 
-| Event Name                   | Source Plugin / Topic     | Trigger Condition                                   | Consumer in refui                                      |
-| ---------------------------- | ------------------------- | --------------------------------------------------- | ------------------------------------------------------ |
-| `onPowerModeChanged`         | `org.rdk.PowerManager`    | Device power state changes                          | `App.js` (key suppression, wakeup logic)               |
-| `onAppLifecycleStateChanged` | `org.rdk.AppManager`      | Launched app transitions to/from `APP_STATE_ACTIVE` | `AppController` (window focus/visibility management)   |
-| `onAppLaunchRequest`         | `org.rdk.AppManager`      | Application launch requested                        | `AppController` (records the launched `appId`)         |
-| `onAppInstalled`             | `org.rdk.AppManager`      | Application package installed                       | `AppController` → registered `packageChangedListeners` |
-| `onAppUninstalled`           | `org.rdk.AppManager`      | Application package uninstalled                     | `AppController` → registered `packageChangedListeners` |
-| `onInputStatusChanged`       | `org.rdk.HdmiInput`       | HDMI input port connected/disconnected              | `HDMIApi` event handler → TV overlay update            |
-| `onSignalChanged`            | `org.rdk.HdmiInput`       | HDMI signal state changes                           | `HDMIApi` event handler                                |
-| `onDiscoveredDevice`         | `org.rdk.Bluetooth`       | New Bluetooth device discovered during scan         | `BluetoothApi` → Bluetooth screen                      |
-| `onStatusChanged`            | `org.rdk.Bluetooth`       | Pairing or connection state changes                 | `BluetoothApi` → Bluetooth screen                      |
-| `onKeywordVerification`      | `org.rdk.VoiceControl`    | Wake word detected                                  | `VoiceApi` → Alexa/voice UI                            |
-| `onApplicationLaunchRequest` | `org.rdk.Xcast`           | Cast source requests app launch                     | `XcastApi` → app launch handler                        |
-| `onValueChanged`             | `org.rdk.PersistentStore` | A stored value changes                              | `PersistentStoreApi` event handler                     |
-| `onStorageExceeded`          | `org.rdk.PersistentStore` | Persistent storage quota exceeded                   | `PersistentStoreApi` event handler                     |
+| Event Name                   | Source Plugin / Topic  | Trigger Condition                                        | Consumer in refui                                                                             |
+| ---------------------------- | ---------------------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `onPowerModeChanged`         | `org.rdk.PowerManager` | Device power state changes                               | `App.js` (key suppression, wakeup logic)                                                      |
+| `onAppLifecycleStateChanged` | `org.rdk.AppManager`   | Launched app transitions to/from `APP_STATE_ACTIVE`      | `AppController` (window focus/visibility management)                                          |
+| `onAppLaunchRequest`         | `org.rdk.AppManager`   | Application launch requested                             | `AppController` (records the launched `appId`)                                                |
+| `onAppInstalled`             | `org.rdk.AppManager`   | Application package installed                            | `AppController` → registered `packageChangedListeners`                                        |
+| `onAppUninstalled`           | `org.rdk.AppManager`   | Application package uninstalled                          | `AppController` → registered `packageChangedListeners`                                        |
+| `onInputStatusChanged`       | `org.rdk.HdmiInput`    | HDMI input port connected/disconnected                   | `HDMIApi` event handler → `MainView` (hides screen saver, logs)                               |
+| `onSignalChanged`            | `org.rdk.HdmiInput`    | HDMI signal state changes                                | `HDMIApi` event handler                                                                       |
+| `onDiscoveredDevice`         | `org.rdk.Bluetooth`    | New Bluetooth device discovered during scan              | `BluetoothApi` → Bluetooth screen                                                             |
+| `onStatusChanged`            | `org.rdk.Bluetooth`    | Pairing or connection state changes                      | `BluetoothApi` → Bluetooth screen                                                             |
+| `onKeywordVerification`      | `org.rdk.VoiceControl` | Wake word detected                                       | `VoiceApi` event handler                                                                      |
+| `onActionStartRequest`       | `org.rdk.AppActions`   | DIAL/cast intent to launch, hide, resume, or stop an app | `App.registerAppActionEvent()` → `AppManager` `launchApp()` / `closeApp()` / `terminateApp()` |
 
 ### IPC Flow Patterns
 
@@ -444,27 +442,27 @@ sequenceDiagram
 
 Implementation file paths in the table below are relative to `accelerator-home-ui/`.
 
-| Plugin / API               | Method Called                                  | Purpose                                                          | Implementation File                                                  |
-| -------------------------- | ---------------------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------- |
-| `org.rdk.AppManager`       | `launchApp()`                                  | Launch a registered application by ID                            | `src/api/AppManagerApi.js`                                           |
-| `org.rdk.AppManager`       | `getLoadedApps()`                              | Retrieve list of currently loaded app instances                  | `src/api/AppManagerApi.js`                                           |
-| `org.rdk.RDKWindowManager` | `setFocus()`                                   | Transfer input focus to a window client                          | `src/api/RDKWindowManagerApi.js`                                     |
-| `org.rdk.RDKWindowManager` | `setVisible()`                                 | Show or hide a window client                                     | `src/api/RDKWindowManagerApi.js`                                     |
-| `org.rdk.RDKWindowManager` | `addKeyIntercepts()`                           | Register key intercepts for the main client window               | `src/api/RDKWindowManagerApi.js`, `src/keyIntercept/keyIntercept.js` |
-| `org.rdk.PowerManager`     | `setPowerState()`                              | Set device power state (ON / STANDBY / LIGHT_SLEEP / DEEP_SLEEP) | `src/api/PowerManagerApi.js`                                         |
-| `org.rdk.PowerManager`     | `setWakeupSourceConfig()`                      | Configure hardware wakeup sources                                | `src/api/PowerManagerApi.js`                                         |
-| `org.rdk.NetworkManager`   | `GetAvailableInterfaces()`                     | List network interfaces                                          | `src/api/NetworkManagerAPI.js`                                       |
-| `org.rdk.NetworkManager`   | `IsConnectedToInternet()`                      | Check active internet connectivity                               | `src/api/NetworkManagerAPI.js`                                       |
-| `org.rdk.NetworkManager`   | `GetIPSettings()`                              | Retrieve IP configuration for an interface                       | `src/api/NetworkManagerAPI.js`                                       |
-| `org.rdk.PersistentStore`  | `getValue()` / `setValue()`                    | Read/write persistent user preferences                           | `src/api/PersistentStore.js`                                         |
-| `org.rdk.HdmiInput`        | `getHDMIInputDevices()`                        | List available HDMI input ports                                  | `src/api/HDMIApi.js`                                                 |
-| `org.rdk.HdmiInput`        | `setHDMIInput()` / `stopHDMIInput()`           | Activate or deactivate an HDMI input source                      | `src/api/HDMIApi.js`                                                 |
-| `org.rdk.HdmiCecSource`    | `getEnabled()`, `setEnabled()`, `performOTP()` | Query and enable CEC; trigger OTP action on the HDMI source      | `src/api/CECApi.js`                                                  |
-| `org.rdk.Xcast`            | `setEnabled()`                                 | Enable cast discovery advertisement                              | `src/api/XcastApi.js`                                                |
-| `org.rdk.MiracastService`  | `setEnable()` / `acceptClientConnection()`     | Enable Miracast and accept/reject peer connections               | `src/api/Miracast.js`                                                |
-| `org.rdk.VoiceControl`     | `configureVoice()`                             | Configure voice endpoint and enable keyword detection            | `src/api/VoiceApi.js`                                                |
-| `org.rdk.TextToSpeech`     | `enabletts()` / `speak()`                      | Enable TTS and synthesise speech for UI elements                 | `src/api/TTSApi.js`                                                  |
-| `org.rdk.System`           | `getTimeZoneDST()` / `setTimeZoneDST()`        | Read and write device time zone                                  | `src/api/AppApi.js`                                                  |
+| Plugin / API               | Method Called                                        | Purpose                                                          | Implementation File                                                  |
+| -------------------------- | ---------------------------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `org.rdk.AppManager`       | `launchApp()`                                        | Launch a registered application by ID                            | `src/api/AppManagerApi.js`                                           |
+| `org.rdk.AppManager`       | `getLoadedApps()`                                    | Retrieve list of currently loaded app instances                  | `src/api/AppManagerApi.js`                                           |
+| `org.rdk.RDKWindowManager` | `setFocus()`                                         | Transfer input focus to a window client                          | `src/api/RDKWindowManagerApi.js`                                     |
+| `org.rdk.RDKWindowManager` | `setVisible()`                                       | Show or hide a window client                                     | `src/api/RDKWindowManagerApi.js`                                     |
+| `org.rdk.RDKWindowManager` | `addKeyIntercepts()`                                 | Register key intercepts for the main client window               | `src/api/RDKWindowManagerApi.js`, `src/keyIntercept/keyIntercept.js` |
+| `org.rdk.PowerManager`     | `setPowerState()`                                    | Set device power state (ON / STANDBY / LIGHT_SLEEP / DEEP_SLEEP) | `src/api/PowerManagerApi.js`                                         |
+| `org.rdk.PowerManager`     | `setWakeupSourceConfig()`                            | Configure hardware wakeup sources                                | `src/api/PowerManagerApi.js`                                         |
+| `org.rdk.NetworkManager`   | `GetAvailableInterfaces()`                           | List network interfaces                                          | `src/api/NetworkManagerAPI.js`                                       |
+| `org.rdk.NetworkManager`   | `IsConnectedToInternet()`                            | Check active internet connectivity                               | `src/api/NetworkManagerAPI.js`                                       |
+| `org.rdk.NetworkManager`   | `GetIPSettings()`                                    | Retrieve IP configuration for an interface                       | `src/api/NetworkManagerAPI.js`                                       |
+| `org.rdk.PersistentStore`  | `getValue()` / `setValue()`                          | Read/write persistent user preferences                           | `src/api/PersistentStore.js`                                         |
+| `org.rdk.HdmiInput`        | `getHDMIInputDevices()`                              | List available HDMI input ports                                  | `src/api/HDMIApi.js`                                                 |
+| `org.rdk.HdmiInput`        | `startHdmiInput()` / `stopHdmiInput()`               | Activate or deactivate an HDMI input source                      | `src/api/HDMIApi.js`                                                 |
+| `org.rdk.HdmiCecSource`    | `getEnabled()`, `setEnabled()`, `performOTPAction()` | Query and enable CEC; trigger OTP action on the HDMI source      | `src/api/CECApi.js`                                                  |
+| `org.rdk.Xcast`            | `setEnabled()`                                       | Enable cast discovery advertisement                              | `src/api/XcastApi.js`                                                |
+| `org.rdk.MiracastService`  | `setEnable()` / `acceptClientConnection()`           | Enable Miracast and accept/reject peer connections               | `src/api/Miracast.js`                                                |
+| `org.rdk.VoiceControl`     | `configureVoice()`                                   | Configure voice endpoint and enable keyword detection            | `src/api/VoiceApi.js`                                                |
+| `org.rdk.TextToSpeech`     | `enabletts()` / `speak()`                            | Enable TTS and synthesise speech for UI elements                 | `src/api/TTSApi.js`                                                  |
+| `org.rdk.System`           | `getTimeZoneDST()` / `setTimeZoneDST()`              | Read and write device time zone                                  | `src/api/AppApi.js`                                                  |
 
 ### Key Implementation Logic
 
@@ -482,27 +480,27 @@ Implementation file paths in the table below are relative to `accelerator-home-u
 
 ### Key Configuration Files
 
-| Configuration File                               | Purpose                                                                                                       | Override Mechanism                                  |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| `accelerator-home-ui/settings.json`              | Lightning SDK stage settings (clear color, image worker), platform ID, version string, and debug flag         | Replace file in the installed dist directory        |
-| `bolt/package-configs/com.rdkcentral.refui.json` | Application package manifest: entry point, version, permissions, runtime dependency on WPE                    | Updated at package build time                       |
-| `accelerator-home-ui/static/data/AppListInfo.js` | Static list of partner applications with callsigns, URLs, and launch parameters shown in the home screen grid | Replace file in the installed static data directory |
+| Configuration File                               | Purpose                                                                                                       | Override Mechanism                                          |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `accelerator-home-ui/settings.json`              | Lightning SDK stage settings (clear color, image worker), platform ID, version string, and debug flag         | Replace file in the installed dist directory                |
+| `bolt/package-configs/com.rdkcentral.refui.json` | Application package manifest: entry point, version, permissions, runtime dependency on WPE                    | Updated at package build time                               |
+| `accelerator-home-ui/static/data/AppListInfo.js` | Static list of partner applications with callsigns, URLs, and launch parameters shown in the home screen grid | Edit the source file, rebuild, and redeploy the application |
 
 ### Key Configuration Parameters
 
-| Parameter                               | Type   | Default                             | Description                                                                                 |
-| --------------------------------------- | ------ | ----------------------------------- | ------------------------------------------------------------------------------------------- |
-| `platformSettings.version`              | string | `"6.0.41"`                          | Application version string logged at startup and shown when `showVersion` is enabled.       |
-| `platformSettings.debug`                | bool   | `false`                             | Enables Lightning.js debug overlay when set to `true`.                                      |
-| `platformSettings.enableAppSuspended`   | bool   | `true`                              | Enables the Lightning app-suspended lifecycle mode.                                         |
-| `platformSettings.stage.useImageWorker` | bool   | `true`                              | Offloads image decoding to a Web Worker for smoother rendering.                             |
-| `CONFIG.thunderConfig.host`             | string | `"127.0.0.1"`                       | ThunderJS WebSocket host address.                                                           |
-| `CONFIG.thunderConfig.port`             | number | `9998`                              | ThunderJS WebSocket port.                                                                   |
-| `CONFIG.language`                       | string | `localStorage "Language"` or `"en"` | UI display language; read from `localStorage` on startup.                                   |
-| `GLOBALS.selfclientAppName`             | string | `"com.rdkcentral.refui"`            | Application identifier used to resolve the main AppManager/window-manager client.           |
-| `EnergySaverInterval`                   | string | —                                   | Inactivity timeout for energy saver mode; stored in `localStorage` via Lightning `Storage`. |
-| `ScreenSaverTimeoutInterval`            | string | —                                   | Inactivity timeout for screen saver; stored in `localStorage`.                              |
-| `TimeoutInterval`                       | string | —                                   | Sleep timer timeout; stored in `localStorage`.                                              |
+| Parameter                             | Type   | Default                             | Description                                                                                 |
+| ------------------------------------- | ------ | ----------------------------------- | ------------------------------------------------------------------------------------------- |
+| `platformSettings.version`            | string | `"6.0.47"`                          | Application version string logged at startup and shown when `showVersion` is enabled.       |
+| `appSettings.debug`                   | bool   | `false`                             | Controls Lightning.js application debugging.                                                |
+| `platformSettings.enableAppSuspended` | bool   | `true`                              | Enables the Lightning app-suspended lifecycle mode.                                         |
+| `appSettings.stage.useImageWorker`    | bool   | `true`                              | Offloads image decoding to a Web Worker for smoother rendering.                             |
+| `CONFIG.thunderConfig.host`           | string | `"127.0.0.1"`                       | ThunderJS WebSocket host address.                                                           |
+| `CONFIG.thunderConfig.port`           | number | `9998`                              | ThunderJS WebSocket port.                                                                   |
+| `CONFIG.language`                     | string | `localStorage "Language"` or `"en"` | UI display language; read from `localStorage` on startup.                                   |
+| `GLOBALS.selfclientAppName`           | string | `"com.rdkcentral.refui"`            | Application identifier used to resolve the main AppManager/window-manager client.           |
+| `EnergySaverInterval`                 | string | —                                   | Inactivity timeout for energy saver mode; stored in `localStorage` via Lightning `Storage`. |
+| `ScreenSaverTimeoutInterval`          | string | —                                   | Inactivity timeout for screen saver; stored in `localStorage`.                              |
+| `TimeoutInterval`                     | string | —                                   | Sleep timer timeout; stored in `localStorage`.                                              |
 
 ### Runtime Configuration
 
