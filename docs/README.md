@@ -167,7 +167,7 @@ graph TD
 | `version` / `versionName` | `6.0.47`                                                                                                                                                                                                                                                            |
 | `entryPoint`              | `--lightning --dev file:///usr/share/refui/index.html`                                                                                                                                                                                                              |
 | `dependencies`            | `com.rdkcentral.wpe` (`~0.5.0`) — the WPE runtime package that hosts the app                                                                                                                                                                                        |
-| `permissions`             | `urn:rdk:permission:home-app`, `urn:rdk:permission.internet`, `urn:rdk:permission:firebolt`, `urn:rdk:permission:thunder`, `urn:rdk:permission:rialto`, `urn:rdk:permission:game-controller`, `urn:rdk:permission:display-overlay`, `urn:rdk:permission:compositor` |
+| `permissions`             | `urn:rdk:permission:home-app`, `urn:rdk:permission:internet`, `urn:rdk:permission:firebolt`, `urn:rdk:permission:thunder`, `urn:rdk:permission:rialto`, `urn:rdk:permission:game-controller`, `urn:rdk:permission:display-overlay`, `urn:rdk:permission:compositor` |
 
 **Build and deployment flow:**
 
@@ -192,7 +192,7 @@ graph TD
 - **Configuration Files**:
   - `accelerator-home-ui/settings.json` — Lightning SDK platform and stage settings, loaded at application startup from the static directory.
   - `bolt/package-configs/com.rdkcentral.refui.json` — Application manifest used by the package manager to describe entry point, version, and required permissions.
-  - `accelerator-home-ui/static/data/AppListInfo.js` — Static list of pre-configured partner applications shown in the home screen application grid.
+  - `accelerator-home-ui/static/data/AppListInfo.js` — Static partner application metadata consumed by `HomeApi.getAppListInfo()` for the `AppCarousel` overlay.
   - `accelerator-home-ui/static/moreChannels/ChannelData.json` — Supplementary channel list fetched at runtime from `http://127.0.0.1:50050/lxresui/static/moreChannels/ChannelData.json`.
 - **Startup Order**: Successful main-client discovery requires the relevant AppManager or RDKWindowManager service to be reachable. `org.rdk.RDKWindowManager` must also be active for key-intercept registration; failures are logged and do not prevent `AppController.init()` from completing.
 
@@ -244,7 +244,7 @@ sequenceDiagram
 
 **State Change Triggers:**
 
-- **Power state change** (`onPowerModeChanged` from `org.rdk.PowerManager`): `GLOBALS.powerState` is refreshed from the plugin. When the device leaves `ON` (for example to `LIGHT_SLEEP` or `DEEP_SLEEP`), the new state is cached in `Storage`, the topmost third-party app (if any) is exited, and the router navigates to `menu`. While in `LIGHT_SLEEP` or `DEEP_SLEEP`, all non-Power key presses are ignored and only the Power key is passed to the power-key handler; the Power key toggles the state (see below). If the device moves from `DEEP_SLEEP` to `LIGHT_SLEEP`, the UI sets the power state to `ON`. When the device returns to `ON`, the cached sleep state is cleared.
+- **Power state change** (`onPowerModeChanged` from `org.rdk.PowerManager`): `GLOBALS.powerState` is refreshed from the plugin. When the device leaves `ON` (for example to `LIGHT_SLEEP` or `DEEP_SLEEP`), the new state is cached in `Storage`, an app exit is attempted through `AppApi.exitApp()` for a non-empty `GLOBALS.topmostApp`, and the router navigates to `menu`. The current `exitApp()` implementation does not close or terminate DAC applications through AppManager. While in `LIGHT_SLEEP` or `DEEP_SLEEP`, all non-Power key presses are ignored and only the Power key is passed to the power-key handler; the Power key toggles the state (see below). If the device moves from `DEEP_SLEEP` to `LIGHT_SLEEP`, the UI sets the power state to `ON`. When the device returns to `ON`, the cached sleep state is cleared.
 - **Power key handling**: The Power key (`Keymap.Power`) is intercepted for the main client window. When the current state is `ON`, a Power key press requests `DEEP_SLEEP` if the energy saver timeout is configured (falling back to `LIGHT_SLEEP` if that fails), otherwise `LIGHT_SLEEP`; in any other state it sets the power state to `ON`. In non-sleep states other than `ON` (for example `STANDBY`), any key press sets the power state to `ON`.
 - **App lifecycle change** (`onAppLifecycleStateChanged` from `org.rdk.AppManager`): `AppController` records the `appId` of the app being launched from `onAppLaunchRequest`. When that app transitions to `APP_STATE_ACTIVE`, `AppController` updates `GLOBALS.topmostApp`, makes the app window visible and focused, registers app-specific key intercepts (YouTube only: volume, mute, and the YouTube key), and hides the main UI window. When the focused app leaves `APP_STATE_ACTIVE`, `GLOBALS.topmostApp` is reset to the main app and the main UI window is made visible and focused again.
 - **HDMI input status change** (`onInputStatusChanged` from `org.rdk.HdmiInput`): `HDMIApi` forwards the event to `MainView`, whose handler hides the screen saver and logs the notification; it does not update the TV overlay or navigate. Input-overlay navigation (`tv-overlay/inputs`) is triggered separately by the Inputs shortcut key in `App`.
@@ -255,7 +255,7 @@ sequenceDiagram
 
 - When a third-party application is launched through `org.rdk.AppManager`, the main UI window is hidden and focus is transferred to the application's window client ID once `onAppLifecycleStateChanged` reports `APP_STATE_ACTIVE`. The router navigates to `applauncher` only when an overlay widget (settings overlay, app carousel, Miracast notification) must be shown while a third-party app is topmost.
 - On a Home key press while a third-party app is topmost, `jumpToRoute("menu")` is called, which calls `AppManager.closeApp()` followed by `AppManager.terminateApp()` for the topmost app and navigates to the target route. The main UI window is then made visible and focused by the `onAppLifecycleStateChanged` handler when the app leaves `APP_STATE_ACTIVE`.
-- The inactivity engine (`initializeInactivityEngine()`) is started once and keeps running across power-state changes. Inactivity reporting is disabled through `org.rdk.RDKWindowManager` only when no valid screen saver, energy saver, or sleep timer timeout is configured.
+- The inactivity engine (`initializeInactivityEngine()`) is started once and is not explicitly stopped on power-state changes. Its initialization and reset helpers disable `org.rdk.RDKWindowManager` inactivity reporting when no valid screen saver, energy saver, or sleep timer timeout remains. However, `ScreenSaverTimer.setTimerValue("Off")` also disables reporting unconditionally, even when another timer is configured.
 
 ---
 
@@ -480,11 +480,11 @@ Implementation file paths in the table below are relative to `accelerator-home-u
 
 ### Key Configuration Files
 
-| Configuration File                               | Purpose                                                                                                       | Override Mechanism                                          |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| `accelerator-home-ui/settings.json`              | Lightning SDK stage settings (clear color, image worker), platform ID, version string, and debug flag         | Replace file in the installed dist directory                |
-| `bolt/package-configs/com.rdkcentral.refui.json` | Application package manifest: entry point, version, permissions, runtime dependency on WPE                    | Updated at package build time                               |
-| `accelerator-home-ui/static/data/AppListInfo.js` | Static list of partner applications with callsigns, URLs, and launch parameters shown in the home screen grid | Edit the source file, rebuild, and redeploy the application |
+| Configuration File                               | Purpose                                                                                                  | Override Mechanism                                          |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `accelerator-home-ui/settings.json`              | Lightning SDK stage settings (clear color, image worker), platform ID, version string, and debug flag    | Replace file in the installed dist directory                |
+| `bolt/package-configs/com.rdkcentral.refui.json` | Application package manifest: entry point, version, permissions, runtime dependency on WPE               | Updated at package build time                               |
+| `accelerator-home-ui/static/data/AppListInfo.js` | Static partner application metadata consumed by `HomeApi.getAppListInfo()` for the `AppCarousel` overlay | Edit the source file, rebuild, and redeploy the application |
 
 ### Key Configuration Parameters
 
