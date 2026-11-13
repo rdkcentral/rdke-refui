@@ -73,14 +73,14 @@ export default class PackageManager {
     });
   }
 
-  getStorageDetails(packageId, version) {
+  getStorageDetails(packageId) {
     const thunderCall = "getStorageDetails";
 
     return this.thunder.call(
       this.callsign, thunderCall,
       /* ThunderJS treats "version" as its own parameter.
          To forward a version to the remote function, use "versionAsParameter". */
-      { packageId, "versionAsParameter": version }
+      { packageId }
     ).then(result => {
       this.LOG(thunderCall, " result:", JSON.stringify(result));
       return result;
@@ -89,14 +89,14 @@ export default class PackageManager {
     });
   }
 
-  config(packageId, version) {
+  config(packageId) {
     const thunderCall = "config";
 
     return this.thunder.call(
       this.callsign, thunderCall,
       /* ThunderJS treats "version" as its own parameter.
          To forward a version to the remote function, use "versionAsParameter". */
-      { packageId, "versionAsParameter": version }
+      { packageId,}
     ).then(result => {
       this.LOG(thunderCall, " result:", JSON.stringify(result));
       return result;
@@ -119,14 +119,14 @@ export default class PackageManager {
     });
   }
 
-  install(packageId, version, fileLocator) {
+  install(packageId, fileLocator) {
     const thunderCall = "install";
 
     return this.thunder.call(
       this.callsign, thunderCall,
       /* ThunderJS treats "version" as its own parameter.
          To forward a version to the remote function, use "versionAsParameter". */
-      { packageId, "versionAsParameter": version, fileLocator }
+      { packageId, fileLocator }
     ).then(result => {
       this.LOG(thunderCall, " result:", JSON.stringify(result));
       return result;
@@ -135,14 +135,14 @@ export default class PackageManager {
     });
   }
 
-  packageState(packageId, version) {
+  packageState(packageId) {
     const thunderCall = "packageState";
 
     return this.thunder.call(
       this.callsign, thunderCall,
       /* ThunderJS treats "version" as its own parameter.
          To forward a version to the remote function, use "versionAsParameter". */
-      { packageId, "versionAsParameter": version }
+      { packageId }
     ).then(result => {
       this.LOG(thunderCall, " result:", JSON.stringify(result));
       return result;
