@@ -670,10 +670,11 @@ export default class App extends Router.App {
 
 		const model = await XcastApi.getModelName();
 		modelName = (model || modelName) + serialnumber;
-		this.LOG("Xcast friendly name to be set: " + JSON.stringify(modelName));
+		const friendlyName = appApi.getUserFriendlyName() || modelName;
+		this.LOG("Xcast friendly name to be set: " + JSON.stringify(friendlyName));
 
 		try {
-			await appApi.setFriendlyName(modelName);
+			await appApi.setFriendlyName(friendlyName);
 
 			const standbyRes = await XcastApi.setStandbyBehavior("active");
 			this.LOG("Xcast setStandbyBehavior result: " + JSON.stringify(standbyRes));
