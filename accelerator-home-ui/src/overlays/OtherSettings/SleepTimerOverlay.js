@@ -19,6 +19,7 @@
 import { Language, Lightning, Router, Storage } from '@lightningjs/sdk'
 import SettingsItem from '../../items/SettingsItem'
 import InactivityHelper from '../../helpers/InactivityHelper';
+import { GLOBALS } from '../../Config/Config'
 
 var inactivityHelper = new InactivityHelper();
 
@@ -116,6 +117,14 @@ export default class SleepTimerScreen extends Lightning.Component {
                     Storage.set("TimeoutInterval", timeout);
                     this.fireAncestors('$sleepTimerText', timeout)
                     this.fireAncestors("$setInactivityIntervalStage", "SleepTimer", inactivityHelper._convertToMinutes(timeout));
+                    // Keep Energy Saver combined with Sleep Timer if it's already enabled
+                    if (GLOBALS.EnergySaverMode) {
+                        if (timeout !== 'Off') {
+                            this.fireAncestors('$setEnergySaverMode', timeout)
+                        } else {
+                            this.fireAncestors("$resetInactivityStage", "EnergySaver");
+                        }
+                    }
                 }
             }
         ]
