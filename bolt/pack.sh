@@ -23,14 +23,16 @@ START_DIR="$(pwd -P)"
 
 pushd ../accelerator-home-ui
 
-npm install
+#npm install
 
-npx lng dist
+#npm install -g @lightningjs/cli
 
-if [ ! -d "dist" ]; then
-  echo "Dist was not created!"
-  exit 1
-fi
+#lng dist
+
+#if [ ! -d "dist" ]; then
+ # echo "Dist was not created!"
+  #exit 1
+#fi
 
 TMPDIR=$(mktemp -d)
 mkdir -p "$TMPDIR/usr/share/refui"
