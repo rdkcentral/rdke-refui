@@ -36,7 +36,7 @@ export default class InactivityHelper {
     return {
       energySaver: parseInt(Storage.get("EnergySaverInterval"), 10),
       screenSaver: parseInt(Storage.get("ScreenSaverTimeoutInterval"), 10),
-      sleepTimer: parseInt(Storage.get("TimeoutInterval"), 10)
+      sleepTimer: this._convertToMinutes(Storage.get("TimeoutInterval"))
     };
   }
   
