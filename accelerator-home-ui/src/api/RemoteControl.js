@@ -24,10 +24,10 @@ let instance = null
 export default class RCApi {
   constructor() {
     this.thunder = ThunderJS(CONFIG.thunderConfig);
-    this.INFO = console.info;
-    this.LOG = console.log;
+    this.INFO = function() {};
+    this.LOG = function() {};
     this.ERR = console.error;
-    this.WARN = console.warn;
+    this.WARN = function() {};
     this.callsign = 'org.rdk.RemoteControl';
   }
 

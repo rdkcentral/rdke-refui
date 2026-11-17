@@ -25,10 +25,10 @@ const errorName = 'TextToSpeechError'
 
 export default class TTSApi {
     constructor() {
-        this.INFO = console.info;
-        this.LOG = console.log;
+        this.INFO = function() {};
+        this.LOG = function() {};
         this.ERR = console.error;
-        this.WARN = console.warn;
+        this.WARN = function() {};
     }
 
     activate() {

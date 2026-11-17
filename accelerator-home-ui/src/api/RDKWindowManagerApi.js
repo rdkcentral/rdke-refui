@@ -24,8 +24,8 @@ export default class RDKWindowManager {
   constructor() {
     this.thunder = ThunderJS(CONFIG.thunderConfig);
     this.callsign = 'org.rdk.RDKWindowManager';
-    this.INFO = console.info;
-    this.LOG = console.log;
+    this.INFO = function() {};
+    this.LOG = function() {};
     this.ERR = console.error;
   }
   static get() {

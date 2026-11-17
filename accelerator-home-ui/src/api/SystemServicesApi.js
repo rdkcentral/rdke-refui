@@ -41,7 +41,9 @@ const FWUpdateState = Object.freeze({
     FWUpdateStateDownloadComplete: 4,
     FWUpdateStateValidationComplete: 5,
     FWUpdateStatePreparingReboot: 6,
-    FWUpdateStateNoUpgradeNeeded: 7,
+    FWUpdateStateOnHoldForOptOut: 7,
+    FWUpdateStateCriticalReboot: 8,
+    FWUpdateStateUpgradeNotRequired: 9,
 });
 
 const FirmwareUpdateStateStr = Object.freeze({
@@ -52,7 +54,9 @@ const FirmwareUpdateStateStr = Object.freeze({
     [FWUpdateState.FWUpdateStateDownloadComplete]: { en: 'Download Complete', es: 'Descarga completa' },
     [FWUpdateState.FWUpdateStateValidationComplete]: { en: 'Validation Complete', es: 'Validación completa' },
     [FWUpdateState.FWUpdateStatePreparingReboot]: { en: 'Preparing to Reboot', es: 'Preparando para reiniciar' },
-    [FWUpdateState.FWUpdateStateNoUpgradeNeeded]: { en: 'System is up to date.', es: 'El sistema está actualizado.' },
+    [FWUpdateState.FWUpdateStateOnHoldForOptOut]: { en: 'On Hold for Opt-Out', es: 'En espera por exclusión' },
+    [FWUpdateState.FWUpdateStateCriticalReboot]: { en: 'Critical Reboot', es: 'Reinicio crítico' },
+    [FWUpdateState.FWUpdateStateUpgradeNotRequired]: { en: 'Upgrade Not Required', es: 'Actualización no requerida' },
 });
 
 function getFirmwareUpdateStateString(state, lang = 'en') {
@@ -68,7 +72,7 @@ class SystemServices {
         this.callsign = 'org.rdk.System';
         this.logtag = 'SysSrv: ';
         this.thunder = ThunderJS(CONFIG.thunderConfig);
-        this.INFO = function () { };
+        this.INFO = console.info;
         this.LOG = console.log;
         this.ERR = console.error;
         this.WARN = console.warn;
@@ -92,7 +96,7 @@ class SystemServices {
     _call(method, params = {}) {
         return new Promise((resolve, reject) => {
             this.thunder.call(this.callsign, method, params).then(result => {
-                this.INFO(this.logtag + `${method} result: ${JSON.stringify(result)}`);
+                //this.INFO(this.logtag + `${method} result: ${JSON.stringify(result)}`);
                 if (result) {
                     resolve(result);
                 } else {

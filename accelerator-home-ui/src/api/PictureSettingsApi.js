@@ -63,10 +63,10 @@ export default class PictureSettingsApi {
       _sharpness: {get: this.getSharpness.bind(this), set: this.setSharpness.bind(this)},
       _saturation: {get: this.getSaturation.bind(this), set: this.setSaturation.bind(this)}
     };
-    this.INFO = console.info;
-    this.LOG = console.log;
+    this.INFO = function() {};
+    this.LOG = function() {};
     this.ERR = console.error;
-    this.WARN = console.warn;
+    this.WARN = function() {};
   }
 
   activate() {

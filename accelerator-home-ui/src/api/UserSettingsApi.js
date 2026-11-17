@@ -24,10 +24,10 @@ const callsign = 'org.rdk.UserSettings'
 
 class UserSettingsApi {
     constructor() {
-        this.INFO = console.info;
-        this.LOG = console.log;
+        this.INFO = function() {};
+        this.LOG = function() {};
         this.ERR = console.error;
-        this.WARN = console.warn;
+        this.WARN = function() {};
     }
 
     setVoiceGuidance(enable) {

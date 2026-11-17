@@ -43,10 +43,10 @@ let deviceEventsSubscribed = false;
 
 export default class CECApi {
     constructor() {
-        this.INFO = console.info.bind(console);
-        this.LOG = console.log.bind(console);
+        this.INFO = function() {};
+        this.LOG = function() {};
         this.ERR = console.error.bind(console);
-        this.WARN = console.warn.bind(console);
+        this.WARN = function() {};
         this._events = new Map();
         this._subscribeToDeviceEvents();
     }

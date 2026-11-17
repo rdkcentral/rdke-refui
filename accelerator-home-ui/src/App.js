@@ -136,11 +136,11 @@ export default class App extends Router.App {
 			}
 		};
 
-		function updateAddress() {
+		const updateAddress = () => {
 			if (window.navigator.onLine) {
-				console.log("is online");
+				this.LOG("is online");
 			} else {
-				console.log(`is offline`)
+				this.LOG(`is offline`)
 			}
 		}
 		window.addEventListener("offline", updateAddress)
@@ -224,7 +224,7 @@ export default class App extends Router.App {
 	}
 
 	_captureKey(key) {
-		this.LOG("PowerState: " + JSON.stringify(GLOBALS.powerState) + " and got keycode: " + JSON.stringify(key.keyCode))
+		//this.LOG("PowerState: " + JSON.stringify(GLOBALS.powerState) + " and got keycode: " + JSON.stringify(key.keyCode))
 		if (GLOBALS.powerState === PowerState.POWER_STATE_DEEP_SLEEP || GLOBALS.powerState === PowerState.POWER_STATE_LIGHT_SLEEP) {
 			if (key.keyCode !== Keymap.Power) {
 				this.LOG("Ignoring non-power key press while device is in sleep state")
@@ -337,7 +337,7 @@ export default class App extends Router.App {
 			this.launchFeaturedApp("Amazon")
 			return true
 		} else if (key.keyCode == Keymap.Youtube && !Router.isNavigating()) {
-			console.log("YouTube key pressed, calling launchFeaturedApp");
+			//console.log("YouTube key pressed, calling launchFeaturedApp");
 			this.launchFeaturedApp("YouTube")
 			return true
 		} else if (key.keyCode == Keymap.Netflix && !Router.isNavigating()) { //launchLocation mapping is in launchApp method in AppApi.js
@@ -559,7 +559,7 @@ export default class App extends Router.App {
 		}
 		appApi.getPluginStatus('org.rdk.PowerManager').then(result => {
 			if (result && result.length > 0 && result[0].state === "activated") {
-				console.log("org.rdk.PowerManager is already activated");
+				//console.log("org.rdk.PowerManager is already activated");
 				this.subscribeToPowerChangeNotifications()
 				this._getPowerStatebeforeReboot();
 				this._setWakeupSourceConfig();
@@ -688,7 +688,7 @@ export default class App extends Router.App {
 
 			const enabledRes = await XcastApi.setEnabled(true);
 			GLOBALS.LocalDeviceDiscoveryStatus = true;
-			console.warn("Xcast setEnabled success: " + JSON.stringify(enabledRes));
+			this.WARN("Xcast setEnabled success: " + JSON.stringify(enabledRes));
 
 		} catch (pipelineError) {
 			GLOBALS.LocalDeviceDiscoveryStatus = false;
@@ -938,9 +938,10 @@ export default class App extends Router.App {
 			else {
 				GLOBALS.IsConnectedToInternet = false
 			}
-			console.warn("onInternetStatusChange:", data);
+			this.WARN("onInternetStatusChange:", data);
 		});
 	}
+
 	SubscribeToMiracastService() {
 		thunder.on('org.rdk.MiracastService.1', 'onClientConnectionRequest', data => {
 			this.LOG('onClientConnectionRequest ' + JSON.stringify(data));
@@ -1517,7 +1518,7 @@ export default class App extends Router.App {
 	}
 
 	launchFeaturedApp = async (appName) => {
-		console.log("Launching Featured App from AI 2.0: " + appName);
+		this.LOG("Launching Featured App from AI 2.0: " + appName);
 		let installedApps;
 		try {
 			installedApps = await AppManager.get().getInstalledApps();

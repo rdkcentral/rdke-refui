@@ -28,9 +28,9 @@ class XcastApi {
 
     this._thunder = ThunderJS(CONFIG.thunderConfig);
     this.logtag = "XcastApi:";
-    this.LOG = console.log;
+    this.LOG = function() {};
     this.ERR = console.error;
-    this.INFO = console.info;
+    this.INFO = function() {};
     this.callsign = "org.rdk.Xcast";
     this._events = new Map();
     this._registeredApps = [];

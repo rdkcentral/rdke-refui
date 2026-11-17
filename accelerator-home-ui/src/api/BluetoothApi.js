@@ -31,10 +31,10 @@ export default class BluetoothApi {
     this._connectedDevices = []
     this.btStatus = false
     this._thunder = ThunderJS(CONFIG.thunderConfig)
-    this.INFO = console.info;
-    this.LOG = console.log;
+    this.INFO = function() {};
+    this.LOG = function() {};
     this.ERR = console.error;
-    this.WARN = console.warn;
+    this.WARN = function() {};
   }
 
   /**

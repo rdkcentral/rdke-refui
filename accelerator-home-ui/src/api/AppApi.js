@@ -35,8 +35,8 @@ export default class AppApi {
   constructor() {
     this.activatedForeground = false
     this._events = new Map()
-    this.INFO = console.info;
-    this.LOG = console.log;
+    this.INFO = function(){};
+    this.LOG = function(){};
     this.ERR = console.error;
     this.WARN = console.warn;
   }
@@ -783,22 +783,6 @@ export default class AppApi {
         })
     })
   }
-
-  //Get download percentage
-  getFirmwareDownloadPercent() {
-    return new Promise((resolve) => {
-      thunder
-        .call('org.rdk.System', 'getFirmwareDownloadPercent')
-        .then(result => {
-          resolve(result)
-        })
-        .catch(err => {
-          this.ERR("AppAPI getFirmwareDownloadPercent error:", JSON.stringify(err, 3, null))
-          resolve(false)
-        })
-    })
-  }
-
 
   // 5. Device Info
   systeminfo() {

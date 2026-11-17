@@ -23,8 +23,8 @@ class RuntimeManager {
   constructor() {
     this.thunder = ThunderJS(CONFIG.thunderConfig);
     this.callsign = 'org.rdk.RuntimeManager';
-    this.INFO = console.info;
-    this.LOG = console.log;
+    this.INFO = function() {};
+    this.LOG = function() {};
     this.ERR = console.error;
   }
 }

@@ -38,10 +38,10 @@ export default class HDMIApi {
             Resolution1080: [1920, 1080],
             Resolution2160: [3840, 2160]
         }
-        this.INFO = console.info;
-        this.LOG = console.log;
+        this.INFO = function() {};
+        this.LOG = function() {};
         this.ERR = console.error;
-        this.WARN = console.warn;
+        this.WARN = function() {};
     }
 
     activate() {

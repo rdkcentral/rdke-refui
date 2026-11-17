@@ -55,6 +55,7 @@ export default class FirmwareScreen extends Lightning.Component {
         if (this.updateInProgress) {
             this.LOG('Firmware update is in progress; navigation is blocked. state=' + state);
         }
+        this._logFirmwareFlags();
     }
 
     updateFirmwareStateUI(state) {
@@ -99,7 +100,6 @@ export default class FirmwareScreen extends Lightning.Component {
 
         if (state > FWUpdateState.FWUpdateStateFailed) {
             this.showUpdateButton(state);
-            this.showDownloadFirmwareInfo();
 
             if (state === FWUpdateState.FWUpdateStatePreparingReboot) {
                 this.FWUpdateRebooting = true;
@@ -232,6 +232,17 @@ export default class FirmwareScreen extends Lightning.Component {
         }
     }
 
+    _logFirmwareFlags() {
+        this.LOG('GLOBALS._maintenanceIsCriticalMaintenance=' + GLOBALS.maintenanceIsCriticalMaintenance);
+        this.LOG('GLOBALS._maintenanceIsRebootPending=' + GLOBALS.maintenanceIsRebootPending);
+        this.LOG('GLOBALS._lastFirmwareUpdateState=' + GLOBALS.lastFirmwareUpdateState);
+        this.LOG('GLOBALS._skipFirmwareUpdateRetry=' + GLOBALS.skipFirmwareUpdateRetry);
+        this.LOG('this.FWUpdateRebootImmediately=' + this.FWUpdateRebootImmediately);
+        this.LOG('this.FWUpdateIsRebootDeferred=' + this.FWUpdateIsRebootDeferred);
+        this.LOG('this.FWUpdateRebooting=' + this.FWUpdateRebooting);
+        this.LOG('this.updateInProgress=' + this.updateInProgress);
+    }
+
     _init() {
         this.FWUpdateRebootImmediately = false;
         this.FWUpdateIsRebootDeferred = false;
@@ -281,6 +292,7 @@ export default class FirmwareScreen extends Lightning.Component {
             }
         });
         this.showDownloadPercent();
+        this._logFirmwareFlags();
     }
 
     startAutoRebootCountdown() {
@@ -316,7 +328,10 @@ export default class FirmwareScreen extends Lightning.Component {
     }
 
     showUpdateButton(state){
-        if(state > FWUpdateState.FWUpdateStateFailed || state === FWUpdateState.FWUpdateStateDownloading) {
+        // Hide button during active firmware operations or when firmware is already being processed
+        if(state > FWUpdateState.FWUpdateStateFailed ||
+           state === FWUpdateState.FWUpdateStateDownloading ||
+           state === FWUpdateState.FWUpdateStateRequesting) {
             this.tag("FirmwareUpdate").alpha = 0
             this._setState('Idle')
         } else {
@@ -360,6 +375,7 @@ export default class FirmwareScreen extends Lightning.Component {
             this.tag('Version.Title').text.text = Language.translate("Firmware Versions: ") + res.currentFWVersion
             this.tag('DownloadedVersion.Title').text.text = Language.translate('Downloaded Firmware Version: ') + `${res.downloadedFWVersion ? res.downloadedFWVersion : 'NA'}`
         });
+        this._logFirmwareFlags();
     }
 
     showDownloadPercent() {
@@ -409,7 +425,8 @@ export default class FirmwareScreen extends Lightning.Component {
 
     _handleBack() {
         if (this.updateInProgress || this.FWUpdateRebooting) {
-            this.LOG("Firmware update in progress; ignoring back navigation" + JSON.stringify(GLOBALS.lastFirmwareUpdateState));
+            this.LOG("Firmware update in progress; ignoring back navigation - lastFirmwareUpdateState:" + JSON.stringify(GLOBALS.lastFirmwareUpdateState));
+            this.LOG("this.updateInProgress: " + this.updateInProgress + " this.FWUpdateRebooting: " + this.FWUpdateRebooting);
             this.tag('DownloadedPercent.Title').visible = true;
             this.tag('DownloadedPercent.Title').text.text = Language.translate("Updating the system, please wait") + "...";
             return;

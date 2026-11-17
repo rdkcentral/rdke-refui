@@ -39,10 +39,10 @@ let appApi = new AppApi();
  */
 export default class HomeApi {
   constructor() {
-    this.INFO = console.info;
-    this.LOG = console.log;
+    this.INFO = function() {};
+    this.LOG = function() {};
     this.ERR = console.error;
-    this.WARN = console.warn;
+    this.WARN = function() {};
   }
   /**
    * Function to get details for app listing.
