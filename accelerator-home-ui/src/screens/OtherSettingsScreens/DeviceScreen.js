@@ -63,8 +63,32 @@ export default class DeviceScreen extends Lightning.Component {
                         src: Utils.asset('images/settings/Arrow.png'),
                     },
                 },
-                TimeZone: {
+                DeviceName: {
                     y: 90,
+                    type: SettingsMainItem,
+                    Title: {
+                        x: 10,
+                        y: 45,
+                        mountY: 0.5,
+                        text: {
+                            text: Language.translate('Device Name'),
+                            textColor: COLORS.titleColor,
+                            fontFace: CONFIG.language.font,
+                            fontSize: 25,
+                        }
+                    },
+                    Button: {
+                        h: 45,
+                        w: 45,
+                        x: 1600,
+                        mountX: 1,
+                        y: 45,
+                        mountY: 0.5,
+                        src: Utils.asset('images/settings/Arrow.png'),
+                    },
+                },
+                TimeZone: {
+                    y: 180,
                     type: SettingsMainItem,
                     Title: {
                         x: 10,
@@ -88,7 +112,7 @@ export default class DeviceScreen extends Lightning.Component {
                     },
                 },
                 Firmware: {
-                    y: 180,
+                    y: 270,
                     type: SettingsMainItem,
                     Title: {
                         x: 10,
@@ -112,7 +136,7 @@ export default class DeviceScreen extends Lightning.Component {
                     },
                 },
                 Reboot: {
-                    y: 270,
+                    y: 360,
                     type: SettingsMainItem,
                     Title: {
                         x: 10,
@@ -127,7 +151,7 @@ export default class DeviceScreen extends Lightning.Component {
                     },
                 },
                 Reset: {
-                    y: 360,
+                    y: 450,
                     type: SettingsMainItem,
                     Title: {
                         x: 10,
@@ -183,11 +207,30 @@ export default class DeviceScreen extends Lightning.Component {
                     // this._setState('Reboot');
                 }
                 _handleDown() {
-                    this._setState('TimeZone')
+                    this._setState('DeviceName')
                 }
                 _handleEnter() {
                     if(!Router.isNavigating()){
                         Router.navigate('settings/advanced/device/info')
+                    }
+                }
+            },
+            class DeviceName extends this{
+                $enter() {
+                    this.tag('DeviceName')._focus()
+                }
+                $exit() {
+                    this.tag('DeviceName')._unfocus()
+                }
+                _handleUp() {
+                    this._setState('Info');
+                }
+                _handleDown() {
+                    this._setState('TimeZone')
+                }
+                _handleEnter() {
+                    if(!Router.isNavigating()){
+                        Router.navigate('settings/advanced/device/name')
                     }
                 }
             },
@@ -199,7 +242,7 @@ export default class DeviceScreen extends Lightning.Component {
                     this.tag('TimeZone')._unfocus()
                 }
                 _handleUp() {
-                    this._setState('Info');
+                    this._setState('DeviceName');
                 }
                 _handleDown() {
                     this._setState('Firmware')
