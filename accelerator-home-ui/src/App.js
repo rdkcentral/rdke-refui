@@ -844,7 +844,7 @@ export default class App extends Router.App {
 				const downloadPercent = percent?.downloadPercent;
 				const firmwareStateKey = `${res.firmwareUpdateState ?? 'unknown'}:${downloadPercent ?? 'n/a'}`;
 				if (this._lastFirmwareStateLog !== firmwareStateKey) {
-					this.LOG("App init FirmwareUpdateState: " + SysSrvApi.getFirmwareUpdateStateString(res?.firmwareUpdateState)
+					this.LOG("App init FirmwareUpdateState: " + SysSrvApi.getFirmwareUpdateStateString(res.firmwareUpdateState)
 						+ ", dwnld %: " + JSON.stringify(downloadPercent) + ", IsCriticalMaintenance="
 						+ GLOBALS.maintenanceIsCriticalMaintenance + ", IsRebootPending=" + GLOBALS.maintenanceIsRebootPending);
 					this._lastFirmwareStateLog = firmwareStateKey;
@@ -878,6 +878,8 @@ export default class App extends Router.App {
 						this.maintenanceRebootIntervalTimer = null;
 						this.LOG("App init Cleared maintenanceRebootIntervalTimer to avoid duplicate reboot handling.");
 					}
+					if (this._maintenanceRebootScheduled) return;
+					this._maintenanceRebootScheduled = true;
 					this.LOG("App init Rebooting device to complete the maintenance update.")
 					// Make this app in foreground to show the reboot screen.
 					let timeoutMs = 100;
