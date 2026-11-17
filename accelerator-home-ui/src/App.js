@@ -1179,6 +1179,7 @@ export default class App extends Router.App {
 	initializeInactivity() {
         this.LOG('Into initialize');
 
+        GLOBALS.EnergySaverMode = !!Storage.get('EnergySaverMode');
         const { energySaver, screenSaver, sleepTimer } = inactivityHelper.getInactivityConfig();
 		this.LOG(`Loaded config: energySaver=${energySaver}, screenSaver=${screenSaver}, sleep=${sleepTimer}`)
 
@@ -1326,8 +1327,7 @@ export default class App extends Router.App {
 		appApi.getPowerState().then(res => {
 			this.LOG("getPowerState: " + JSON.stringify(res));
 			if (res.currentState === "ON") {
-				const { energySaver } = inactivityHelper.getInactivityConfig();
-				if (inactivityHelper.isValidTimeout(energySaver)) {
+				if (GLOBALS.EnergySaverMode) {
 					this.LOG("Energy Saver is enabled — going to DEEP_SLEEP on power key press");
 					inactivityHelper._enterSleepMode();
 				} else {
