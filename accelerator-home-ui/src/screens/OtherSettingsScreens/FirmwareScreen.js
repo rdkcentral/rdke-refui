@@ -30,7 +30,7 @@ import MaintMgrApi, { MaintenanceStatus, UpgradeOptOutMode, MaintenanceMode, isM
 export default class FirmwareScreen extends Lightning.Component {
     constructor(...args) {
         super(...args);
-        this.INFO = console.info;
+        this.INFO = function() {};
         this.LOG = console.log;
         this.ERR = console.error;
         this.WARN = console.warn;
@@ -239,14 +239,14 @@ export default class FirmwareScreen extends Lightning.Component {
     }
 
     _logFirmwareFlags() {
-        this.LOG('GLOBALS._maintenanceIsCriticalMaintenance=' + GLOBALS.maintenanceIsCriticalMaintenance);
-        this.LOG('GLOBALS._maintenanceIsRebootPending=' + GLOBALS.maintenanceIsRebootPending);
-        this.LOG('GLOBALS._lastFirmwareUpdateState=' + GLOBALS.lastFirmwareUpdateState);
-        this.LOG('GLOBALS._skipFirmwareUpdateRetry=' + GLOBALS.skipFirmwareUpdateRetry);
-        this.LOG('this.FWUpdateRebootImmediately=' + this.FWUpdateRebootImmediately);
-        this.LOG('this.FWUpdateIsRebootDeferred=' + this.FWUpdateIsRebootDeferred);
-        this.LOG('this.FWUpdateRebooting=' + this.FWUpdateRebooting);
-        this.LOG('this.updateInProgress=' + this.updateInProgress);
+        this.INFO('GLOBALS._maintenanceIsCriticalMaintenance=' + GLOBALS.maintenanceIsCriticalMaintenance);
+        this.INFO('GLOBALS._maintenanceIsRebootPending=' + GLOBALS.maintenanceIsRebootPending);
+        this.INFO('GLOBALS._lastFirmwareUpdateState=' + GLOBALS.lastFirmwareUpdateState);
+        this.INFO('GLOBALS._skipFirmwareUpdateRetry=' + GLOBALS.skipFirmwareUpdateRetry);
+        this.INFO('this.FWUpdateRebootImmediately=' + this.FWUpdateRebootImmediately);
+        this.INFO('this.FWUpdateIsRebootDeferred=' + this.FWUpdateIsRebootDeferred);
+        this.INFO('this.FWUpdateRebooting=' + this.FWUpdateRebooting);
+        this.INFO('this.updateInProgress=' + this.updateInProgress);
     }
 
     _init() {
