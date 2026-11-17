@@ -59,7 +59,7 @@ const FirmwareUpdateStateStr = Object.freeze({
     [FWUpdateState.FWUpdateStateUpgradeNotRequired]: { en: 'Upgrade Not Required', es: 'Actualización no requerida' },
 });
 
-function getFirmwareUpdateStateString(state, lang = 'en') {
+function getFirmwareUpdateStateString(state, lang = CONFIG.language) {
     return FirmwareUpdateStateStr[state]?.[lang] ?? ((lang === 'en') ? 'Unknown state' : 'Estado desconocido');
 }
 

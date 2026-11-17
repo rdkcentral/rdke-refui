@@ -829,6 +829,59 @@ export default class App extends Router.App {
 		}
 	}
 
+	_startMaintenanceRebootPolling() {
+		if (this.maintenanceRebootIntervalTimer) return;
+
+		this.maintenanceRebootIntervalTimer = setInterval(async () => {
+			await SysSrvApi.getFirmwareUpdateState().then(async res => {
+				let percent = {};
+				if (res.success && res.firmwareUpdateState === FWUpdateState.FWUpdateStateDownloading) {
+					await SysSrvApi.getFirmwareDownloadPercent().then(p => { percent = p; });
+				} else {
+					percent = { downloadPercent: 100 };
+				}
+				const firmwareStateKey = `${res.firmwareUpdateState ?? 'unknown'}:${percent.downloadPercent ?? 'n/a'}`;
+				if (this._lastFirmwareStateLog !== firmwareStateKey) {
+					this.LOG("App init FirmwareUpdateState: " + SysSrvApi.getFirmwareUpdateStateString(res?.firmwareUpdateState) + ", dwnld %: " + JSON.stringify(percent.downloadPercent) + ", IsCriticalMaintenance=" + GLOBALS.maintenanceIsCriticalMaintenance + ", IsRebootPending=" + GLOBALS.maintenanceIsRebootPending);
+					this._lastFirmwareStateLog = firmwareStateKey;
+				}
+				if (res.success &&
+					res.firmwareUpdateState === FWUpdateState.FWUpdateStatePreparingReboot &&
+					(!GLOBALS.maintenanceIsRebootPending || !GLOBALS.maintenanceIsCriticalMaintenance)) {
+					const skipKey = `prepareRebootGate:${GLOBALS.maintenanceIsCriticalMaintenance}:${GLOBALS.maintenanceIsRebootPending}`;
+					if (this._lastPrepareRebootGateLog !== skipKey) {
+						this.LOG("App init Skip reboot: firmware update is Preparing to Reboot but IsCriticalMaintenance=" + GLOBALS.maintenanceIsCriticalMaintenance + " IsRebootPending=" + GLOBALS.maintenanceIsRebootPending);
+						this._lastPrepareRebootGateLog = skipKey;
+					}
+				}
+				if (res.success &&
+					res.firmwareUpdateState === FWUpdateState.FWUpdateStatePreparingReboot &&
+					GLOBALS.maintenanceIsRebootPending && GLOBALS.maintenanceIsCriticalMaintenance) {
+					if (this.maintenanceRebootIntervalTimer) {
+						clearInterval(this.maintenanceRebootIntervalTimer);
+						this.maintenanceRebootIntervalTimer = null;
+						this.LOG("App init Cleared maintenanceRebootIntervalTimer to avoid duplicate reboot handling.");
+					}
+					this.LOG("App init Rebooting device to complete the maintenance update.")
+					// Make this app in foreground to show the reboot screen.
+					let timeoutMs = 100;
+					if (GLOBALS.topmostApp !== GLOBALS.selfClientName) {
+						timeoutMs = 6000;
+						this.LOG("App init Exiting topmost app " + GLOBALS.topmostApp + ", UI to foreground for reboot.")
+					}
+					const navigateToRebootWhenIdle = () => {
+						if (Router.isNavigating()) {
+							setTimeout(navigateToRebootWhenIdle, 100);
+							return;
+						}
+						this.jumpToRoute('settings/advanced/device/reboot');
+					};
+					setTimeout(navigateToRebootWhenIdle, timeoutMs);
+				}
+			});
+		}, 3000);
+	}
+
 	async startMaintenanceHandling() {
 		this._lastMaintenanceNotificationState = this._lastMaintenanceNotificationState ?? null;
 		this._lastMaintenanceStatusLog = this._lastMaintenanceStatusLog ?? null;
@@ -855,6 +908,9 @@ export default class App extends Router.App {
 						if (res?.success) {
 							GLOBALS.maintenanceIsCriticalMaintenance = Boolean(res.isCriticalMaintenance);
 							GLOBALS.maintenanceIsRebootPending = Boolean(res.isRebootPending);
+							if (isMaintenanceActive(maintenanceStatus)) {
+								this._startMaintenanceRebootPolling();
+							}
 						}
 					});
 				}
@@ -876,55 +932,7 @@ export default class App extends Router.App {
 						this._lastMaintenanceStartTime = res?.startTime;
 					}
 				});
-				if (!this.maintenanceRebootIntervalTimer) {
-					this.maintenanceRebootIntervalTimer = setInterval(async () => {
-						await SysSrvApi.getFirmwareUpdateState().then(async res => {
-							let percent = {};
-							if (res.success && res.firmwareUpdateState === FWUpdateState.FWUpdateStateDownloading) {
-								await SysSrvApi.getFirmwareDownloadPercent().then(p => { percent = p; });
-							} else {
-								percent = { downloadPercent: 100 };
-							}
-							const firmwareStateKey = `${res.firmwareUpdateState ?? 'unknown'}:${percent.downloadPercent ?? 'n/a'}`;
-							if (this._lastFirmwareStateLog !== firmwareStateKey) {
-								this.LOG("App init FirmwareUpdateState: " + SysSrvApi.getFirmwareUpdateStateString(res?.firmwareUpdateState) + ", dwnld %: " + JSON.stringify(percent?.downloadPercent) + ", IsCriticalMaintenance=" + GLOBALS.maintenanceIsCriticalMaintenance + ", IsRebootPending=" + GLOBALS.maintenanceIsRebootPending);
-								this._lastFirmwareStateLog = firmwareStateKey;
-							}
-							if (res.success &&
-								res.firmwareUpdateState === FWUpdateState.FWUpdateStatePreparingReboot &&
-								(!GLOBALS.maintenanceIsRebootPending || !GLOBALS.maintenanceIsCriticalMaintenance)) {
-								const skipKey = `prepareRebootGate:${GLOBALS.maintenanceIsCriticalMaintenance}:${GLOBALS.maintenanceIsRebootPending}`;
-								if (this._lastPrepareRebootGateLog !== skipKey) {
-									this.LOG("App init Skip reboot: firmware update is Preparing to Reboot but IsCriticalMaintenance=" + GLOBALS.maintenanceIsCriticalMaintenance + " IsRebootPending=" + GLOBALS.maintenanceIsRebootPending);
-									this._lastPrepareRebootGateLog = skipKey;
-								}
-							}
-							if (res.success &&
-								res.firmwareUpdateState === FWUpdateState.FWUpdateStatePreparingReboot &&
-								GLOBALS.maintenanceIsRebootPending && GLOBALS.maintenanceIsCriticalMaintenance) {
-								if (this.maintenanceRebootIntervalTimer) {
-									clearInterval(this.maintenanceRebootIntervalTimer);
-									this.maintenanceRebootIntervalTimer = null;
-									this.LOG("App init Cleared maintenanceRebootIntervalTimer to avoid duplicate reboot handling.");
-								}
-								this.LOG("App init Rebooting device to complete the maintenance update.")
-								// Make this app in foreground to show the reboot screen.
-								let timeoutMs = 100;
-								if (GLOBALS.topmostApp !== GLOBALS.selfClientName) {
-									timeoutMs = 6000;
-									this.LOG("App init Exiting topmost app " + GLOBALS.topmostApp + ", UI to foreground for reboot.")
-								}
-								setTimeout(function navigateToRebootWhenIdle() {
-									if (Router.isNavigating()) {
-										setTimeout(navigateToRebootWhenIdle, 100);
-										return;
-									}
-									jumpToRoute('settings/advanced/device/reboot');
-								}, timeoutMs);
-							}
-						});
-					}, 3000);
-				}
+				this._startMaintenanceRebootPolling();
 			}
 		});
 	}

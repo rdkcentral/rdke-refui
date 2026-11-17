@@ -228,7 +228,10 @@ export default class FirmwareScreen extends Lightning.Component {
     }
 
     _unfocus() {
-        this.clearFirmwareUpdateCallbacks();
+        if (this.autoRebootStartedCB) {
+            clearInterval(this.autoRebootStartedCB);
+            this.autoRebootStartedCB = null;
+        }
         if (this.downloadInterval) {
             clearInterval(this.downloadInterval);
             this.downloadInterval = null
@@ -380,7 +383,7 @@ export default class FirmwareScreen extends Lightning.Component {
                     const verRes = await SysSrvApi.getSystemVersions();
                     if (verRes?.success && verRes?.stbVersion && verRes?.downloadedFWVersion && verRes.stbVersion === verRes.downloadedFWVersion) {
                         this.tag('State.Title').text.text = Language.translate("Firmware State: ") + Language.translate("System is up to date");
-                        GLOBALS.lastFirmwareUpdateState = FWUpdateState.FWUpdateStateNoUpgradeNeeded;
+                        GLOBALS.lastFirmwareUpdateState = FWUpdateState.FWUpdateStateUpgradeNotRequired;
                     }
                 }
             } else {

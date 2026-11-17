@@ -149,7 +149,7 @@ class MaintenanceMgrApi {
         return this._call('getMaintenanceStartTime');
     }
 
-    setMaintenanceMode(maintenanceMode = MaintenanceMode.BACKGROUND, optOut = UpgradeOutOutMode.NONE) {
+    setMaintenanceMode(maintenanceMode = MaintenanceMode.BACKGROUND, optOut = UpgradeOptOutMode.NONE) {
         return this._call('setMaintenanceMode', { maintenanceMode, optOut });
     }
 
