@@ -78,26 +78,26 @@ async function getConfigUrlFromRFC() {
       console.log("Resolved config URL from RFC ");
       return resolvedConfigUrl;
     }
-    //console.warn("Config RFC URL empty or invalid");
+    console.warn("Config RFC URL empty or invalid");
     return null;
   } catch (err) {
-    //console.error("Failed to get config URL from RFC", err);
+    console.error("Failed to get config URL from RFC", err);
     return null;
   }
 }
 
 async function getConfigUrlFromPackageManager() {
   try {
-    //console.log("Resolving config URL from PackageManager...");
+    console.log("Resolving config URL from PackageManager...");
     const config = await PackageManager.get().configuration();
-    //console.log("Resolved server config URL from PackageManager: ");
+    console.log("Resolved server config URL from PackageManager: ");
     if (typeof config?.configUrl !== "string" || config.configUrl.trim().length === 0) {
       throw new Error("Invalid config: " + JSON.stringify(config));
     }
 
     return config.configUrl.trim();
   } catch (err) {
-    //console.error("Failed to resolve config URL from PackageManager", err);
+    console.error("Failed to resolve config URL from PackageManager", err);
     throw err;
   }
 }
@@ -114,7 +114,7 @@ async function getServerURL() {
         if (!url) {
           url = await getConfigUrlFromPackageManager();
         }
-        //console.log(`Server URL: ${url}`);
+        console.log(`Server URL: ${url}`);
         return url;
       }
 
@@ -210,7 +210,7 @@ class LegacyAppCatalogHandler {
     try {
       return await this.fetchStoreObject(request);
     } catch (err) {
-      //console.error(`fetchStoreObject(${request}) ${err}`);
+      console.error(`fetchStoreObject(${request}) ${err}`);
       throw err;
     }
   }
@@ -255,7 +255,7 @@ class AppCatalogHandler {
     const response = await this.fetch(url, options);
     const responseObj = await response.json();
     if (debug) {
-      //console.log(`Auth response: ${JSON.stringify(responseObj, null, 2)}`);
+      console.log(`Auth response: ${JSON.stringify(responseObj, null, 2)}`);
     }
     return responseObj;
   }
@@ -267,7 +267,7 @@ class AppCatalogHandler {
     let timeout = Math.min(Math.max(expiresIn / 2, MIN), MAX);
 
     if (debug) {
-      //console.log(`Calculated timeout: ${timeout}`);
+      console.log(`Calculated timeout: ${timeout}`);
     }
 
     return timeout * 1000;
@@ -287,7 +287,7 @@ class AppCatalogHandler {
         const refreshResponse = await this.refresh();
         this.scheduleRefresh(refreshResponse, onAuthExpired);
       } catch (err) {
-        //console.warn(`Refresh failed: ${err}`);
+        console.warn(`Refresh failed: ${err}`);
         onAuthExpired();
       }
     }, this.calculateTimeout(expiresIn));
@@ -314,7 +314,7 @@ class AppCatalogHandler {
     const fetchResponse = await this.fetch(url, { method: 'GET', redirect: 'follow' });
     const result = await fetchResponse.json();
     if (debug) {
-      //console.log(`${url} : ${JSON.stringify(result, null, 2)}`);
+      console.log(`${url} : ${JSON.stringify(result, null, 2)}`);
     }
     return result;
   }
@@ -329,7 +329,7 @@ class AppCatalogHandler {
     try {
       return await this.fetchAppCatalogObject(request);
     } catch (err) {
-      //console.error(`fetchAppCatalogObject(${request}) ${err}`);
+      console.error(`fetchAppCatalogObject(${request}) ${err}`);
       throw err;
     }
   }
@@ -339,7 +339,7 @@ class AppCatalogHandler {
     const response = await this.fetch(url, { method: 'GET', redirect: 'follow' });
     const result = await response.json();
     if (debug) {
-      //console.log(`${url}: ${JSON.stringify(result, null, 2)}`);
+      console.log(`${url}: ${JSON.stringify(result, null, 2)}`);
     }
     return result;
   }
@@ -390,7 +390,7 @@ async function initAppCatalogHandler() {
         handler.scheduleRefresh(refreshResponse, () => handleAuthExpired(handler));
         appCatalogHandler = handler;
       } catch (err) {
-        //console.log(`initAppCatalogHandler() ${err}`);
+        console.log(`initAppCatalogHandler() ${err}`);
         if (err instanceof AuthExpiredError) {
           eventTarget.dispatchEvent(new AuthNeeded());
         } else {
@@ -425,7 +425,7 @@ export async function login(user, pass) {
     eventTarget.dispatchEvent(new RefreshNeeded());
     return true;
   } catch (err) {
-    //console.warn(`Login failed: ${err}`);
+    console.warn(`Login failed: ${err}`);
     return false;
   }
 }
