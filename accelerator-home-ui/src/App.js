@@ -879,6 +879,14 @@ export default class App extends Router.App {
 					};
 					setTimeout(navigateToRebootWhenIdle, timeoutMs);
 				}
+				if ((res.firmwareUpdateState === FWUpdateState.FWUpdateStateOnHoldForOptOut) ||
+					(res.firmwareUpdateState === FWUpdateState.FWUpdateStateUpgradeNotRequired)) {
+					if (this.maintenanceRebootIntervalTimer) {
+						clearInterval(this.maintenanceRebootIntervalTimer);
+						this.maintenanceRebootIntervalTimer = null;
+						this.LOG("App init Cleared maintenanceRebootIntervalTimer due to firmware update on hold or upgrade not required.");
+					}
+				}
 			});
 		}, 3000);
 	}
