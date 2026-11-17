@@ -21,6 +21,7 @@ import { COLORS } from '../../colors/Colors'
 import { GLOBALS, CONFIG } from '../../Config/Config'
 import SysSrvApi, { FWUpdateState, FWUpdateAvailableEnum } from '../../api/SystemServicesApi';
 import PowerManagerApi from '../../api/PowerManagerApi';
+import MaintMgrApi, { MaintenanceStatus, UpgradeOptOutMode, MaintenanceMode, isMaintenanceActive } from '../../api/MaintenanceMgrApi';
 
 /**
  * Class for Firmware screen.
@@ -277,7 +278,7 @@ export default class FirmwareScreen extends Lightning.Component {
                 if (params.updateAvailable) {
                     switch(params.updateAvailableEnum) {
                         case FWUpdateAvailableEnum.FW_UPDATE_AVAILABLE:
-                            this.FWUpdateRebootImmediately = !!params.rebootImmediately;
+                            this.FWUpdateRebootImmediately = params.rebootImmediately;
                             this.showUpdateButton(params.updateAvailable)
                             break;
                         case FWUpdateAvailableEnum.FW_MATCH_CURRENT_VER:
@@ -349,32 +350,55 @@ export default class FirmwareScreen extends Lightning.Component {
     }
 
     async _focus() {
-        this.downloadInterval = null;
-        await SysSrvApi.getFirmwareUpdateState().then(async res => {
-            if (res.success) {
-                this.LOG("getFirmwareUpdateState from firmware screen " + JSON.stringify(res))
-                const firmwareState = res.firmwareUpdateState;
+        if (this.downloadInterval) {
+            clearInterval(this.downloadInterval);
+            this.downloadInterval = null;
+        }
+        try {
+            const maintRes = await MaintMgrApi.getMaintenanceActivityStatus();
+            this.LOG("getMaintenanceActivityStatus from firmware screen " + JSON.stringify(maintRes));
+            if (maintRes?.success && isMaintenanceActive(maintRes?.maintenanceStatus)) {
+                this.updateInProgress = true;
+                GLOBALS.maintenanceIsCriticalMaintenance = Boolean(maintRes?.isCriticalMaintenance);
+                GLOBALS.maintenanceIsRebootPending = Boolean(maintRes?.isRebootPending);
+                this.FWUpdateRebootImmediately = GLOBALS.maintenanceIsCriticalMaintenance && GLOBALS.maintenanceIsRebootPending;
+                // Here we only care about critical maintenance that requires an immediate reboot.
+                this.FWUpdateIsRebootDeferred = !this.FWUpdateRebootImmediately;
+            }
+
+            const stateRes = await SysSrvApi.getFirmwareUpdateState();
+            if (stateRes?.success) {
+                this.LOG("getFirmwareUpdateState from firmware screen " + JSON.stringify(stateRes));
+                const firmwareState = stateRes.firmwareUpdateState;
                 this.updateFirmwareStateUI(firmwareState);
-                if (FWUpdateState.FWUpdateStatePreparingReboot < firmwareState) {
-                    await SysSrvApi.getSystemVersions().then(res => {
-                        if (res.success && res?.stbVersion === res?.downloadedFWVersion) {
-                            this.tag('State.Title').text.text = Language.translate("Firmware State: ") + Language.translate("System is up to date");
-                            GLOBALS.lastFirmwareUpdateState = FWUpdateState.FWUpdateStateNoUpgradeNeeded;
-                        }
-                    });
-                }
-                if (FWUpdateState.FWUpdateStateDownloading === firmwareState) {
+
+                if (firmwareState === FWUpdateState.FWUpdateStateDownloading) {
                     this.startDownloadPercentageTimer();
+                } else if (firmwareState >= FWUpdateState.FWUpdateStateValidationComplete) {
+                    const verRes = await SysSrvApi.getSystemVersions();
+                    if (verRes?.success && verRes?.stbVersion && verRes?.downloadedFWVersion && verRes.stbVersion === verRes.downloadedFWVersion) {
+                        this.tag('State.Title').text.text = Language.translate("Firmware State: ") + Language.translate("System is up to date");
+                        GLOBALS.lastFirmwareUpdateState = FWUpdateState.FWUpdateStateNoUpgradeNeeded;
+                    }
                 }
             } else {
                 this.updateInProgress = false;
             }
-        });
-        await SysSrvApi.getDownloadedFirmwareInfo().then(res => {
-            this.LOG("getDownloadedFirmwareInfo : " + JSON.stringify(res));
-            this.tag('Version.Title').text.text = Language.translate("Firmware Versions: ") + res.currentFWVersion
-            this.tag('DownloadedVersion.Title').text.text = Language.translate('Downloaded Firmware Version: ') + `${res.downloadedFWVersion ? res.downloadedFWVersion : 'NA'}`
-        });
+
+            const dlInfoRes = await SysSrvApi.getDownloadedFirmwareInfo();
+            this.LOG("getDownloadedFirmwareInfo : " + JSON.stringify(dlInfoRes));
+            if (dlInfoRes?.success) {
+                this.tag('Version.Title').text.text = Language.translate("Firmware Versions: ") + (dlInfoRes.currentFWVersion || 'NA');
+                this.tag('DownloadedVersion.Title').text.text = Language.translate('Downloaded Firmware Version: ') + (dlInfoRes.downloadedFWVersion || 'NA');
+
+                if (dlInfoRes.isRebootDeferred) {
+                    this.tag('State.Title').text.text = Language.translate("Firmware State: ") + Language.translate("Reboot pending to complete update");
+                }
+            }
+        } catch (err) {
+            this.LOG("Error in firmware screen _focus: " + err);
+            this.updateInProgress = false;
+        }
         this._logFirmwareFlags();
     }
 

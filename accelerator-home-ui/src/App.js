@@ -63,7 +63,7 @@ import RuntimeManager from './api/RuntimeManagerApi.js';
 import AppController from './AppController.js';
 import userSettingsApi from './api/UserSettingsApi.js';
 import SysSrvApi, { FWUpdateState, FWUpdateAvailableEnum } from './api/SystemServicesApi';
-import MaintMgrApi, { MaintenanceStatus, UpgradeOptOutMode, MaintenanceMode } from './api/MaintenanceMgrApi';
+import MaintMgrApi, { MaintenanceStatus, UpgradeOptOutMode, MaintenanceMode, isMaintenanceActive } from './api/MaintenanceMgrApi';
 
 var thunder = ThunderJS(CONFIG.thunderConfig);
 var appApi = new AppApi();
@@ -844,7 +844,7 @@ export default class App extends Router.App {
 				}
 				GLOBALS.maintenanceIsCriticalMaintenance = notification && notification?.isCriticalMaintenance ? true : false;
 				GLOBALS.maintenanceIsRebootPending = notification && notification?.isRebootPending ? true : false;
-				if (nextState !== MaintenanceStatus.MAINTENANCE_IDLE) {
+				if (isMaintenanceActive(nextState)) {
 					MaintMgrApi.getMaintenanceActivityStatus().then(res => {
 						const maintenanceStatus = res && res.maintenanceStatus;
 						if (this._lastMaintenanceStatusLog !== maintenanceStatus) {
@@ -861,12 +861,12 @@ export default class App extends Router.App {
 		}
 
 		await MaintMgrApi.getMaintenanceActivityStatus().then(async res => {
-			const maintenanceStatus = res && res.maintenanceStatus;
+			const maintenanceStatus = res && res?.maintenanceStatus;
 			if (this._lastMaintenanceStatusLog !== maintenanceStatus) {
 				this.LOG("App init MaintenanceActivityStatus: " + JSON.stringify(res));
 				this._lastMaintenanceStatusLog = maintenanceStatus;
 			}
-			if (res.success && maintenanceStatus >= MaintenanceStatus.MAINTENANCE_STARTED) {
+			if (res.success && isMaintenanceActive(maintenanceStatus)) {
 				GLOBALS.maintenanceIsCriticalMaintenance = res?.isCriticalMaintenance ? true : false;
 				GLOBALS.maintenanceIsRebootPending = res?.isRebootPending ? true : false;
 				await MaintMgrApi.getMaintenanceStartTime().then(res => {
