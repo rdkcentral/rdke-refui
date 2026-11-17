@@ -841,10 +841,25 @@ export default class App extends Router.App {
 				} else {
 					percent = { downloadPercent: 100 };
 				}
-				const firmwareStateKey = `${res.firmwareUpdateState ?? 'unknown'}:${percent.downloadPercent ?? 'n/a'}`;
+				const downloadPercent = percent?.downloadPercent;
+				const firmwareStateKey = `${res.firmwareUpdateState ?? 'unknown'}:${downloadPercent ?? 'n/a'}`;
 				if (this._lastFirmwareStateLog !== firmwareStateKey) {
-					this.LOG("App init FirmwareUpdateState: " + SysSrvApi.getFirmwareUpdateStateString(res?.firmwareUpdateState) + ", dwnld %: " + JSON.stringify(percent.downloadPercent) + ", IsCriticalMaintenance=" + GLOBALS.maintenanceIsCriticalMaintenance + ", IsRebootPending=" + GLOBALS.maintenanceIsRebootPending);
+					this.LOG("App init FirmwareUpdateState: " + SysSrvApi.getFirmwareUpdateStateString(res?.firmwareUpdateState)
+						+ ", dwnld %: " + JSON.stringify(downloadPercent) + ", IsCriticalMaintenance="
+						+ GLOBALS.maintenanceIsCriticalMaintenance + ", IsRebootPending=" + GLOBALS.maintenanceIsRebootPending);
 					this._lastFirmwareStateLog = firmwareStateKey;
+				}
+				// MaintenanceManager sets isCriticalMaintenance/isRebootPending late in the cycle without
+				// emitting a new status event, so the cached flags can be stale; refresh before gating.
+				if (res.success && res.firmwareUpdateState === FWUpdateState.FWUpdateStatePreparingReboot) {
+					await MaintMgrApi.getMaintenanceActivityStatus().then(maintRes => {
+						if (maintRes?.success) {
+							GLOBALS.maintenanceIsCriticalMaintenance = Boolean(maintRes.isCriticalMaintenance);
+							GLOBALS.maintenanceIsRebootPending = Boolean(maintRes.isRebootPending);
+						}
+					}).catch(err => {
+						this.ERR("App init getMaintenanceActivityStatus error: " + JSON.stringify(err));
+					});
 				}
 				if (res.success &&
 					res.firmwareUpdateState === FWUpdateState.FWUpdateStatePreparingReboot &&
@@ -905,8 +920,13 @@ export default class App extends Router.App {
 					this.LOG("App Init onMaintenanceStatusChange: " + JSON.stringify(notification));
 					this._lastMaintenanceNotificationState = nextState;
 				}
-				GLOBALS.maintenanceIsCriticalMaintenance = notification && notification?.isCriticalMaintenance ? true : false;
-				GLOBALS.maintenanceIsRebootPending = notification && notification?.isRebootPending ? true : false;
+				// The event payload may omit these fields; only overwrite cached values when present.
+				if (notification && typeof notification.isCriticalMaintenance === 'boolean') {
+					GLOBALS.maintenanceIsCriticalMaintenance = notification.isCriticalMaintenance;
+				}
+				if (notification && typeof notification.isRebootPending === 'boolean') {
+					GLOBALS.maintenanceIsRebootPending = notification.isRebootPending;
+				}
 				if (isMaintenanceActive(nextState)) {
 					MaintMgrApi.getMaintenanceActivityStatus().then(res => {
 						const maintenanceStatus = res && res.maintenanceStatus;
