@@ -660,6 +660,7 @@ export default class App extends Router.App {
 		this._SubscribeToRuntimeManagerNotifications();
 		this.registerAppActionEvent();
 		await this.setupDial();
+		this.startMaintenanceHandling();
 	}
 
 	async setupDial() {
@@ -720,8 +721,7 @@ export default class App extends Router.App {
 		this.LOG("Xcast: _updateDialAppList xcastAppIdMap: " + JSON.stringify(Array.from(this.xcastAppIdMap.entries())));
 	}
 
-	async _registerXcastApplications(action = null, dataAppId = null)
-	{
+	async _registerXcastApplications(action = null, dataAppId = null) {
 		try {
 			// Package manager related trigger.
 			if (action && dataAppId) {
@@ -800,9 +800,32 @@ export default class App extends Router.App {
 				}
 				this.LOG("Xcast: Applications registered successfully");
 			}
-		})
+		} catch (err) {
+			this.ERR("Xcast: Core registration lifecycle pipeline failed: " + (err?.message || JSON.stringify(err)));
+			throw err;
+		}
+	}
 
-		this.startMaintenanceHandling();
+	async _handleXcastAppLifecycle(applicationName, intent, action) {
+		const targetApp = this._getXcastAppId(applicationName) || applicationName;
+		if (!targetApp) return false;
+
+		const actionMap = {
+			launch: 'launchApp',
+			resume: 'launchApp',
+			hide: 'closeApp',
+			stop: 'terminateApp'
+		};
+
+		const method = actionMap[action];
+		if (!method) return false;
+		this.LOG(`Xcast: Performing '${action}' on Xcast app: ${targetApp} using method: ${method}`);
+		try {
+			if ("launchApp" === method) await AppManager.get()[method](targetApp, intent);
+			else await AppManager.get()[method](targetApp);
+		} catch (err) {
+			this.ERR(`Xcast: Error performing '${action}' on Xcast app: ${JSON.stringify(err)}`);
+		}
 	}
 
 	async startMaintenanceHandling() {
