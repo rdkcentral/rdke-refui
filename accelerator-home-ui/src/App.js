@@ -63,7 +63,8 @@ import RuntimeManager from './api/RuntimeManagerApi.js';
 import AppController from './AppController.js';
 import userSettingsApi from './api/UserSettingsApi.js';
 import SysSrvApi, { FWUpdateState, FWUpdateAvailableEnum } from './api/SystemServicesApi';
-import MaintMgrApi, { MaintenanceStatus, UpgradeOptOutMode, MaintenanceMode, isMaintenanceActive } from './api/MaintenanceMgrApi';
+import XcastApi from '../src/api/XcastApi.js';
+import MaintMgrApi, { isMaintenanceActive } from './api/MaintenanceMgrApi';
 
 var thunder = ThunderJS(CONFIG.thunderConfig);
 var appApi = new AppApi();
@@ -851,9 +852,9 @@ export default class App extends Router.App {
 							this.LOG("App init MaintenanceActivityStatus: " + JSON.stringify(res));
 							this._lastMaintenanceStatusLog = maintenanceStatus;
 						}
-						if (res.success) {
-							GLOBALS.maintenanceIsCriticalMaintenance = res?.isCriticalMaintenance ? true : false;
-							GLOBALS.maintenanceIsRebootPending = res?.isRebootPending ? true : false;
+						if (res?.success) {
+							GLOBALS.maintenanceIsCriticalMaintenance = Boolean(res.isCriticalMaintenance);
+							GLOBALS.maintenanceIsRebootPending = Boolean(res.isRebootPending);
 						}
 					});
 				}
@@ -866,9 +867,9 @@ export default class App extends Router.App {
 				this.LOG("App init MaintenanceActivityStatus: " + JSON.stringify(res));
 				this._lastMaintenanceStatusLog = maintenanceStatus;
 			}
-			if (res.success && isMaintenanceActive(maintenanceStatus)) {
-				GLOBALS.maintenanceIsCriticalMaintenance = res?.isCriticalMaintenance ? true : false;
-				GLOBALS.maintenanceIsRebootPending = res?.isRebootPending ? true : false;
+			if (res?.success && isMaintenanceActive(maintenanceStatus)) {
+				GLOBALS.maintenanceIsCriticalMaintenance = Boolean(res.isCriticalMaintenance);
+				GLOBALS.maintenanceIsRebootPending = Boolean(res.isRebootPending);
 				await MaintMgrApi.getMaintenanceStartTime().then(res => {
 					if (res?.startTime !== this._lastMaintenanceStartTime) {
 						this.LOG("App init MaintenanceStartTime: " + JSON.stringify(res));
@@ -884,7 +885,7 @@ export default class App extends Router.App {
 							} else {
 								percent = { downloadPercent: 100 };
 							}
-							const firmwareStateKey = `${res?.firmwareUpdateState ?? 'unknown'}:${percent?.downloadPercent ?? 'n/a'}`;
+							const firmwareStateKey = `${res.firmwareUpdateState ?? 'unknown'}:${percent.downloadPercent ?? 'n/a'}`;
 							if (this._lastFirmwareStateLog !== firmwareStateKey) {
 								this.LOG("App init FirmwareUpdateState: " + SysSrvApi.getFirmwareUpdateStateString(res?.firmwareUpdateState) + ", dwnld %: " + JSON.stringify(percent?.downloadPercent) + ", IsCriticalMaintenance=" + GLOBALS.maintenanceIsCriticalMaintenance + ", IsRebootPending=" + GLOBALS.maintenanceIsRebootPending);
 								this._lastFirmwareStateLog = firmwareStateKey;
@@ -912,15 +913,13 @@ export default class App extends Router.App {
 								if (GLOBALS.topmostApp !== GLOBALS.selfClientName) {
 									timeoutMs = 6000;
 									this.LOG("App init Exiting topmost app " + GLOBALS.topmostApp + ", UI to foreground for reboot.")
-									appApi.exitApp(GLOBALS.topmostApp).then(() => {
-										GLOBALS.topmostApp = GLOBALS.selfClientName;
-									}).catch(err => {
-										this.ERR("App init exitApp err: " + JSON.stringify(err))
-									});
 								}
-								setTimeout(() => {
-									while (Router.isNavigating()) { /* Nothing to do here. */ }
-									Router.navigate('settings/advanced/device/reboot');
+								setTimeout(function navigateToRebootWhenIdle() {
+									if (Router.isNavigating()) {
+										setTimeout(navigateToRebootWhenIdle, 100);
+										return;
+									}
+									jumpToRoute('settings/advanced/device/reboot');
 								}, timeoutMs);
 							}
 						});

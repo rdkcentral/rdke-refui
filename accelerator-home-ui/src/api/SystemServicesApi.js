@@ -135,7 +135,7 @@ class SystemServices {
             return;
         }
 
-        const index = this.eventListeners[event].findIndex(entry => entry.callback === callback);
+        const index = this.eventListeners[event].findIndex(entry => entry.callback === callback || entry.listener === callback);
         if (index === -1) {
             return;
         }

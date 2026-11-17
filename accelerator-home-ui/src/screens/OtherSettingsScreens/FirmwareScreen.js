@@ -69,6 +69,8 @@ export default class FirmwareScreen extends Lightning.Component {
         if (GLOBALS.skipFirmwareUpdateRetry && state === FWUpdateState.FWUpdateStatePreparingReboot) {
             this.LOG('Skipping firmware update retry because the user canceled the reboot confirmation flow.');
             this.tag('State.Title').text.text = Language.translate('Firmware State: ') + Language.translate('Reboot to complete the update');
+            this.updateInProgress = false;
+            this.FWUpdateRebooting = false;
             return;
         }
 
@@ -404,11 +406,11 @@ export default class FirmwareScreen extends Lightning.Component {
 
     showDownloadPercent() {
         SysSrvApi.getFirmwareDownloadPercent().then(res => {
-            if (res.success && res?.downloadPercent < 0) {
+            if (res?.success && res?.downloadPercent < 0) {
                 this.tag('DownloadedPercent.Title').visible = false;
                 this.tag('DownloadedPercent.Title').text.text = "";
             }
-            else if (res.success && res?.downloadPercent > 0) {
+            else if (res?.success && res?.downloadPercent > 0) {
                 this.tag('DownloadedPercent.Title').visible = true;
                 this.tag('DownloadedPercent.Title').text.text = Language.translate("Download Progress: ") + res.downloadPercent + "%";
                 if (this.downloadInterval === null) {
@@ -440,7 +442,6 @@ export default class FirmwareScreen extends Lightning.Component {
                 this.FWUpdateIsRebootDeferred = false;
             }
             this.LOG("FWUpdateRebootImmediately: " + this.FWUpdateRebootImmediately + " FWUpdateIsRebootDeferred: " + this.FWUpdateIsRebootDeferred)
-            this.updateInProgress = false;
         }).catch(err => {
             this.ERR("Error: " + JSON.stringify(err));
             this.updateInProgress = false;

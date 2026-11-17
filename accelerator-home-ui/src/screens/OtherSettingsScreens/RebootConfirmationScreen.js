@@ -124,13 +124,17 @@ export default class RebootConfirmationScreen extends Lightning.Component {
             // Display user message and auto reboot the device without user confirmation.
             this.tag("Info").text.text = Language.translate("Maintenance Update Finished, Rebooting") + "..."
             this.tag('Buttons').visible = false
-            setTimeout(() => {
-                while (Router.isNavigating()) { /* Nothing to do here. */ }
+            const rebootWhenIdle = () => {
+                if (Router.isNavigating()) {
+                    setTimeout(rebootWhenIdle, 100);
+                    return;
+                }
                 appApi.reboot("Maintenance UI Trigger").then(result => {
                     this.LOG('device rebooting' + JSON.stringify(result))
                     this._setState('Rebooting')
                 })
-            }, 2000)
+            };
+            setTimeout(rebootWhenIdle, 2000)
         } else {
             this._setState('Confirm')
         }
