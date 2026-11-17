@@ -36,7 +36,7 @@ export default class InactivityHelper {
     return {
       energySaver: parseInt(Storage.get("EnergySaverInterval"), 10),
       screenSaver: parseInt(Storage.get("ScreenSaverTimeoutInterval"), 10),
-      sleepTimer: parseInt(Storage.get("TimeoutInterval"), 10)
+      sleepTimer: this._convertToMinutes(Storage.get("TimeoutInterval"))
     };
   }
   
@@ -84,19 +84,14 @@ export default class InactivityHelper {
       this.LOG("Energy Saver disabled");
       return;
     }
-    let arr = time.split(" ");
-    let value = parseFloat(arr[0]);
-    let unit = arr[1].substring(0, 1); // "M" or "H"
 
     let storedTimeout = Storage.get("TimeoutInterval");
     if (storedTimeout && storedTimeout !== "Off") {
         this.LOG("Using stored timeout instead: " + storedTimeout);
-        value = parseFloat(storedTimeout);
-        unit = "M"; // already in minutes
+        time = storedTimeout;
     }
-    // Convert to minutes
-    let timeoutInMinutes = (unit === "H") ? value * 60 : value;
-    return timeoutInMinutes;
+    // Convert to minutes, respecting the actual unit ("Minutes" or "Hours")
+    return this._convertToMinutes(time);
   }
 
   standby(value) {

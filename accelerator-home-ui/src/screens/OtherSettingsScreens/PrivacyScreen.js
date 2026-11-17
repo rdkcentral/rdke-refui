@@ -28,7 +28,6 @@ import Warehouse from '../../api/WarehouseApis'
  * Class for Privacy Screen.
  */
 
-const xcastApi = new XcastApi()
 let cookieToggle = false
 
 export default class PrivacyScreen extends Lightning.Component {
@@ -159,16 +158,16 @@ export default class PrivacyScreen extends Lightning.Component {
         }
     }
 
-    _firstEnable() {
-        this._setState('LocalDeviceDiscovery')
-        this.checkLocalDeviceStatus()
+    async _firstEnable() {
         this.AppApi = new AppApi()
         this.Warehouse= new Warehouse()
+        this._setState('LocalDeviceDiscovery')
+        await this.checkLocalDeviceStatus()
     }
 
-    _focus() {
+    async _focus() {
         this._setState(this.state)
-        this.checkLocalDeviceStatus()
+        await this.checkLocalDeviceStatus()
     }
 
     _handleBack() {
@@ -177,41 +176,39 @@ export default class PrivacyScreen extends Lightning.Component {
         }
     }
 
-    checkLocalDeviceStatus() {
-        xcastApi.getEnabled().then(res => {
-            if (res.enabled) {
-                this.tag('LocalDeviceDiscovery.Button').src = Utils.asset('images/settings/ToggleOnOrange.png')
-            } else {
-                this.tag('LocalDeviceDiscovery.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
-            }
-        }).catch(err => {
+    async checkLocalDeviceStatus() {
+        try {
+            const res = await XcastApi.getEnabled();
+            const enabled = res?.enabled ?? false;
+            const assetPath = enabled
+                    ? 'images/settings/ToggleOnOrange.png'
+                    : 'images/settings/ToggleOffWhite.png';
+            this.tag('LocalDeviceDiscovery.Button').src = Utils.asset(assetPath);
+        } catch (err) {
+            this.ERR('xcastApi getEnabled error:' + JSON.stringify(err));
             this.tag('LocalDeviceDiscovery.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
-        })
+        }
     }
 
-    toggleLocalDeviceDiscovery() {
-        if (GLOBALS.LocalDeviceDiscoveryStatus) {
-             xcastApi.getEnabled().then(res => {
-                if (res.enabled) {
-                     xcastApi.setEnabled(false).then(res => {
-                        this.tag('LocalDeviceDiscovery.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
-                        GLOBALS.LocalDeviceDiscoveryStatus = false;
-                    })
-                }
-            }).catch(err => {
-                this.LOG('Error while fetching Xcast Enable status')
-                this.tag('LocalDeviceDiscovery.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
-            })
-        } else {
-            xcastApi.setEnabled(true).then(res => {
-                if (res) {
-                    GLOBALS.LocalDeviceDiscoveryStatus = true;
-                    this.tag('LocalDeviceDiscovery.Button').src = Utils.asset('images/settings/ToggleOnOrange.png')
-                }
-            }).catch(err => {
-                this.LOG('Service not active')
-                this.tag('LocalDeviceDiscovery.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
-            })
+    async toggleLocalDeviceDiscovery() {
+        try {
+            const status = await XcastApi.getEnabled();
+            const currentlyEnabled = !!status?.enabled;
+            const targetState = !currentlyEnabled;
+            const result = await XcastApi.setEnabled(targetState);
+            const isSuccess = (result === true || result?.success === true);
+
+            if (isSuccess) {
+                const assetPath = targetState
+                    ? 'images/settings/ToggleOnOrange.png'
+                    : 'images/settings/ToggleOffWhite.png';
+                this.tag('LocalDeviceDiscovery.Button').src = Utils.asset(assetPath);
+            } else {
+                this.ERR('Failed to update discovery state via XcastApi');
+            }
+        } catch (err) {
+            this.ERR('Service not active: ' + JSON.stringify(err));
+            this.tag('LocalDeviceDiscovery.Button').src = Utils.asset('images/settings/ToggleOffWhite.png');
         }
     }
 
@@ -230,8 +227,8 @@ export default class PrivacyScreen extends Lightning.Component {
                 _handleDown() {
                     this._setState('AudioInput')
                 }
-                _handleEnter() {
-                    this.toggleLocalDeviceDiscovery()
+                async _handleEnter() {
+                    await this.toggleLocalDeviceDiscovery()
                 }
             },
             class AudioInput extends this {
