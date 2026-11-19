@@ -156,7 +156,7 @@ export default class DeviceInformationScreen extends Lightning.Component {
                             y: 540,
                             mountY: 0.5,
                             text: {
-                                text: Language.translate(`App Info`),
+                                text: Language.translate('App Info'),
                                 textColor: COLORS.titleColor,
                                 fontFace: CONFIG.language.font,
                                 fontSize: 25,

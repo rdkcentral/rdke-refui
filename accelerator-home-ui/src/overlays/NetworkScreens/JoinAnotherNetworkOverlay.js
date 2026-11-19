@@ -215,7 +215,7 @@ export default class JoinAnotherNetworkComponent extends Lightning.Component {
         visible: true
       },
       ShowPassword: {
-        x: 1365,
+        x: Language.get() === 'es' ? 1345 : 1365,
         y: 312,
         w: 300,
         h: 75,
