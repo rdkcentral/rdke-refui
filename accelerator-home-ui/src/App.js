@@ -1589,7 +1589,8 @@ export default class App extends Router.App {
 		this.LOG("Registering onActionStartRequest event listener for org.rdk.AppActions");
 		this.onActionStartRequest = thunder.on("org.rdk.AppActions", "onActionStartRequest", async notification => {
 			this.LOG("onActionStartRequest: " + JSON.stringify(notification));
-			if (notification && "DIAL" === notification.initiator && notification.intent && notification.handlerAppId) {
+			// TODO: make it aligned to spec once its approved and confirmed.
+			if (notification && ("DIAL" === notification.initiator || "xcast" === notification.initiator.toLowerCase()) && notification.intent && notification.handlerAppId) {
 				let parsedIntent = {};
 				try {
 					parsedIntent = JSON.parse(notification.intent);
