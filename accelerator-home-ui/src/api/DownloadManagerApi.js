@@ -40,8 +40,8 @@ export default class DownloadManager {
     this.downloadIdToLastPercent = new Map();
     this.listeners = new Map();
     this.tickTimeout = null;
-    this.INFO = function() {};
-    this.LOG = function() {};
+    this.INFO = console.info;
+    this.LOG = console.log;
     this.ERR = console.error;
 
     this.thunder.on(this.callsign, "onAppDownloadStatus", event => {

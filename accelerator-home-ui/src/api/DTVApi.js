@@ -32,10 +32,10 @@ const getCustomServiceList = async () => {
     response = await response.json();
     customServiceList = response.serviceList;
     customEventList = response.eventList;
-    //console.log("customServiceList: ", customServiceList);
-    //console.log("customEventList: ", customEventList);
+    console.log("customServiceList: ", customServiceList);
+    console.log("customEventList: ", customEventList);
   } catch (err) {
-    //console.log("Failed to read Custom Channel Data: ", err);
+    console.log("Failed to read Custom Channel Data: ", err);
   }
 };
 
@@ -44,10 +44,10 @@ getCustomServiceList(); //call this method in activate
 //plugin is activated by default, no need to call explicitly
 export default class DTVApi {
   constructor() {
-    this.INFO = function() {};
-    this.LOG = function() {};
+    this.INFO = console.info;
+    this.LOG = console.log;
     this.ERR = console.error;
-    this.WARN = function() {};
+    this.WARN = console.warn;
   }
   activate() {
     return new Promise((resolve, reject) => {

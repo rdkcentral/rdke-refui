@@ -28,9 +28,9 @@ class XcastApi {
 
     this._thunder = ThunderJS(CONFIG.thunderConfig);
     this.logtag = "XcastApi:";
-    this.LOG = function() {};
+    this.LOG = console.log;
     this.ERR = console.error;
-    this.INFO = function() {};
+    this.INFO = console.info;
     this.callsign = "org.rdk.Xcast";
     this._events = new Map();
     this._registeredApps = [];
@@ -130,6 +130,11 @@ class XcastApi {
   async getStandbyBehavior() {
     const res = await this._call('getStandbyBehavior').catch(() => null);
     return res?.standbybehavior || null;
+  }
+
+  async getAdditionalDataUrl(applicationName) {
+    const res = await this._call('getAdditionalDataUrl', { applicationName }).catch(() => null);
+    return res?.success ? res?.additionalDataUrl || null : null;
   }
 
   registerApplications(params) {

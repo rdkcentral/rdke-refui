@@ -25,10 +25,10 @@ export default class Warehouse {
   constructor() {
     this.thunder = ThunderJS(CONFIG.thunderConfig);
     this.callsign = 'org.rdk.Warehouse';
-    this.INFO = function() {};
-    this.LOG = function() {};
+    this.INFO = console.info;
+    this.LOG = console.log;
     this.ERR = console.error;
-    this.WARN = function() {};
+    this.WARN = console.warn;
   }
 
   static get() {

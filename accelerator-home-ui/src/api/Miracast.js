@@ -22,10 +22,10 @@ import { CONFIG } from '../Config/Config'
 export default class Miracast {
     constructor() {
         this._thunder = ThunderJS(CONFIG.thunderConfig);
-        this.INFO = function() {};
-        this.LOG = function() {};
+        this.INFO = console.info;
+        this.LOG = console.log;
         this.ERR = console.error;
-        this.WARN = function() {};
+        this.WARN = console.warn;
     }
 
     activateService() {

@@ -28,10 +28,10 @@ export default class PersistentStoreApi {
     this._events = new Map();
     this.callsign = "org.rdk.PersistentStore";
     this.thunder = ThunderJS(CONFIG.thunderConfig);
-    this.INFO = function() {};
-    this.LOG = function() {};
+    this.INFO = console.info;
+    this.LOG = console.log;
     this.ERR = console.error;
-    this.WARN = function() {};
+    this.WARN = console.warn;
 
     PersistentStoreApi.instance = this;
   }

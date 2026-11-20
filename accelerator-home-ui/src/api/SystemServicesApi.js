@@ -96,7 +96,7 @@ class SystemServices {
     _call(method, params = {}) {
         return new Promise((resolve, reject) => {
             this.thunder.call(this.callsign, method, params).then(result => {
-                //this.INFO(this.logtag + `${method} result: ${JSON.stringify(result)}`);
+                this.INFO(this.logtag + `${method} result: ${JSON.stringify(result)}`);
                 if (result) {
                     resolve(result);
                 } else {

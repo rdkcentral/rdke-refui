@@ -34,10 +34,10 @@ let instance = null
 export default class PowerManagerApi {
   constructor() {
     this.thunder = ThunderJS(CONFIG.thunderConfig);
-    this.INFO = function() {};
-    this.LOG = function() {};
+    this.INFO = console.info;
+    this.LOG = console.log;
     this.ERR = console.error;
-    this.WARN = function() {};
+    this.WARN = console.warn;
     this.callsign = "org.rdk.PowerManager";
   }
 

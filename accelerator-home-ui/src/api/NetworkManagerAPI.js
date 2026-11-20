@@ -45,10 +45,10 @@ class NetworkManager {
   constructor() {
     this.thunder = ThunderJS(CONFIG.thunderConfig);
     this.callsign = 'org.rdk.NetworkManager';
-    this.INFO = function() {};
-    this.LOG = function() {};
+    this.INFO = console.info;
+    this.LOG = console.log;
     this.ERR = console.error;
-    this.WARN = function() {};
+    this.WARN = console.warn;
   }
 
   thunderCall = (infoMessage, method, params = {}, property) => {

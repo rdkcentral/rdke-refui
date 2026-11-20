@@ -225,7 +225,7 @@ export default class App extends Router.App {
 	}
 
 	_captureKey(key) {
-		//this.LOG("PowerState: " + JSON.stringify(GLOBALS.powerState) + " and got keycode: " + JSON.stringify(key.keyCode))
+		this.LOG("PowerState: " + JSON.stringify(GLOBALS.powerState) + " and got keycode: " + JSON.stringify(key.keyCode))
 		if (GLOBALS.powerState === PowerState.POWER_STATE_DEEP_SLEEP || GLOBALS.powerState === PowerState.POWER_STATE_LIGHT_SLEEP) {
 			if (key.keyCode !== Keymap.Power) {
 				this.LOG("Ignoring non-power key press while device is in sleep state")
@@ -338,7 +338,7 @@ export default class App extends Router.App {
 			this.launchFeaturedApp("Amazon")
 			return true
 		} else if (key.keyCode == Keymap.Youtube && !Router.isNavigating()) {
-			//console.log("YouTube key pressed, calling launchFeaturedApp");
+			console.log("YouTube key pressed, calling launchFeaturedApp");
 			this.launchFeaturedApp("YouTube")
 			return true
 		} else if (key.keyCode == Keymap.Netflix && !Router.isNavigating()) { //launchLocation mapping is in launchApp method in AppApi.js
@@ -560,7 +560,7 @@ export default class App extends Router.App {
 		}
 		appApi.getPluginStatus('org.rdk.PowerManager').then(result => {
 			if (result && result.length > 0 && result[0].state === "activated") {
-				//console.log("org.rdk.PowerManager is already activated");
+				console.log("org.rdk.PowerManager is already activated");
 				this.subscribeToPowerChangeNotifications()
 				this._getPowerStatebeforeReboot();
 				this._setWakeupSourceConfig();
@@ -808,23 +808,12 @@ export default class App extends Router.App {
 		}
 	}
 
-	async _handleXcastAppLifecycle(applicationName, intent, action) {
-		const targetApp = this._getXcastAppId(applicationName) || applicationName;
-		if (!targetApp) return false;
-
-		const actionMap = {
-			launch: 'launchApp',
-			resume: 'launchApp',
-			hide: 'closeApp',
-			stop: 'terminateApp'
-		};
-
-		const method = actionMap[action];
-		if (!method) return false;
-		this.LOG(`Xcast: Performing '${action}' on Xcast app: ${targetApp} using method: ${method}`);
+	async _handleXcastAppLifecycle(dialAppId, intent, action = undefined) {
+		const targetApp = this._getXcastAppId(dialAppId) || dialAppId;
+		if (!targetApp || action === undefined) return false;
+		this.LOG(`Xcast: Performing '${action}' on Xcast app: ${targetApp}`);
 		try {
-			if ("launchApp" === method) await AppManager.get()[method](targetApp, intent);
-			else await AppManager.get()[method](targetApp);
+			if (action === "org.rdk.app.launch") await AppManager.get().launchApp(targetApp, intent);
 		} catch (err) {
 			this.ERR(`Xcast: Error performing '${action}' on Xcast app: ${JSON.stringify(err)}`);
 		}
@@ -1589,8 +1578,8 @@ export default class App extends Router.App {
 		this.LOG("Registering onActionStartRequest event listener for org.rdk.AppActions");
 		this.onActionStartRequest = thunder.on("org.rdk.AppActions", "onActionStartRequest", async notification => {
 			this.LOG("onActionStartRequest: " + JSON.stringify(notification));
-			// TODO: make it aligned to spec once its approved and confirmed.
-			if (notification && ("DIAL" === notification.initiator || "xcast" === notification.initiator.toLowerCase()) && notification.intent && notification.handlerAppId) {
+			// onActionStartRequest: {"initiator":"DIAL","intent":"{\"actionType\":\"org.rdk.app.launch\",\"actionData\":{\"appId\":\"YouTube\",\"intent\":{\"action\":\"launch\",\"data\":{\"appContentData\":\"pairingCode=d27787a3-905f-40d4-a786-e8de0edc7071&theme=cl&dialLaunch=watch\"}}}}","handlerAppId":"YouTube"}
+			if (notification && ("DIAL" === notification.initiator) && notification.intent && notification.handlerAppId) {
 				let parsedIntent = {};
 				try {
 					parsedIntent = JSON.parse(notification.intent);
@@ -1599,24 +1588,37 @@ export default class App extends Router.App {
 					this.ERR("onActionStartRequest: Failed to parse nested intent string: " + err);
 					return false;
 				}
-				const intentAction = parsedIntent?.action;
-				const validIntents = ["launch", "hide", "resume", "stop"];
-				if (validIntents.includes(intentAction)) {
-					if ("launch" === intentAction || "resume" === intentAction) {
+				const actionType = parsedIntent?.actionType;
+				const dialAppId = parsedIntent?.actionData?.appId;
+				let intent = parsedIntent?.actionData?.intent;
+				if ("org.rdk.app.launch" === actionType) {
+					try {
+						const powerState = await PowerManagerApi.get().getPowerState();
+						if (powerState?.currentState !== PowerState.POWER_STATE_ON) {
+							await PowerManagerApi.get().setPowerState(PowerState.POWER_STATE_ON);
+						}
+					} catch (err) {
+						this.ERR("onActionStartRequest: Error getting/setting power state: " + JSON.stringify(err));
+					}
+					const additionalDataUrl = await XcastApi.get().getAdditionalDataUrl(dialAppId);
+					if (additionalDataUrl != null) {
 						try {
-							const powerState = await PowerManagerApi.get().getPowerState();
-							if (powerState?.currentState !== PowerState.POWER_STATE_ON) {
-								await PowerManagerApi.get().setPowerState(PowerState.POWER_STATE_ON);
-							}
+							const intentObj = typeof intent === "string" ? JSON.parse(intent) : (intent || {});
+							// Note: Verify whether your target expects additionalDataUrl at root or inside intentObj.data
+							intentObj.data = { ...intentObj.data, additionalDataUrl };
+							intent = JSON.stringify(intentObj);
 						} catch (err) {
-							this.ERR("onActionStartRequest: Error getting/setting power state: " + JSON.stringify(err));
+							this.ERR("onActionStartRequest: Failed to parse/append additionalDataUrl to intent: " + JSON.stringify(err));
 						}
 					}
-					const appName = notification.handlerAppId;
+					// append additionalDataUrl to intent
+					if (additionalDataUrl) {
+						intent = { ...intent, additionalDataUrl };
+					}
 					// LaunchApp argument - intent is of string type, pass it as received.
-					await this._handleXcastAppLifecycle(appName, notification.intent, intentAction);
+					await this._handleXcastAppLifecycle(dialAppId, intent, actionType);
 				} else {
-					this.LOG("onActionStartRequest: intent " + (intentAction || "undefined") + " is not supported.");
+					this.LOG("onActionStartRequest: intent " + (actionType || "undefined") + " is not supported.");
 				}
 			} else {
 				this.LOG("onActionStartRequest: notification is not from DIAL or missing required fields.");
