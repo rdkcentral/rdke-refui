@@ -117,6 +117,20 @@ export default class AppApi {
     })
   }
 
+  isResourceMonitorPluginAvailable() {
+    if (!this._resourceMonitorAvailablePromise) {
+      this._resourceMonitorAvailablePromise = thunder.call('Controller', 'status@org.rdk.ResourceMonitor')
+        .then((result) => {
+          this.INFO("AppAPI Controller status org.rdk.ResourceMonitor " + JSON.stringify(result));
+          return true;
+        })
+        .catch((err) => {
+          this.ERR("AppAPI Controller status 'org.rdk.ResourceMonitor' error." + JSON.stringify(err));
+          return false;
+        });
+    }
+    return this._resourceMonitorAvailablePromise;
+  }
 
   /**
    * Function to get resolution of the display screen.

@@ -1771,19 +1771,27 @@ export default class App extends Router.App {
 		if (targetApp != GLOBALS.selfclientAppName) {
 			AppManager.get().closeApp(targetApp).then(() => {
 				this.LOG("closeApp success for: " + targetApp)
-				// FIXME: Remove this workaround once App is aligned to LifeCycle.\
-				AppManager.get().terminateApp(targetApp).then(() => {
-					this.LOG("terminateApp success after closeApp for: " + targetApp)
-				}).catch(err => {
-					this.ERR("terminateApp err after closeApp: " + JSON.stringify(err))
+				// FIXME: Remove this workaround once App is aligned to LifeCycle.
+				appApi.isResourceMonitorPluginAvailable().then((isAvailable) => {
+					if (!isAvailable) {
+						AppManager.get().terminateApp(targetApp).then(() => {
+							this.LOG("terminateApp success after closeApp for: " + targetApp)
+						}).catch(err => {
+							this.ERR("terminateApp err after closeApp: " + JSON.stringify(err))
+						});
+					}
 				});
 			}).catch(err => {
 				this.ERR("closeApp err for " + targetApp + ": " + JSON.stringify(err))
 				// FIXME: Remove this workaround once App is aligned to LifeCycle.
-				AppManager.get().terminateApp(targetApp).then(() => {
-					this.LOG("terminateApp success after closeApp failure for: " + targetApp)
-				}).catch(termErr => {
-					this.ERR("terminateApp err after closeApp failure for " + targetApp + ": " + JSON.stringify(termErr))
+				appApi.isResourceMonitorPluginAvailable().then((isAvailable) => {
+					if (!isAvailable) {
+						AppManager.get().terminateApp(targetApp).then(() => {
+							this.LOG("terminateApp success after closeApp failure for: " + targetApp)
+						}).catch(termErr => {
+							this.ERR("terminateApp err after closeApp failure for " + targetApp + ": " + JSON.stringify(termErr))
+						});
+					}
 				});
 			});
 			Storage.set("lastVisitedRoute", route); // incase any state change event tries to navigate, it need to be navigated to alexa requested route
