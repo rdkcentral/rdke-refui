@@ -3379,8 +3379,8 @@ var APP_Loader = (function () {
     }
 
     afterEachRoute(request);
-    console.info('[route]:' + JSON.stringify(route.path));
-    console.info('[hash]:' + JSON.stringify(hash));
+    Log.info('[route]:', route.path);
+    Log.info('[hash]:', hash);
   };
 
   const cleanUp = (page, request) => {
