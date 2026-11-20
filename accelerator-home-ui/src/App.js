@@ -62,7 +62,9 @@ import RDKWindowManager from './api/RDKWindowManagerApi.js';
 import RuntimeManager from './api/RuntimeManagerApi.js';
 import AppController from './AppController.js';
 import userSettingsApi from './api/UserSettingsApi.js';
+import SysSrvApi, { FWUpdateState, FWUpdateAvailableEnum } from './api/SystemServicesApi';
 import XcastApi from '../src/api/XcastApi.js';
+import MaintMgrApi, { isMaintenanceActive } from './api/MaintenanceMgrApi';
 
 var thunder = ThunderJS(CONFIG.thunderConfig);
 var appApi = new AppApi();
@@ -135,11 +137,11 @@ export default class App extends Router.App {
 			}
 		};
 
-		function updateAddress() {
+		const updateAddress = () => {
 			if (window.navigator.onLine) {
-				console.log("is online");
+				this.LOG("is online");
 			} else {
-				console.log(`is offline`)
+				this.LOG(`is offline`)
 			}
 		}
 		window.addEventListener("offline", updateAddress)
@@ -248,16 +250,20 @@ export default class App extends Router.App {
 	}
 
 	_performKeyPressOPerations(key) {
+		const activePage = Router.activePage && Router.activePage();
+		if (activePage && activePage.updateInProgress && key.keyCode !== Keymap.Power) {
+			this.LOG("Ignoring hotkey while firmware update is in progress: " + JSON.stringify(key.keyCode));
+		}
 		let self = this;
-			if(GLOBALS.MiracastNotificationstatus && key.keyCode !== Keymap.Power && key.keyCode !== Keymap.Home ){
-				return false
-			} else if ((key.keyCode == Keymap.Home || key.keyCode == Keymap.Escape) && !Router.isNavigating()) {
-				if (Router.getActiveHash().startsWith("splash")) {
-					if (Router.getActiveHash() !== "splash/language") {
-						Router.navigate("splash/language");
-					}
-					return true;
+		if(GLOBALS.MiracastNotificationstatus && key.keyCode !== Keymap.Power && key.keyCode !== Keymap.Home ) {
+			return false
+		} else if ((key.keyCode == Keymap.Home || key.keyCode == Keymap.Escape) && !Router.isNavigating()) {
+			if (Router.getActiveHash().startsWith("splash")) {
+				if (Router.getActiveHash() !== "splash/language") {
+					Router.navigate("splash/language");
 				}
+				return true;
+			}
 			if (GLOBALS.topmostApp.includes("dac.native")) {
 				this.jumpToRoute("apps");
 			} else if (GLOBALS.Miracastclientdevicedetails.state === "INITIATED" || GLOBALS.Miracastclientdevicedetails.state === "INPROGRESS ") {
@@ -655,6 +661,7 @@ export default class App extends Router.App {
 		this._SubscribeToRuntimeManagerNotifications();
 		this.registerAppActionEvent();
 		await this.setupDial();
+		this.startMaintenanceHandling();
 	}
 
 	async setupDial() {
@@ -683,7 +690,7 @@ export default class App extends Router.App {
 
 			const enabledRes = await XcastApi.setEnabled(true);
 			GLOBALS.LocalDeviceDiscoveryStatus = true;
-			console.warn("Xcast setEnabled success: " + JSON.stringify(enabledRes));
+			this.WARN("Xcast setEnabled success: " + JSON.stringify(enabledRes));
 
 		} catch (pipelineError) {
 			GLOBALS.LocalDeviceDiscoveryStatus = false;
@@ -716,8 +723,7 @@ export default class App extends Router.App {
 		this.LOG("Xcast: _updateDialAppList xcastAppIdMap: " + JSON.stringify(Array.from(this.xcastAppIdMap.entries())));
 	}
 
-	async _registerXcastApplications(action = null, dataAppId = null)
-	{
+	async _registerXcastApplications(action = null, dataAppId = null) {
 		try {
 			// Package manager related trigger.
 			if (action && dataAppId) {
@@ -802,26 +808,153 @@ export default class App extends Router.App {
 		}
 	}
 
-	async _handleXcastAppLifecycle(applicationName, intent, action) {
-		const targetApp = this._getXcastAppId(applicationName) || applicationName;
-		if (!targetApp) return false;
-
-		const actionMap = {
-			launch: 'launchApp',
-			resume: 'launchApp',
-			hide: 'closeApp',
-			stop: 'terminateApp'
-		};
-
-		const method = actionMap[action];
-		if (!method) return false;
-		this.LOG(`Xcast: Performing '${action}' on Xcast app: ${targetApp} using method: ${method}`);
+	async _handleXcastAppLifecycle(dialAppId, intent, action = undefined) {
+		const targetApp = this._getXcastAppId(dialAppId) || dialAppId;
+		if (!targetApp || action === undefined) return false;
+		this.LOG(`Xcast: Performing '${action}' on Xcast app: ${targetApp}`);
 		try {
-			if ("launchApp" === method) await AppManager.get()[method](targetApp, intent);
-			else await AppManager.get()[method](targetApp);
+			if (action === "org.rdk.app.launch") await AppManager.get().launchApp(targetApp, intent);
 		} catch (err) {
 			this.ERR(`Xcast: Error performing '${action}' on Xcast app: ${JSON.stringify(err)}`);
 		}
+	}
+
+	_startMaintenanceRebootPolling() {
+		if (this.maintenanceRebootIntervalTimer) return;
+
+		this.maintenanceRebootIntervalTimer = setInterval(async () => {
+			await SysSrvApi.getFirmwareUpdateState().then(async res => {
+				let percent = {};
+				if (res.success && res.firmwareUpdateState === FWUpdateState.FWUpdateStateDownloading) {
+					await SysSrvApi.getFirmwareDownloadPercent().then(p => { percent = p; });
+				} else {
+					percent = { downloadPercent: 100 };
+				}
+				const downloadPercent = percent?.downloadPercent;
+				const firmwareStateKey = `${res.firmwareUpdateState ?? 'unknown'}:${downloadPercent ?? 'n/a'}`;
+				if (this._lastFirmwareStateLog !== firmwareStateKey) {
+					this.LOG("App init FirmwareUpdateState: " + SysSrvApi.getFirmwareUpdateStateString(res.firmwareUpdateState)
+						+ ", dwnld %: " + JSON.stringify(downloadPercent) + ", IsCriticalMaintenance="
+						+ GLOBALS.maintenanceIsCriticalMaintenance + ", IsRebootPending=" + GLOBALS.maintenanceIsRebootPending);
+					this._lastFirmwareStateLog = firmwareStateKey;
+				}
+				// MaintenanceManager sets isCriticalMaintenance/isRebootPending late in the cycle without
+				// emitting a new status event, so the cached flags can be stale; refresh before gating.
+				if (res.success && res.firmwareUpdateState === FWUpdateState.FWUpdateStatePreparingReboot) {
+					await MaintMgrApi.getMaintenanceActivityStatus().then(maintRes => {
+						if (maintRes?.success) {
+							GLOBALS.maintenanceIsCriticalMaintenance = Boolean(maintRes.isCriticalMaintenance);
+							GLOBALS.maintenanceIsRebootPending = Boolean(maintRes.isRebootPending);
+						}
+					}).catch(err => {
+						this.ERR("App init getMaintenanceActivityStatus error: " + JSON.stringify(err));
+					});
+				}
+				if (res.success &&
+					res.firmwareUpdateState === FWUpdateState.FWUpdateStatePreparingReboot &&
+					(!GLOBALS.maintenanceIsRebootPending || !GLOBALS.maintenanceIsCriticalMaintenance)) {
+					const skipKey = `prepareRebootGate:${GLOBALS.maintenanceIsCriticalMaintenance}:${GLOBALS.maintenanceIsRebootPending}`;
+					if (this._lastPrepareRebootGateLog !== skipKey) {
+						this.LOG("App init Skip reboot: firmware update is Preparing to Reboot but IsCriticalMaintenance=" + GLOBALS.maintenanceIsCriticalMaintenance + " IsRebootPending=" + GLOBALS.maintenanceIsRebootPending);
+						this._lastPrepareRebootGateLog = skipKey;
+					}
+				}
+				if (res.success &&
+					res.firmwareUpdateState === FWUpdateState.FWUpdateStatePreparingReboot &&
+					GLOBALS.maintenanceIsRebootPending && GLOBALS.maintenanceIsCriticalMaintenance) {
+					if (this.maintenanceRebootIntervalTimer) {
+						clearInterval(this.maintenanceRebootIntervalTimer);
+						this.maintenanceRebootIntervalTimer = null;
+						this.LOG("App init Cleared maintenanceRebootIntervalTimer to avoid duplicate reboot handling.");
+					}
+					if (this._maintenanceRebootScheduled) return;
+					this._maintenanceRebootScheduled = true;
+					this.LOG("App init Rebooting device to complete the maintenance update.")
+					// Make this app in foreground to show the reboot screen.
+					let timeoutMs = 100;
+					if (GLOBALS.topmostApp !== GLOBALS.selfClientName) {
+						timeoutMs = 6000;
+						this.LOG("App init Exiting topmost app " + GLOBALS.topmostApp + ", UI to foreground for reboot.")
+					}
+					const navigateToRebootWhenIdle = () => {
+						if (Router.isNavigating()) {
+							setTimeout(navigateToRebootWhenIdle, 100);
+							return;
+						}
+						this.jumpToRoute('settings/advanced/device/reboot');
+					};
+					setTimeout(navigateToRebootWhenIdle, timeoutMs);
+				}
+				if ((res.firmwareUpdateState === FWUpdateState.FWUpdateStateOnHoldForOptOut) ||
+					(res.firmwareUpdateState === FWUpdateState.FWUpdateStateUpgradeNotRequired)) {
+					if (this.maintenanceRebootIntervalTimer) {
+						clearInterval(this.maintenanceRebootIntervalTimer);
+						this.maintenanceRebootIntervalTimer = null;
+						this.LOG("App init Cleared maintenanceRebootIntervalTimer due to firmware update on hold or upgrade not required.");
+					}
+				}
+			});
+		}, 3000);
+	}
+
+	async startMaintenanceHandling() {
+		this._lastMaintenanceNotificationState = this._lastMaintenanceNotificationState ?? null;
+		this._lastMaintenanceStatusLog = this._lastMaintenanceStatusLog ?? null;
+		this._lastFirmwareStateLog = this._lastFirmwareStateLog ?? null;
+		this._lastPrepareRebootGateLog = this._lastPrepareRebootGateLog ?? null;
+
+		// Note: this is of global scope and will be effect on all pages.
+		if (!this.onMaintenanceStatusChangeCB) {
+			this.onMaintenanceStatusChangeCB = MaintMgrApi.on('onMaintenanceStatusChange', notification => {
+				const nextState = notification && notification.maintenanceStatus;
+				if (this._lastMaintenanceNotificationState !== nextState) {
+					this.LOG("App Init onMaintenanceStatusChange: " + JSON.stringify(notification));
+					this._lastMaintenanceNotificationState = nextState;
+				}
+				// The event payload may omit these fields; only overwrite cached values when present.
+				if (notification && typeof notification.isCriticalMaintenance === 'boolean') {
+					GLOBALS.maintenanceIsCriticalMaintenance = notification.isCriticalMaintenance;
+				}
+				if (notification && typeof notification.isRebootPending === 'boolean') {
+					GLOBALS.maintenanceIsRebootPending = notification.isRebootPending;
+				}
+				if (isMaintenanceActive(nextState)) {
+					MaintMgrApi.getMaintenanceActivityStatus().then(res => {
+						const maintenanceStatus = res && res.maintenanceStatus;
+						if (this._lastMaintenanceStatusLog !== maintenanceStatus) {
+							this.LOG("App init MaintenanceActivityStatus: " + JSON.stringify(res));
+							this._lastMaintenanceStatusLog = maintenanceStatus;
+						}
+						if (res?.success) {
+							GLOBALS.maintenanceIsCriticalMaintenance = Boolean(res.isCriticalMaintenance);
+							GLOBALS.maintenanceIsRebootPending = Boolean(res.isRebootPending);
+							if (isMaintenanceActive(maintenanceStatus)) {
+								this._startMaintenanceRebootPolling();
+							}
+						}
+					});
+				}
+			});
+		}
+
+		await MaintMgrApi.getMaintenanceActivityStatus().then(async res => {
+			const maintenanceStatus = res && res?.maintenanceStatus;
+			if (this._lastMaintenanceStatusLog !== maintenanceStatus) {
+				this.LOG("App init MaintenanceActivityStatus: " + JSON.stringify(res));
+				this._lastMaintenanceStatusLog = maintenanceStatus;
+			}
+			if (res?.success && isMaintenanceActive(maintenanceStatus)) {
+				GLOBALS.maintenanceIsCriticalMaintenance = Boolean(res.isCriticalMaintenance);
+				GLOBALS.maintenanceIsRebootPending = Boolean(res.isRebootPending);
+				await MaintMgrApi.getMaintenanceStartTime().then(res => {
+					if (res?.startTime !== this._lastMaintenanceStartTime) {
+						this.LOG("App init MaintenanceStartTime: " + JSON.stringify(res));
+						this._lastMaintenanceStartTime = res?.startTime;
+					}
+				});
+				this._startMaintenanceRebootPolling();
+			}
+		});
 	}
 
 	SubscribeToNetworkManager() {
@@ -832,9 +965,10 @@ export default class App extends Router.App {
 			else {
 				GLOBALS.IsConnectedToInternet = false
 			}
-			console.warn("onInternetStatusChange:", data);
+			this.WARN("onInternetStatusChange:", data);
 		});
 	}
+
 	SubscribeToMiracastService() {
 		thunder.on('org.rdk.MiracastService.1', 'onClientConnectionRequest', data => {
 			this.LOG('onClientConnectionRequest ' + JSON.stringify(data));
@@ -1178,32 +1312,32 @@ export default class App extends Router.App {
 	}
 
 	initializeInactivity() {
-        this.LOG('Into initialize');
+		this.LOG('Into initialize');
 
-        GLOBALS.EnergySaverMode = !!Storage.get('EnergySaverMode');
-        const { energySaver, screenSaver, sleepTimer } = inactivityHelper.getInactivityConfig();
+                GLOBALS.EnergySaverMode = !!Storage.get('EnergySaverMode');
+                const { energySaver, screenSaver, sleepTimer } = inactivityHelper.getInactivityConfig();
 		this.LOG(`Loaded config: energySaver=${energySaver}, screenSaver=${screenSaver}, sleep=${sleepTimer}`)
 
 		const hasValidTimer = inactivityHelper.isValidTimeout(screenSaver) || inactivityHelper.isValidTimeout(energySaver) || inactivityHelper.isValidTimeout(sleepTimer);
 
-        if (!hasValidTimer) {
-            this.LOG('No valid inactivity timers found. Disabling inactivity reporting.');
+		if (!hasValidTimer) {
+			this.LOG('No valid inactivity timers found. Disabling inactivity reporting.');
 			appApi.enableInactivityReporting(false)
-            .catch(err => this.ERR('Error disabling inactivity: ' + JSON.stringify(err)));
+			.catch(err => this.ERR('Error disabling inactivity: ' + JSON.stringify(err)));
 			return;
-        }
+		}
 
 		// Set initial interval based on valid timers
 		if (inactivityHelper.isValidTimeout(screenSaver)) {
-            this.$setInactivityIntervalStage('ScreenSaver', screenSaver);
-        } else if (inactivityHelper.isValidTimeout(sleepTimer)) {
-            this.$setInactivityIntervalStage('SleepTimer', sleepTimer);
-        } else if(inactivityHelper.isValidTimeout(energySaver)) {
-            this.$setInactivityIntervalStage('EnergySaver', energySaver);
-        } else {
-            this.LOG('No valid inactivity timers found. Engine will not start.');
-        }
-    }
+			this.$setInactivityIntervalStage('ScreenSaver', screenSaver);
+		} else if (inactivityHelper.isValidTimeout(sleepTimer)) {
+			this.$setInactivityIntervalStage('SleepTimer', sleepTimer);
+		} else if(inactivityHelper.isValidTimeout(energySaver)) {
+			this.$setInactivityIntervalStage('EnergySaver', energySaver);
+		} else {
+			this.LOG('No valid inactivity timers found. Engine will not start.');
+		}
+	}
 
 	async registerOnUserInactivityListener() {
 		try {
@@ -1271,7 +1405,7 @@ export default class App extends Router.App {
 		this.currentStage = stage;
 		this.currentInterval = minutes;
 
-        const { energySaver, screenSaver, sleepTimer } = inactivityHelper.getInactivityConfig();
+		const { energySaver, screenSaver, sleepTimer } = inactivityHelper.getInactivityConfig();
 		if (inactivityHelper.isValidTimeout(screenSaver)) {
 			this.currentStage = 'ScreenSaver';
 			this.currentInterval = screenSaver;
@@ -1296,13 +1430,13 @@ export default class App extends Router.App {
 	}
 
 	$resetInactivityStage(stage) {
-        this.LOG(`Reset request for stage=${stage}`);
-        if (this.currentStage === stage) {
-            this.currentStage = null;
-            this.currentInterval = null;
-        }
+		this.LOG(`Reset request for stage=${stage}`);
+		if (this.currentStage === stage) {
+			this.currentStage = null;
+			this.currentInterval = null;
+		}
 		inactivityHelper.$resetInactivity(stage);
-    }
+	}
 
 	async listenToVoiceControl() {
 		this.LOG("App listenToVoiceControl method got called, configuring VoiceControl Plugin")
@@ -1411,7 +1545,7 @@ export default class App extends Router.App {
 	}
 
 	launchFeaturedApp = async (appName) => {
-		console.log("Launching Featured App from AI 2.0: " + appName);
+		this.LOG("Launching Featured App from AI 2.0: " + appName);
 		let installedApps;
 		try {
 			installedApps = await AppManager.get().getInstalledApps();
@@ -1444,7 +1578,8 @@ export default class App extends Router.App {
 		this.LOG("Registering onActionStartRequest event listener for org.rdk.AppActions");
 		this.onActionStartRequest = thunder.on("org.rdk.AppActions", "onActionStartRequest", async notification => {
 			this.LOG("onActionStartRequest: " + JSON.stringify(notification));
-			if (notification && "DIAL" === notification.initiator && notification.intent && notification.handlerAppId) {
+			// onActionStartRequest: {"initiator":"DIAL","intent":"{\"actionType\":\"org.rdk.app.launch\",\"actionData\":{\"appId\":\"YouTube\",\"intent\":{\"action\":\"launch\",\"data\":{\"appContentData\":\"pairingCode=d27787a3-905f-40d4-a786-e8de0edc7071&theme=cl&dialLaunch=watch\"}}}}","handlerAppId":"YouTube"}
+			if (notification && ("DIAL" === notification.initiator) && notification.intent && notification.handlerAppId) {
 				let parsedIntent = {};
 				try {
 					parsedIntent = JSON.parse(notification.intent);
@@ -1453,24 +1588,37 @@ export default class App extends Router.App {
 					this.ERR("onActionStartRequest: Failed to parse nested intent string: " + err);
 					return false;
 				}
-				const intentAction = parsedIntent?.action;
-				const validIntents = ["launch", "hide", "resume", "stop"];
-				if (validIntents.includes(intentAction)) {
-					if ("launch" === intentAction || "resume" === intentAction) {
+				const actionType = parsedIntent?.actionType;
+				const dialAppId = parsedIntent?.actionData?.appId;
+				let intent = parsedIntent?.actionData?.intent;
+				if ("org.rdk.app.launch" === actionType) {
+					try {
+						const powerState = await PowerManagerApi.get().getPowerState();
+						if (powerState?.currentState !== PowerState.POWER_STATE_ON) {
+							await PowerManagerApi.get().setPowerState(PowerState.POWER_STATE_ON);
+						}
+					} catch (err) {
+						this.ERR("onActionStartRequest: Error getting/setting power state: " + JSON.stringify(err));
+					}
+					const additionalDataUrl = await XcastApi.getAdditionalDataUrl(dialAppId);
+					if (additionalDataUrl != null) {
 						try {
-							const powerState = await PowerManagerApi.get().getPowerState();
-							if (powerState?.currentState !== PowerState.POWER_STATE_ON) {
-								await PowerManagerApi.get().setPowerState(PowerState.POWER_STATE_ON);
-							}
+							const intentObj = typeof intent === "string" ? JSON.parse(intent) : (intent || {});
+							// Note: Verify whether your target expects additionalDataUrl at root or inside intentObj.data
+							intentObj.data = { ...intentObj.data, additionalDataUrl };
+							intent = JSON.stringify(intentObj);
 						} catch (err) {
-							this.ERR("onActionStartRequest: Error getting/setting power state: " + JSON.stringify(err));
+							this.ERR("onActionStartRequest: Failed to parse/append additionalDataUrl to intent: " + JSON.stringify(err));
 						}
 					}
-					const appName = notification.handlerAppId;
+					// append additionalDataUrl to intent
+					if (additionalDataUrl) {
+						intent = { ...intent, additionalDataUrl };
+					}
 					// LaunchApp argument - intent is of string type, pass it as received.
-					await this._handleXcastAppLifecycle(appName, notification.intent, intentAction);
+					await this._handleXcastAppLifecycle(dialAppId, intent, actionType);
 				} else {
-					this.LOG("onActionStartRequest: intent " + (intentAction || "undefined") + " is not supported.");
+					this.LOG("onActionStartRequest: intent " + (actionType || "undefined") + " is not supported.");
 				}
 			} else {
 				this.LOG("onActionStartRequest: notification is not from DIAL or missing required fields.");
@@ -1501,7 +1649,7 @@ export default class App extends Router.App {
 
 	$setEnergySaverMode(time) {
 		var timeoutInMinutes = inactivityHelper.$setEnergySaver(time);
-        this.LOG("Final timeout (minutes): " + timeoutInMinutes);
+		this.LOG("Final timeout (minutes): " + timeoutInMinutes);
 		try {
 			Storage.set('EnergySaverInterval', timeoutInMinutes);
 			this.$setInactivityIntervalStage("EnergySaver", parseInt(timeoutInMinutes));

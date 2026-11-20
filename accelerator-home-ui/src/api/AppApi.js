@@ -786,22 +786,6 @@ export default class AppApi {
     })
   }
 
-  //Get download percentage
-  getFirmwareDownloadPercent() {
-    return new Promise((resolve) => {
-      thunder
-        .call('org.rdk.System', 'getFirmwareDownloadPercent')
-        .then(result => {
-          resolve(result)
-        })
-        .catch(err => {
-          this.ERR("AppAPI getFirmwareDownloadPercent error:", JSON.stringify(err, 3, null))
-          resolve(false)
-        })
-    })
-  }
-
-
   // 5. Device Info
   systeminfo() {
     return new Promise((resolve) => {

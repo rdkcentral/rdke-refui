@@ -132,6 +132,11 @@ class XcastApi {
     return res?.standbybehavior || null;
   }
 
+  async getAdditionalDataUrl(applicationName) {
+    const res = await this._call('getAdditionalDataUrl', { applicationName }).catch(() => null);
+    return res?.success ? res?.additionalDataUrl || null : null;
+  }
+
   registerApplications(params) {
     return this._call('registerApplications', params)
       .then((result) => {
