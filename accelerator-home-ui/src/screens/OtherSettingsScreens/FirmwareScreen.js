@@ -108,7 +108,9 @@ export default class FirmwareScreen extends Lightning.Component {
                 this.FWUpdateRebooting = true;
                 if (this.FWUpdateRebootImmediately === true && !this.FWUpdateIsRebootDeferred) {
                     this.LOG('Starting auto reboot countdown');
-                    this.autoRebootStartedCB = this.startAutoRebootCountdown();
+                    if (!this.autoRebootStartedCB) {
+                        this.autoRebootStartedCB = this.startAutoRebootCountdown();
+                    }
                     return;
                 }
                 this.tag('State.Title').text.text = Language.translate('Firmware State: ') + Language.translate('Reboot to complete the update');

@@ -1600,7 +1600,7 @@ export default class App extends Router.App {
 					} catch (err) {
 						this.ERR("onActionStartRequest: Error getting/setting power state: " + JSON.stringify(err));
 					}
-					const additionalDataUrl = await XcastApi.get().getAdditionalDataUrl(dialAppId);
+					const additionalDataUrl = await XcastApi.getAdditionalDataUrl(dialAppId);
 					if (additionalDataUrl != null) {
 						try {
 							const intentObj = typeof intent === "string" ? JSON.parse(intent) : (intent || {});
