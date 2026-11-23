@@ -23,6 +23,7 @@ import ThunderJS from 'ThunderJS'
 import AppApi from '../api/AppApi.js'
 import { CONFIG, GLOBALS } from '../Config/Config.js'
 import HomeApi from '../api/HomeApi.js'
+import XcastApi from '../api/XcastApi'
 import GracenoteItem from '../items/GracenoteItem.js'
 import HDMIApi from '../api/HDMIApi.js'
 import NetworkManager from '../api/NetworkManagerAPI.js'
@@ -329,6 +330,7 @@ export default class MainView extends Lightning.Component {
     this.indexVal = 0
     this.homeApi = new HomeApi();
     this.hdmiApi = new HDMIApi()
+    this.xcastApi = new XcastApi();
     this.appApi = new AppApi()
     this._isRefreshingMyApps = false
     this._pendingMyAppsRefresh = false
