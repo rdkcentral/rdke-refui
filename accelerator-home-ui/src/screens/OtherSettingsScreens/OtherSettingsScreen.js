@@ -229,7 +229,7 @@ export default class OtherSettingsScreen extends Lightning.Component {
         this.tag("EnergySaver.Title").text.text = Language.translate("Energy Saver: ") + Language.translate(standbyMode)
     }
     $sleepTimerText(text) {
-        this.tag('SleepTimer.Title').text.text = Language.translate('Sleep Timer: ') + text
+        this.tag('SleepTimer.Title').text.text = Language.translate('Sleep Timer: ') + Language.translate(text)
     }
     $screenSaverTime(text){
         this.tag('ScreenSaver.Title').text.text = Language.translate('Screen-Saver: ') + text
@@ -238,13 +238,13 @@ export default class OtherSettingsScreen extends Lightning.Component {
     _focus() {
         this._setState(this.state)
         if (Storage.get('TimeoutInterval')) {
-            this.tag('SleepTimer.Title').text.text = Language.translate('Sleep Timer: ') + Storage.get('TimeoutInterval')
+            this.tag('SleepTimer.Title').text.text = Language.translate('Sleep Timer: ') + Language.translate(Storage.get('TimeoutInterval'))
         }
         else {
             this.tag('SleepTimer.Title').text.text = Language.translate('Sleep Timer: ') + 'Off'
         }
         if (Storage.get('ScreenSaverTimeoutInterval')) {
-            this.tag('ScreenSaver.Title').text.text = Language.translate('Screen-Saver: ') + Storage.get('ScreenSaverTimeoutInterval') + ' min'
+            this.tag('ScreenSaver.Title').text.text = Language.translate('Screen-Saver: ') + Storage.get('ScreenSaverTimeoutInterval') + ' ' + Language.translate('Minutes')
         } else {
             this.tag('ScreenSaver.Title').text.text = Language.translate('Screen-Saver: ') + 'Off'
         }
