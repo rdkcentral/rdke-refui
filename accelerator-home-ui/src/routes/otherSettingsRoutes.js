@@ -25,6 +25,7 @@ import AdvancedSettingsScreen from '../screens/OtherSettingsScreens/AdvancedSett
 import TTSScreen from '../screens/OtherSettingsScreens/TTSScreen'
 import DeviceScreen from '../screens/OtherSettingsScreens/DeviceScreen'
 import DeviceInformationScreen from '../screens/OtherSettingsScreens/DeviceInformationScreen'
+import FriendlyNameScreen from '../screens/OtherSettingsScreens/FriendlyNameScreen'
 import FirmwareScreen from '../screens/OtherSettingsScreens/FirmwareScreen'
 import RebootConfirmationScreen from '../screens/OtherSettingsScreens/RebootConfirmationScreen'
 import TimeZone from '../screens/OtherSettingsScreens/TimeZone'
@@ -72,6 +73,11 @@ export default {
     {
       path: 'settings/advanced/device/info',
       component: DeviceInformationScreen,
+      widgets: ['Menu', 'Volume', "AppCarousel"],
+    },
+    {
+      path: 'settings/advanced/device/name',
+      component: FriendlyNameScreen,
       widgets: ['Menu', 'Volume', "AppCarousel"],
     },
     {

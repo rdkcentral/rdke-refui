@@ -41,23 +41,26 @@ const FWUpdateState = Object.freeze({
     FWUpdateStateDownloadComplete: 4,
     FWUpdateStateValidationComplete: 5,
     FWUpdateStatePreparingReboot: 6,
-    FWUpdateStateNoUpgradeNeeded: 7,
+    FWUpdateStateOnHoldForOptOut: 7,
+    FWUpdateStateCriticalReboot: 8,
+    FWUpdateStateUpgradeNotRequired: 9,
 });
 
-// 2. Map the enum values to human-readable strings
 const FirmwareUpdateStateStr = Object.freeze({
-    [FWUpdateState.FWUpdateStateUninitialized]: 'Uninitialized',
-    [FWUpdateState.FWUpdateStateRequesting]: 'Requesting',
-    [FWUpdateState.FWUpdateStateDownloading]: 'Downloading',
-    [FWUpdateState.FWUpdateStateFailed]: 'Failed',
-    [FWUpdateState.FWUpdateStateDownloadComplete]: 'Download Complete',
-    [FWUpdateState.FWUpdateStateValidationComplete]: 'Validation Complete',
-    [FWUpdateState.FWUpdateStatePreparingReboot]: 'Preparing to Reboot',
-    [FWUpdateState.FWUpdateStateNoUpgradeNeeded]: 'No Upgrade Needed',
+    [FWUpdateState.FWUpdateStateUninitialized]: { en: 'Uninitialized', es: 'Sin inicializar' },
+    [FWUpdateState.FWUpdateStateRequesting]: { en: 'Requesting', es: 'Solicitando' },
+    [FWUpdateState.FWUpdateStateDownloading]: { en: 'Downloading', es: 'Descargando' },
+    [FWUpdateState.FWUpdateStateFailed]: { en: 'Failed', es: 'Error' },
+    [FWUpdateState.FWUpdateStateDownloadComplete]: { en: 'Download Complete', es: 'Descarga completa' },
+    [FWUpdateState.FWUpdateStateValidationComplete]: { en: 'Validation Complete', es: 'Validación completa' },
+    [FWUpdateState.FWUpdateStatePreparingReboot]: { en: 'Preparing to Reboot', es: 'Preparando para reiniciar' },
+    [FWUpdateState.FWUpdateStateOnHoldForOptOut]: { en: 'On Hold for Opt-Out', es: 'En espera por exclusión' },
+    [FWUpdateState.FWUpdateStateCriticalReboot]: { en: 'Critical Reboot', es: 'Reinicio crítico' },
+    [FWUpdateState.FWUpdateStateUpgradeNotRequired]: { en: 'Upgrade Not Required', es: 'Actualización no requerida' },
 });
 
-function getFirmwareUpdateStateString(state) {
-    return FirmwareUpdateStateStr[state] ?? 'Unknown State';
+function getFirmwareUpdateStateString(state, lang = CONFIG.language) {
+    return FirmwareUpdateStateStr[state]?.[lang] ?? ((lang === 'en') ? 'Unknown state' : 'Estado desconocido');
 }
 
 class SystemServices {
@@ -97,6 +100,7 @@ class SystemServices {
                 if (result) {
                     resolve(result);
                 } else {
+                    this.ERR(this.logtag + `${method} error: No result returned`);
                     reject(false);
                 }
             }).catch(err => {
@@ -115,12 +119,10 @@ class SystemServices {
         if (!this.eventListeners[event]) {
             this.eventListeners[event] = [];
         }
-        this.eventListeners[event].push(callback);
 
-        // Subscribe to the event via Thunder
-        this.thunder.subscribe({
-            event: `${this.callsign}.${event}`
-        }, callback);
+        const listener = this.thunder.on(this.callsign, event, callback);
+        this.eventListeners[event].push({ callback, listener });
+        return listener;
     }
 
     /**
@@ -129,14 +131,24 @@ class SystemServices {
      * @param {function} callback - Callback function
      */
     off(event, callback) {
-        if (this.eventListeners[event]) {
-            this.eventListeners[event] = this.eventListeners[event].filter(cb => cb !== callback);
+        if (!this.eventListeners[event]) {
+            return;
         }
 
-        // Unsubscribe from the event via Thunder
-        this.thunder.unsubscribe({
-            event: `${this.callsign}.${event}`
-        }, callback);
+        const index = this.eventListeners[event].findIndex(entry => entry.callback === callback || entry.listener === callback);
+        if (index === -1) {
+            return;
+        }
+
+        const { listener } = this.eventListeners[event][index];
+        if (listener && typeof listener.dispose === 'function') {
+            listener.dispose();
+        }
+
+        this.eventListeners[event].splice(index, 1);
+        if (this.eventListeners[event].length === 0) {
+            delete this.eventListeners[event];
+        }
     }
 
     /************************** Methods *********************/

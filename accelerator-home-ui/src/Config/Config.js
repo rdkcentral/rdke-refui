@@ -82,6 +82,35 @@ export const GLOBALS = {
   _EnergySaverMode:false,
   _selfclientAppName: 'com.rdkcentral.refui',
   _selfClientId: null,
+  _maintenanceIsCriticalMaintenance: false,
+  _maintenanceIsRebootPending: false,
+  _lastFirmwareUpdateState: null,
+  _skipFirmwareUpdateRetry: false,
+
+  set maintenanceIsCriticalMaintenance(value) {
+    this._maintenanceIsCriticalMaintenance = value;
+  },
+  get maintenanceIsCriticalMaintenance() {
+    return this._maintenanceIsCriticalMaintenance;
+  },
+  set maintenanceIsRebootPending(value) {
+    this._maintenanceIsRebootPending = value;
+  },
+  get maintenanceIsRebootPending() {
+    return this._maintenanceIsRebootPending;
+  },
+  set lastFirmwareUpdateState(value) {
+    this._lastFirmwareUpdateState = value;
+  },
+  get lastFirmwareUpdateState() {
+    return this._lastFirmwareUpdateState;
+  },
+  set skipFirmwareUpdateRetry(value) {
+    this._skipFirmwareUpdateRetry = value;
+  },
+  get skipFirmwareUpdateRetry() {
+    return this._skipFirmwareUpdateRetry;
+  },
   set selfclientAppName(name)
   {
     this._selfclientAppName = name

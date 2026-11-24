@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-import { Lightning, Router } from '@lightningjs/sdk'
+import { Lightning, Router, Language } from '@lightningjs/sdk'
 import LightningPlayerControls from './LightningPlayerControl';
 import { CONFIG, GLOBALS } from '../Config/Config';
 import ChannelOverlay from './ChannelOverlay';
@@ -270,13 +270,24 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 	}
 
 	async _ensureNativePlayerServiceStarted() {
-		if (this._nativeServiceReady) return;
+		if (this._nativeServiceReady) {
+			try {
+				const priority = await AppManager.get().getAppProperty(nativePlayerServiceBolt, 'priority');
+				if (0 !== priority) {
+					await AppManager.get().setAppProperty(nativePlayerServiceBolt, 'priority', 0)
+				}
+			} catch (error) {
+				await AppManager.get().setAppProperty(nativePlayerServiceBolt, 'priority', 0)
+				return;
+			}
+		}
 		if (!this._nativeServiceLaunchPromise) {
 			this._nativeServiceLaunchPromise = (async () => {
 				const isInstalled = await AppManager.get().isInstalled(nativePlayerServiceBolt)
 				if (!isInstalled) {
 					throw new Error(nativePlayerServiceBolt + ' is not installed on the device')
 				}
+				await AppManager.get().setAppProperty(nativePlayerServiceBolt, 'priority', 0)
 				const response = await AppManager.get().launchApp(nativePlayerServiceBolt)
 				this.LOG('launchApp response: ' + JSON.stringify(response))
 				this._nativeServiceReady = true;
@@ -747,7 +758,7 @@ export default class AAMPVideoPlayer extends Lightning.Component {
 
 		this.showPlayerControls();
 		this.tag('PlaybackNotification').patch({ alpha: 1 });
-		this.tag('PlaybackNotification').tag('Message').text.text = message;
+		this.tag('PlaybackNotification').tag('Message').text.text = Language.translate(message);
 
 		if (!this._isPlaybackNotificationPinned) {
 			this._errorMessageTimeout = setTimeout(() => {

@@ -26,6 +26,8 @@ import PowerManagerApi from './PowerManagerApi.js';
 import RDKWindowManager from './RDKWindowManagerApi.js';
 import AppManager from './AppManagerApi.js';
 
+const USER_FRIENDLY_NAME_KEY = "UserFriendlyName";
+
 const thunder = ThunderJS(CONFIG.thunderConfig)
 
 /**
@@ -784,22 +786,6 @@ export default class AppApi {
     })
   }
 
-  //Get download percentage
-  getFirmwareDownloadPercent() {
-    return new Promise((resolve) => {
-      thunder
-        .call('org.rdk.System', 'getFirmwareDownloadPercent')
-        .then(result => {
-          resolve(result)
-        })
-        .catch(err => {
-          this.ERR("AppAPI getFirmwareDownloadPercent error:", JSON.stringify(err, 3, null))
-          resolve(false)
-        })
-    })
-  }
-
-
   // 5. Device Info
   systeminfo() {
     return new Promise((resolve) => {
@@ -900,6 +886,16 @@ export default class AppApi {
         reject(err)
       })
     })
+  }
+
+  getUserFriendlyName() {
+    return Storage.get(USER_FRIENDLY_NAME_KEY);
+  }
+
+  async setUserFriendlyName(name) {
+    const result = await this.setFriendlyName(name);
+    Storage.set(USER_FRIENDLY_NAME_KEY, name);
+    return result;
   }
 
   getRFCConfig(rfcParamsList) {

@@ -1,16 +1,16 @@
 {
   "id": "com.rdkcentral.refui",
-  "version": "6.0.42",
-  "versionName": "6.0.42",
+  "version": "6.0.50",
+  "versionName": "6.0.50",
   "name": "RDK Ref UI Home Screen",
   "packageType": "application",
-  "entryPoint": "--lightning --dev file:///usr/share/refui/index.html",
+  "entryPoint": "--lightning file:///usr/share/refui/index.html",
   "dependencies": {
     "com.rdkcentral.wpe": "~0.5.0"
   },
   "permissions": [
     "urn:rdk:permission:home-app",
-    "urn:rdk:permission.internet",
+    "urn:rdk:permission:internet",
     "urn:rdk:permission:firebolt",
     "urn:rdk:permission:thunder",
     "urn:rdk:permission:rialto",
@@ -19,5 +19,29 @@
     "urn:rdk:permission:compositor"
   ],
   "configuration": {
+    "urn:rdk:config:network": [
+      {
+        "name": "com.rdkcentral.nativeplayer",
+        "port": 10101,
+        "protocol": "tcp",
+        "type": "imported"
+      },
+      {
+        "name": "wpe-inspector",
+        "port": 12345,
+        "protocol": "tcp",
+        "type": "public"
+      }
+    ],
+    "urn:rdk:config:overrides": {
+      "application": {
+        "options": {
+          "disableWebSecurity": true
+        },
+        "envs": {
+          "WEBKIT_INSPECTOR_HTTP_SERVER": "0.0.0.0:12345"
+        }
+      }
+    }
   }
 }
