@@ -278,12 +278,17 @@ export default class DIALManager {
           const additionalDataUrl = notification.strAddDataUrl;
           const params = `&inApp=${this.appController.isLaunched(desc.id)}&launch=dial`;
           const url = `${desc.url}?${pairingCode}&additionalDataUrl=${additionalDataUrl}${params}`;
-
+          const intent = JSON.stringify({
+            action: url,
+            context: {
+              source: "DIAL",
+            },
+          });
           const isActive = this.appController.getAppLifecycleState(desc.id) === 'APP_STATE_ACTIVE';
         if (isActive) {
-        await this.appController.sendIntent(desc.id, url);
+        await this.appController.sendIntent(desc.id, intent);
         } else {
-        await this.appController.launch(desc.id, url);
+        await this.appController.launch(desc.id, intent);
         }
           break;
         }
