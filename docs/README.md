@@ -222,7 +222,7 @@ sequenceDiagram
     AppCtrl->>AppMgr: getLoadedApps()
     AppMgr-->>AppCtrl: app list (mainClientId)
     AppCtrl->>WM: addKeyIntercepts(mainClientId, intercepts)
-    WM-->>AppCtrl: success
+    WM-->>AppCtrl: null (successful call has no output)
     AppCtrl-->>App: init() resolved
     Note over App,AppCtrl: App._init() also calls AppController.subscribe(thunder) for onAppLifecycleStateChanged, onAppLaunchRequest, ...
     App->>Router: navigate("splash/...")
@@ -277,7 +277,7 @@ sequenceDiagram
     AppCtrl->>AppMgr: thunder.call('org.rdk.AppManager.1', 'getLoadedApps')
     AppMgr-->>AppCtrl: [{appId, appInstanceId}, ...]
     AppCtrl->>WM: addKeyIntercepts({clientId, intercepts})
-    WM-->>AppCtrl: {success: true}
+    WM-->>AppCtrl: null (successful call has no output)
     AppCtrl-->>App: init() resolved
     App->>App: Router.navigate("splash/...")
 ```
@@ -371,7 +371,7 @@ Key file paths in the table below are relative to `accelerator-home-ui/`.
 | `org.rdk.Bluetooth`         | Device discovery, pairing, connection for remote controls and audio devices                        | `startScan()`, `pair()`, `connect()`, `onDiscoveredDevice`, `onStatusChanged`, `onPairingRequest`                                                                           |
 | `org.rdk.HdmiInput`         | Query and switch HDMI input sources                                                                | `getHDMIInputDevices()`, `startHdmiInput()`, `stopHdmiInput()`, `onInputStatusChanged`, `onSignalChanged`                                                                   |
 | `org.rdk.HdmiCecSource`     | Enable CEC and manage TV control actions via HDMI-CEC                                              | `getEnabled()`, `setEnabled()`, `performOTPAction()`, `getActiveSourceStatus()`                                                                                             |
-| `org.rdk.Xcast`             | Enable cast discovery, set standby behavior, and register/unregister DIAL applications             | `setEnabled()`, `setStandbyBehavior()`, `registerApplications()`, `unregisterApplications()`                                                                                |
+| `org.rdk.Xcast`             | Enable cast discovery, set standby behavior, and register DIAL applications                        | `setEnabled()`, `setStandbyBehavior()`, `registerApplications()`                                                                                                            |
 | `org.rdk.AppActions`        | Receive DIAL launch, hide, resume, and stop intents for cast applications                          | `onActionStartRequest`                                                                                                                                                      |
 | `org.rdk.VoiceControl`      | Activate voice session, subscribe to keyword and stream events                                     | `configureVoice()`, `onKeywordVerification`, `onSessionBegin`, `onSessionEnd`                                                                                               |
 | `org.rdk.MiracastService`   | Enable/disable Miracast, accept/reject incoming connections                                        | `setEnable()`, `getEnable()`, `acceptClientConnection()`, `stopClientConnection()`                                                                                          |
@@ -419,7 +419,7 @@ sequenceDiagram
 
 **Event Notification Flow:**
 
-Adapter classes subscribe to plugin events during `activate()`. When an event arrives, the adapter dispatches it to a registered callback, which was set by the screen or the `App` root component.
+Some adapters, such as `VoiceApi` and `HDMIApi`, subscribe to plugin events during `activate()` and dispatch notifications to registered callbacks. Other subscriptions are registered directly: `App.js` handles power (`onPowerModeChanged`) and network (`onInternetStatusChange`) notifications, while `AppController.subscribe(thunder)` registers application lifecycle and package events (`onAppLifecycleStateChanged`, `onAppLaunchRequest`, `onAppInstalled`, `onAppUninstalled`, `onAppUnloaded`). The diagram below illustrates only the adapter-dispatch pattern.
 
 ```mermaid
 sequenceDiagram
@@ -468,7 +468,7 @@ Implementation file paths in the table below are relative to `accelerator-home-u
 
 - **State / Lifecycle Management**: `GLOBALS` (module-level object in `Config.js`) is the authoritative store for runtime state: `topmostApp`, `powerState`, `selfClientId`, `IsConnectedToInternet`, `Miracastclientdevicedetails`. `AppController` maintains the focused client ID and main client ID for window management. State transitions on power mode or app lifecycle events are handled by callbacks registered in `App.js` and `AppController.js`.
 
-- **Event Processing**: Plugin events are registered in each adapter's `activate()` method via `thunder.on(callsign, eventName, callback)`. Callbacks invoke registered handler functions stored in the adapter's `_events` Map. The `App.js` root registers handlers on adapters directly, or adapters forward events to UI components through the Lightning component event system.
+- **Event Processing**: Some adapters (for example `VoiceApi`, `HDMIApi`) register plugin events in their `activate()` method via `thunder.on(callsign, eventName, callback)`; callbacks invoke registered handler functions stored in the adapter's `_events` Map, and adapters forward events to UI components through the Lightning component event system. Other events are subscribed to directly rather than through an adapter: `App.js` registers power (`onPowerModeChanged`) and network (`onInternetStatusChange`) handlers itself, and `AppController.subscribe(thunder)` registers application lifecycle and package events.
 
 - **Error Handling Strategy**: Calls may return ThunderJS Promises directly or wrap them in a new Promise. On failure, the error is usually logged via `console.error`, and the Promise is then either rejected with the error or resolved with a default value (for example an empty array or `false`). Some failure paths only log the error without settling the outer Promise, so callers can remain pending. Examples are the `catch` blocks in `VoiceApi.activate()` and `VoiceApi.deactivate()`, and the plugin activation failure path in `AppApi.getSupportedResolutions()`. Keep this in mind when diagnosing stalled initialization or settings screens. `AppController` uses the `ThunderError` helper class to produce structured error strings.
 
