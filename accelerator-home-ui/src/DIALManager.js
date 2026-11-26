@@ -28,7 +28,7 @@ let instance = null;
 
 const DIAL_APPS = {
   "YouTube": {
-    id: "com.rdkcentral.youtube-exp",
+    id: "com.rdkcentral.youtube",
     url: "https://www.youtube.com/tv",
     cors: ".youtube.com",
   },
