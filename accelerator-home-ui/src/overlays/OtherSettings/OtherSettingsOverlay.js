@@ -208,20 +208,20 @@
          this._setState('SleepTimer')
      }
      $sleepTimerText(text) {
-         this.tag('SleepTimer.Title').text.text = Language.translate('Sleep Timer: ') + text
+         this.tag('SleepTimer.Title').text.text = Language.translate('Sleep Timer: ') + Language.translate(text)
      }
 
      _focus() {
         this._setState('SleepTimer')
 
          if (Storage.get('TimeoutInterval')) {
-             this.tag('SleepTimer.Title').text.text = Language.translate('Sleep Timer: ') + Storage.get('TimeoutInterval')
+             this.tag('SleepTimer.Title').text.text = Language.translate('Sleep Timer: ') + Language.translate(Storage.get('TimeoutInterval'))
          }
          else {
              this.tag('SleepTimer.Title').text.text = Language.translate('Sleep Timer: ') + 'Off'
          }
          if (Storage.get('ScreenSaverTimeoutInterval')) {
-            this.tag('ScreenSaver.Title').text.text = Language.translate('Screen-Saver: ') + Storage.get('ScreenSaverTimeoutInterval') + ' min'
+            this.tag('ScreenSaver.Title').text.text = Language.translate('Screen-Saver: ') + Storage.get('ScreenSaverTimeoutInterval') + ' ' + Language.translate('Minutes')
          } else {
             this.tag('ScreenSaver.Title').text.text = Language.translate('Screen-Saver: ') + 'Off'
          }

@@ -89,7 +89,7 @@ export default class SreenSaverScreen extends Lightning.Component {
                 w: 1920 - 300,
                 h: 90,
                 type: SettingsItem,
-                item: item.value
+                item: Language.translate(item.value)
             }
         })
         this.tag('List').getElement(index).tag('Tick').visible = true
@@ -130,7 +130,7 @@ export default class SreenSaverScreen extends Lightning.Component {
                 w: 1920 - 300,
                 h: 90,
                 type: SettingsItem,
-                item: item.value
+                item: Language.translate(item.value)
             }
         })
         this.tag('List').getElement(index).tag('Tick').visible = true
