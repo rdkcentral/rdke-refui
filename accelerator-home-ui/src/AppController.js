@@ -301,8 +301,12 @@ export default class AppController {
     }
   }
 
-  async launch(id) {
-    await AppManager.get().launchApp(id);
+  /**
+   * @param {string} id
+   * @param {string} [intent]
+   */
+  async launch(id, intent) {
+    await AppManager.get().launchApp(id, intent);
   }
 
   isLaunched(id) {
