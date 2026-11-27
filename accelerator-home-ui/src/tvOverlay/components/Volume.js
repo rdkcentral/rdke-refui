@@ -80,7 +80,7 @@ export default class Volume extends Lightning.Component {
         // so it's warm by the time a fallback key needs to be sent.
         this.cecApi.getCachedDeviceList();
         this.getMuteStatus();
-        this.LOG("_init this.mute-" + JSON.stringify(this.mute));
+        //this.LOG("_init this.mute-" + JSON.stringify(this.mute));
     }
 
     async onVolumeKeyDown() {

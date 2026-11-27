@@ -62,7 +62,10 @@ import RDKWindowManager from './api/RDKWindowManagerApi.js';
 import RuntimeManager from './api/RuntimeManagerApi.js';
 import AppController from './AppController.js';
 import userSettingsApi from './api/UserSettingsApi.js';
-import XcastApi from '../src/api/XcastApi.js';
+import DIALManager from './DIALManager.js';
+var packageManager = new PackageManager();
+import SysSrvApi, { FWUpdateState, FWUpdateAvailableEnum } from './api/SystemServicesApi';
+import MaintMgrApi, { isMaintenanceActive } from './api/MaintenanceMgrApi';
 
 var thunder = ThunderJS(CONFIG.thunderConfig);
 var appApi = new AppApi();
@@ -81,7 +84,6 @@ export default class App extends Router.App {
 		this.LOG = console.log;
 		this.ERR = console.error;
 		this.WARN = console.warn;
-		this.xcastAppIdMap = new Map();
 	}
 
 	_handleAppClose() {
@@ -135,11 +137,11 @@ export default class App extends Router.App {
 			}
 		};
 
-		function updateAddress() {
+		const updateAddress = () => {
 			if (window.navigator.onLine) {
-				console.log("is online");
+				this.LOG("is online");
 			} else {
-				console.log(`is offline`)
+				this.LOG(`is offline`)
 			}
 		}
 		window.addEventListener("offline", updateAddress)
@@ -248,16 +250,20 @@ export default class App extends Router.App {
 	}
 
 	_performKeyPressOPerations(key) {
+		const activePage = Router.activePage && Router.activePage();
+		if (activePage && activePage.updateInProgress && key.keyCode !== Keymap.Power) {
+			this.LOG("Ignoring hotkey while firmware update is in progress: " + JSON.stringify(key.keyCode));
+		}
 		let self = this;
-			if(GLOBALS.MiracastNotificationstatus && key.keyCode !== Keymap.Power && key.keyCode !== Keymap.Home ){
-				return false
-			} else if ((key.keyCode == Keymap.Home || key.keyCode == Keymap.Escape) && !Router.isNavigating()) {
-				if (Router.getActiveHash().startsWith("splash")) {
-					if (Router.getActiveHash() !== "splash/language") {
-						Router.navigate("splash/language");
-					}
-					return true;
+		if(GLOBALS.MiracastNotificationstatus && key.keyCode !== Keymap.Power && key.keyCode !== Keymap.Home ) {
+			return false
+		} else if ((key.keyCode == Keymap.Home || key.keyCode == Keymap.Escape) && !Router.isNavigating()) {
+			if (Router.getActiveHash().startsWith("splash")) {
+				if (Router.getActiveHash() !== "splash/language") {
+					Router.navigate("splash/language");
 				}
+				return true;
+			}
 			if (GLOBALS.topmostApp.includes("dac.native")) {
 				this.jumpToRoute("apps");
 			} else if (GLOBALS.Miracastclientdevicedetails.state === "INITIATED" || GLOBALS.Miracastclientdevicedetails.state === "INPROGRESS ") {
@@ -269,7 +275,7 @@ export default class App extends Router.App {
 				miracast.acceptClientConnection("Reject").then(res=>{
 					if(res.success){Router.focusPage()}
 				})
-			} else {
+		    } else {
 				this.jumpToRoute("menu"); //method to exit the current app(if any) and route to home screen
 			}
 			return true
@@ -441,21 +447,12 @@ export default class App extends Router.App {
 		this.tag("VideoScreen").alpha = alpha;
 		// this.tag("ScreenSaver").alpha = alpha;
 	}
-	async _init() {
+	_init() {
 		let self = this;
 		this.inactivityEngineInitialized = false;
 		this.thunderListenerRegistered = false;
 		this.currentStage = null;
 		this.currentInterval = null;
-		this._xcastPackageChangeListener = (action, data) => {
-			if (action === 'installed' || action === 'uninstalled') {
-				this.LOG(`Xcast: package changed (${action}), refreshing app registrations: ` + JSON.stringify(data));
-				this._registerXcastApplications(action, data?.appId).catch(err => {
-					this.ERR("Error refreshing Xcast app registrations: " + JSON.stringify(err));
-				});
-			}
-		};
-		AppController.get().addPackageChangedListener(this._xcastPackageChangeListener);
 		self.appIdentifiers = {
 			"YouTubeTV": "n:4",
 			"YouTube": "n:3",
@@ -489,10 +486,10 @@ export default class App extends Router.App {
 		Storage.set("lastVisitedRoute", "menu"); //setting to menu so that it will be always defaulted to #menu
 		GLOBALS.LastvisitedRoute = "menu";
 		NetworkManager.IsConnectedToInternet().then(result => {
-			if (result.connected)
-				GLOBALS.IsConnectedToInternet = true;
-			else
-				GLOBALS.IsConnectedToInternet = false;
+		if (result.connected)
+			GLOBALS.IsConnectedToInternet = true;
+		else
+			GLOBALS.IsConnectedToInternet = false;
 		});
 		appApi.enableDisplaySettings().then(res => {
 			this.LOG("results : " + JSON.stringify(res))
@@ -527,8 +524,8 @@ export default class App extends Router.App {
 					this.subscribeToPowerChangeNotifications()
 				}
 			}
-			if (noti.callsign === "org.rdk.AppManager") {
-				if (noti.data.state === "activated") {
+			if( noti.callsign === "org.rdk.AppManager")	{
+				if(noti.data.state === "activated")	{
 					this._SubscribeToAppManagerNotifications();
 				}
 			}
@@ -644,183 +641,180 @@ export default class App extends Router.App {
 					cecApi.getActiveSourceStatus().then((res) => {
 						Storage.set("UICacheCECActiveSourceStatus", res);
 						this.LOG("App getActiveSourceStatus: " + JSON.stringify(res) + " UICacheCECActiveSourceStatus:" + JSON.stringify(Storage.get("UICacheCECActiveSourceStatus")));
-					});
+			});
 				}).catch((err) => this.ERR(JSON.stringify(err)))
 			}
 		})
 		this._subscribeToIOPortNotifications();
 		this._updateLanguageToDefault();
+		this._activatePlugin(
+			"org.rdk.AppPackageManager",
+			"AppPackageManager",
+			() => packageManager.activate()
+		);
+		this._activatePlugin(
+			"org.rdk.AppManager",
+			"AppManager",
+			() => AppManager.get().activate()
+		);
+
+		this._activatePlugin(
+			"org.rdk.RDKWindowManager",
+			"RDKWindowManager",
+			() => RDKWindowManager.get().activate(),
+			() => this._SubscribeToRDKWindowManagerNotifications()
+		);
+
+		this._activatePlugin(
+			"org.rdk.RuntimeManager",
+			"RuntimeManager",
+			() => RuntimeManager.get().activate(),
+			() => this._SubscribeToRuntimeManagerNotifications()
+		);
 		this._SubscribeToAppManagerNotifications();
 		this._SubscribeToRDKWindowManagerNotifications();
 		this._SubscribeToRuntimeManagerNotifications();
-		this.registerAppActionEvent();
-		await this.setupDial();
-	}
-
-	async setupDial() {
-		let serialnumber = "DefaultSLNO";
-		let modelName = "RDK" + GLOBALS.deviceType;
-
-		try {
-			const serialRes = await appApi.getSerialNumber();
-			serialnumber = (serialRes && serialRes.length >= 6) ? serialRes.slice(-6) : (serialRes || serialnumber);
-		} catch (err) {
-			this.ERR("Failed to fetch serial number: " + JSON.stringify(err));
-		}
-
-		const model = await XcastApi.getModelName();
-		modelName = (model || modelName) + serialnumber;
-		this.LOG("Xcast friendly name to be set: " + JSON.stringify(modelName));
-
-		try {
-			await appApi.setFriendlyName(modelName);
-
-			const standbyRes = await XcastApi.setStandbyBehavior("active");
-			this.LOG("Xcast setStandbyBehavior result: " + JSON.stringify(standbyRes));
-
-			await this._registerXcastApplications();
-
-			const enabledRes = await XcastApi.setEnabled(true);
-			GLOBALS.LocalDeviceDiscoveryStatus = true;
-			console.warn("Xcast setEnabled success: " + JSON.stringify(enabledRes));
-
-		} catch (pipelineError) {
-			GLOBALS.LocalDeviceDiscoveryStatus = false;
-			this.ERR("Critical exception during sequential Xcast activation pipeline: " + JSON.stringify(pipelineError));
-		}
-	}
-
-	_getXcastAppId(applicationName) {
-		this.LOG("Xcast: _getXcastAppId " + JSON.stringify(applicationName));
-		if (this.xcastAppIdMap.has(applicationName)) {
-			const appId = this.xcastAppIdMap.get(applicationName);
-			this.LOG("Xcast: _getXcastAppId found appId " + JSON.stringify(appId));
-			return appId;
-		}
-		return null;
-	}
-
-	_updateDialAppList(params, name, prefix, cors, appId, query = 'source_type=12', allowStop = 1, _payload = null) {
-		params.applications.push({
-			name : name,
-			appid: appId,
-			prefix: prefix,
-			cors: cors,
-			query: query,
-			allowStop: allowStop,
-			payload: _payload
+		DIALManager.get().start().catch(err => {
+			console.error(`DIALManager.start() failed: ${err}`);
 		});
-		this.xcastAppIdMap.set(name, appId);
-		this.LOG("Xcast: _updateDialAppList params: " + JSON.stringify(params));
-		this.LOG("Xcast: _updateDialAppList xcastAppIdMap: " + JSON.stringify(Array.from(this.xcastAppIdMap.entries())));
 	}
 
-	async _registerXcastApplications(action = null, dataAppId = null)
-	{
-		try {
-			// Package manager related trigger.
-			if (action && dataAppId) {
-				const registered = await XcastApi.getRegisteredApps();
-				this.LOG("Xcast: Currently registered applications: " + JSON.stringify(registered));
-				if (Array.isArray(registered) && dataAppId) {
-					const appNameToUnregister = registered.find(app => app?.appId === dataAppId || app?.appid === dataAppId);
-					if (appNameToUnregister && "uninstalled" === action) {
-						this.LOG("Xcast: Unregistering application with appId: " + dataAppId + " and name: " + appNameToUnregister.name);
-						return XcastApi.unregisterApplications([appNameToUnregister.name]);
-					} else if (!appNameToUnregister && "installed" === action) {
-						this.LOG("Xcast: Application: " + dataAppId + " installed, register now");
-						const config = await packageManager.getConfigForInstalledPackage(dataAppId);
-						const appName = config?.name || config?.applicationName;
-						if (!appName) {
-							this.WARN("Xcast: Missing app name for package registration: " + JSON.stringify(config));
-							return;
-						}
-						const params = { applications: [] };
-						const rdkDialCfg = config?.configuration?.["urn:rdk:config:dial"];
-						const corsDomains = Array.isArray(rdkDialCfg?.corsDomains) ? [...rdkDialCfg.corsDomains] : [];
-						const query = "source_type=12";
-						const allowStop = 1;
-						this._updateDialAppList(params, appName, "my" + appName, corsDomains.join(" "), dataAppId, query, allowStop);
-						if (params.applications.length > 0) {
-							const success = await XcastApi.registerApplications(params);
-							if (true !== success?.success) {
-								throw new Error("Platform plugin interface rejected the application registration parameters payload");
-							} else {
-								this.LOG("Xcast: Application registered successfully");
-							}
-							return;
-						}
-					} else {
-						this.LOG("Xcast: No action required for application with appId: " + dataAppId + " and name: " + (appNameToUnregister?.name || "unknown"));
-					}
-				}
-			} else {
-				// Initial startup.
-				const res = await packageManager.getConfigListForInstalledPackages("dial");
-				const configs = Array.isArray(res) ? res : [];
-				const nextAppIdMap = new Map();
-				const params = { applications: [] };
+	_startMaintenanceRebootPolling() {
+		if (this.maintenanceRebootIntervalTimer) return;
 
-				for (const config of configs) {
-					const appId = config?.id || config?.appId;
-					const appName = config?.name;
-
-					if (!appId || !appName) {
-						this.WARN("Xcast: Skipping config with missing appId or name: " + JSON.stringify(config));
-						continue;
-					}
-
-					const rdkDialCfg = config?.configuration?.["urn:rdk:config:dial"];
-					if (!rdkDialCfg) continue;
-					const corsDomains = Array.isArray(rdkDialCfg?.corsDomains) ? [...rdkDialCfg.corsDomains] : [];
-
-					const query = "source_type=12";
-					const allowStop = 1;
-					this._updateDialAppList(params, appName, "my" + appName, corsDomains.join(" "), appId, query, allowStop);
-					nextAppIdMap.set(appName, appId);
-				}
-
-				if (params.applications.length === 0) {
-					this.WARN("Xcast: No supported applications isolated for registration pipeline");
-					return;
-				}
-
-				this.xcastAppIdMap = nextAppIdMap;
-
-				const success = await XcastApi.registerApplications(params);
-				if (!success) {
-					throw new Error("Platform plugin interface rejected the application registration parameters payload");
+		this.maintenanceRebootIntervalTimer = setInterval(async () => {
+			await SysSrvApi.getFirmwareUpdateState().then(async res => {
+				let percent = {};
+				if (res.success && res.firmwareUpdateState === FWUpdateState.FWUpdateStateDownloading) {
+					await SysSrvApi.getFirmwareDownloadPercent().then(p => { percent = p; });
 				} else {
-					this.LOG("Xcast: Application registration pipeline completed successfully");
+					percent = { downloadPercent: 100 };
 				}
-				this.LOG("Xcast: Applications registered successfully");
-			}
-		} catch (err) {
-			this.ERR("Xcast: Core registration lifecycle pipeline failed: " + (err?.message || JSON.stringify(err)));
-			throw err;
-		}
+				const downloadPercent = percent?.downloadPercent;
+				const firmwareStateKey = `${res.firmwareUpdateState ?? 'unknown'}:${downloadPercent ?? 'n/a'}`;
+				if (this._lastFirmwareStateLog !== firmwareStateKey) {
+					this.LOG("App init FirmwareUpdateState: " + SysSrvApi.getFirmwareUpdateStateString(res.firmwareUpdateState)
+						+ ", dwnld %: " + JSON.stringify(downloadPercent) + ", IsCriticalMaintenance="
+						+ GLOBALS.maintenanceIsCriticalMaintenance + ", IsRebootPending=" + GLOBALS.maintenanceIsRebootPending);
+					this._lastFirmwareStateLog = firmwareStateKey;
+				}
+				// MaintenanceManager sets isCriticalMaintenance/isRebootPending late in the cycle without
+				// emitting a new status event, so the cached flags can be stale; refresh before gating.
+				if (res.success && res.firmwareUpdateState === FWUpdateState.FWUpdateStatePreparingReboot) {
+					await MaintMgrApi.getMaintenanceActivityStatus().then(maintRes => {
+						if (maintRes?.success) {
+							GLOBALS.maintenanceIsCriticalMaintenance = Boolean(maintRes.isCriticalMaintenance);
+							GLOBALS.maintenanceIsRebootPending = Boolean(maintRes.isRebootPending);
+						}
+					}).catch(err => {
+						this.ERR("App init getMaintenanceActivityStatus error: " + JSON.stringify(err));
+					});
+				}
+				if (res.success &&
+					res.firmwareUpdateState === FWUpdateState.FWUpdateStatePreparingReboot &&
+					(!GLOBALS.maintenanceIsRebootPending || !GLOBALS.maintenanceIsCriticalMaintenance)) {
+					const skipKey = `prepareRebootGate:${GLOBALS.maintenanceIsCriticalMaintenance}:${GLOBALS.maintenanceIsRebootPending}`;
+					if (this._lastPrepareRebootGateLog !== skipKey) {
+						this.LOG("App init Skip reboot: firmware update is Preparing to Reboot but IsCriticalMaintenance=" + GLOBALS.maintenanceIsCriticalMaintenance + " IsRebootPending=" + GLOBALS.maintenanceIsRebootPending);
+						this._lastPrepareRebootGateLog = skipKey;
+					}
+				}
+				if (res.success &&
+					res.firmwareUpdateState === FWUpdateState.FWUpdateStatePreparingReboot &&
+					GLOBALS.maintenanceIsRebootPending && GLOBALS.maintenanceIsCriticalMaintenance) {
+					if (this.maintenanceRebootIntervalTimer) {
+						clearInterval(this.maintenanceRebootIntervalTimer);
+						this.maintenanceRebootIntervalTimer = null;
+						this.LOG("App init Cleared maintenanceRebootIntervalTimer to avoid duplicate reboot handling.");
+					}
+					if (this._maintenanceRebootScheduled) return;
+					this._maintenanceRebootScheduled = true;
+					this.LOG("App init Rebooting device to complete the maintenance update.")
+					// Make this app in foreground to show the reboot screen.
+					let timeoutMs = 100;
+					if (GLOBALS.topmostApp !== GLOBALS.selfClientName) {
+						timeoutMs = 6000;
+						this.LOG("App init Exiting topmost app " + GLOBALS.topmostApp + ", UI to foreground for reboot.")
+					}
+					const navigateToRebootWhenIdle = () => {
+						if (Router.isNavigating()) {
+							setTimeout(navigateToRebootWhenIdle, 100);
+							return;
+						}
+						this.jumpToRoute('settings/advanced/device/reboot');
+					};
+					setTimeout(navigateToRebootWhenIdle, timeoutMs);
+				}
+				if ((res.firmwareUpdateState === FWUpdateState.FWUpdateStateOnHoldForOptOut) ||
+					(res.firmwareUpdateState === FWUpdateState.FWUpdateStateUpgradeNotRequired)) {
+					if (this.maintenanceRebootIntervalTimer) {
+						clearInterval(this.maintenanceRebootIntervalTimer);
+						this.maintenanceRebootIntervalTimer = null;
+						this.LOG("App init Cleared maintenanceRebootIntervalTimer due to firmware update on hold or upgrade not required.");
+					}
+				}
+			});
+		}, 3000);
 	}
 
-	async _handleXcastAppLifecycle(applicationName, intent, action) {
-		const targetApp = this._getXcastAppId(applicationName) || applicationName;
-		if (!targetApp) return false;
+	async startMaintenanceHandling() {
+		this._lastMaintenanceNotificationState = this._lastMaintenanceNotificationState ?? null;
+		this._lastMaintenanceStatusLog = this._lastMaintenanceStatusLog ?? null;
+		this._lastFirmwareStateLog = this._lastFirmwareStateLog ?? null;
+		this._lastPrepareRebootGateLog = this._lastPrepareRebootGateLog ?? null;
 
-		const actionMap = {
-			launch: 'launchApp',
-			resume: 'launchApp',
-			hide: 'closeApp',
-			stop: 'terminateApp'
-		};
-
-		const method = actionMap[action];
-		if (!method) return false;
-		this.LOG(`Xcast: Performing '${action}' on Xcast app: ${targetApp} using method: ${method}`);
-		try {
-			if ("launchApp" === method) await AppManager.get()[method](targetApp, intent);
-			else await AppManager.get()[method](targetApp);
-		} catch (err) {
-			this.ERR(`Xcast: Error performing '${action}' on Xcast app: ${JSON.stringify(err)}`);
+		// Note: this is of global scope and will be effect on all pages.
+		if (!this.onMaintenanceStatusChangeCB) {
+			this.onMaintenanceStatusChangeCB = MaintMgrApi.on('onMaintenanceStatusChange', notification => {
+				const nextState = notification && notification.maintenanceStatus;
+				if (this._lastMaintenanceNotificationState !== nextState) {
+					this.LOG("App Init onMaintenanceStatusChange: " + JSON.stringify(notification));
+					this._lastMaintenanceNotificationState = nextState;
+				}
+				// The event payload may omit these fields; only overwrite cached values when present.
+				if (notification && typeof notification.isCriticalMaintenance === 'boolean') {
+					GLOBALS.maintenanceIsCriticalMaintenance = notification.isCriticalMaintenance;
+				}
+				if (notification && typeof notification.isRebootPending === 'boolean') {
+					GLOBALS.maintenanceIsRebootPending = notification.isRebootPending;
+				}
+				if (isMaintenanceActive(nextState)) {
+					MaintMgrApi.getMaintenanceActivityStatus().then(res => {
+						const maintenanceStatus = res && res.maintenanceStatus;
+						if (this._lastMaintenanceStatusLog !== maintenanceStatus) {
+							this.LOG("App init MaintenanceActivityStatus: " + JSON.stringify(res));
+							this._lastMaintenanceStatusLog = maintenanceStatus;
+						}
+						if (res?.success) {
+							GLOBALS.maintenanceIsCriticalMaintenance = Boolean(res.isCriticalMaintenance);
+							GLOBALS.maintenanceIsRebootPending = Boolean(res.isRebootPending);
+							if (isMaintenanceActive(maintenanceStatus)) {
+								this._startMaintenanceRebootPolling();
+							}
+						}
+					});
+				}
+			});
 		}
+
+		await MaintMgrApi.getMaintenanceActivityStatus().then(async res => {
+			const maintenanceStatus = res && res?.maintenanceStatus;
+			if (this._lastMaintenanceStatusLog !== maintenanceStatus) {
+				this.LOG("App init MaintenanceActivityStatus: " + JSON.stringify(res));
+				this._lastMaintenanceStatusLog = maintenanceStatus;
+			}
+			if (res?.success && isMaintenanceActive(maintenanceStatus)) {
+				GLOBALS.maintenanceIsCriticalMaintenance = Boolean(res.isCriticalMaintenance);
+				GLOBALS.maintenanceIsRebootPending = Boolean(res.isRebootPending);
+				await MaintMgrApi.getMaintenanceStartTime().then(res => {
+					if (res?.startTime !== this._lastMaintenanceStartTime) {
+						this.LOG("App init MaintenanceStartTime: " + JSON.stringify(res));
+						this._lastMaintenanceStartTime = res?.startTime;
+					}
+				});
+				this._startMaintenanceRebootPolling();
+			}
+		});
 	}
 
 	SubscribeToNetworkManager() {
@@ -831,9 +825,10 @@ export default class App extends Router.App {
 			else {
 				GLOBALS.IsConnectedToInternet = false
 			}
-			console.warn("onInternetStatusChange:", data);
+			this.WARN("onInternetStatusChange:", data);
 		});
 	}
+
 	SubscribeToMiracastService() {
 		thunder.on('org.rdk.MiracastService.1', 'onClientConnectionRequest', data => {
 			this.LOG('onClientConnectionRequest ' + JSON.stringify(data));
@@ -1177,31 +1172,32 @@ export default class App extends Router.App {
 	}
 
 	initializeInactivity() {
-        this.LOG('Into initialize');
+		this.LOG('Into initialize');
 
-        const { energySaver, screenSaver, sleepTimer } = inactivityHelper.getInactivityConfig();
+                GLOBALS.EnergySaverMode = !!Storage.get('EnergySaverMode');
+                const { energySaver, screenSaver, sleepTimer } = inactivityHelper.getInactivityConfig();
 		this.LOG(`Loaded config: energySaver=${energySaver}, screenSaver=${screenSaver}, sleep=${sleepTimer}`)
 
 		const hasValidTimer = inactivityHelper.isValidTimeout(screenSaver) || inactivityHelper.isValidTimeout(energySaver) || inactivityHelper.isValidTimeout(sleepTimer);
 
-        if (!hasValidTimer) {
-            this.LOG('No valid inactivity timers found. Disabling inactivity reporting.');
+		if (!hasValidTimer) {
+			this.LOG('No valid inactivity timers found. Disabling inactivity reporting.');
 			appApi.enableInactivityReporting(false)
-            .catch(err => this.ERR('Error disabling inactivity: ' + JSON.stringify(err)));
+			.catch(err => this.ERR('Error disabling inactivity: ' + JSON.stringify(err)));
 			return;
-        }
+		}
 
 		// Set initial interval based on valid timers
 		if (inactivityHelper.isValidTimeout(screenSaver)) {
-            this.$setInactivityIntervalStage('ScreenSaver', screenSaver);
-        } else if (inactivityHelper.isValidTimeout(sleepTimer)) {
-            this.$setInactivityIntervalStage('SleepTimer', sleepTimer);
-        } else if(inactivityHelper.isValidTimeout(energySaver)) {
-            this.$setInactivityIntervalStage('EnergySaver', energySaver);
-        } else {
-            this.LOG('No valid inactivity timers found. Engine will not start.');
-        }
-    }
+			this.$setInactivityIntervalStage('ScreenSaver', screenSaver);
+		} else if (inactivityHelper.isValidTimeout(sleepTimer)) {
+			this.$setInactivityIntervalStage('SleepTimer', sleepTimer);
+		} else if(inactivityHelper.isValidTimeout(energySaver)) {
+			this.$setInactivityIntervalStage('EnergySaver', energySaver);
+		} else {
+			this.LOG('No valid inactivity timers found. Engine will not start.');
+		}
+	}
 
 	async registerOnUserInactivityListener() {
 		try {
@@ -1269,7 +1265,7 @@ export default class App extends Router.App {
 		this.currentStage = stage;
 		this.currentInterval = minutes;
 
-        const { energySaver, screenSaver, sleepTimer } = inactivityHelper.getInactivityConfig();
+		const { energySaver, screenSaver, sleepTimer } = inactivityHelper.getInactivityConfig();
 		if (inactivityHelper.isValidTimeout(screenSaver)) {
 			this.currentStage = 'ScreenSaver';
 			this.currentInterval = screenSaver;
@@ -1294,13 +1290,13 @@ export default class App extends Router.App {
 	}
 
 	$resetInactivityStage(stage) {
-        this.LOG(`Reset request for stage=${stage}`);
-        if (this.currentStage === stage) {
-            this.currentStage = null;
-            this.currentInterval = null;
-        }
+		this.LOG(`Reset request for stage=${stage}`);
+		if (this.currentStage === stage) {
+			this.currentStage = null;
+			this.currentInterval = null;
+		}
 		inactivityHelper.$resetInactivity(stage);
-    }
+	}
 
 	async listenToVoiceControl() {
 		this.LOG("App listenToVoiceControl method got called, configuring VoiceControl Plugin")
@@ -1326,8 +1322,7 @@ export default class App extends Router.App {
 		appApi.getPowerState().then(res => {
 			this.LOG("getPowerState: " + JSON.stringify(res));
 			if (res.currentState === "ON") {
-				const { energySaver } = inactivityHelper.getInactivityConfig();
-				if (inactivityHelper.isValidTimeout(energySaver)) {
+				if (GLOBALS.EnergySaverMode) {
 					this.LOG("Energy Saver is enabled — going to DEEP_SLEEP on power key press");
 					inactivityHelper._enterSleepMode();
 				} else {
@@ -1410,7 +1405,7 @@ export default class App extends Router.App {
 	}
 
 	launchFeaturedApp = async (appName) => {
-		console.log("Launching Featured App from AI 2.0: " + appName);
+		this.LOG("Launching Featured App from AI 2.0: " + appName);
 		let installedApps;
 		try {
 			installedApps = await AppManager.get().getInstalledApps();
@@ -1436,57 +1431,6 @@ export default class App extends Router.App {
 		}
 	}
 
-	/**
-	 * Function to register event listeners for Xcast plugin.
-	 */
-	registerAppActionEvent() {
-		this.LOG("Registering onActionStartRequest event listener for org.rdk.AppActions");
-		this.onActionStartRequest = thunder.on("org.rdk.AppActions", "onActionStartRequest", async notification => {
-			this.LOG("onActionStartRequest: " + JSON.stringify(notification));
-			if (notification && "DIAL" === notification.initiator && notification.intent && notification.handlerAppId) {
-				let parsedIntent = {};
-				try {
-					parsedIntent = JSON.parse(notification.intent);
-					this.LOG("onActionStartRequest: Successfully parsed nested intent string: " + JSON.stringify(parsedIntent));
-				} catch (err) {
-					this.ERR("onActionStartRequest: Failed to parse nested intent string: " + err);
-					return false;
-				}
-				const intentAction = parsedIntent?.action;
-				const validIntents = ["launch", "hide", "resume", "stop"];
-				if (validIntents.includes(intentAction)) {
-					if ("launch" === intentAction || "resume" === intentAction) {
-						try {
-							const powerState = await PowerManagerApi.get().getPowerState();
-							if (powerState?.currentState !== PowerState.POWER_STATE_ON) {
-								await PowerManagerApi.get().setPowerState(PowerState.POWER_STATE_ON);
-							}
-						} catch (err) {
-							this.ERR("onActionStartRequest: Error getting/setting power state: " + JSON.stringify(err));
-						}
-					}
-					const appName = notification.handlerAppId;
-					// LaunchApp argument - intent is of string type, pass it as received.
-					await this._handleXcastAppLifecycle(appName, notification.intent, intentAction);
-				} else {
-					this.LOG("onActionStartRequest: intent " + (intentAction || "undefined") + " is not supported.");
-				}
-			} else {
-				this.LOG("onActionStartRequest: notification is not from DIAL or missing required fields.");
-			}
-		});
-	}
-
-	/**
-	 * Function to get the plugin name for the application name.
-	 * @param {string} app App instance.
-	 */
-	xcastApps(app) {
-		if (Object.keys(XcastApi.supportedApps()).includes(app)) {
-			return XcastApi.supportedApps()[app];
-		} else return false;
-	}
-
 	$registerUsbMount() {
 		this.disposableListener = this.ListenerConstructor();
 		this.LOG("Successfully registered the usb Mount")
@@ -1500,7 +1444,7 @@ export default class App extends Router.App {
 
 	$setEnergySaverMode(time) {
 		var timeoutInMinutes = inactivityHelper.$setEnergySaver(time);
-        this.LOG("Final timeout (minutes): " + timeoutInMinutes);
+		this.LOG("Final timeout (minutes): " + timeoutInMinutes);
 		try {
 			Storage.set('EnergySaverInterval', timeoutInMinutes);
 			this.$setInactivityIntervalStage("EnergySaver", parseInt(timeoutInMinutes));
@@ -1622,7 +1566,6 @@ export default class App extends Router.App {
 		if (targetApp != GLOBALS.selfclientAppName) {
 			AppManager.get().closeApp(targetApp).then(() => {
 				this.LOG("closeApp success for: " + targetApp)
-				// FIXME: Remove this workaround once App is aligned to LifeCycle.\
 				AppManager.get().terminateApp(targetApp).then(() => {
 					this.LOG("terminateApp success after closeApp for: " + targetApp)
 				}).catch(err => {
@@ -1630,7 +1573,6 @@ export default class App extends Router.App {
 				});
 			}).catch(err => {
 				this.ERR("closeApp err for " + targetApp + ": " + JSON.stringify(err))
-				// FIXME: Remove this workaround once App is aligned to LifeCycle.
 				AppManager.get().terminateApp(targetApp).then(() => {
 					this.LOG("terminateApp success after closeApp failure for: " + targetApp)
 				}).catch(termErr => {
@@ -1642,8 +1584,7 @@ export default class App extends Router.App {
 			Router.navigate(route);
 		} else {
 			if (!Router.isNavigating()) {
-				if (Router.getActiveHash() === "dtvplayer") //exit scenario for dtv player
-				{
+				if (Router.getActiveHash() === "dtvplayer") { //exit scenario for dtv player
 					dtvApi
 						.exitChannel()
 						.then((res) => {

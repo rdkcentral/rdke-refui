@@ -22,7 +22,6 @@ import { COLORS } from '../../colors/Colors'
 import { CONFIG, GLOBALS } from '../../Config/Config'
 import AppApi from '../../api/AppApi'
 
-const energySaverTimeout = '15 Minutes';
 /**
  * Class for Other Settings Screen.
  */
@@ -249,7 +248,7 @@ export default class OtherSettingsScreen extends Lightning.Component {
         } else {
             this.tag('ScreenSaver.Title').text.text = Language.translate('Screen-Saver: ') + 'Off'
         }
-        if (Storage.get('EnergySaverInterval')) {
+        if (Storage.get('EnergySaverMode')) {
             GLOBALS.EnergySaverMode = true;
             this.tag('EnergySaver.Button').src = Utils.asset('images/settings/ToggleOnOrange.png')
         } else {
@@ -321,9 +320,15 @@ export default class OtherSettingsScreen extends Lightning.Component {
                 _handleEnter() {
                     // Toggle Energy Saver mode
                     GLOBALS.EnergySaverMode = !GLOBALS.EnergySaverMode;
+                    Storage.set('EnergySaverMode', GLOBALS.EnergySaverMode);
                     if (GLOBALS.EnergySaverMode) {
-                        this.fireAncestors('$setEnergySaverMode', energySaverTimeout)
                         this.tag('EnergySaver.Button').src = Utils.asset('images/settings/ToggleOnOrange.png')
+                        // Only schedule a deep-sleep trigger if a Sleep Timer is already set.
+                        // No default 15 min timer should be applied when Sleep Timer is Off.
+                        const sleepTimer = Storage.get('TimeoutInterval');
+                        if (sleepTimer && sleepTimer !== 'Off') {
+                            this.fireAncestors('$setEnergySaverMode', sleepTimer)
+                        }
                     } else {
                         this.tag('EnergySaver.Button').src = Utils.asset('images/settings/ToggleOffWhite.png')
                         this.fireAncestors("$resetInactivityStage", "EnergySaver");

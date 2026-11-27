@@ -35,6 +35,7 @@ export default class PackageManager {
   constructor() {
     this.thunder = ThunderJS(CONFIG.thunderConfig);
     this.callsign = 'org.rdk.AppPackageManager';
+    this.metricsComponent = 'PackageManager';
     this.INFO = console.info;
     this.LOG = console.log;
     this.ERR = console.error;
@@ -44,6 +45,7 @@ export default class PackageManager {
     const err = new ThunderError(thunderCall, thunderErr);
     const errString = err.toString();
     this.ERR(errString);
+    Metrics.error(Metrics.ErrorType.OTHER,this.metricsComponent, errString, false, null)
 
     throw err;
   }
@@ -145,26 +147,6 @@ export default class PackageManager {
       { packageId, "versionAsParameter": version }
     ).then(result => {
       this.LOG(thunderCall, " result:", JSON.stringify(result));
-      return result;
-    }).catch(err => {
-      this.handleThunderError(thunderCall, err);
-    });
-  }
-
-  getConfigForInstalledPackage(packageId) {
-    const thunderCall = "getConfigForInstalledPackage";
-    return this.thunder.call(this.callsign, thunderCall, { packageId }).then(result => {
-      this.LOG(thunderCall, " result:" + JSON.stringify(result));
-      return result;
-    }).catch(err => {
-      this.handleThunderError(thunderCall, err);
-    });
-  }
-
-  getConfigListForInstalledPackages(filter = "dial") {
-    const thunderCall = "getConfigListForInstalledPackages";
-    return this.thunder.call(this.callsign, thunderCall, { filter }).then(result => {
-      this.LOG(thunderCall, " result:" + JSON.stringify(result));
       return result;
     }).catch(err => {
       this.handleThunderError(thunderCall, err);
